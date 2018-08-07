@@ -1,0 +1,12 @@
+resolver: lts-11.13
+
+packages:
+- location:
+    git: https://github.com/purescript/purescript.git
+    commit: f8ca834ebe3d8e5d484e5b55b5d1b8b6f0a783a2
+  extra-dep: false
+- location:
+    git: https://github.com/purescript/psc-package.git
+    commit: 1529f28a70a2b65b02efe4ddd6e879ced1a85b20
+  extra-dep: false
+
