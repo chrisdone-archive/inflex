@@ -51,16 +51,16 @@ render state =
                                    then " focused"
                                    else "")))
                         ]
-                        [HH.span[HP.class_ (ClassName"input")] [HH.text (x.rhs)]]
+                        [HH.span [HP.class_ (ClassName"input")] [HH.text (x.rhs)]]
                     ])
              things)
     ]
 
 things = [
-  {lhs:"rate", rhs:"55.5"},
-  {lhs:"standard_hours", rhs:"160"},
-  {lhs:"hours_worked", rhs:"150"},
-  {lhs:"due", rhs:"rate * (hours_worked / standard_hours)"}
+  {lhs:"rate", rhs:"55.5", result: "55.5"},
+  {lhs:"standard_hours", rhs:"160", result: "160"},
+  {lhs:"hours_worked", rhs:"150", result: "150"},
+  {lhs:"due", rhs:"rate * (hours_worked / standard_hours)", result: "52.03125"}
   ]
 
 handleAction ∷ forall o m. Action → H.HalogenM State Action () o m Unit
