@@ -1,12 +1,13 @@
-resolver: lts-11.13
-
+resolver: lts-14.20
+allow-newer: true
+ghc-options:
+  purescript: '-j4 -O2'
+  psc-package: '-j4 -O2'
 packages:
-- location:
-    git: https://github.com/purescript/purescript.git
-    commit: f8ca834ebe3d8e5d484e5b55b5d1b8b6f0a783a2
-  extra-dep: false
-- location:
-    git: https://github.com/purescript/psc-package.git
-    commit: 1529f28a70a2b65b02efe4ddd6e879ced1a85b20
-  extra-dep: false
-
+- inflex-client
+extra-deps:
+- happy-1.19.9
+- github: purescript/purescript
+  commit: ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9
+- github: purescript/psc-package
+  commit: 24a696131bca63513a84d0a9b691f773c7b37069
