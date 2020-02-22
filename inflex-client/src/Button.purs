@@ -33,27 +33,37 @@ render state =
         [HH.span [HP.class_ (ClassName "logo")] [HH.text "Inflex"]]
     , HH.div
         [HP.class_ (ClassName "document"), HE.onClick (\_ -> Just Clear)]
-        (map (\x -> HH.div [] [ HH.span
-                        [ HP.class_
-                            (ClassName
-                               ("lhs" <>
-                                (if state . enabled
-                                   then " focused"
-                                   else "")))
-                        ]
-                        [HH.span [HP.class_ (ClassName"input")] [HH.text (x.lhs)]]
-                    , HH.span [HP.class_ (ClassName "eq")] [HH.text "="]
-                    , HH.span
-                        [ HP.class_
-                            (ClassName
-                               ("rhs" <>
-                                (if state . enabled2
-                                   then " focused"
-                                   else "")))
-                        ]
-                        [HH.span [HP.class_ (ClassName"input")] [HH.text (x.rhs)]]
-                    ])
-             things)
+        (map
+           (\x ->
+              HH.div
+                []
+                [ HH.span
+                    [ HP.class_
+                        (ClassName
+                           ("lhs" <>
+                            (if state . enabled
+                               then " focused"
+                               else "")))
+                    ]
+                    [ HH.span
+                        [HP.class_ (ClassName "input")]
+                        [HH.text (x . lhs)]
+                    ]
+                , HH.span [HP.class_ (ClassName "eq")] [HH.text "="]
+                , HH.span
+                    [ HP.class_
+                        (ClassName
+                           ("rhs" <>
+                            (if state . enabled2
+                               then " focused"
+                               else "")))
+                    ]
+                    [ HH.span
+                        [HP.class_ (ClassName "input")]
+                        [HH.text (x . rhs)]
+                    ]
+                ])
+           things)
     ]
 
 things = [
