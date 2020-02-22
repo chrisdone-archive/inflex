@@ -1,0 +1,22 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+span.lhs, span.rhs {
+    display: inline-block;
+    padding: 5px;
+    margin: 5px 5px 5px 5px;
+}
+
+.rhs > input, .lhs > input {
+    border: 1px solid #e6daa5;
+    background: #f4f1df;
+    border-radius: 3px;
+    padding: 5px;
+    font-family: monospace;
+    color: #873f3f;
+}
+.rhs > input:focus, .lhs > input:focus {
+       box-shadow: 0 0 3px #5c1313;
+       outline: none;
+}
