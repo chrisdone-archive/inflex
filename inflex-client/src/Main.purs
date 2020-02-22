@@ -1,11 +1,13 @@
 module Main where
 
-import Prelude (Unit, (<>))
-import Effect.Console (log)
-import Effect (Effect)
+import Prelude
 
-greet :: String -> String
-greet name = "Hello, " <> name <> "!"
+import Effect (Effect)
+import Button as Button
+import Halogen.Aff as HA
+import Halogen.VDom.Driver (runUI)
 
 main :: Effect Unit
-main = log (greet "World")
+main = HA.runHalogenAff do
+  body <- HA.awaitBody
+  runUI Button.component unit body
