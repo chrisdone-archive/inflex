@@ -1,8 +1,13 @@
 name:                inflex-client
 version:             0
 extra-source-files: src/*
+data-files:
+- app.js
 dependencies:
 - purescript
 - base
+- template-haskell
+- typed-process
+- directory
 library:
   source-dirs: src
