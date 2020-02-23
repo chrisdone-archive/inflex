@@ -4,6 +4,7 @@ ghc-options:
   purescript: '-j4 -O2'
   psc-package: '-j4 -O2'
   inflex-server: '-j4 -O0'
+  inflex-client: '-fforce-recomp'
 packages:
 - inflex-client
 - inflex-server

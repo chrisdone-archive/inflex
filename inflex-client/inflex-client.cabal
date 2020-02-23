@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4dad9be551f2037980c16106aea955e0a9a17a85ed5d7e1992ff44f3304b50cb
+-- hash: dc5ffb0509b8fb81e2ae494c0e5a4e6bd3b0f21b702f657aabeeaa6a32771920
 
 name:           inflex-client
 version:        0
@@ -19,9 +19,9 @@ data-files:
 
 library
   exposed-modules:
-      Inflex.Client
-  other-modules:
       Paths_inflex_client
+  other-modules:
+      Inflex.Client
   hs-source-dirs:
       src
   build-depends:

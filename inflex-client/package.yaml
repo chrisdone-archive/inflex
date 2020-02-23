@@ -1,8 +1,8 @@
 name:                inflex-client
 version:             0
-extra-source-files: src/*
-data-files:
-- app.js
+extra-source-files:
+- src/*
+data-files: app.js
 dependencies:
 - purescript
 - base
@@ -11,3 +11,5 @@ dependencies:
 - directory
 library:
   source-dirs: src
+  exposed-modules:
+    Paths_inflex_client
