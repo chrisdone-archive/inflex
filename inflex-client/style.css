@@ -1,43 +1,11 @@
-body {
-  margin: 0;
-  padding: 0;
-}
-.document {
-  padding-top: 5px;
-}
-span.lhs, span.rhs {
-  display: inline-block;
-  padding: 5px;
-  margin: 5px 5px 5px 5px;
-}
-
-.rhs > .input, .lhs > .input {
-  border: 1px solid #e6daa5;
-  padding: 5px;
-  font-family: "Ubuntu Mono", monospace;
-  color: #873f3f;
-  border-radius: 5px;
-  border: 1px solid #e6dfc2;
-  background: #fcfbf2;
-  /* width: 4ch; */
-}
-.rhs > .input:focus, .lhs > .input:focus {
-  box-shadow: 0 0 5px #5c1313;
-  outline: none;
-  border: 1px solid #e6daa5;
-  background: #f4f1df;
-  border-radius: 5px;
-}
-.nav {
-  height: 50px;
-  background: #455C7B;
-}
-.nav .logo {
-  display: inline-block;
-  color: #FFBC67;
+.dec {
   font-family: sans-serif;
-  font-weight: bold;
-  vertical-align: middle;
-  height: 50px;
-  padding: 15px;
+  margin-bottom: 1em;
+}
+.eq {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+.editor {
+  font-family: monospace;
 }

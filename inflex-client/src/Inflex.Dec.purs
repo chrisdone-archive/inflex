@@ -40,13 +40,14 @@ component =
 
 render (State {name, rhs, result, display}) =
   HH.div
-    []
+    [HP.class_ (HH.ClassName "dec")]
     [ HH.text name
-    , HH.text "="
+    , HH.span [HP.class_ (HH.ClassName "eq")] [HH.text "="]
     , case display of
         DisplayEditor ->
           HH.input
             [ HP.value rhs
+            , HP.class_ (HH.ClassName "editor")
             , HE.onKeyDown
                 (\k ->
                    case K.code k of
