@@ -5,6 +5,7 @@
 .eq {
   padding-left: 1em;
   padding-right: 1em;
+  color: blue;
 }
 .editor {
   font-family: monospace;

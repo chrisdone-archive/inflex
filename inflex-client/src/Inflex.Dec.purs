@@ -55,7 +55,7 @@ render (State {name, rhs, result, display}) =
                      code -> Just (KeyCode code))
             ]
         DisplayResult ->
-          HH.span [HE.onDoubleClick (\_ -> pure StartEditor)] [HH.text rhs]
+          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text rhs]
     ]
 
 eval =
