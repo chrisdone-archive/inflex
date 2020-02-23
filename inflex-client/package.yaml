@@ -1,7 +1,8 @@
 name:                inflex-client
 version:             0
+extra-source-files: src/*
 dependencies:
 - purescript
-- psc-package
+- base
 library:
   source-dirs: src

@@ -4,11 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dec5b8dee0f2d68be0fd92f7ffcaa2921d245e98215f3b9c5e2bcf8637b9d507
+-- hash: 8664628a74aeb9fe51590445dd4041a141320415c992f0e75d5367d6040eb252
 
 name:           inflex-client
 version:        0
 build-type:     Simple
+extra-source-files:
+    src/Inflex.App.purs
+    src/Inflex.Dec.purs
+    src/Inflex.Doc.purs
+    src/Main.purs
 
 library
   other-modules:
@@ -16,6 +21,6 @@ library
   hs-source-dirs:
       src
   build-depends:
-      psc-package
+      base
     , purescript
   default-language: Haskell2010
