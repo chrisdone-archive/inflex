@@ -1,2 +1,14 @@
-* TODO Put .psc-package in /dev/shm to avoid thrashing
-* TODO Integrate dev bundling explicitly
+* DONE Make Haskell server load at runtime the app.js
+  CLOSED: [2020-02-24 Mon 16:15]
+  - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
+* DONE Use psc-package-fast
+  CLOSED: [2020-02-24 Mon 13:29]
+  - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
+  - Note taken on [2020-02-24 Mon 13:29] \\
+    Opened PR
+
+    https://github.com/bitc/purescript-bundle-fast/pull/2
+
+* DONE Put .psc-package in /dev/shm to avoid thrashing
+  CLOSED: [2020-02-24 Mon 13:29]
+  - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
