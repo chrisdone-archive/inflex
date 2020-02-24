@@ -1,0 +1,8 @@
+* TODO Is there a purescript "compile server"?
+  - Note taken on [2020-02-24 Mon 10:05] \\
+    Perform command on watch
+    https://github.com/watchexec/watchexec
+  - Note taken on [2020-02-24 Mon 10:05] \\
+    https://github.com/kRITZCREEK/pscid
+* TODO In dev mode, load code directly from "inflex-client/app.js"
+* TODO Put app.js and .psc-package in tmpfs to avoid thrashing SSD
