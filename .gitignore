@@ -1,4 +1,5 @@
 inflex-server/client_session_key.aes
+.backup-psc-package
 .psc-package
 .stack-work
 app.js

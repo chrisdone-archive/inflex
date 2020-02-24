@@ -33,6 +33,17 @@ packages:
       sha256: 7ae4413f1441bfa111f8e39a77ffdc95776d8ee6129d5ff328d6de4a8a67788e
   original:
     url: https://github.com/purescript/psc-package/archive/24a696131bca63513a84d0a9b691f773c7b37069.tar.gz
+- completed:
+    size: 7273
+    url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
+    name: purescript-bundle-fast
+    version: 0.1.0.1
+    sha256: 453b53e143994d23beeb30c9899ef2c805c0edeaabf287538813cad0f97eaba2
+    pantry-tree:
+      size: 441
+      sha256: a0cfe01e673c8077665181f1eca8c05ab9ff1cae96e67031d2836bb658416aaf
+  original:
+    url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
 snapshots:
 - completed:
     size: 524154
