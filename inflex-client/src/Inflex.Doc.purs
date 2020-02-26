@@ -16,6 +16,26 @@ import Data.HTTP.Method (Method(..))
 import Effect.Aff (launchAff)
 import Effect.Class.Console (log)
 
+-- TODO:
+--
+-- 1. Make a Command type.
+-- 2. Trigger in the @const Nothing@ below a parent command, indicating that this Dec was updated.
+-- 3. Eval handler will simply send the whole lot via ajax to REST endpoint.
+--    <https://github.com/purescript-halogen/purescript-halogen/blob/master/examples/effects-aff-ajax/src/Component.purs#L76>
+-- 4. REST endpoint evaluates all decls, sends back new set of decls.
+-- 5. Component updates internal state, causing re-render of views.
+-- 6. Names of decs don't change, or they do, in which case unreferenced components are GC'd.
+
+-- MORE EFFICIENT APPROACH TO RECONCILLIATION:
+--
+-- 1. Generate a UUID for each decl-which-is-a-component in-a-document.
+-- 2. Updates to each dec are routed to the same UUID, same component.
+-- 3. A field in the input argument to dec (early on) can be a SHA512
+--    of the whole dec, causing a very fast equality comparison via
+--    manual implementation of input handler in the Dec component.
+
+-- IMPORTANT QUESTION: How does Halogen's components know when NOT to
+-- re-render? Is it on H.modify?
 
 component :: forall q i o m. MonadEffect m =>  H.Component HH.HTML q i o m
 component =
