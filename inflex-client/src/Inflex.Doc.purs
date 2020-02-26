@@ -8,6 +8,15 @@ import Halogen.HTML as HH
 import Inflex.Dec as Dec
 import Prelude
 
+import Affjax as AX
+import Affjax.ResponseFormat as ResponseFormat
+import Data.Argonaut.Core as J
+import Data.Either (Either(..))
+import Data.HTTP.Method (Method(..))
+import Effect.Aff (launchAff)
+import Effect.Class.Console (log)
+
+
 component :: forall q i o m. MonadEffect m =>  H.Component HH.HTML q i o m
 component =
   H.mkComponent
