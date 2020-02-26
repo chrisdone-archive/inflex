@@ -8,6 +8,6 @@ import Language.Haskell.TH.Syntax
 import System.Directory
 import System.Process.Typed
 
-$(runIO
-    (do runProcess_ (proc "sh" ["bundle.sh"])
-        pure []))
+-- $(runIO
+--     (do runProcess_ (proc "sh" ["bundle.sh"])
+--         pure []))
