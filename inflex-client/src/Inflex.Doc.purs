@@ -28,7 +28,7 @@ import Effect.Class.Console (log)
 
 -- MORE EFFICIENT APPROACH TO RECONCILLIATION:
 --
--- 1. Generate a UUID for each decl-which-is-a-component in-a-document.
+-- 1. Generate a UUID <https://pursuit.purescript.org/packages/purescript-uuid/6.0.1/docs/Data.UUID> for each decl-which-is-a-component in-a-document.
 -- 2. Updates to each dec are routed to the same UUID, same component.
 -- 3. A field in the input argument to dec component can be a SHA512
 --    of the whole dec, causing a very fast equality comparison via

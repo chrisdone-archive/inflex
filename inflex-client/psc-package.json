@@ -8,6 +8,7 @@
     "halogen",
     "affjax",
     "argonaut",
-    "http-methods"
+    "http-methods",
+    "uuid"
   ]
 }
