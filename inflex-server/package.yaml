@@ -23,6 +23,9 @@ dependencies:
 - base >= 4.7 && < 5
 - yesod
 - duet
+- text
+- aeson
+- unordered-containers
 
 library:
   source-dirs: src
