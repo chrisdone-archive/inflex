@@ -10,7 +10,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Prelude (const, unit, pure)
+import Prelude
 import Web.UIEvent.KeyboardEvent as K
 
 data Dec = Dec {
@@ -28,7 +28,7 @@ data Display = DisplayResult | DisplayEditor
 
 data Command = StartEditor | KeyCode String | FinishEditing
 
-component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec o m
+component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec Dec m
 component =
   H.mkComponent
     { initialState: (\dec -> State {dec, display: DisplayResult})
@@ -60,6 +60,8 @@ eval =
   case _ of
     StartEditor ->
       H.modify_ (\(State st) -> State (st {display = DisplayEditor}))
-    FinishEditing ->
+    FinishEditing -> do
+      State st <- H.get
+      _result <- H.raise (st.dec)
       H.modify_ (\(State st) -> State (st {display = DisplayResult}))
     KeyCode code -> H.liftEffect (log code)

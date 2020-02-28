@@ -1,5 +1,11 @@
 module Inflex.Doc (component) where
 
+import Data.Traversable
+import Data.Tuple
+import Data.UUID
+import Effect.Class
+import Prelude
+
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
 import Data.Argonaut.Core as J
@@ -9,16 +15,11 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Traversable
-import Data.Tuple
-import Data.UUID
 import Effect.Aff (launchAff)
-import Effect.Class
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Dec as Dec
-import Prelude
 
 -- TODO:
 --
@@ -88,9 +89,11 @@ eval =
              initialDecs)
       H.modify_ (\s -> s {decs = decs})
       pure unit
-    UpdateDec uuid dec ->
+    UpdateDec uuid dec -> do
+      H.liftEffect (log "Asking server for an update...")
+      let decs' = M.insert uuid dec (s . decs)
       -- TODO: Here is where we request from the server the latest results.
-      H.modify_ (\s -> s {decs = M.insert uuid dec (s . decs)})
+      H.modify_ (\s -> s {decs = decs'})
 
 render state =
   HH.div
@@ -105,8 +108,9 @@ render state =
             (\dec -> pure (UpdateDec uuid dec)))
        (M.toUnfoldable (state . decs)))
 
+
 initialDecs =
-  [Dec.Dec {name: "rate", rhs: "55.5"}
-  ,Dec.Dec {name: "hours", rhs: "160"}
-  ,Dec.Dec {name: "worked", rhs: "150"}
-  ,Dec.Dec {name: "total", rhs: "worked / hours * rate"}]
+  [Dec.Dec {name: "rate", rhs: "55.5", result: "55.5"}
+  ,Dec.Dec {name: "hours", rhs: "160", result: "160"}
+  ,Dec.Dec {name: "worked", rhs: "150", result: "150"}
+  ,Dec.Dec {name: "total", rhs: "worked / hours * rate", result: "0"}]
