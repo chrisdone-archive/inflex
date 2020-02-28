@@ -59,7 +59,7 @@ import Prelude
 --    knows the input, and knows the output. Easy to diff. This would
 --    be 4 levels of avoiding work.
 
-data Command = Initialize
+data Command = Initialize | UpdateDec UUID Dec.Dec
 
 type State = {
   decs :: Map UUID Dec.Dec
@@ -88,20 +88,22 @@ eval =
              initialDecs)
       H.modify_ (\s -> s {decs = decs})
       pure unit
+    UpdateDec uuid dec ->
+      -- TODO: Here is where we request from the server the latest results.
+      H.modify_ (\s -> s {decs = M.insert uuid dec (s . decs)})
 
-render =
-  \state ->
-    HH.div
-      []
-      (map
-         (\(Tuple uuid dec) ->
-            HH.slot
-              (SProxy :: SProxy "Dec")
-              (uuidToString uuid)
-              Dec.component
-              dec
-              (const Nothing))
-         (M.toUnfoldable (state . decs)))
+render state =
+  HH.div
+    []
+    (map
+       (\(Tuple uuid dec) ->
+          HH.slot
+            (SProxy :: SProxy "Dec")
+            (uuidToString uuid)
+            Dec.component
+            dec
+            (\dec -> pure (UpdateDec uuid dec)))
+       (M.toUnfoldable (state . decs)))
 
 initialDecs =
   [Dec.Dec {name: "rate", rhs: "55.5"}

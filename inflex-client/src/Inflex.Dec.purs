@@ -16,12 +16,11 @@ import Web.UIEvent.KeyboardEvent as K
 data Dec = Dec {
     name :: String
   , rhs :: String
+  , result :: String
   }
 
 data State = State {
-    name :: String
-  , rhs :: String
-  , result :: Maybe String
+    dec :: Dec
   , display :: Display
   }
 
@@ -32,13 +31,12 @@ data Command = StartEditor | KeyCode String | FinishEditing
 component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec o m
 component =
   H.mkComponent
-    { initialState:
-        (\(Dec {name, rhs}) -> (State {name, rhs, result: Nothing, display: DisplayResult}))
+    { initialState: (\dec -> State {dec, display: DisplayResult})
     , render
     , eval: H.mkEval H.defaultEval { handleAction = eval }
     }
 
-render (State {name, rhs, result, display}) =
+render (State {dec: Dec{name, rhs, result}, display}) =
   HH.div
     [HP.class_ (HH.ClassName "dec")]
     [ HH.text name
