@@ -1,20 +1,21 @@
 module Inflex.Doc (component) where
 
-import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
-import Effect.Class
-import Halogen as H
-import Halogen.HTML as HH
-import Inflex.Dec as Dec
-import Prelude
-
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
 import Data.Argonaut.Core as J
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
+import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy(..))
+import Data.Traversable
+import Data.UUID
 import Effect.Aff (launchAff)
+import Effect.Class
 import Effect.Class.Console (log)
+import Halogen as H
+import Halogen.HTML as HH
+import Inflex.Dec as Dec
+import Prelude
 
 -- TODO:
 --
@@ -55,29 +56,51 @@ import Effect.Class.Console (log)
 --    knows the input, and knows the output. Easy to diff. This would
 --    be 4 levels of avoiding work.
 
+data Command = Initialize
+
+data Dec = Dec { dec :: Dec.Dec, uuid :: UUID }
+
+type State = {
+  decs :: Array Dec
+ }
+
 component :: forall q i o m. MonadEffect m =>  H.Component HH.HTML q i o m
 component =
   H.mkComponent
-    { initialState: const unit
+    { initialState: const { decs: [] }
     , render
-    , eval: H.mkEval H.defaultEval
+    , eval:
+        H.mkEval
+          H.defaultEval {initialize = pure Initialize, handleAction = eval}
     }
+
+eval =
+  case _ of
+    Initialize -> do
+      decs <-
+        traverse
+          (\dec -> do
+             uuid <- H.liftEffect genUUIDV4
+             pure (Dec {uuid, dec}))
+          initialDecs
+      H.modify_ (\s -> s {decs = decs})
+      pure unit
 
 render =
   \state ->
     HH.div
       []
       (map
-         (\dec@(Dec.Dec {name}) ->
+         (\(Dec {uuid, dec}) ->
             HH.slot
-              (SProxy :: SProxy "doc")
-              name
+              (SProxy :: SProxy "Dec")
+              (uuidToString uuid)
               Dec.component
               dec
               (const Nothing))
-         decs)
+         (state . decs))
 
-decs =
+initialDecs =
   [Dec.Dec {name: "rate", rhs: "55.5"}
   ,Dec.Dec {name: "hours", rhs: "160"}
   ,Dec.Dec {name: "worked", rhs: "150"}
