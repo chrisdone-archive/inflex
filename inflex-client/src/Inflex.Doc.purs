@@ -1,13 +1,10 @@
 module Inflex.Doc (component) where
 
-import Data.Traversable
-import Data.Tuple
-import Data.UUID
-import Effect.Class
-import Prelude
-
+import Effect.Aff.Class
 import Affjax as AX
+import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
+import Control.Monad.State
 import Data.Argonaut.Core as J
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
@@ -15,11 +12,17 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Data.Traversable
+import Data.Tuple
+import Data.UUID
+import Foreign.Object as Foreign
 import Effect.Aff (launchAff)
+import Effect.Class
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Dec as Dec
+import Prelude
 
 -- TODO:
 --
@@ -66,7 +69,7 @@ type State = {
   decs :: Map UUID Dec.Dec
  }
 
-component :: forall q i o m. MonadEffect m =>  H.Component HH.HTML q i o m
+component :: forall q i o m. MonadEffect m =>  MonadAff m =>  H.Component HH.HTML q i o m
 component =
   H.mkComponent
     { initialState: const { decs: mempty }
@@ -76,6 +79,7 @@ component =
           H.defaultEval {initialize = pure Initialize, handleAction = eval}
     }
 
+eval :: forall m. MonadState State m => MonadEffect m => MonadAff m => Command -> m Unit
 eval =
   case _ of
     Initialize -> do
@@ -91,8 +95,33 @@ eval =
       pure unit
     UpdateDec uuid dec -> do
       H.liftEffect (log "Asking server for an update...")
+      s <- H.get
       let decs' = M.insert uuid dec (s . decs)
-      -- TODO: Here is where we request from the server the latest results.
+      -- TODO_=Here is where we request from the server the latest results.
+      result2 <-
+        H.liftAff
+          (AX.post
+             ResponseFormat.json
+             "/api/refresh"
+             (Just
+                (RequestBody.json
+                   (J.fromObject
+                      (Foreign.fromFoldable
+                       (map
+                          (\(Tuple uuid (Dec.Dec dec)) ->
+                             Tuple
+                               (uuidToString uuid)
+                               (J.fromObject
+                                (Foreign.fromHomogeneous
+                                   { name: J.fromString (dec.name)
+                                   , rhs: J.fromString (dec.rhs)
+                                   })))
+                          (M.toUnfoldable decs'):: Array (Tuple String J.Json)))))))
+      case result2 of
+        Left err ->
+          log $ "POST /api response failed to decode_=" <> AX.printError err
+        Right response ->
+          log $ "POST /api response_=" <> J.stringify response . body
       H.modify_ (\s -> s {decs = decs'})
 
 render state =
