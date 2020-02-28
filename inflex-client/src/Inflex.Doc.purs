@@ -5,9 +5,12 @@ import Affjax.ResponseFormat as ResponseFormat
 import Data.Argonaut.Core as J
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
+import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Traversable
+import Data.Tuple
 import Data.UUID
 import Effect.Aff (launchAff)
 import Effect.Class
@@ -58,16 +61,14 @@ import Prelude
 
 data Command = Initialize
 
-data Dec = Dec { dec :: Dec.Dec, uuid :: UUID }
-
 type State = {
-  decs :: Array Dec
+  decs :: Map UUID Dec.Dec
  }
 
 component :: forall q i o m. MonadEffect m =>  H.Component HH.HTML q i o m
 component =
   H.mkComponent
-    { initialState: const { decs: [] }
+    { initialState: const { decs: mempty }
     , render
     , eval:
         H.mkEval
@@ -78,11 +79,13 @@ eval =
   case _ of
     Initialize -> do
       decs <-
-        traverse
-          (\dec -> do
-             uuid <- H.liftEffect genUUIDV4
-             pure (Dec {uuid, dec}))
-          initialDecs
+        map
+          M.fromFoldable
+          (traverse
+             (\dec -> do
+                uuid <- H.liftEffect genUUIDV4
+                pure (Tuple uuid dec))
+             initialDecs)
       H.modify_ (\s -> s {decs = decs})
       pure unit
 
@@ -91,14 +94,14 @@ render =
     HH.div
       []
       (map
-         (\(Dec {uuid, dec}) ->
+         (\(Tuple uuid dec) ->
             HH.slot
               (SProxy :: SProxy "Dec")
               (uuidToString uuid)
               Dec.component
               dec
               (const Nothing))
-         (state . decs))
+         (M.toUnfoldable (state . decs)))
 
 initialDecs =
   [Dec.Dec {name: "rate", rhs: "55.5"}
