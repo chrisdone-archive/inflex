@@ -26,6 +26,10 @@ dependencies:
 - text
 - aeson
 - unordered-containers
+- exceptions
+- monad-logger
+- containers
+- mtl
 
 library:
   source-dirs: src
