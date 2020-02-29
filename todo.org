@@ -1,4 +1,6 @@
-* TODO Get input value from Dec input
+* DONE Get input value from Dec input
+  CLOSED: [2020-02-29 Sat 15:27]
+  - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
 * DONE Make Haskell server load at runtime the app.js
   CLOSED: [2020-02-24 Mon 16:15]
   - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
