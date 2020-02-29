@@ -38,57 +38,14 @@ import           GHC.Generics
 import           System.IO
 import           Yesod
 
-data App = App
-instance Yesod App
-
-mkYesod "App" [parseRoutes|
-  /appjs AppJsR GET
-  /api/refresh RefreshR POST
-  / AppR GET
-|]
-
-getAppR :: Handler TypedContent
-getAppR = sendFile "text/html" "index.html"
-
-getAppJsR :: Handler TypedContent
-getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
-
-postRefreshR :: Handler TypedContent
-postRefreshR =
-  selectRep
-    (provideRep
-       (do inputDocument :: HashMap Text DecIn <- requireCheckJsonBody
-           let parsedDocument =
-                 map
-                   (\(uuid, decIn@DecIn {name, rhs}) ->
-                      (uuid, Identifier (T.unpack name), rhs, parseDecIn decIn))
-                   (HM.toList inputDocument)
-               evaluatedDocument =
-                 case mapM
-                        (\(uuid, i, rhs, r) ->
-                           fmap (uuid, i, rhs, ) (fmap snd r))
-                        parsedDocument of
-                   Left {} ->
-                     map
-                       (\(uuid, Identifier name, rhs, result) ->
-                          ( uuid
-                          , DecOut
-                              { name = T.pack name
-                              , rhs
-                              , result =
-                                  case result of
-                                    Left e -> Left (T.pack (show e))
-                                    Right v -> Left "... [waiting]"
-                              }))
-                       parsedDocument
-                   Right r -> runProgram r
-           pure (toJSON (Object (fmap toJSON (HM.fromList evaluatedDocument))))))
+--------------------------------------------------------------------------------
+-- Main entry point
 
 main :: IO ()
 main = warpEnv App
 
 --------------------------------------------------------------------------------
--- Duet helpers
+-- Types
 
 data DecIn = DecIn
   { name :: Text
@@ -118,6 +75,83 @@ instance ToJSON DecOut where
           Right d -> "output" .= d
       ]
 
+--------------------------------------------------------------------------------
+-- Constants
+
+maxSteps :: Int
+maxSteps = 100
+
+initialDecs :: [DecOut]
+initialDecs =
+  [ DecOut {name = "rate", rhs = "55.5", result = Right "55.5"}
+  , DecOut {name = "hours", rhs = "160.0", result = Right "160.0"}
+  , DecOut {name = "worked", rhs = "150.0", result = Right "150.0"}
+  , DecOut {name = "bill", rhs = "worked * rate", result = Left "Waiting ..."}
+  , DecOut
+      { name = "percent"
+      , rhs = "(worked / hours) * 100.0"
+      , result = Left "Waiting ..."
+      }
+  ]
+
+--------------------------------------------------------------------------------
+-- Dispatcher
+
+data App = App
+instance Yesod App
+
+mkYesod "App" [parseRoutes|
+  /appjs AppJsR GET
+  /api/refresh RefreshR POST
+  / AppR GET
+|]
+
+--------------------------------------------------------------------------------
+-- Routes
+
+getAppR :: Handler TypedContent
+getAppR = sendFile "text/html" "index.html"
+
+getAppJsR :: Handler TypedContent
+getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
+
+postRefreshR :: Handler TypedContent
+postRefreshR = selectRep (provideRep refreshHandler)
+
+--------------------------------------------------------------------------------
+-- Refresh handler
+
+refreshHandler :: HandlerFor App Value
+refreshHandler = do
+  inputDocument :: HashMap Text DecIn <- requireCheckJsonBody
+  let parsedDocument =
+        map
+          (\(uuid, decIn@DecIn {name, rhs}) ->
+             (uuid, Identifier (T.unpack name), rhs, parseDecIn decIn))
+          (HM.toList inputDocument)
+      evaluatedDocument =
+        case mapM
+               (\(uuid, i, rhs, r) -> fmap (uuid, i, rhs, ) (fmap snd r))
+               parsedDocument of
+          Left {} ->
+            map
+              (\(uuid, Identifier name, rhs, result) ->
+                 ( uuid
+                 , DecOut
+                     { name = T.pack name
+                     , rhs
+                     , result =
+                         case result of
+                           Left e -> Left (T.pack (show e))
+                           Right v -> Left "... [waiting]"
+                     }))
+              parsedDocument
+          Right r -> runProgram r
+  pure (toJSON (Object (fmap toJSON (HM.fromList evaluatedDocument))))
+
+--------------------------------------------------------------------------------
+-- Duet helpers
+
 -- TOOD: Deal with max steps, should throw an error.
 runProgram ::
      [(Text, Identifier, Text, Expression UnkindedType Identifier Location)]
@@ -134,9 +168,12 @@ runProgram decls = map toDecOut final
                 Left ex -> Left (T.pack (show ex))
                 Right results ->
                   case results of
-                    [] -> Left "No result (didn't finish!)" -- TODO: Handle properly.
+                    [] -> Left "No result (didn't start!)" -- TODO: Handle properly.
                     xs ->
-                      Right (T.pack (printExpression defaultPrint (last xs)))
+                      if length xs > maxSteps
+                        then Left "No result (didn't finish!)"
+                        else Right
+                               (T.pack (printExpression defaultPrint (last xs)))
           })
     final =
       case overall of
@@ -170,7 +207,7 @@ runProgram decls = map toDecOut final
                            (evalSupplyT
                               (execWriterT
                                  (runStepper
-                                    100
+                                    (maxSteps + 1)
                                     ctx
                                     (fmap (fmap typeSignatureA) binds)
                                     i))
