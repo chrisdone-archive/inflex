@@ -16,6 +16,6 @@ extra-deps:
   commit: 24a696131bca63513a84d0a9b691f773c7b37069
 - github: chrisdone/purescript-bundle-fast
   commit: c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e
-- github: chrisdone/duet
-  commit: 959d40db68f4c2df04cabb7677724900d4f71db4
-# - ../../duet-lang/duet/
+# - github: chrisdone/duet
+#   commit: 959d40db68f4c2df04cabb7677724900d4f71db4
+- ../../duet-lang/duet/

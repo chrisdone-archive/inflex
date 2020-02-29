@@ -140,6 +140,6 @@ render state =
 
 initialDecs =
   [Dec.Dec {name: "rate", rhs: "55.5", result: "55.5"}
-  ,Dec.Dec {name: "hours", rhs: "160", result: "160"}
-  ,Dec.Dec {name: "worked", rhs: "150", result: "150"}
-  ,Dec.Dec {name: "total", rhs: "worked / hours * rate", result: "0"}]
+  ,Dec.Dec {name: "hours", rhs: "160.0", result: "160"}
+  ,Dec.Dec {name: "worked", rhs: "150.0", result: "150"}
+  ,Dec.Dec {name: "total", rhs: "worked * rate", result: "0"}]

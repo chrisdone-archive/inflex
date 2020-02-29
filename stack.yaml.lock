@@ -44,17 +44,6 @@ packages:
       sha256: a0cfe01e673c8077665181f1eca8c05ab9ff1cae96e67031d2836bb658416aaf
   original:
     url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
-- completed:
-    size: 56792
-    url: https://github.com/chrisdone/duet/archive/959d40db68f4c2df04cabb7677724900d4f71db4.tar.gz
-    name: duet
-    version: 0.0.2
-    sha256: be14eb32870b09851efc4e20503c2fd894a3a35b5cfa40addae84a5c095133dd
-    pantry-tree:
-      size: 3226
-      sha256: 3051fcc677152a21af9e2c1dd362de830ed90c2a4fd249690e665320e48000f7
-  original:
-    url: https://github.com/chrisdone/duet/archive/959d40db68f4c2df04cabb7677724900d4f71db4.tar.gz
 snapshots:
 - completed:
     size: 524154
