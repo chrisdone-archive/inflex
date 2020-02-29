@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css?family=Open+Sans|Ubuntu+Mono&display=swap');
 
+textarea:focus, input:focus{
+    outline: none;
+}
+
 body {
   background: #edf2f4;
   font-family: "Open Sans", sans-serif;
