@@ -3,6 +3,7 @@ module Inflex.Dec
   , Dec(..)
   ) where
 
+import Data.Either
 import Data.Maybe
 import Effect.Class
 import Effect.Console
@@ -16,7 +17,7 @@ import Web.UIEvent.KeyboardEvent as K
 data Dec = Dec {
     name :: String
   , rhs :: String
-  , result :: String
+  , result :: Either String String
   }
 
 data State = State {
@@ -26,14 +27,14 @@ data State = State {
 
 data Display = DisplayResult | DisplayEditor String
 
-data Command = StartEditor | SetInput String | FinishEditing String
+data Command = StartEditor | SetInput String | FinishEditing String | SetDec Dec
 
 component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec Dec m
 component =
   H.mkComponent
     { initialState: (\dec -> State {dec, display: DisplayResult})
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = eval }
+    , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetDec }
     }
 
 render (State {dec: Dec{name, rhs, result}, display}) =
@@ -54,7 +55,7 @@ render (State {dec: Dec{name, rhs, result}, display}) =
             , HE.onValueChange (\i -> pure (SetInput i))
             ]
         DisplayResult ->
-          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text result]
+          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text (either identity identity result)]
     ]
 
 eval =
@@ -74,10 +75,11 @@ eval =
       State st <- H.get
       let newDec =
             let Dec dec = st . dec
-             in Dec (dec {rhs = rhs, result = "..."})
+             in Dec (dec {rhs = rhs, result = Left "Waiting..."})
       H.modify_
         (\(State st') -> State (st' {display = DisplayResult, dec = newDec}))
       _result <- H.raise newDec
       H.modify_ (\(State st') -> State (st' {display = DisplayResult}))
     SetInput i ->
       H.modify_ (\(State st) -> State (st {display = DisplayEditor i}))
+    SetDec dec -> H.put (State {dec, display: DisplayResult})

@@ -1,6 +1,5 @@
 module Inflex.Doc (component) where
 
-import Effect.Aff.Class
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -10,15 +9,17 @@ import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Map (Map)
 import Data.Map as M
+import Data.Maybe
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Traversable
 import Data.Tuple
 import Data.UUID
-import Foreign.Object as Foreign
 import Effect.Aff (launchAff)
+import Effect.Aff.Class
 import Effect.Class
 import Effect.Class.Console (log)
+import Foreign.Object as Foreign
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Dec as Dec
@@ -120,9 +121,41 @@ eval =
       case result2 of
         Left err ->
           log $ "POST /api response failed to decode_=" <> AX.printError err
-        Right response ->
-          log $ "POST /api response_=" <> J.stringify response . body
-      H.modify_ (\s -> s {decs = decs'})
+        Right response -> do
+          log $ "POST /api response_=" <> J.stringify (response . body)
+          case decOutsParser (response.body) of
+            Left err -> log ("error parsing JSON:" <> err)
+            Right decs'' -> H.modify_ (\s' -> s' {decs = decs''})
+
+decOutsParser :: forall a. J.Json -> Either String (Map UUID (Dec.Dec))
+decOutsParser =
+  J.caseJsonObject
+    (Left "expected object of uuids")
+    (\obj ->
+       let mp =
+             M.fromFoldable
+               (map
+                  (\(Tuple k v) -> Tuple (UUID k) v)
+                  (Foreign.toUnfoldable obj :: Array (Tuple String J.Json))) :: Map UUID J.Json
+        in traverse
+             (J.caseJsonObject
+                (Left "expected DecOut")
+                (\dec -> do
+                   name <-
+                     maybe (Left "need name") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "name" dec)
+                   rhs <-
+                     maybe (Left "need rhs") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "rhs" dec)
+                   result <-
+                     maybe (Left "need result") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "result" dec)
+                   case result of
+                     "error" -> do error <-
+                                     maybe (Left "need error") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "error" dec)
+                                   pure (Dec.Dec {name, rhs, result: Left error})
+                     "success" -> do output <-
+                                       maybe (Left "need output") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "output" dec)
+                                     pure (Dec.Dec {name, rhs, result: Left output})
+                     _ -> Left "invalid result"))
+             mp)
 
 render state =
   HH.div
@@ -139,7 +172,8 @@ render state =
 
 
 initialDecs =
-  [Dec.Dec {name: "rate", rhs: "55.5", result: "55.5"}
-  ,Dec.Dec {name: "hours", rhs: "160.0", result: "160.0"}
-  ,Dec.Dec {name: "worked", rhs: "150.0", result: "150.0"}
-  ,Dec.Dec {name: "total", rhs: "worked * rate", result: "0"}]
+  [Dec.Dec {name: "rate", rhs: "55.5", result: Right "55.5"}
+  ,Dec.Dec {name: "hours", rhs: "160.0", result: Right "160.0"}
+  ,Dec.Dec {name: "worked", rhs: "150.0", result: Right "150.0"}
+  ,Dec.Dec {name: "bill", rhs: "worked * rate", result: Left "Waiting ..."}
+  ,Dec.Dec {name: "percent", rhs: "(worked / hours) * 100.0", result: Left "Waiting ..."}]

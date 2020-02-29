@@ -3,7 +3,7 @@
 module Data.UUID
   ( genUUIDV4
   , uuidToString
-  , UUID
+  , UUID(..)
   ) where
 
 import Effect (Effect)
