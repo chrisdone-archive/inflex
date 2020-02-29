@@ -14,6 +14,7 @@
 
 import           Control.Monad.Catch (SomeException, catch, MonadThrow)
 import           Control.Monad.Logger
+import           Control.Monad.Reader
 import           Control.Monad.Supply
 import           Control.Monad.Writer
 import           Data.Aeson
@@ -40,6 +41,7 @@ import           Duet.Types
 import           GHC.Generics
 import           Lucid
 import           System.IO
+import           Text.Lucius
 import           Yesod hiding (Html)
 import           Yesod.Lucid
 
@@ -103,6 +105,7 @@ instance Yesod App
 
 mkYesod "App" [parseRoutes|
   /appjs AppJsR GET
+  /appcss AppCssR GET
   /api/refresh RefreshR POST
   / AppR GET
 |]
@@ -125,19 +128,25 @@ getAppR = do
           evaluateInputDocument decs)
   htmlWithUrl
     (do doctype_
+        url <- ask
         html_
-          (do head_ (do title_ "InflexApp")
+          (do head_
+                (do title_ "InflexApp"
+                    link_
+                      [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
               body_
-                []
                 (do script_
                       [type_ "text/javascript"]
                       (do toHtmlRaw "window['inflexDocument'] = "
                           toHtmlRaw (encode initialDecs')
                           ";")
-                    script_ [type_ "text/javascript", src_ "/appjs"] "")))
+                    script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
+
+getAppCssR :: Handler Css
+getAppCssR = pure ($(luciusFile "templates/app.lucius") ())
 
 postRefreshR :: Handler TypedContent
 postRefreshR = selectRep (provideRep refreshHandler)

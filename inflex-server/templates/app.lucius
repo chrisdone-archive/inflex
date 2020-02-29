@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans|Ubuntu+Mono&display=swap');
+
+body {
+  background: #edf2f4;
+  font-family: "Open Sans", sans-serif;
+  cursor: crosshair;
+}
+
+.dec {
+  margin-bottom: 10px;
+  width: fit-content;
+  font-size: 20px;
+  padding: 8px;
+  background: #ffffff;
+  border: 2px solid #d7daf2;
+  border-radius: 5px;
+  font-family: 'Ubuntu Mono', monospace;
+  color: #493587;
+  cursor: grab;
+  box-shadow: 3px 3px #e8edf4;
+}
+
+.dec-eq {
+  margin-left: 5px;
+  margin-right: 5px;
+  color: #75b4ac;
+}
+
+.dec:hover {
+  background: #dff4ee;
+}
+
+.dec-rhs, .dec-name {
+  cursor: text;
+}
+
+.dec-name {
+  font-family: "Open Sans", sans-serif;
+}
+
+.dec-rhs:hover, .dec-name:hover {
+    background: #b4c8db;
+    border-radius: 3px;
+}
+
+.dec-rhs .editor {
+    border: 2px solid #0083ff;
+    font-family: "Ubuntu Mono";
+    font-size: 20px;
+    color: #493587;
+    padding: 5px;
+    border-radius: 5px;
+}

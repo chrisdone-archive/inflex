@@ -37,25 +37,30 @@ component =
     , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetDec }
     }
 
-render (State {dec: Dec{name, rhs, result}, display}) =
+render (State {dec: Dec {name, rhs, result}, display}) =
   HH.div
     [HP.class_ (HH.ClassName "dec")]
-    [ HH.text name
-    , HH.span [HP.class_ (HH.ClassName "eq")] [HH.text " = "]
-    , case display of
-        DisplayEditor string ->
-          HH.input
-            [ HP.value string
-            , HP.class_ (HH.ClassName "editor")
-            , HE.onKeyUp
-                (\k ->
-                   case K.code k of
-                     "Enter" -> Just (FinishEditing string)
-                     code -> Nothing)
-            , HE.onValueChange (\i -> pure (SetInput i))
-            ]
-        DisplayResult ->
-          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text (either identity identity result)]
+    [ HH.span [HP.class_ (HH.ClassName "dec-name")] [HH.text name]
+    , HH.span [HP.class_ (HH.ClassName "dec-eq")] [HH.text "="]
+    , HH.span
+        [HP.class_ (HH.ClassName "dec-rhs")]
+        [ case display of
+            DisplayEditor string ->
+              HH.input
+                [ HP.value string
+                , HP.class_ (HH.ClassName "editor")
+                , HE.onKeyUp
+                    (\k ->
+                       case K.code k of
+                         "Enter" -> Just (FinishEditing string)
+                         code -> Nothing)
+                , HE.onValueChange (\i -> pure (SetInput i))
+                ]
+            DisplayResult ->
+              HH.span
+                [HE.onClick (\_ -> pure StartEditor)]
+                [HH.text (either identity identity result)]
+        ]
     ]
 
 eval =
