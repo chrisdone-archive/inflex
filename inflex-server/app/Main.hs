@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -23,6 +24,8 @@ import           Data.Maybe
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as V4
 import           Duet.Context
 import           Duet.Errors
 import           Duet.Infer
@@ -35,8 +38,10 @@ import           Duet.Stepper
 import           Duet.Tokenizer
 import           Duet.Types
 import           GHC.Generics
+import           Lucid
 import           System.IO
-import           Yesod
+import           Yesod hiding (Html)
+import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Main entry point
@@ -81,17 +86,13 @@ instance ToJSON DecOut where
 maxSteps :: Int
 maxSteps = 100
 
-initialDecs :: [DecOut]
+initialDecs :: [DecIn]
 initialDecs =
-  [ DecOut {name = "rate", rhs = "55.5", result = Right "55.5"}
-  , DecOut {name = "hours", rhs = "160.0", result = Right "160.0"}
-  , DecOut {name = "worked", rhs = "150.0", result = Right "150.0"}
-  , DecOut {name = "bill", rhs = "worked * rate", result = Left "Waiting ..."}
-  , DecOut
-      { name = "percent"
-      , rhs = "(worked / hours) * 100.0"
-      , result = Left "Waiting ..."
-      }
+  [ DecIn {name = "rate", rhs = "55.5"}
+  , DecIn {name = "hours", rhs = "160.0"}
+  , DecIn {name = "worked", rhs = "150.0"}
+  , DecIn {name = "bill", rhs = "worked * rate"}
+  , DecIn {name = "percent", rhs = "(worked / hours) * 100.0"}
   ]
 
 --------------------------------------------------------------------------------
@@ -109,8 +110,31 @@ mkYesod "App" [parseRoutes|
 --------------------------------------------------------------------------------
 -- Routes
 
-getAppR :: Handler TypedContent
-getAppR = sendFile "text/html" "index.html"
+getAppR :: Handler (Html ())
+getAppR = do
+  initialDecs' <-
+    liftIO
+      (do decs <-
+            fmap
+              HM.fromList
+              (traverse
+                 (\dec -> do
+                    uuid <- V4.nextRandom
+                    pure (UUID.toText uuid, dec))
+                 initialDecs)
+          evaluateInputDocument decs)
+  htmlWithUrl
+    (do doctype_
+        html_
+          (do head_ (do title_ "InflexApp")
+              body_
+                []
+                (do script_
+                      [type_ "text/javascript"]
+                      (do toHtmlRaw "window['inflexDocument'] = "
+                          toHtmlRaw (encode initialDecs')
+                          ";")
+                    script_ [type_ "text/javascript", src_ "/appjs"] "")))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
@@ -124,6 +148,10 @@ postRefreshR = selectRep (provideRep refreshHandler)
 refreshHandler :: HandlerFor App Value
 refreshHandler = do
   inputDocument :: HashMap Text DecIn <- requireCheckJsonBody
+  evaluateInputDocument inputDocument
+
+evaluateInputDocument :: Monad m => HashMap Text DecIn -> m Value
+evaluateInputDocument inputDocument = do
   let parsedDocument =
         map
           (\(uuid, decIn@DecIn {name, rhs}) ->

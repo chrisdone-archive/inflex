@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc5ffb0509b8fb81e2ae494c0e5a4e6bd3b0f21b702f657aabeeaa6a32771920
+-- hash: f7191fa622ff230f85947f32d2013b8cb3ddd6425719ae38654999701170dfb1
 
 name:           inflex-client
 version:        0
@@ -12,6 +12,7 @@ build-type:     Simple
 extra-source-files:
     src/Inflex.App.purs
     src/Inflex.Dec.purs
+    src/Inflex.Doc.js
     src/Inflex.Doc.purs
     src/Main.purs
 data-files:

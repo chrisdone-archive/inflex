@@ -30,6 +30,9 @@ dependencies:
 - monad-logger
 - containers
 - mtl
+- yesod-lucid
+- lucid
+- uuid
 
 library:
   source-dirs: src

@@ -15,6 +15,7 @@ import Data.Symbol (SProxy(..))
 import Data.Traversable
 import Data.Tuple
 import Data.UUID
+import Effect
 import Effect.Aff (launchAff)
 import Effect.Aff.Class
 import Effect.Class
@@ -84,16 +85,10 @@ eval :: forall m. MonadState State m => MonadEffect m => MonadAff m => Command -
 eval =
   case _ of
     Initialize -> do
-      decs <-
-        map
-          M.fromFoldable
-          (traverse
-             (\dec -> do
-                uuid <- H.liftEffect genUUIDV4
-                pure (Tuple uuid dec))
-             initialDecs)
-      H.modify_ (\s -> s {decs = decs})
-      pure unit
+      decs <- H.liftEffect initialDecs
+      case decOutsParser decs of
+        Left e -> log e
+        Right decs -> H.modify_ (\s -> s {decs = decs})
     UpdateDec uuid dec -> do
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
@@ -170,10 +165,4 @@ render state =
             (\dec -> pure (UpdateDec uuid dec)))
        (M.toUnfoldable (state . decs)))
 
-
-initialDecs =
-  [Dec.Dec {name: "rate", rhs: "55.5", result: Right "55.5"}
-  ,Dec.Dec {name: "hours", rhs: "160.0", result: Right "160.0"}
-  ,Dec.Dec {name: "worked", rhs: "150.0", result: Right "150.0"}
-  ,Dec.Dec {name: "bill", rhs: "worked * rate", result: Left "Waiting ..."}
-  ,Dec.Dec {name: "percent", rhs: "(worked / hours) * 100.0", result: Left "Waiting ..."}]
+foreign import initialDecs :: Effect J.Json
