@@ -24,9 +24,9 @@ data State = State {
   , display :: Display
   }
 
-data Display = DisplayResult | DisplayEditor
+data Display = DisplayResult | DisplayEditor String
 
-data Command = StartEditor | KeyCode String | FinishEditing
+data Command = StartEditor | SetInput String | FinishEditing String
 
 component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec Dec m
 component =
@@ -42,26 +42,42 @@ render (State {dec: Dec{name, rhs, result}, display}) =
     [ HH.text name
     , HH.span [HP.class_ (HH.ClassName "eq")] [HH.text " = "]
     , case display of
-        DisplayEditor ->
+        DisplayEditor string ->
           HH.input
-            [ HP.value rhs
+            [ HP.value string
             , HP.class_ (HH.ClassName "editor")
-            , HE.onKeyDown
+            , HE.onKeyUp
                 (\k ->
                    case K.code k of
-                     "Enter" -> Just FinishEditing
-                     code -> Just (KeyCode code))
+                     "Enter" -> Just (FinishEditing string)
+                     code -> Nothing)
+            , HE.onValueChange (\i -> pure (SetInput i))
             ]
         DisplayResult ->
-          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text rhs]
+          HH.span [HE.onClick (\_ -> pure StartEditor)] [HH.text result]
     ]
 
 eval =
   case _ of
     StartEditor ->
-      H.modify_ (\(State st) -> State (st {display = DisplayEditor}))
-    FinishEditing -> do
+      H.modify_
+        (\(State st) ->
+           State
+             (st
+                { display =
+                    DisplayEditor
+                      (let Dec {rhs} = st . dec
+                        in rhs)
+                }))
+    FinishEditing rhs -> do
+      H.liftEffect (log ("Finish editing with rhs=" <> rhs))
       State st <- H.get
-      _result <- H.raise (st.dec)
-      H.modify_ (\(State st) -> State (st {display = DisplayResult}))
-    KeyCode code -> H.liftEffect (log code)
+      let newDec =
+            let Dec dec = st . dec
+             in Dec (dec {rhs = rhs, result = "..."})
+      H.modify_
+        (\(State st') -> State (st' {display = DisplayResult, dec = newDec}))
+      _result <- H.raise newDec
+      H.modify_ (\(State st') -> State (st' {display = DisplayResult}))
+    SetInput i ->
+      H.modify_ (\(State st) -> State (st {display = DisplayEditor i}))

@@ -97,7 +97,7 @@ eval =
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
       let decs' = M.insert uuid dec (s . decs)
-      -- TODO_=Here is where we request from the server the latest results.
+      -- TODO Here is where we request from the server the latest results.
       result2 <-
         H.liftAff
           (AX.post
@@ -107,16 +107,16 @@ eval =
                 (RequestBody.json
                    (J.fromObject
                       (Foreign.fromFoldable
-                       (map
-                          (\(Tuple uuid (Dec.Dec dec)) ->
-                             Tuple
-                               (uuidToString uuid)
-                               (J.fromObject
-                                (Foreign.fromHomogeneous
-                                   { name: J.fromString (dec.name)
-                                   , rhs: J.fromString (dec.rhs)
-                                   })))
-                          (M.toUnfoldable decs'):: Array (Tuple String J.Json)))))))
+                         (map
+                            (\(Tuple uuid (Dec.Dec dec)) ->
+                               Tuple
+                                 (uuidToString uuid)
+                                 (J.fromObject
+                                    (Foreign.fromHomogeneous
+                                       { name: J.fromString (dec . name)
+                                       , rhs: J.fromString (dec . rhs)
+                                       })))
+                            (M.toUnfoldable decs') :: Array (Tuple String J.Json)))))))
       case result2 of
         Left err ->
           log $ "POST /api response failed to decode_=" <> AX.printError err
@@ -140,6 +140,6 @@ render state =
 
 initialDecs =
   [Dec.Dec {name: "rate", rhs: "55.5", result: "55.5"}
-  ,Dec.Dec {name: "hours", rhs: "160.0", result: "160"}
-  ,Dec.Dec {name: "worked", rhs: "150.0", result: "150"}
+  ,Dec.Dec {name: "hours", rhs: "160.0", result: "160.0"}
+  ,Dec.Dec {name: "worked", rhs: "150.0", result: "150.0"}
   ,Dec.Dec {name: "total", rhs: "worked * rate", result: "0"}]
