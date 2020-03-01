@@ -1,17 +1,73 @@
-* DONE Get input value from Dec input
-  CLOSED: [2020-02-29 Sat 15:27]
-  - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
-* DONE Make Haskell server load at runtime the app.js
-  CLOSED: [2020-02-24 Mon 16:15]
-  - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
-* DONE Use psc-package-fast
-  CLOSED: [2020-02-24 Mon 13:29]
-  - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
-  - Note taken on [2020-02-24 Mon 13:29] \\
-    Opened PR
+* Feature
+** TODO New decl maker
+** TODO Make sum type of results
+- [ ] Number
+- [ ] List of numbers
+- [ ] Table
+- [ ] Text
+** DONE Get input value from Dec input
+   CLOSED: [2020-02-29 Sat 15:27]
+   - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
+** DONE Make Haskell server load at runtime the app.js
+   CLOSED: [2020-02-24 Mon 16:15]
+   - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
+* Bugs
+** TODO Autofocus when starting the editor
+** TODO Autoresize input to match content length
+* Supportive
+** DONE Use psc-package-fast
+   CLOSED: [2020-02-24 Mon 13:29]
+   - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
+   - Note taken on [2020-02-24 Mon 13:29] \\
+     Opened PR
 
-    https://github.com/bitc/purescript-bundle-fast/pull/2
+     https://github.com/bitc/purescript-bundle-fast/pull/2
 
-* DONE Put .psc-package in /dev/shm to avoid thrashing
-  CLOSED: [2020-02-24 Mon 13:29]
-  - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
+** DONE Put .psc-package in /dev/shm to avoid thrashing
+   CLOSED: [2020-02-24 Mon 13:29]
+   - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
+
+* Considerations
+** TODO Server-side PureScript
+   - Note taken on [2020-03-06 Fri 16:20] \\
+     Use nodejs for now?
+   - Note taken on [2020-03-06 Fri 16:17] \\
+     SpiderMonkey probably quite stable?
+   - Note taken on [2020-03-05 Thu 09:37] \\
+     V8 binary:
+
+     #+BEGIN_SRC
+     console.log('waiting');
+     setTimeout(function(){
+     console.log('hi');
+     }, 1000 * 3);
+     console.log('me first');
+     $ ./d8 test.js
+     waiting
+     me first
+     hi
+     #+END_SRC
+   - Note taken on [2020-03-05 Thu 09:37] \\
+     Investigation into Duktape: https://github.com/svaarala/duktape/issues/2241
+   - Note taken on [2020-03-04 Wed 15:26] \\
+     Use one of these binaries?
+
+     https://bellard.org/quickjs/bench.html
+
+     NodeJS doesn't have a DOM anyway!
+*** DONE Review hs-duktape [NOT GOOD]
+    CLOSED: [2020-03-04 Wed 11:03]
+    - State "DONE"       from "TODO"       [2020-03-04 Wed 11:03]
+    - Note taken on [2020-03-04 Wed 11:02] \\
+      Not very satisfying:
+
+      https://github.com/myfreeweb/hs-duktape/issues/11
+      https://github.com/myfreeweb/hs-duktape/issues/10
+    - Note taken on [2020-03-04 Wed 11:01] \\
+      https://github.com/myfreeweb/hs-duktape/pull/7/files
+    - Note taken on [2020-03-04 Wed 10:47] \\
+      https://github.com/svaarala/duktape/issues/1853
+    - Note taken on [2020-03-04 Wed 10:31] \\
+      https://github.com/myfreeweb/hs-duktape/commit/931f5da36454bfb9c6231333f82b14265fb226c8#r37628869
+    - Note taken on [2020-03-04 Wed 10:31] \\
+      https://github.com/myfreeweb/hs-duktape/commit/68b2ea59fb9c708362007acdc5cb35aca2b0d365

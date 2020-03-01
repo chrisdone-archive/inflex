@@ -27,6 +27,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Duet.Context
 import           Duet.Errors
 import           Duet.Infer
@@ -57,17 +59,25 @@ main = warpEnv App
 data DecIn = DecIn
   { name :: Text
   , rhs :: Text
-  } deriving (Generic, Show)
+  } deriving (Show)
 instance FromJSON DecIn where
   parseJSON j = do
     o <- parseJSON j
     DecIn <$> o .: "name" <*> o .: "rhs"
 
+data Editor
+  = IntegerR Integer
+  | RationalR Rational
+  | TextR Text
+  | RecordR (HashMap Text Editor)
+  | TableR (Vector Text) (Vector (HashMap Text Editor))
+  deriving (Show)
+
 data DecOut = DecOut
   { name :: Text
   , rhs :: Text
   , result :: Either Text Text
-  } deriving (Generic)
+  } deriving (Show)
 instance ToJSON DecOut where
   toJSON DecOut {name, rhs, result} =
     object
@@ -90,11 +100,15 @@ maxSteps = 100
 
 initialDecs :: [DecIn]
 initialDecs =
-  [ DecIn {name = "rate", rhs = "55.5"}
-  , DecIn {name = "hours", rhs = "160.0"}
-  , DecIn {name = "worked", rhs = "150.0"}
-  , DecIn {name = "bill", rhs = "worked * rate"}
-  , DecIn {name = "percent", rhs = "(worked / hours) * 100.0"}
+  [ DecIn {name = "paypermonthpremium", rhs = "10"}
+  , DecIn {name = "paypermonthbasic", rhs = "5"}
+  , DecIn {name = "users", rhs = "1000"}
+  , DecIn
+      {name = "profityearlybasic", rhs = "paypermonthbasic * (users * 12)"}
+  , DecIn
+      { name = "profityearlypremium"
+      , rhs = "paypermonthpremium * (users * 12)"
+      }
   ]
 
 --------------------------------------------------------------------------------
