@@ -1,12 +1,12 @@
 * Feature
 ** UI
-*** TODO "New" button
+*** TODO [#B] "New" button
 ** Engine
-*** TODO Add Rows
+*** TODO [#A] Add Rows
 - [ ] Add row types to Duet
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
-*** TODO Add Vectors
+*** TODO [#A] Add Vectors
    - Note taken on [2020-03-06 Fri 17:54] \\
      This will serve as a warm up for the Duet, for implementing row types.
    - Note taken on [2020-03-06 Fri 17:41] \\
@@ -21,7 +21,7 @@
 | 2 |
 | 3 |
 #+END_SRC
-*** TODO Add TextE for String typed expressions
+*** TODO [#C] Add TextE for String typed expressions
 *** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
    - Note taken on [2020-03-06 Fri 17:15] \\
@@ -50,8 +50,8 @@
     - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
 * Bugs
 ** UI
-*** TODO Autofocus when starting the editor
-*** TODO Autoresize input to match content length
+*** TODO [#C] Autofocus when starting the editor
+*** TODO [#C] Autoresize input to match content length
 * Supportive
 ** DONE Use psc-package-fast
    CLOSED: [2020-02-24 Mon 13:29]
