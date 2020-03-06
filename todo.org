@@ -6,14 +6,16 @@
 - [ ] Add row types to Duet
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
-*** TODO [#A] Add Vectors
+*** TODO [#A] Add Array
    - Note taken on [2020-03-06 Fri 17:54] \\
      This will serve as a warm up for the Duet, for implementing row types.
    - Note taken on [2020-03-06 Fri 17:41] \\
-     Work in progress. Needs inference for Vector type.
-     e.g. data Vector (a :: Type)
-- [ ] Add a Vector type to Duet
-- [ ] Add a Vector display to Editor sum type
+     Work in progress. Needs inference for Array type.
+     e.g. data Array (a :: Type)
+   - [X] Add a Array type to Duet
+   - [X] Add inference for Array type
+   - [ ] Add stepper for Array
+   - [ ] Add a Array display to Editor sum type
 #+BEGIN_SRC
 [1,2,3]
 =>
@@ -33,7 +35,7 @@
        -- | RationalE Rational
        -- | TextE Text
        -- | RecordE (HashMap Text Editor)
-       -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+       -- | TableE (Array Text) (Array (HashMap Text Editor))
        | MiscE Text
        deriving (Show)
      #+END_SRC
