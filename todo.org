@@ -1,16 +1,28 @@
 * Feature
-** TODO New decl maker
-** TODO Add a table display Editor sum type
-** TODO Add a table type to Inflex prelude
-   - Note taken on [2020-03-06 Fri 17:43] \\
-     e.g. data Table (row :: Row) = Table (Vector row)
-** TODO Add a Vector display to Editor sum type
-** TODO Add a Vector type to Duet
+** UI
+*** TODO "New" button
+** Engine
+*** TODO Add Rows
+- [ ] Add row types to Duet
+- [ ] Add RowE display to Editor for row types
+- [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
+*** TODO Add Vectors
+   - Note taken on [2020-03-06 Fri 17:54] \\
+     This will serve as a warm up for the Duet, for implementing row types.
    - Note taken on [2020-03-06 Fri 17:41] \\
      Work in progress. Needs inference for Vector type.
      e.g. data Vector (a :: Type)
-** TODO Display a String as regular text
-** DONE Make sum type of results
+- [ ] Add a Vector type to Duet
+- [ ] Add a Vector display to Editor sum type
+#+BEGIN_SRC
+[1,2,3]
+=>
+| 1 |
+| 2 |
+| 3 |
+#+END_SRC
+*** TODO Add TextE for String typed expressions
+*** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
    - Note taken on [2020-03-06 Fri 17:15] \\
      Made Editor type.
@@ -30,15 +42,16 @@
 - [ ] List of numbers
 - [ ] Table
 - [ ] Text
-** DONE Get input value from Dec input
-   CLOSED: [2020-02-29 Sat 15:27]
-   - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
-** DONE Make Haskell server load at runtime the app.js
-   CLOSED: [2020-02-24 Mon 16:15]
-   - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
+*** DONE Get input value from Dec input
+    CLOSED: [2020-02-29 Sat 15:27]
+    - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
+*** DONE Make Haskell server load at runtime the app.js
+    CLOSED: [2020-02-24 Mon 16:15]
+    - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
 * Bugs
-** TODO Autofocus when starting the editor
-** TODO Autoresize input to match content length
+** UI
+*** TODO Autofocus when starting the editor
+*** TODO Autoresize input to match content length
 * Supportive
 ** DONE Use psc-package-fast
    CLOSED: [2020-02-24 Mon 13:29]
