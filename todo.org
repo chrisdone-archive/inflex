@@ -2,8 +2,13 @@
 ** TODO New decl maker
 ** TODO Add a table display Editor sum type
 ** TODO Add a table type to Inflex prelude
+   - Note taken on [2020-03-06 Fri 17:43] \\
+     e.g. data Table (row :: Row) = Table (Vector row)
 ** TODO Add a Vector display to Editor sum type
 ** TODO Add a Vector type to Duet
+   - Note taken on [2020-03-06 Fri 17:41] \\
+     Work in progress. Needs inference for Vector type.
+     e.g. data Vector (a :: Type)
 ** TODO Display a String as regular text
 ** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
