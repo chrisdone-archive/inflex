@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE LambdaCase #-}
@@ -12,7 +14,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-import           Control.Monad.Catch (SomeException, catch, MonadThrow)
+import           Control.Monad.Catch (SomeException)
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Control.Monad.Supply
@@ -20,29 +22,18 @@ import           Control.Monad.Writer
 import           Data.Aeson
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
-import           Data.Maybe
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
-import           Duet.Context
-import           Duet.Errors
 import           Duet.Infer
 import           Duet.Parser
 import           Duet.Printer
-import           Duet.Renamer
-import           Duet.Setup
 import           Duet.Simple
-import           Duet.Stepper
 import           Duet.Tokenizer
 import           Duet.Types
-import           GHC.Generics
 import           Lucid
-import           System.IO
 import           Text.Lucius
 import           Yesod hiding (Html)
 import           Yesod.Lucid
@@ -66,17 +57,30 @@ instance FromJSON DecIn where
     DecIn <$> o .: "name" <*> o .: "rhs"
 
 data Editor
-  = IntegerR Integer
-  | RationalR Rational
-  | TextR Text
-  | RecordR (HashMap Text Editor)
-  | TableR (Vector Text) (Vector (HashMap Text Editor))
+  = IntegerE Integer
+  -- | RationalE Rational
+  -- | TextE Text
+  -- | RecordE (HashMap Text Editor)
+  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+  | MiscE Text
   deriving (Show)
+instance ToJSON Editor where
+  toJSON =
+    \case
+      IntegerE integer ->
+        object ["type" .= "integer", "integer" .= T.pack (show integer)]
+      MiscE t -> object ["type" .= "misc", "misc" .= t]
+
+expressionToEditor :: Expression Type Name l -> Editor
+expressionToEditor =
+  \case
+    LiteralExpression unkindedType (IntegerLiteral integer) -> IntegerE integer
+    e  -> MiscE (T.pack (printExpression defaultPrint e))
 
 data DecOut = DecOut
   { name :: Text
   , rhs :: Text
-  , result :: Either Text Text
+  , result :: Either Text Editor
   } deriving (Show)
 instance ToJSON DecOut where
   toJSON DecOut {name, rhs, result} =
@@ -89,7 +93,7 @@ instance ToJSON DecOut where
           Right {} -> "success"
       , case result of
           Left e -> "error" .= e
-          Right d -> "output" .= d
+          Right d -> "editor" .= d
       ]
 
 --------------------------------------------------------------------------------
@@ -223,8 +227,7 @@ runProgram decls = map toDecOut final
                     xs ->
                       if length xs > maxSteps
                         then Left "No result (didn't finish!)"
-                        else Right
-                               (T.pack (printExpression defaultPrint (last xs)))
+                        else Right (expressionToEditor (last xs))
           })
     final =
       case overall of

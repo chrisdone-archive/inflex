@@ -1,6 +1,7 @@
 module Inflex.Dec
   ( component
   , Dec(..)
+  , Editor(..)
   ) where
 
 
@@ -25,9 +26,17 @@ import Web.UIEvent.KeyboardEvent as K
 data Dec = Dec {
     name :: String
   , rhs :: String
-  , result :: Either String String
+  , result :: Either String Editor
 
   }
+
+data Editor
+  = IntegerE String
+  -- | RationalE Rational
+  -- | TextE Text
+  -- | RecordE (HashMap Text Editor)
+  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+  | MiscE String
 
 data State = State {
     dec :: Dec
@@ -73,7 +82,9 @@ render (State {dec: Dec {name, rhs, result}, display}) =
             DisplayResult ->
               HH.span
                 [HE.onClick (\_ -> pure StartEditor)]
-                [HH.text (either identity identity result)]
+                [HH.text (either identity (case _ of
+                                             IntegerE i -> i
+                                             MiscE t -> t) result)]
             DisplayTable heading rows ->
                HH.table [] [HH.thead [] (map (\text -> HH.th [] [HH.text text]) (Set.toUnfoldable heading))
                            ,HH.tbody []

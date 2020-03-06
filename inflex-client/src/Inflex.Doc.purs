@@ -146,9 +146,21 @@ decOutsParser =
                      "error" -> do error <-
                                      maybe (Left "need error") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "error" dec)
                                    pure (Dec.Dec {name, rhs, result: Left error})
-                     "success" -> do output <-
-                                       maybe (Left "need output") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "output" dec)
-                                     pure (Dec.Dec {name, rhs, result: Left output})
+                     "success" -> do
+                       editor <-
+                         maybe (Left "need editor")
+                               (J.caseJsonObject
+                                  (Left "expected editor obj")
+                                  (\obj -> do
+                                     typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj)
+                                     case typ of
+                                       "integer" -> do
+                                         i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj)
+                                         pure (Dec.IntegerE i)
+                                       _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj)
+                                               pure (Dec.MiscE i)))
+                               (Foreign.lookup "editor" dec)
+                       pure (Dec.Dec {name, rhs, result: Right editor})
                      _ -> Left "invalid result"))
              mp)
 

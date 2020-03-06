@@ -1,6 +1,26 @@
 * Feature
 ** TODO New decl maker
-** TODO Make sum type of results
+** TODO Add a table display Editor sum type
+** TODO Add a table type to Inflex prelude
+** TODO Add a Vector display to Editor sum type
+** TODO Add a Vector type to Duet
+** TODO Display a String as regular text
+** DONE Make sum type of results
+   CLOSED: [2020-03-06 Fri 17:15]
+   - Note taken on [2020-03-06 Fri 17:15] \\
+     Made Editor type.
+
+     #+BEGIN_SRC
+     data Editor
+       = IntegerE Integer
+       -- | RationalE Rational
+       -- | TextE Text
+       -- | RecordE (HashMap Text Editor)
+       -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+       | MiscE Text
+       deriving (Show)
+     #+END_SRC
+   - State "DONE"       from "TODO"       [2020-03-06 Fri 17:15]
 - [ ] Number
 - [ ] List of numbers
 - [ ] Table
