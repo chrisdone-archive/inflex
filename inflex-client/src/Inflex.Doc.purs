@@ -24,6 +24,7 @@ import Foreign.Object as Foreign
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Dec as Dec
+import Inflex.Editor as Editor
 import Prelude
 
 -- TODO:
@@ -157,13 +158,13 @@ decOutsParser =
                                            case typ of
                                              "integer" -> do
                                                i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj)
-                                               pure (Dec.IntegerE i)
+                                               pure (Editor.IntegerE i)
                                              "array" -> do
                                                es <- maybe (Left "need array")
                                                            (J.caseJsonArray (Left "not an array") Right) (Foreign.lookup "array" obj)
-                                               map Dec.ArrayE (traverse editorParser es)
+                                               map Editor.ArrayE (traverse editorParser es)
                                              _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj)
-                                                     pure (Dec.MiscE i))
+                                                     pure (Editor.MiscE i))
                                 in editorParser)
                                (Foreign.lookup "editor" dec)
                        pure (Dec.Dec {name, rhs, result: Right editor})
