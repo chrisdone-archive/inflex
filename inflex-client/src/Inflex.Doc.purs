@@ -149,16 +149,22 @@ decOutsParser =
                      "success" -> do
                        editor <-
                          maybe (Left "need editor")
-                               (J.caseJsonObject
-                                  (Left "expected editor obj")
-                                  (\obj -> do
-                                     typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj)
-                                     case typ of
-                                       "integer" -> do
-                                         i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj)
-                                         pure (Dec.IntegerE i)
-                                       _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj)
-                                               pure (Dec.MiscE i)))
+                               (let editorParser =
+                                      J.caseJsonObject
+                                        (Left "expected editor obj")
+                                        (\obj -> do
+                                           typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj)
+                                           case typ of
+                                             "integer" -> do
+                                               i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj)
+                                               pure (Dec.IntegerE i)
+                                             "array" -> do
+                                               es <- maybe (Left "need array")
+                                                           (J.caseJsonArray (Left "not an array") Right) (Foreign.lookup "array" obj)
+                                               map Dec.ArrayE (traverse editorParser es)
+                                             _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj)
+                                                     pure (Dec.MiscE i))
+                                in editorParser)
                                (Foreign.lookup "editor" dec)
                        pure (Dec.Dec {name, rhs, result: Right editor})
                      _ -> Left "invalid result"))

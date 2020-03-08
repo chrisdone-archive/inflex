@@ -55,3 +55,16 @@ body {
     padding: 5px;
     border-radius: 5px;
 }
+
+.dec-rhs .array-editor {
+  background: #fff;
+  margin-top: 10px;
+  border: 2px solid #eee;
+  border-radius: 3px;
+  tr + tr > td {
+    border-top: 1px solid #ddd;
+  }
+  td {
+    padding: 5px;
+  }
+}

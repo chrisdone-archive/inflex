@@ -27,6 +27,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Duet.Infer
 import           Duet.Parser
 import           Duet.Printer
@@ -58,6 +60,7 @@ instance FromJSON DecIn where
 
 data Editor
   = IntegerE Integer
+  | ArrayE (Vector Editor)
   -- | RationalE Rational
   -- | TextE Text
   -- | RecordE (HashMap Text Editor)
@@ -69,12 +72,14 @@ instance ToJSON Editor where
     \case
       IntegerE integer ->
         object ["type" .= "integer", "integer" .= T.pack (show integer)]
+      ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
       MiscE t -> object ["type" .= "misc", "misc" .= t]
 
 expressionToEditor :: Expression Type Name l -> Editor
 expressionToEditor =
   \case
     LiteralExpression unkindedType (IntegerLiteral integer) -> IntegerE integer
+    ArrayExpression unkindedType es -> ArrayE (fmap expressionToEditor es)
     e  -> MiscE (T.pack (printExpression defaultPrint e))
 
 data DecOut = DecOut
@@ -104,16 +109,8 @@ maxSteps = 100
 
 initialDecs :: [DecIn]
 initialDecs =
-  [ DecIn {name = "paypermonthpremium", rhs = "10"}
-  , DecIn {name = "paypermonthbasic", rhs = "5"}
-  , DecIn {name = "users", rhs = "1000"}
-  , DecIn
-      {name = "profityearlybasic", rhs = "paypermonthbasic * (users * 12)"}
-  , DecIn
-      { name = "profityearlypremium"
-      , rhs = "paypermonthpremium * (users * 12)"
-      }
-  ]
+  [DecIn
+     {name = "some_table", rhs = "[2 * 6, 6, 9, 123]"}]
 
 --------------------------------------------------------------------------------
 -- Dispatcher
@@ -149,7 +146,8 @@ getAppR = do
         url <- ask
         html_
           (do head_
-                (do title_ "InflexApp"
+                (do link_ [rel_ "shortcut icon" ,href_ "#"]
+                    title_ "InflexApp"
                     link_
                       [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
               body_

@@ -22,6 +22,9 @@ import Halogen.HTML.Properties as HP
 import Prelude
 import Web.HTML.HTMLElement as Web
 import Web.UIEvent.KeyboardEvent as K
+import Web.Event.Event (preventDefault, stopPropagation, stopImmediatePropagation)
+import Web.Event.Internal.Types (Event)
+import Web.UIEvent.MouseEvent (toEvent)
 
 data Dec = Dec {
     name :: String
@@ -36,6 +39,7 @@ data Editor
   -- | TextE Text
   -- | RecordE (HashMap Text Editor)
   -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+  | ArrayE (Array Editor)
   | MiscE String
 
 data State = State {
@@ -48,7 +52,13 @@ data Display
   | DisplayEditor String
   | DisplayTable (Set String) (Array (Map String String))
 
-data Command = StartEditor | SetInput String | FinishEditing String | SetDec Dec | Autoresize
+data Command
+  = StartEditor
+  | SetInput String
+  | FinishEditing String
+  | SetDec Dec
+  | Autoresize
+  | PreventDefault Event Command
 
 component :: forall q o m. MonadEffect m => H.Component HH.HTML q Dec Dec m
 component =
@@ -81,10 +91,15 @@ render (State {dec: Dec {name, rhs, result}, display}) =
                         ]
             DisplayResult ->
               HH.span
-                [HE.onClick (\_ -> pure StartEditor)]
-                [HH.text (either identity (case _ of
-                                             IntegerE i -> i
-                                             MiscE t -> t) result)]
+                [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
+                [let renderEditor =
+                       case _ of
+                         IntegerE i -> HH.text i
+                         ArrayE es ->
+                           HH.table [HP.class_ (HH.ClassName "array-editor")]
+                                    (map (\row -> HH.tr [] [HH.td [] [renderEditor row]]) es)
+                         MiscE t -> HH.text t
+                 in either HH.text renderEditor result]
             DisplayTable heading rows ->
                HH.table [] [HH.thead [] (map (\text -> HH.th [] [HH.text text]) (Set.toUnfoldable heading))
                            ,HH.tbody []
@@ -95,6 +110,7 @@ render (State {dec: Dec {name, rhs, result}, display}) =
         ]
     ]
 
+eval :: forall t45 t47 t48. MonadEffect t45 => Command -> H.HalogenM State t48 t47 Dec t45 Unit
 eval =
   case _ of
     StartEditor -> do
@@ -124,6 +140,9 @@ eval =
       ref <- H.getHTMLElementRef editorRef
       -- TODO: Set style="width: 100ch"  where 100=length of input.
       H.liftEffect (for_ ref (\el -> pure unit))
+    PreventDefault e c -> do
+      H.liftEffect (preventDefault e)
+      eval c
     {-NewTable ->
      H.modify_ (\(State s) ->
        State (s { display = DisplayTable (Set.fromFoldable ["Name","Age"])
