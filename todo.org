@@ -17,6 +17,7 @@
    - [X] Add stepper for Array
    - [X] Add a Array display to Editor sum type
    - [ ] Recursive editing  - build up a new Editor in the components
+     (more efficient than string building)
 #+BEGIN_SRC
 [1,2,3]
 =>
