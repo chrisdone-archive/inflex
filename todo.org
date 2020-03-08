@@ -16,7 +16,7 @@
    - [X] Add inference for Array type
    - [X] Add stepper for Array
    - [X] Add a Array display to Editor sum type
-   - [ ] Recursive editing
+   - [ ] Recursive editing  - build up a new Editor in the components
 #+BEGIN_SRC
 [1,2,3]
 =>
