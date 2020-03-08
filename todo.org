@@ -50,6 +50,35 @@
 *** DONE Make Haskell server load at runtime the app.js
     CLOSED: [2020-02-24 Mon 16:15]
     - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
+* Duet
+** TODO Convert to trees that grow
+** TODO Delete Alts and such
+** TODO Implement CAS name generation
+- [ ] de Brujin index
+- [ ] mutually recursive groups are rewritten into one
+
+Quoting Unison:
+
+#+BEGIN_QUOTE
+A term or type definition that’s part of a cycle of mutually recursive
+definitions hashes to the form #x.n where x is the hash of the cycle
+and n is the term or type’s index in its cycle. A cycle has a
+canonical order determined by sorting all the members of the cycle by
+their individual hashes (with the cycle removed).
+#+END_QUOTE
+
+* Testing
+  - Note taken on [2020-03-07 Sat 11:29] \\
+    https://hackage.haskell.org/package/validity-0.9.0.3/docs/src/Data.Validity.html#trivialValidation
+  - Note taken on [2020-03-07 Sat 11:26] \\
+    #+BEGIN_QUOTE
+    syd
+    have you tried producesValidsOnValids?
+    it's basically totality testing
+    #+END_QUOTE
+** TODO Use PureScript to validity test QuickCheck generate code
+- [ ] Should compile vs shouldn't -- if it compiles in PS implies it
+  compiles in Duet
 * Bugs
 ** UI
 *** TODO [#C] Autofocus when starting the editor
@@ -111,3 +140,9 @@
       https://github.com/myfreeweb/hs-duktape/commit/931f5da36454bfb9c6231333f82b14265fb226c8#r37628869
     - Note taken on [2020-03-04 Wed 10:31] \\
       https://github.com/myfreeweb/hs-duktape/commit/68b2ea59fb9c708362007acdc5cb35aca2b0d365
+* Competition
+** Notebooks
+   - Note taken on [2020-03-07 Sat 16:51] \\
+     What’s Wrong with Computational Notebooks?
+     Pain Points, Needs, and Design Opportunities
+     https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
