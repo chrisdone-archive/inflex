@@ -14,8 +14,9 @@
      e.g. data Array (a :: Type)
    - [X] Add a Array type to Duet
    - [X] Add inference for Array type
-   - [ ] Add stepper for Array
-   - [ ] Add a Array display to Editor sum type
+   - [X] Add stepper for Array
+   - [X] Add a Array display to Editor sum type
+   - [ ] Recursive editing
 #+BEGIN_SRC
 [1,2,3]
 =>
