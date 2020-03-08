@@ -8,11 +8,13 @@ module Inflex.Editor
 
 import Data.Either
 import Data.Foldable
+import Data.FunctorWithIndex
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Symbol (SProxy(..))
 import Data.Tuple
 import Effect.Class
 import Effect.Console
@@ -21,10 +23,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Prelude
-import Web.HTML.HTMLElement as Web
-import Web.UIEvent.KeyboardEvent as K
 import Web.Event.Event (preventDefault, stopPropagation, stopImmediatePropagation)
 import Web.Event.Internal.Types (Event)
+import Web.HTML.HTMLElement as Web
+import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
 data Editor
@@ -64,6 +66,7 @@ component =
     , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
     }
 
+render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (editor::H.Slot i String Int) a Command) Command
 render (State { display, code, editor }) =
   case display of
     DisplayCode ->
@@ -87,8 +90,20 @@ render (State { display, code, editor }) =
                  IntegerE i -> HH.text i
                  ArrayE es ->
                    HH.table [HP.class_ (HH.ClassName "array-editor")]
-                            (map (\row ->
-                                    HH.tr [] [HH.td [] [renderEditor row]]) es)
+                            (mapWithIndex (\i editor ->
+                                    HH.tr
+                                      []
+                                      [HH.td
+                                         []
+                                         [if false
+                                             then renderEditor editor
+                                             else
+                                               HH.slot (SProxy :: SProxy "editor")
+                                                       i
+                                                       component
+                                                       (EditorAndCode {editor, code})
+                                                       (\rhs -> Just (FinishEditing rhs))]])
+                                 es)
                  MiscE t -> HH.text t
          in renderEditor editor]
 
