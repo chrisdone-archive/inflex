@@ -11,18 +11,12 @@
      This will serve as a warm up for the Duet, for implementing row types.
    - Note taken on [2020-03-06 Fri 17:41] \\
      Work in progress. Needs inference for Array type.
-     e.g. data Array (a :: Type)
-   - [X] Add a Array type to Duet
-   - [X] Add inference for Array type
-   - [X] Add stepper for Array
-   - [X] Add a Array display to Editor sum type
-   - [ ] Recursive editing - produce an "edit" like a lens modifier?
 
-#+BEGIN_SRC haskell-mode
-data Modification
-  = OverIndex Int Modification
-  | SetCode Text
-#+END_SRC
+e.g. data Array (a :: Type)
+- [X] Add a Array type to Duet
+- [X] Add inference for Array type
+- [X] Add stepper for Array
+- [X] Add a Array display to Editor sum type
 
 #+BEGIN_SRC
 [1,2,3]
@@ -31,6 +25,24 @@ data Modification
 | 2 |
 | 3 |
 #+END_SRC
+
+- [ ] Recursive editing - produce an "edit" like a lens modifier?
+
+#+BEGIN_SRC haskell-mode
+data Modification
+  = OverIndex Int Modification
+  | SetCode String
+#+END_SRC
+
+The server can then process the modification as either e.g.
+
+- VectorExpression [1,2,3] -- update in place [999,2,3]
+
+- LATER: reverse (VectorExpression [1,2,3]) -- wrapper traversal e.g.
+  imap (\i x -> if i == 0 then 999 else x)
+
+For now, the traversal should be disallowed.
+
 *** TODO [#C] Add TextE for String typed expressions
 *** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
