@@ -3,68 +3,30 @@ module Inflex.Doc (component) where
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
-import Control.Monad.State
+import Control.Monad.State (class MonadState)
 import Data.Argonaut.Core as J
 import Data.Either (Either(..))
-import Data.HTTP.Method (Method(..))
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
-import Data.Traversable
-import Data.Tuple
-import Data.UUID
-import Effect
-import Effect.Aff (launchAff)
-import Effect.Aff.Class
-import Effect.Class
+import Data.Traversable (traverse)
+import Data.Tuple (Tuple(..))
+import Data.UUID (UUID(..), uuidToString)
+import Effect (Effect)
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Foreign.Object as Foreign
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Dec as Dec
 import Inflex.Editor as Editor
-import Prelude
+import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>))
 
--- TODO:
---
--- 1. Make a Command type.
--- 2. Trigger in the @const Nothing@ below a parent command, indicating that this Dec was updated.
--- 3. Eval handler will simply send the whole lot via ajax to REST endpoint.
---    <https://github.com/purescript-halogen/purescript-halogen/blob/master/examples/effects-aff-ajax/src/Component.purs#L76>
--- 4. REST endpoint evaluates all decls, sends back new set of decls.
--- 5. Component updates internal state, causing re-render of views.
--- 6. Names of decs don't change, or they do, in which case unreferenced components are GC'd.
-
--- MORE EFFICIENT APPROACH TO RECONCILLIATION:
---
--- 1. Generate a UUID <https://pursuit.purescript.org/packages/purescript-uuid/6.0.1/docs/Data.UUID> for each decl-which-is-a-component in-a-document.
--- 2. Updates to each dec are routed to the same UUID, same component.
--- 3. A field in the input argument to dec component can be a SHA512
---    of the whole dec, causing a very fast equality comparison via
---    manual implementation of input handler in the Dec component.
-
--- NOTABLE: It's more expensive to delete/recreate a decl, than to
--- re-render and have the vdom differ update the small part that
--- changed.
-
--- IMPORTANT QUESTION: How does Halogen's components know when NOT to
--- re-render? Is it on H.modify?
--- ANSWER: It's H.modify (or H.put) <https://discourse.purescript.org/t/performance-in-halogen-components/456>
-
---
--- So we have 3 levels of avoiding work:
---
--- 1. Don't recreate components.
--- 2. Don't update component state if the SHA256 hasn't changed.
--- 3. Don't recreate the DOM, just modify in place via the VDOM.
---
--- Further microptimizations (depends on the size of the doc):
---
--- 1. Have the server only send those UUIDs that actually changed: it
---    knows the input, and knows the output. Easy to diff. This would
---    be 4 levels of avoiding work.
+--------------------------------------------------------------------------------
+-- Component types
 
 data Command = Initialize | UpdateDec UUID Dec.Dec
 
@@ -72,7 +34,19 @@ type State = {
   decs :: Map UUID Dec.Dec
  }
 
-component :: forall q i o m. MonadEffect m =>  MonadAff m =>  H.Component HH.HTML q i o m
+type Input = Unit
+
+type Output = Unit
+
+--------------------------------------------------------------------------------
+-- Foreign imports
+
+foreign import initialDecs :: Effect J.Json
+
+--------------------------------------------------------------------------------
+-- Component
+
+component :: forall q i o. H.Component HH.HTML q i o Aff
 component =
   H.mkComponent
     { initialState: const { decs: mempty }
@@ -82,6 +56,9 @@ component =
           H.defaultEval {initialize = pure Initialize, handleAction = eval}
     }
 
+--------------------------------------------------------------------------------
+-- Eval
+
 eval :: forall m. MonadState State m => MonadEffect m => MonadAff m => Command -> m Unit
 eval =
   case _ of
@@ -89,12 +66,11 @@ eval =
       decs <- H.liftEffect initialDecs
       case decOutsParser decs of
         Left e -> log e
-        Right decs -> H.modify_ (\s -> s {decs = decs})
+        Right decs' -> H.modify_ (\s -> s {decs = decs'})
     UpdateDec uuid dec -> do
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
       let decs' = M.insert uuid dec (s . decs)
-      -- TODO Here is where we request from the server the latest results.
       result2 <-
         H.liftAff
           (AX.post
@@ -105,13 +81,13 @@ eval =
                    (J.fromObject
                       (Foreign.fromFoldable
                          (map
-                            (\(Tuple uuid (Dec.Dec dec)) ->
+                            (\(Tuple uuid' (Dec.Dec dec')) ->
                                Tuple
-                                 (uuidToString uuid)
+                                 (uuidToString uuid')
                                  (J.fromObject
                                     (Foreign.fromHomogeneous
-                                       { name: J.fromString (dec . name)
-                                       , rhs: J.fromString (dec . rhs)
+                                       { name: J.fromString (dec' . name)
+                                       , rhs: J.fromString (dec' . rhs)
                                        })))
                             (M.toUnfoldable decs') :: Array (Tuple String J.Json)))))))
       case result2 of
@@ -123,7 +99,7 @@ eval =
             Left err -> log ("error parsing JSON:" <> err)
             Right decs'' -> H.modify_ (\s' -> s' {decs = decs''})
 
-decOutsParser :: forall a. J.Json -> Either String (Map UUID (Dec.Dec))
+decOutsParser :: J.Json -> Either String (Map UUID (Dec.Dec))
 decOutsParser =
   J.caseJsonObject
     (Left "expected object of uuids")
@@ -153,17 +129,17 @@ decOutsParser =
                                (let editorParser =
                                       J.caseJsonObject
                                         (Left "expected editor obj")
-                                        (\obj -> do
-                                           typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj)
+                                        (\obj' -> do
+                                           typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj')
                                            case typ of
                                              "integer" -> do
-                                               i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj)
+                                               i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj')
                                                pure (Editor.IntegerE i)
                                              "array" -> do
                                                es <- maybe (Left "need array")
-                                                           (J.caseJsonArray (Left "not an array") Right) (Foreign.lookup "array" obj)
+                                                           (J.caseJsonArray (Left "not an array") Right) (Foreign.lookup "array" obj')
                                                map Editor.ArrayE (traverse editorParser es)
-                                             _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj)
+                                             _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj')
                                                      pure (Editor.MiscE i))
                                 in editorParser)
                                (Foreign.lookup "editor" dec)
@@ -171,6 +147,12 @@ decOutsParser =
                      _ -> Left "invalid result"))
              mp)
 
+--------------------------------------------------------------------------------
+-- Render
+
+render :: forall q state keys.
+   { decs :: Map UUID Dec.Dec | state }
+   -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Dec String | keys) Aff Command) Command
 render state =
   HH.div
     []
@@ -181,7 +163,5 @@ render state =
             (uuidToString uuid)
             Dec.component
             dec
-            (\dec -> pure (UpdateDec uuid dec)))
+            (\dec' -> pure (UpdateDec uuid dec')))
        (M.toUnfoldable (state . decs)))
-
-foreign import initialDecs :: Effect J.Json

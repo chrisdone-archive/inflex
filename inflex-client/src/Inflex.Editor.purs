@@ -1,4 +1,4 @@
--- |
+-- | Recursive editing of parts of a result.
 
 module Inflex.Editor
   ( Editor(..)
@@ -6,37 +6,28 @@ module Inflex.Editor
   , component
   ) where
 
-import Data.Either
-import Data.Foldable
-import Data.FunctorWithIndex
-import Data.Map (Map)
-import Data.Map as M
-import Data.Maybe
-import Data.Set (Set)
-import Data.Set as Set
+import Data.Foldable (for_)
+import Data.FunctorWithIndex (mapWithIndex)
+import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Tuple
-import Effect.Class
-import Effect.Console
+import Effect.Class (class MonadEffect)
+import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Prelude
-import Web.Event.Event (preventDefault, stopPropagation, stopImmediatePropagation)
+import Prelude (Unit, bind, discard, pure, unit, (<<<), (<>))
+import Web.Event.Event (preventDefault)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.HTMLElement as Web
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
-data Editor
-  = IntegerE String
-  -- | RationalE Rational
-  -- | TextE Text
-  -- | RecordE (HashMap Text Editor)
-  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
-  | ArrayE (Array Editor)
-  | MiscE String
+--------------------------------------------------------------------------------
+-- Component types
+
+type Input = EditorAndCode
+
+type Output = String
 
 data State = State
   { display :: Display
@@ -52,13 +43,33 @@ data Command
   | PreventDefault Event Command
   | Autoresize
 
+--------------------------------------------------------------------------------
+-- Internal types
+
+data Editor
+  = IntegerE String
+  | ArrayE (Array Editor)
+  | MiscE String
+
 data Display
   = DisplayEditor
   | DisplayCode
 
-data EditorAndCode = EditorAndCode { editor :: Editor, code :: String }
+data EditorAndCode = EditorAndCode
+  { editor :: Editor
+  , code :: String
+  }
 
-component :: forall q o m. MonadEffect m => H.Component HH.HTML q EditorAndCode String m
+--------------------------------------------------------------------------------
+-- Constants
+
+editorRef :: H.RefLabel
+editorRef = (H.RefLabel "editor")
+
+--------------------------------------------------------------------------------
+-- Component
+
+component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
     { initialState: (\(EditorAndCode{editor, code}) -> State {display: DisplayEditor, editor, code })
@@ -66,46 +77,8 @@ component =
     , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
     }
 
-render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (editor::H.Slot i String Int) a Command) Command
-render (State { display, code, editor }) =
-  case display of
-    DisplayCode ->
-      HH.div [] [HH.input
-                   [ HP.value code
-                   , HP.class_ (HH.ClassName "editor")
-                   , HP.ref editorRef
-                   , HE.onKeyUp
-                       (\k ->
-                          case K.code k of
-                            "Enter" -> Just (FinishEditing code)
-                            code -> Just Autoresize)
-                   , HE.onValueChange (\i -> pure (SetInput i))
-                   ]
-                ]
-    DisplayEditor ->
-      HH.span
-        [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
-        [let renderEditor =
-               case _ of
-                 IntegerE i -> HH.text i
-                 ArrayE es ->
-                   HH.table [HP.class_ (HH.ClassName "array-editor")]
-                            (mapWithIndex (\i editor ->
-                                    HH.tr
-                                      []
-                                      [HH.td
-                                         []
-                                         [if false
-                                             then renderEditor editor
-                                             else
-                                               HH.slot (SProxy :: SProxy "editor")
-                                                       i
-                                                       component
-                                                       (EditorAndCode {editor, code})
-                                                       (\rhs -> Just (FinishEditing rhs))]])
-                                 es)
-                 MiscE t -> HH.text t
-         in renderEditor editor]
+--------------------------------------------------------------------------------
+-- Eval
 
 eval :: forall t45 t47 t48. MonadEffect t45 => Command -> H.HalogenM State t48 t47 String t45 Unit
 eval =
@@ -134,5 +107,46 @@ eval =
       H.liftEffect (preventDefault e)
       eval c
 
-editorRef :: H.RefLabel
-editorRef = (H.RefLabel "editor")
+--------------------------------------------------------------------------------
+-- Render
+
+render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (editor::H.Slot i String Int) a Command) Command
+render (State { display, code, editor }) =
+  case display of
+    DisplayCode ->
+      HH.div [] [HH.input
+                   [ HP.value code
+                   , HP.class_ (HH.ClassName "editor")
+                   , HP.ref editorRef
+                   , HE.onKeyUp
+                       (\k ->
+                          case K.code k of
+                            "Enter" -> Just (FinishEditing code)
+                            _code -> Just Autoresize)
+                   , HE.onValueChange (\i -> pure (SetInput i))
+                   ]
+                ]
+    DisplayEditor ->
+      HH.span
+        [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
+        [let renderEditor =
+               case _ of
+                 IntegerE i -> HH.text i
+                 ArrayE es ->
+                   HH.table [HP.class_ (HH.ClassName "array-editor")]
+                            (mapWithIndex (\i editor' ->
+                                    HH.tr
+                                      []
+                                      [HH.td
+                                         []
+                                         [if false
+                                             then renderEditor editor'
+                                             else
+                                               HH.slot (SProxy :: SProxy "editor")
+                                                       i
+                                                       component
+                                                       (EditorAndCode {editor: editor', code})
+                                                       (\rhs -> Just (FinishEditing rhs))]])
+                                 es)
+                 MiscE t -> HH.text t
+         in renderEditor editor]
