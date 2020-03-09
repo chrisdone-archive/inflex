@@ -5,11 +5,11 @@ module Inflex.Dec
   , Dec(..)
   ) where
 
-import Effect (Effect)
 import Data.Either (Either, either)
 import Data.Map (Map)
 import Data.Set (Set)
 import Data.Symbol (SProxy(..))
+import Effect.Class
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
@@ -49,7 +49,7 @@ data Display
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall q. H.Component HH.HTML q Input Output Effect
+component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
     { initialState: (\dec -> State {dec, display: DisplayResult})
@@ -60,7 +60,7 @@ component =
 --------------------------------------------------------------------------------
 -- Eval
 
-eval :: forall q i. Command -> H.HalogenM State q i Output Effect Unit
+eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
     CodeUpdate dec -> H.raise dec
@@ -69,9 +69,9 @@ eval =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall keys q.
+render :: forall keys q m. MonadEffect m =>
           State
-       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit | keys) Effect Command)
+       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit | keys) m Command)
                   Command
 render (State {dec: Dec {name, rhs, result}, display}) =
   HH.div

@@ -1,3 +1,5 @@
+-- | The document area.
+
 module Inflex.Doc (component) where
 
 import Affjax as AX
@@ -150,9 +152,9 @@ decOutsParser =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall q state keys.
+render :: forall q state keys m. MonadEffect m =>
    { decs :: Map UUID Dec.Dec | state }
-   -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Dec String | keys) Aff Command) Command
+   -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Dec String | keys) m Command) Command
 render state =
   HH.div
     []

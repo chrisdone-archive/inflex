@@ -4,7 +4,7 @@
 # set -x
 
 # echo Skipping psc-package build
-# time psc-package build
+#time psc-package build
 
 echo Bundling...
 #time purs bundle 'output/**/*.js' -m Main --main Main -o app.js

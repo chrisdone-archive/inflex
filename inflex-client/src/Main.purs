@@ -1,3 +1,5 @@
+-- | Main entry point to the app UI.
+
 module Main where
 
 import Prelude
@@ -6,6 +8,18 @@ import Effect (Effect)
 import Inflex.App as App
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
+
+--------------------------------------------------------------------------------
+-- Main entry point
+
+main :: Effect Unit
+main =
+  HA.runHalogenAff
+    (do body <- HA.awaitBody
+        runUI App.component unit body)
+
+--------------------------------------------------------------------------------
+-- Notes
 
 -- Initial load:
 --
@@ -22,9 +36,3 @@ import Halogen.VDom.Driver (runUI)
 -- hydration would get better results. Server-side rendering via
 -- nodejs? Possibly... rather than on-demand, as a cache that is
 -- updated async? <https://github.com/purescript-halogen/purescript-halogen/issues/587#issuecomment-449952354>
-
-main :: Effect Unit
-main =
-  HA.runHalogenAff
-    (do body <- HA.awaitBody
-        runUI App.component unit body)
