@@ -60,6 +60,10 @@ data EditorAndCode = EditorAndCode
   , code :: String
   }
 
+data Modification
+  = OverIndex Int Modification
+  | SetCode String
+
 --------------------------------------------------------------------------------
 -- Constants
 

@@ -16,8 +16,14 @@
    - [X] Add inference for Array type
    - [X] Add stepper for Array
    - [X] Add a Array display to Editor sum type
-   - [ ] Recursive editing  - build up a new Editor in the components
-     (more efficient than string building)
+   - [ ] Recursive editing - produce an "edit" like a lens modifier?
+
+#+BEGIN_SRC haskell-mode
+data Modification
+  = OverIndex Int Modification
+  | SetCode Text
+#+END_SRC
+
 #+BEGIN_SRC
 [1,2,3]
 =>
