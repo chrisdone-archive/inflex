@@ -100,7 +100,7 @@ eval =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.liftEffect (log ("Finish editing with code=" <> code))
+      H.liftEffect (log ("Finish editing with code: " <> code))
       State {display, editor} <- H.get
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))

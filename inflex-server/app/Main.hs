@@ -109,8 +109,9 @@ maxSteps = 100
 
 initialDecs :: [DecIn]
 initialDecs =
-  [DecIn
-     {name = "some_table", rhs = "[2 * 6, 6, 9, 123]"}]
+  [ DecIn {name = "some_table", rhs = "[2 * 6, 6, 9, value1]"}
+  , DecIn {name = "value1", rhs = "23 * 5"}
+  ]
 
 --------------------------------------------------------------------------------
 -- Dispatcher
