@@ -6,10 +6,11 @@ module Inflex.Editor
   , component
   ) where
 
+import Data.String
+
 import Data.Foldable (for_)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
-import Data.String
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
@@ -18,7 +19,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
-import Web.Event.Event (preventDefault)
+import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
@@ -43,6 +44,7 @@ data Command
   | FinishEditing String
   | PreventDefault Event Command
   | Autoresize
+  | NoOp
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -96,28 +98,27 @@ eval :: forall t45 t47 t48. MonadEffect t45 => Command -> H.HalogenM State t48 t
 eval =
   case _ of
     StartEditor -> do
-      H.modify_ (\(State st) -> State (st { display = DisplayCode}))
+      H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
       H.liftEffect (log ("Finish editing with code=" <> code))
       State {display, editor} <- H.get
-      -- let newDec =
-      --       let Dec dec = st . dec
-      --        in Dec (dec {rhs = rhs, result = Left "Waiting..."})
-      -- H.modify_
-      --   (\(State st') -> State (st' {display = DisplayResult, dec = newDec}))
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
     SetInput i ->
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
-    SetEditor (EditorAndCode{editor,code}) ->
+    SetEditor (EditorAndCode {editor, code}) ->
       H.put (State {editor, code, display: DisplayEditor})
     Autoresize -> do
       ref <- H.getHTMLElementRef editorRef
-      -- TODO: Set style="width: 100ch"  where 100=length of input.
       H.liftEffect (for_ ref (\el -> pure unit))
     PreventDefault e c -> do
-      H.liftEffect (preventDefault e)
+      H.liftEffect
+        (do log "Preventing default and propagation ..."
+            preventDefault e
+            stopPropagation e
+            log "Triggering")
       eval c
+    NoOp -> pure unit
 
 --------------------------------------------------------------------------------
 -- Render
@@ -138,11 +139,14 @@ render (State {display, code, editor}) =
                      "Enter" -> Just (FinishEditing code)
                      _code -> Just Autoresize)
             , HE.onValueChange (\i -> pure (SetInput i))
+            , HE.onClick (\e -> pure (PreventDefault (toEvent e) NoOp))
             ]
         ]
     DisplayEditor ->
       HH.span
-        [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
+        [ HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))
+        , HP.class_ (HH.ClassName "clickable")
+        ]
         [ let renderEditor =
                 case _ of
                   IntegerE i -> HH.text i
@@ -150,7 +154,7 @@ render (State {display, code, editor}) =
                     HH.table
                       [HP.class_ (HH.ClassName "array-editor")]
                       (mapWithIndex
-                         (\i editor' ->
+                         (\i subEditor ->
                             HH.tr
                               []
                               [ HH.td
@@ -160,7 +164,10 @@ render (State {display, code, editor}) =
                                       i
                                       component
                                       (EditorAndCode
-                                         {editor: editor', code})
+                                         { editor: subEditor
+                                         , code:
+                                             editorCode subEditor
+                                         })
                                       (\rhs ->
                                          Just
                                            (FinishEditing
