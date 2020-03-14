@@ -22,7 +22,9 @@ Use floating points but make partial results explicit too?
 - [ ] Add row types to Duet
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
-*** TODO [#A] Add Array
+*** DONE [#A] Add Array
+    CLOSED: [2020-03-14 Sat 16:27]
+    - State "DONE"       from "TODO"       [2020-03-14 Sat 16:27]
    - Note taken on [2020-03-06 Fri 17:54] \\
      This will serve as a warm up for the Duet, for implementing row types.
    - Note taken on [2020-03-06 Fri 17:41] \\
@@ -99,7 +101,13 @@ their individual hashes (with the cycle removed).
   compiles in Duet
 * Bugs
 ** UI
-*** TODO [#C] Autofocus when starting the editor
+*** BLOCKED [#C] Autofocus when starting the editor
+    - State "BLOCKED"    from "TODO"       [2020-03-14 Sat 16:27] \\
+      Waiting on answer.
+    - Note taken on [2020-03-14 Sat 16:26] \\
+      Asked question here:
+
+      https://github.com/purescript-halogen/purescript-halogen/issues/646
 *** TODO [#C] Autoresize input to match content length
 * Supportive
 ** DONE Use psc-package-fast
