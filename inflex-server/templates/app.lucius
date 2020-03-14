@@ -68,3 +68,8 @@ body {
     padding: 5px;
   }
 }
+
+.stretch-child > * {
+  width: 100%;
+  display: inline-block;
+}

@@ -70,6 +70,8 @@ data EditorAndCode = EditorAndCode
   , code :: String
   }
 
+type Slots i = (editor::H.Slot i String Int)
+
 data Edit
   = OverIndex Int Edit
   | SetCode String
@@ -94,13 +96,13 @@ component =
 --------------------------------------------------------------------------------
 -- Eval
 
-eval :: forall t45 t47 t48. MonadEffect t45 => Command -> H.HalogenM State t48 t47 String t45 Unit
+eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
 eval =
   case _ of
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.liftEffect (log ("Finish editing with code: " <> code))
+      H.liftEffect (log ("Finish editing with code:" <> code))
       State {display, editor} <- H.get
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
@@ -123,7 +125,7 @@ eval =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (editor::H.Slot i String Int) a Command) Command
+render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
 render (State {display, code, editor}) =
   case display of
     DisplayCode ->
@@ -158,7 +160,7 @@ render (State {display, code, editor}) =
                             HH.tr
                               []
                               [ HH.td
-                                  []
+                                  [HP.class_ (HH.ClassName "stretch-child")]
                                   [ HH.slot
                                       (SProxy :: SProxy "editor")
                                       i
