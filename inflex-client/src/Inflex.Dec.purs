@@ -52,9 +52,11 @@ data Display
 component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
-    { initialState: (\dec -> State {dec, display: DisplayResult})
+    { initialState:
+        (\dec -> State {dec, display: DisplayResult})
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetDec }
+    , eval:
+        H.mkEval H.defaultEval {handleAction = eval, receive = pure <<< SetDec}
     }
 
 --------------------------------------------------------------------------------
@@ -80,10 +82,15 @@ render (State {dec: Dec {name, rhs, result}, display}) =
     , HH.span [HP.class_ (HH.ClassName "dec-eq")] [HH.text "="]
     , HH.span
         [HP.class_ (HH.ClassName "dec-rhs")]
-        [ HH.slot (SProxy :: SProxy "editor")
-                  unit
-                  Editor.component
-                  (Editor.EditorAndCode {editor: either Editor.MiscE identity result, code: rhs})
-                  (\rhs' -> pure (CodeUpdate (Dec {name,result,rhs: rhs'})))
+        [ HH.slot
+            (SProxy :: SProxy "editor")
+            unit
+            Editor.component
+            (Editor.EditorAndCode
+               { editor: either Editor.MiscE identity result
+               , code: rhs
+               })
+            (\rhs' ->
+               pure (CodeUpdate (Dec {name, result, rhs: rhs'})))
         ]
     ]

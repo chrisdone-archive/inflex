@@ -12,6 +12,13 @@ component :: forall q i o. H.Component HH.HTML q i o Aff
 component =
   H.mkComponent
     { initialState: const unit
-    , render: (\state -> HH.slot (SProxy :: SProxy "doc") unit Doc.component unit (const Nothing))
+    , render:
+        (\state ->
+           HH.slot
+             (SProxy :: SProxy "doc")
+             unit
+             Doc.component
+             unit
+             (const Nothing))
     , eval: H.mkEval H.defaultEval
     }

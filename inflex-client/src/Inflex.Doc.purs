@@ -51,7 +51,7 @@ foreign import initialDecs :: Effect J.Json
 component :: forall q i o. H.Component HH.HTML q i o Aff
 component =
   H.mkComponent
-    { initialState: const { decs: mempty }
+    { initialState: const {decs: mempty}
     , render
     , eval:
         H.mkEval
@@ -88,16 +88,22 @@ eval =
                                  (uuidToString uuid')
                                  (J.fromObject
                                     (Foreign.fromHomogeneous
-                                       { name: J.fromString (dec' . name)
-                                       , rhs: J.fromString (dec' . rhs)
+                                       { name:
+                                           J.fromString (dec' . name)
+                                       , rhs:
+                                           J.fromString (dec' . rhs)
                                        })))
                             (M.toUnfoldable decs') :: Array (Tuple String J.Json)))))))
       case result2 of
         Left err ->
-          log $ "POST /api response failed to decode_=" <> AX.printError err
+          log $
+          "POST /api response failed to decode:" <>
+          AX.printError err
         Right response -> do
-          log $ "POST /api response_=" <> J.stringify (response . body)
-          case decOutsParser (response.body) of
+          log $
+            "POST /api response:" <>
+            J.stringify (response . body)
+          case decOutsParser (response . body) of
             Left err -> log ("error parsing JSON:" <> err)
             Right decs'' -> H.modify_ (\s' -> s' {decs = decs''})
 
@@ -116,36 +122,79 @@ decOutsParser =
                 (Left "expected DecOut")
                 (\dec -> do
                    name <-
-                     maybe (Left "need name") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "name" dec)
+                     maybe
+                       (Left "need name")
+                       (J.caseJsonString (Left "not a string") Right)
+                       (Foreign.lookup "name" dec)
                    rhs <-
-                     maybe (Left "need rhs") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "rhs" dec)
+                     maybe
+                       (Left "need rhs")
+                       (J.caseJsonString (Left "not a string") Right)
+                       (Foreign.lookup "rhs" dec)
                    result <-
-                     maybe (Left "need result") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "result" dec)
+                     maybe
+                       (Left "need result")
+                       (J.caseJsonString (Left "not a string") Right)
+                       (Foreign.lookup "result" dec)
                    case result of
-                     "error" -> do error <-
-                                     maybe (Left "need error") (J.caseJsonString (Left "not a string") Right) (Foreign.lookup "error" dec)
-                                   pure (Dec.Dec {name, rhs, result: Left error})
+                     "error" -> do
+                       error <-
+                         maybe
+                           (Left "need error")
+                           (J.caseJsonString (Left "not a string") Right)
+                           (Foreign.lookup "error" dec)
+                       pure
+                         (Dec.Dec {name, rhs, result: Left error})
                      "success" -> do
                        editor <-
-                         maybe (Left "need editor")
-                               (let editorParser =
-                                      J.caseJsonObject
-                                        (Left "expected editor obj")
-                                        (\obj' -> do
-                                           typ <- maybe (Left "need type") (J.caseJsonString (Left "type not a string") Right) (Foreign.lookup "type" obj')
-                                           case typ of
-                                             "integer" -> do
-                                               i <- maybe (Left "need integer") (J.caseJsonString (Left "integer not a string") Right) (Foreign.lookup "integer" obj')
-                                               pure (Editor.IntegerE i)
-                                             "array" -> do
-                                               es <- maybe (Left "need array")
-                                                           (J.caseJsonArray (Left "not an array") Right) (Foreign.lookup "array" obj')
-                                               map Editor.ArrayE (traverse editorParser es)
-                                             _ -> do i <- maybe (Left "need misc") (J.caseJsonString (Left "misc not a string") Right) (Foreign.lookup "misc" obj')
-                                                     pure (Editor.MiscE i))
-                                in editorParser)
-                               (Foreign.lookup "editor" dec)
-                       pure (Dec.Dec {name, rhs, result: Right editor})
+                         maybe
+                           (Left "need editor")
+                           (let editorParser =
+                                  J.caseJsonObject
+                                    (Left "expected editor obj")
+                                    (\obj' -> do
+                                       typ <-
+                                         maybe
+                                           (Left "need type")
+                                           (J.caseJsonString
+                                              (Left "type not a string")
+                                              Right)
+                                           (Foreign.lookup "type" obj')
+                                       case typ of
+                                         "integer" -> do
+                                           i <-
+                                             maybe
+                                               (Left "need integer")
+                                               (J.caseJsonString
+                                                  (Left "integer not a string")
+                                                  Right)
+                                               (Foreign.lookup "integer" obj')
+                                           pure (Editor.IntegerE i)
+                                         "array" -> do
+                                           es <-
+                                             maybe
+                                               (Left "need array")
+                                               (J.caseJsonArray
+                                                  (Left "not an array")
+                                                  Right)
+                                               (Foreign.lookup "array" obj')
+                                           map
+                                             Editor.ArrayE
+                                             (traverse editorParser es)
+                                         _ -> do
+                                           i <-
+                                             maybe
+                                               (Left "need misc")
+                                               (J.caseJsonString
+                                                  (Left "misc not a string")
+                                                  Right)
+                                               (Foreign.lookup "misc" obj')
+                                           pure (Editor.MiscE i))
+                             in editorParser)
+                           (Foreign.lookup "editor" dec)
+                       pure
+                         (Dec.Dec
+                            {name, rhs, result: Right editor})
                      _ -> Left "invalid result"))
              mp)
 

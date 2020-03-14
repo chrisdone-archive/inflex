@@ -2,6 +2,22 @@
 ** UI
 *** TODO [#B] "New" button
 ** Engine
+*** TODO Question-mark for results/optionals?
+*** TODO Consider partial arithmetic similar to x * y :: Result Error Int
+Be bold!
+
+(but limited in memory use eventually)
+Integer - arbitrary size   - total operations
+Rational - arbitrary size  - total operations
+
+(re-use safe-decimal package)
+Int64 - fixed precision    - partial operations
+Decimal - fixed precision  - partial operations
+
+Int32/Int16/Int8
+
+Use floating points but make partial results explicit too?
+
 *** TODO [#A] Add Rows
 - [ ] Add row types to Duet
 - [ ] Add RowE display to Editor for row types
@@ -25,24 +41,6 @@ e.g. data Array (a :: Type)
 | 2 |
 | 3 |
 #+END_SRC
-
-- [ ] Recursive editing - produce an "edit" like a lens modifier?
-
-#+BEGIN_SRC haskell-mode
-data Modification
-  = OverIndex Int Modification
-  | SetCode String
-#+END_SRC
-
-The server can then process the modification as either e.g.
-
-- VectorExpression [1,2,3] -- update in place [999,2,3]
-
-- LATER: reverse (VectorExpression [1,2,3]) -- wrapper traversal e.g.
-  imap (\i x -> if i == 0 then 999 else x)
-
-For now, the traversal should be disallowed.
-
 *** TODO [#C] Add TextE for String typed expressions
 *** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
