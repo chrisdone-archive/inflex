@@ -1,5 +1,10 @@
 * Feature
 ** UI
+*** TODO [#A] Re-use code instead of result for other array items
+Repro:
+[1, x] where x = 2 * 3
+Changing 1 => 3 should not replace x with 6.
+*** TODO [#B] Ability to edit names of decls
 *** TODO [#B] "New" button
 ** Engine
 *** TODO Question-mark for results/optionals?
@@ -25,10 +30,6 @@ Use floating points but make partial results explicit too?
 - [ ] Use test suite to test this
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
-*** TODO [#A] Re-use code instead of result for other array items
-Repro:
-[1, x] where x = 2 * 3
-Changing 1 => 3 should not replace x with 6.
 *** TODO [#C] Add TextE for String typed expressions
 *** DONE [#A] Add Array
     CLOSED: [2020-03-14 Sat 16:27]
