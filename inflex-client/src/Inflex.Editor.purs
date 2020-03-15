@@ -7,7 +7,6 @@ module Inflex.Editor
   ) where
 
 import Data.String
-
 import Data.Foldable (for_)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
@@ -19,6 +18,11 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
+import Halogen.Query.Input as Input
+import Halogen.VDom.DOM.Prop (ElemRef(..))
+import Halogen.HTML.Core as Core
+import Web.HTML.HTMLElement (focus, fromElement)
+import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.KeyboardEvent as K
@@ -45,6 +49,7 @@ data Command
   | PreventDefault Event Command
   | Autoresize
   | NoOp
+  | InputElementChanged (ElemRef Element)
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -76,6 +81,9 @@ data Edit
   = OverIndex Int Edit
   | SetCode String
 
+manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
+manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
+
 --------------------------------------------------------------------------------
 -- Constants
 
@@ -99,6 +107,13 @@ component =
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
 eval =
   case _ of
+    InputElementChanged elemRef ->
+      case elemRef of
+        Created element ->
+          case fromElement element of
+            Just htmlelement -> H.liftEffect (focus htmlelement)
+            Nothing -> pure unit
+        Removed _ -> pure unit
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
@@ -134,7 +149,7 @@ render (State {display, code, editor}) =
         [ HH.input
             [ HP.value code
             , HP.class_ (HH.ClassName "editor")
-            , HP.ref editorRef
+            , manage InputElementChanged
             , HE.onKeyUp
                 (\k ->
                    case K.code k of
