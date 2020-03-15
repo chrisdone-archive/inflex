@@ -22,6 +22,11 @@ Use floating points but make partial results explicit too?
 - [ ] Add row types to Duet
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
+*** TODO [#A] Re-use code instead of result for other array items
+Repro:
+[1, x] where x = 2 * 3
+Changing 1 => 3 should not replace x with 6.
+*** TODO [#C] Add TextE for String typed expressions
 *** DONE [#A] Add Array
     CLOSED: [2020-03-14 Sat 16:27]
     - State "DONE"       from "TODO"       [2020-03-14 Sat 16:27]
@@ -43,7 +48,6 @@ e.g. data Array (a :: Type)
 | 2 |
 | 3 |
 #+END_SRC
-*** TODO [#C] Add TextE for String typed expressions
 *** DONE Make sum type of results
    CLOSED: [2020-03-06 Fri 17:15]
    - Note taken on [2020-03-06 Fri 17:15] \\
@@ -101,14 +105,16 @@ their individual hashes (with the cycle removed).
   compiles in Duet
 * Bugs
 ** UI
-*** BLOCKED [#C] Autofocus when starting the editor
+*** TODO [#C] Autoresize input to match content length
+*** DONE [#C] Autofocus when starting the editor
+    CLOSED: [2020-03-15 Sun 00:16]
+    - State "DONE"       from "BLOCKED"    [2020-03-15 Sun 00:16]
     - State "BLOCKED"    from "TODO"       [2020-03-14 Sat 16:27] \\
       Waiting on answer.
     - Note taken on [2020-03-14 Sat 16:26] \\
       Asked question here:
 
       https://github.com/purescript-halogen/purescript-halogen/issues/646
-*** TODO [#C] Autoresize input to match content length
 * Supportive
 ** DONE Use psc-package-fast
    CLOSED: [2020-02-24 Mon 13:29]
