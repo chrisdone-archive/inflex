@@ -19,7 +19,10 @@ Int32/Int16/Int8
 Use floating points but make partial results explicit too?
 
 *** TODO [#A] Add Rows
+- [ ] Write Duet->PS converter
+- [ ] Add test suite that checks compile(duet(x))==compile(ps(x))
 - [ ] Add row types to Duet
+- [ ] Use test suite to test this
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
 *** TODO [#A] Re-use code instead of result for other array items
