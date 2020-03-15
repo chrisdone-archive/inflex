@@ -79,9 +79,7 @@ e.g. data Array (a :: Type)
     CLOSED: [2020-02-24 Mon 16:15]
     - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
 * Duet
-** TODO Convert to trees that grow
-** TODO Delete Alts and such
-** TODO Implement CAS name generation
+** TODO [#A] Implement CAS name generation
 - [ ] de Brujin index
 - [ ] mutually recursive groups are rewritten into one
 
@@ -94,7 +92,9 @@ and n is the term or type’s index in its cycle. A cycle has a
 canonical order determined by sorting all the members of the cycle by
 their individual hashes (with the cycle removed).
 #+END_QUOTE
-
+** TODO [#A] Need better GenUnchecked instances for names
+** TODO [#C] Convert to trees that grow
+** TODO [#B] Delete Alts and such
 * Testing
   - Note taken on [2020-03-07 Sat 11:29] \\
     https://hackage.haskell.org/package/validity-0.9.0.3/docs/src/Data.Validity.html#trivialValidation
