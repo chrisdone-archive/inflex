@@ -50,3 +50,12 @@ executables:
     - -Wall
     dependencies:
     - inflex-server
+
+tests:
+  inflex-types:
+    source-dirs: test
+    main: TypesSpec.hs
+    dependencies:
+      - purescript
+      - duet
+      - hspec
