@@ -146,7 +146,10 @@ getHomeR =
           (do head_
                 (do link_ [rel_ "shortcut icon", href_ "#"]
                     title_ "Inflex"
-                    meta_ [name_ "viewport",content_ "width=device-width, initial-scale=1.0"]
+                    meta_
+                      [ name_ "viewport"
+                      , content_ "width=device-width, initial-scale=1.0"
+                      ]
                     link_
                       [ rel_ "stylesheet"
                       , type_ "text/css"
@@ -158,13 +161,18 @@ getHomeR =
                       [class_ "big-header"]
                       (div_
                          [class_ "wrap"]
-                         (do div_ [class_ "inflex"] "Inflex"
+                         (do h1_ [class_ "inflex"] "Inflex"
                              div_
                                [class_ "tagline"]
                                "Spreadsheets reimagined from the ground up"
                              div_
                                [class_ "subline"]
-                               "Flexible, Fast and Correct")))))
+                               "Flexible, Fast and Correct"))
+                    div_
+                      [class_ "light-fold"]
+                      (div_
+                         [class_ "wrap"]
+                         (do h2_ "")))))
 
 getAppR :: Handler (Html ())
 getAppR = do
