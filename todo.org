@@ -1,4 +1,17 @@
 * Feature
+** Shop
+*** TODO Homepage
+*** TODO Register page
+*** TODO Login/logout page
+*** TODO Yesod tests
+** Database
+*** TODO Create
+*** TODO Setup indexes
+** Organizer
+** TODO List documents
+** TODO Create document
+** TODO Delete document
+** TODO Rename
 ** UI
 *** TODO [#A] Re-use code instead of result for other array items
 Repro:
@@ -104,6 +117,9 @@ their individual hashes (with the cycle removed).
     have you tried producesValidsOnValids?
     it's basically totality testing
     #+END_QUOTE
+** TODO hspec-yesod to test shop
+** TODO nodejs benchmark frontend
+** TODO nodejs PureScript to unit test
 ** TODO Use PureScript to validity test QuickCheck generate code
 - [ ] Should compile vs shouldn't -- if it compiles in PS implies it
   compiles in Duet
@@ -133,6 +149,10 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO GDPR
+** TODO The cookies spiel - needed before register/login page?
+** TODO Sending emails?
+** TODO Cache-control to make shop faster
 ** TODO Server-side PureScript
    - Note taken on [2020-03-06 Fri 16:20] \\
      Use nodejs for now?
