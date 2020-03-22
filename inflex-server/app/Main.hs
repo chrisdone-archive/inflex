@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE Strict #-}
@@ -119,6 +121,12 @@ initialDecs =
 --------------------------------------------------------------------------------
 -- Dispatcher
 
+newtype DocumentName = DocumentName Text
+  deriving (Show, Read, PathPiece, Eq)
+
+newtype Username = Username Text
+  deriving (Show, Read, PathPiece, Eq)
+
 data App = App
 instance Yesod App
 
@@ -132,17 +140,56 @@ mkYesod "App" [parseRoutes|
 
   -- App
   /dashboard AppDashboardR GET POST
-  /editor/#DocName AppEditorR GET
+  /editor/#DocumentName AppEditorR GET
   /app/api/refresh AppRefreshR POST
   /app/js AppJsR GET
   /app/css AppCssR GET
 
   -- Vanity URLs for user documents
-  /#Username/#DocName GET
+  !/#Username/#DocumentName ViewDocumentR GET
 |]
 
 --------------------------------------------------------------------------------
 -- Routes
+
+getShopLoginR :: Handler (Html ())
+getShopLoginR = pure (pure ())
+
+postShopLoginR :: Handler (Html ())
+postShopLoginR = pure (pure ())
+
+getShopRegisterR :: Handler (Html ())
+getShopRegisterR = pure (pure ())
+
+postShopRegisterR :: Handler (Html ())
+postShopRegisterR = pure (pure ())
+
+getShopAccountR :: Handler (Html ())
+getShopAccountR = pure (pure ())
+
+postShopAccountR :: Handler (Html ())
+postShopAccountR = pure (pure ())
+
+postAppRefreshR :: Handler (Html ())
+postAppRefreshR = pure (pure ())
+
+getAppDashboardR :: Handler (Html ())
+getAppDashboardR = pure (pure ())
+
+postAppDashboardR :: Handler (Html ())
+postAppDashboardR = pure (pure ())
+
+getAppEditorR :: DocumentName -> Handler (Html ())
+getAppEditorR _ = pure (pure ())
+
+postAppEditorR ::  DocumentName -> Handler (Html ())
+postAppEditorR _ = pure (pure ())
+
+getViewDocumentR :: Username -> DocumentName -> Handler (Html ())
+getViewDocumentR _ _ = pure (pure ())
+
+postViewDocumentR :: Username -> DocumentName -> Handler (Html ())
+postViewDocumentR _ _ = pure (pure ())
 
 getHomeR :: Handler (Html ())
 getHomeR =
