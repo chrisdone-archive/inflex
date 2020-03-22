@@ -40,7 +40,7 @@
   }
   .light-fold {
     padding: 15px 0;
-    color: #666666;
+    color: #555;
   }
   .footer {
     background: #455C7B;
