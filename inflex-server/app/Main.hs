@@ -172,7 +172,26 @@ getHomeR =
                       [class_ "light-fold"]
                       (div_
                          [class_ "wrap"]
-                         (do h2_ "")))))
+                         (do h2_ "Explanation"
+                             p_ "Explanation here."))
+                    div_
+                      [class_ "dark-fold"]
+                      (div_
+                         [class_ "wrap"]
+                         (do h2_ "Templates"
+                             p_ "Templates here."))
+                    div_
+                      [class_ "light-fold"]
+                      (div_
+                         [class_ "wrap"]
+                         (do h2_ "Next steps"
+                             p_ "Register now."))
+                    div_
+                      [class_ "footer"]
+                      (div_
+                         [class_ "wrap"]
+                         (do h2_ "Footer"
+                             p_ "Put footer content here.")))))
 
 getAppR :: Handler (Html ())
 getAppR = do
