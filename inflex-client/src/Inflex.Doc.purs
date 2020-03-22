@@ -77,7 +77,7 @@ eval =
         H.liftAff
           (AX.post
              ResponseFormat.json
-             "/api/refresh"
+             "/app/api/refresh"
              (Just
                 (RequestBody.json
                    (J.fromObject

@@ -1,3 +1,4 @@
+{-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE Strict #-}
 {-# LANGUAGE TupleSections #-}
@@ -14,33 +15,36 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-import           Control.Monad.Catch (SomeException)
-import           Control.Monad.Logger
-import           Control.Monad.Reader
-import           Control.Monad.Supply
-import           Control.Monad.Writer
-import           Data.Aeson
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.UUID as UUID
-import qualified Data.UUID.V4 as V4
-import           Data.Vector (Vector)
-import           Duet.Infer
-import           Duet.Parser
-import           Duet.Printer
-import           Duet.Simple
-import           Duet.Tokenizer
-import           Duet.Types
-import           Lucid
-import           Text.Lucius
-import           Yesod hiding (Html)
-import           Yesod.Lucid
+import                Control.Monad.Catch (SomeException)
+import "monad-logger" Control.Monad.Logger
+import                Control.Monad.Reader
+import "duet"         Control.Monad.Supply
+import                Control.Monad.Writer
+import                Data.Aeson
+import                Data.HashMap.Strict (HashMap)
+import qualified      Data.HashMap.Strict as HM
+import                Data.Semigroup ((<>))
+import                Data.Text (Text)
+import qualified      Data.Text as T
+import qualified      Data.UUID as UUID
+import qualified      Data.UUID.V4 as V4
+import                Data.Vector (Vector)
+import                Duet.Infer
+import                Duet.Parser
+import                Duet.Printer
+import                Duet.Simple
+import                Duet.Tokenizer
+import                Duet.Types
+import                Lucid
+import                Text.Lucius
+import                Yesod hiding (Html)
+import                Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Main entry point
+
+development :: Bool
+development = True
 
 main :: IO ()
 main = warpEnv App
@@ -119,14 +123,47 @@ data App = App
 instance Yesod App
 
 mkYesod "App" [parseRoutes|
-  /appjs AppJsR GET
-  /appcss AppCssR GET
-  /api/refresh RefreshR POST
+  -- Routes
+  /app/js AppJsR GET
+  /app/css AppCssR GET
+  /app/api/refresh RefreshR POST
   /app AppR GET
+
+  -- Shop
+  /shop.css ShopCssR GET
+  / HomeR GET
 |]
 
 --------------------------------------------------------------------------------
 -- Routes
+
+getHomeR :: Handler (Html ())
+getHomeR =
+  htmlWithUrl
+    (do doctype_
+        url <- ask
+        html_
+          (do head_
+                (do link_ [rel_ "shortcut icon", href_ "#"]
+                    title_ "Inflex"
+                    link_
+                      [ rel_ "stylesheet"
+                      , type_ "text/css"
+                      , href_ (url ShopCssR)
+                      ])
+              body_
+                [class_ "shop"]
+                (do div_
+                      [class_ "big-header"]
+                      (div_
+                         [class_ "wrap"]
+                         (do div_ [class_ "inflex"] "Inflex"
+                             div_
+                               [class_ "tagline"]
+                               "SPREADSHEETS REIMAGINED FROM THE GROUND UP"
+                             div_
+                               [class_ "subline"]
+                               "Flexible, Fast and Correct")))))
 
 getAppR :: Handler (Html ())
 getAppR = do
@@ -163,6 +200,13 @@ getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
 
 getAppCssR :: Handler Css
 getAppCssR = pure ($(luciusFile "templates/app.lucius") ())
+
+getShopCssR :: Handler Css
+getShopCssR =
+  do url <- getUrlRender
+     if development
+       then pure ($(luciusFileReload "templates/shop.lucius") (\x _ -> url x))
+       else pure ($(luciusFile "templates/shop.lucius") ())
 
 postRefreshR :: Handler TypedContent
 postRefreshR = selectRep (provideRep refreshHandler)
