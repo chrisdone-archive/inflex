@@ -123,15 +123,22 @@ data App = App
 instance Yesod App
 
 mkYesod "App" [parseRoutes|
-  -- Routes
+  -- Shop
+  / HomeR GET
+  /register ShopRegisterR GET POST
+  /login ShopLoginR GET POST
+  /account ShopAccountR GET POST
+  /shop/css ShopCssR GET
+
+  -- App
+  /dashboard AppDashboardR GET POST
+  /editor/#DocName AppEditorR GET
+  /app/api/refresh AppRefreshR POST
   /app/js AppJsR GET
   /app/css AppCssR GET
-  /app/api/refresh RefreshR POST
-  /app AppR GET
 
-  -- Shop
-  /shop.css ShopCssR GET
-  / HomeR GET
+  -- Vanity URLs for user documents
+  /#Username/#DocName GET
 |]
 
 --------------------------------------------------------------------------------
