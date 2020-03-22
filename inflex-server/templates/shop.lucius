@@ -34,17 +34,19 @@
     max-width: 80%;
   }
   .dark-fold {
-    background: #455C7B;
-    color: #FFBC67;
+    background: #eee;
+    color: #444;
     padding: 15px 0;
   }
   .light-fold {
     padding: 15px 0;
+    color: #666666;
   }
   .footer {
     background: #455C7B;
     color: #FFBC67;
     padding: 15px 0;
+    height: 500px;
   }
 }
 @media only screen and (max-width: 400px) {
