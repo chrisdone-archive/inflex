@@ -149,6 +149,8 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO Username/organization blacklists!
+https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-future-features/answer/Kyle-Neath
 ** TODO GDPR
 ** TODO The cookies spiel - needed before register/login page?
 ** TODO Sending emails?

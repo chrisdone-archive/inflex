@@ -28,7 +28,6 @@ import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import           Data.Vector (Vector)
-import qualified Data.Vector as V
 import           Duet.Infer
 import           Duet.Parser
 import           Duet.Printer
@@ -123,7 +122,7 @@ mkYesod "App" [parseRoutes|
   /appjs AppJsR GET
   /appcss AppCssR GET
   /api/refresh RefreshR POST
-  / AppR GET
+  /app AppR GET
 |]
 
 --------------------------------------------------------------------------------
