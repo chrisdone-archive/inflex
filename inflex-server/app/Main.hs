@@ -146,6 +146,7 @@ getHomeR =
           (do head_
                 (do link_ [rel_ "shortcut icon", href_ "#"]
                     title_ "Inflex"
+                    meta_ [name_ "viewport",content_ "width=device-width, initial-scale=1.0"]
                     link_
                       [ rel_ "stylesheet"
                       , type_ "text/css"
@@ -160,7 +161,7 @@ getHomeR =
                          (do div_ [class_ "inflex"] "Inflex"
                              div_
                                [class_ "tagline"]
-                               "SPREADSHEETS REIMAGINED FROM THE GROUND UP"
+                               "Spreadsheets reimagined from the ground up"
                              div_
                                [class_ "subline"]
                                "Flexible, Fast and Correct")))))

@@ -5,25 +5,45 @@
   .big-header {
     background: #455C7B;
     color: #FFBC67;
+    padding: 15px 0;
     .inflex {
-      padding-top: 1ex;
       text-transform: uppercase;
       opacity: 0.7;
       font-size: 24pt;
     }
     .tagline {
+      text-transform: uppercase;
       margin: 1ex 0;
       font-size: 32pt;
-      width: 564px;
+      word-break: break-all;
+      word-break: break-word;
+      max-width: 564px;
     }
     .subline {
       font-size: 16pt;
       opacity: 0.6;
       text-transform: uppercase;
-      padding-bottom: 1ex;
     }
   }
   .wrap {
-    margin: 0 15px;
+    padding: 0 15px;
+    margin: auto;
+    max-width: 80%;
+  }
+}
+@media only screen and (max-width: 400px) {
+  .shop {
+    .big-header {
+      padding: 5px 0;
+      .tagline {
+        max-width: fit-content;
+        font-size: 24pt;
+      }
+    }
+    .wrap {
+      max-width: fit-content;
+      margin: 0;
+      padding: 0 5px;
+    }
   }
 }
