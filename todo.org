@@ -7,6 +7,8 @@
 ** Database
 *** TODO Create
 *** TODO Setup indexes
+*** TODO Encrypt data at rest?
+*** TODO Versioning?
 ** Organizer
 ** TODO List documents
 ** TODO Create document
@@ -204,3 +206,12 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
      What’s Wrong with Computational Notebooks?
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
+* Research
+  - Note taken on [2020-03-26 Thu 09:33] \\
+    https://www.unisonweb.org/
+  - Note taken on [2020-03-26 Thu 09:33] \\
+    https://www.reddit.com/r/haskell/comments/fov9gt/closure_calculus_is_better_than_the_pure_%CE%BBcalculus/fljg9fb/
+* Mantras
+** UI failures
+- Scroll within scroll
+- Focus stealing
