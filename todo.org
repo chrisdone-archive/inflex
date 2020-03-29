@@ -215,3 +215,21 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
 ** UI failures
 - Scroll within scroll
 - Focus stealing
+* DigitalOcean
+  - Note taken on [2020-03-29 Sun 12:36] \\
+    Looks like this guy has it right:
+
+    https://www.digitalocean.com/community/questions/kubernetes-deployment-with-external-load-balancer-zero-downtime-rollouts
+- [ ] Proxying http://hackage.haskell.org/package/warp-3.3.9/docs/Network-Wai-Handler-Warp.html#v:setProxyProtocolRequired
+#+BEGIN_SRC
+chris@precision:~$ doctl auth init
+Please authenticate doctl for use with your DigitalOcean account. You can generate a token in the control panel at https://cloud.digitalocean.com/account/api/token
+
+Enter your access token:
+Validating token... OK
+
+chris@precision:~$ doctl kubernetes cluster kubeconfig save inflex-server
+Notice: Adding cluster credentials to kubeconfig file found in "/home/chris/.kube/config"
+Notice: Setting current-context to do-lon1-inflex-server
+chris@precision:~$
+#+END_SRC
