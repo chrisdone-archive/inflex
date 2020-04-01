@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflex-server
+  labels:
+    app: inflex-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: inflex-server
+  template:
+    metadata:
+      labels:
+        app: inflex-server
+    spec:
+      containers:
+      - name: inflex-server
+        image: nginxdemos/hello:latest
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        ports:
+          - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inflex-server
+spec:
+  type: NodePort
+  ports:
+  - targetPort: 80
+    port: 8080
+    nodePort: 30001
+  selector:
+    app: inflex-server

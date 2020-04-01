@@ -216,6 +216,23 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
 - Scroll within scroll
 - Focus stealing
 * DigitalOcean
+  - Note taken on [2020-03-29 Sun 18:11] \\
+    Consider e.g. rancher or coreos - a way to spin up a droplet with a
+    single file like "run this docker image".
+  - Note taken on [2020-03-29 Sun 17:45] \\
+    Got a basic deploy working with DO's load balancer (with HTTPS), a
+    single droplet (a heavy full ubuntu machine with docker-machine on
+    it).
+
+    Deploy step is basically:
+
+    docker-machine up -d
+
+    And we change the docker image to something else to deploy a new instance.
+  - Note taken on [2020-03-29 Sun 17:10] \\
+    Via docker-machine:
+
+    time docker-machine create   --driver digitalocean   --digitalocean-access-token $(cat ~/.do-token)   --digitalocean-monitoring   --digitalocean-region "lon1"   --digitalocean-size "s-1vcpu-1gb" inflex-server
   - Note taken on [2020-03-29 Sun 12:36] \\
     Looks like this guy has it right:
 
