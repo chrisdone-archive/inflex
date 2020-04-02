@@ -16,7 +16,12 @@ spec:
     spec:
       containers:
       - name: inflex-server
-        image: nginxdemos/hello:latest
+        image: chrisdone/lbtest@sha256:f26b21a619545e4d2fdbf1fbe5b07f6dadc426c3275bdea74d849a2fb89d63b8
+        env:
+          - name: PORT
+            value: "80"
+          - name: PROXY_OPTIONAL
+            value: "true"
         imagePullPolicy: Always
         readinessProbe:
           httpGet:
@@ -33,15 +38,34 @@ spec:
         ports:
           - containerPort: 80
 ---
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
-  name: inflex-server
+  name: london-lb15
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-name: "london-lb15"
+    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "ac5300c5-cb18-4699-8bf1-df91d8dd98ba"
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https: "true"
+    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
+    service.beta.kubernetes.io/do-loadbalancer-hostname: "inflex.io"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/do-loadbalancer-algorithm: "least_connections"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "8"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "6"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
 spec:
-  type: NodePort
-  ports:
-  - targetPort: 80
-    port: 8080
-    nodePort: 30001
+  type: LoadBalancer
   selector:
     app: inflex-server
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 80
