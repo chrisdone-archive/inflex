@@ -20,8 +20,8 @@ spec:
         env:
           - name: PORT
             value: "80"
-          - name: PROXY_OPTIONAL
-            value: "true"
+          # - name: PROXY_OPTIONAL
+          #   value: "true"
         imagePullPolicy: Always
         readinessProbe:
           httpGet:
@@ -55,7 +55,7 @@ metadata:
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "6"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+    # service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
 spec:
   type: LoadBalancer
   selector:
