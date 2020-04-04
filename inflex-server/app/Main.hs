@@ -20,7 +20,7 @@
 import                Control.Monad.Catch (SomeException)
 import "monad-logger" Control.Monad.Logger
 import                Control.Monad.Reader
-import "duet"         Control.Monad.Supply
+import "inflex-engine"         Control.Monad.Supply
 import                Control.Monad.Writer
 import                Data.Aeson
 import                Data.HashMap.Strict (HashMap)

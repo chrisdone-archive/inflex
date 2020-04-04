@@ -4,10 +4,11 @@ ghc-options:
   purescript: '-j4 -O2'
   psc-package: '-j4 -O2'
   inflex-server: '-j4 -O0'
-  inflex-client: '-fforce-recomp'
+  inflex-engine: '-j4 -O0'
 packages:
 - inflex-client
 - inflex-server
+- inflex-engine
 extra-deps:
 - happy-1.19.9
 - github: purescript/purescript
@@ -18,6 +19,3 @@ extra-deps:
   commit: c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e
 - github: chrisdone/yesod-lucid
   commit: cde88d0736a44163be70044a109798f578151db3
-# - github: chrisdone/duet
-#   commit: 959d40db68f4c2df04cabb7677724900d4f71db4
-- ../../duet-lang/duet/
