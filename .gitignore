@@ -4,3 +4,4 @@ inflex-server/client_session_key.aes
 .stack-work
 app.js
 output
+client_session_key.aes

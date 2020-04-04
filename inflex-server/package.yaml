@@ -35,6 +35,13 @@ dependencies:
 - lucid
 - uuid
 - shakespeare
+- template-haskell
+- th-utilities
+
+flags:
+ debug:
+   manual: True
+   default: False
 
 library:
   source-dirs: src
@@ -48,6 +55,12 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    when:
+      - condition: flag(debug)
+        then:
+          cpp-options: -DDEBUG
+        else:
+          cpp-options: -DRELEASE
     dependencies:
     - inflex-server
 

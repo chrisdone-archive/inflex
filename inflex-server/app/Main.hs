@@ -17,36 +17,34 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-import                Control.Monad.Catch (SomeException)
-import "monad-logger" Control.Monad.Logger
-import                Control.Monad.Reader
-import "inflex-engine"         Control.Monad.Supply
-import                Control.Monad.Writer
-import                Data.Aeson
-import                Data.HashMap.Strict (HashMap)
-import qualified      Data.HashMap.Strict as HM
-import                Data.Semigroup ((<>))
-import                Data.Text (Text)
-import qualified      Data.Text as T
-import qualified      Data.UUID as UUID
-import qualified      Data.UUID.V4 as V4
-import                Data.Vector (Vector)
-import                Duet.Infer
-import                Duet.Parser
-import                Duet.Printer
-import                Duet.Simple
-import                Duet.Tokenizer
-import                Duet.Types
-import                Lucid
-import                Text.Lucius
-import                Yesod hiding (Html)
-import                Yesod.Lucid
+import                 Control.Monad.Catch (SomeException)
+import "monad-logger"  Control.Monad.Logger
+import                 Control.Monad.Reader
+import "inflex-engine" Control.Monad.Supply
+import                 Control.Monad.Writer
+import                 Data.Aeson
+import                 Data.HashMap.Strict (HashMap)
+import qualified       Data.HashMap.Strict as HM
+import                 Data.Semigroup ((<>))
+import                 Data.Text (Text)
+import qualified       Data.Text as T
+import qualified       Data.UUID as UUID
+import qualified       Data.UUID.V4 as V4
+import                 Data.Vector (Vector)
+import                 Duet.Infer
+import                 Duet.Parser
+import                 Duet.Printer
+import                 Duet.Simple
+import                 Duet.Tokenizer
+import                 Duet.Types
+import                 Lucid
+import                 Shakespearean
+import                 Text.Lucius
+import                 Yesod hiding (Html)
+import                 Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Main entry point
-
-development :: Bool
-development = False
 
 main :: IO ()
 main = warpEnv App
@@ -255,10 +253,7 @@ getAppCssR = pure ($(luciusFile "templates/app.lucius") ())
 
 getShopCssR :: Handler Css
 getShopCssR =
-  do url <- getUrlRender
-     if development
-       then pure ($(luciusFileReload "templates/shop.lucius") (\x _ -> url x))
-       else pure ($(luciusFile "templates/shop.lucius") ())
+  $(luciusFileFrom "templates/shop.lucius")
 
 postRefreshR :: Handler TypedContent
 postRefreshR = selectRep (provideRep refreshHandler)
