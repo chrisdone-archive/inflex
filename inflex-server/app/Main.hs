@@ -46,7 +46,7 @@ import                Yesod.Lucid
 -- Main entry point
 
 development :: Bool
-development = True
+development = False
 
 main :: IO ()
 main = warpEnv App
@@ -211,41 +211,11 @@ getHomeR =
                       ])
               body_
                 [class_ "shop"]
-                (do div_
-                      [class_ "big-header"]
-                      (div_
-                         [class_ "wrap"]
-                         (do h1_ [class_ "inflex"] "Inflex"
-                             div_
-                               [class_ "tagline"]
-                               "Spreadsheets reimagined from the ground up"
-                             div_
-                               [class_ "subline"]
-                               "Flexible, Fast and Correct"))
-                    div_
-                      [class_ "light-fold"]
-                      (div_
-                         [class_ "wrap"]
-                         (do h2_ "Explanation"
-                             p_ "Explanation here."))
-                    div_
-                      [class_ "dark-fold"]
-                      (div_
-                         [class_ "wrap"]
-                         (do h2_ "Templates"
-                             p_ "Templates here."))
-                    div_
-                      [class_ "light-fold"]
-                      (div_
-                         [class_ "wrap"]
-                         (do h2_ "Next steps"
-                             p_ "Register now."))
-                    div_
-                      [class_ "footer"]
-                      (div_
-                         [class_ "wrap"]
-                         (do h2_ "Footer"
-                             p_ "Put footer content here.")))))
+                (do h1_ "Inflex"
+                    p_ "Spreadsheets reimagined."
+                    p_ (do "A "
+                           a_ [href_ "https://skyabove.io/"] "Sky Above"
+                           " product."))))
 
 getAppR :: Handler (Html ())
 getAppR = do
