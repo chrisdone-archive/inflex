@@ -1,13 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
+
 -- |
 
 module Inflex.Client where
 
-import Control.Monad
 import Language.Haskell.TH.Syntax
-import System.Directory
+import Stack
 import System.Process.Typed
 
--- $(runIO
---     (do runProcess_ (proc "sh" ["bundle.sh"])
---         pure []))
+$(do fp <- makeRelativeToProject "inflex-client/"
+     runIO (runProcess_ (setWorkingDir fp (proc "sh" ["bundle-full.sh"])))
+     pure [])

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 13ce7219f356264a21e33e9be5566b4277d7f8cabc7408ba5941ba2541f3337e
+-- hash: 0008e510e33f64e5ba7ea8ae657716d195d42af0d46e71fb495642fa50c0cd90
 
 name:           inflex-client
 version:        0
@@ -16,17 +16,20 @@ extra-source-files:
     src/Inflex.Doc.purs
     src/Inflex.Editor.purs
     src/Main.purs
+    src/Stack.hs
 
 library
   exposed-modules:
-      Paths_inflex_client
-  other-modules:
       Inflex.Client
+      Stack
+  other-modules:
+      Paths_inflex_client
   hs-source-dirs:
       src
   build-depends:
       base
     , directory
+    , filepath
     , purescript
     , template-haskell
     , typed-process

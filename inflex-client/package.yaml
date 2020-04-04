@@ -8,7 +8,6 @@ dependencies:
 - template-haskell
 - typed-process
 - directory
+- filepath
 library:
   source-dirs: src
-  exposed-modules:
-    Paths_inflex_client
