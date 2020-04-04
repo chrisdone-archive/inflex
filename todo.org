@@ -216,6 +216,10 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
 - Scroll within scroll
 - Focus stealing
 * DigitalOcean
+  - Note taken on [2020-04-04 Sat 10:29] \\
+    Load balancer name issue:
+
+    https://cloudsupport.digitalocean.com/s/my-tickets
   - Note taken on [2020-03-29 Sun 18:11] \\
     Consider e.g. rancher or coreos - a way to spin up a droplet with a
     single file like "run this docker image".
