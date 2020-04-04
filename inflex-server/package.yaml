@@ -57,5 +57,4 @@ tests:
     main: TypesSpec.hs
     dependencies:
       - purescript
-      - duet
       - hspec

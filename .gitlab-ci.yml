@@ -1,0 +1,26 @@
+stages:
+  - build
+  - release
+
+build:
+  image: registry.gitlab.com/<TODO>
+  stage: build
+  script:
+    - "stack test --fast"
+    - "mkdir build"
+    - "stack build --force-dirty --ghc-options=-O --copy-bins k3dash --local-bin-path=build"
+  artifacts:
+    paths:
+      - build
+
+release:
+  stage: release
+  image: docker:stable
+  services:
+    - docker:dind
+  dependencies:
+    - build
+  script:
+    - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
+    - docker image build . -f docker/deploy.Dockerfile -t "${CI_REGISTRY_IMAGE}:pipeline-${CI_PIPELINE_ID}"
+    - docker push "${CI_REGISTRY_IMAGE}:pipeline-${CI_PIPELINE_ID}"
