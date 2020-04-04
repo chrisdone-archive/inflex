@@ -151,6 +151,9 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO Make WAI only approve /health?token=SPECIALTOKENHERE
+   - Note taken on [2020-04-04 Sat 13:41] \\
+     https://www.digitalocean.com/community/questions/how-to-set-a-ip-restriction-on-nodeport-range-of-do-managed-kubernetes?comment=86684
 ** TODO Username/organization blacklists!
 https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-future-features/answer/Kyle-Neath
 ** TODO GDPR
