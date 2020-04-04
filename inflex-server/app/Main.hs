@@ -249,11 +249,10 @@ getAppJsR :: Handler TypedContent
 getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
 
 getAppCssR :: Handler Css
-getAppCssR = pure ($(luciusFile "templates/app.lucius") ())
+getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
 
 getShopCssR :: Handler Css
-getShopCssR =
-  $(luciusFileFrom "templates/shop.lucius")
+getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")
 
 postRefreshR :: Handler TypedContent
 postRefreshR = selectRep (provideRep refreshHandler)

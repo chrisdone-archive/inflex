@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP, TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
+{-# LANGUAGE CPP, TemplateHaskell, QuasiQuotes #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-unused-imports #-}
 
 -- | DEBUG-aware code.
 
@@ -7,9 +7,10 @@ module Shakespearean
   ( luciusFileFrom
   ) where
 
+import Data.FileEmbed.Stack
 import Language.Haskell.TH
-import TH.RelativePaths
 import Text.Lucius
+import Text.RawString.QQ
 
 luciusFileFrom :: FilePath -> Q Exp
 #ifdef DEBUG
@@ -22,9 +23,8 @@ luciusFileFromRelease :: FilePath -> ExpQ
 luciusFileFromRelease fp0 =
   [|do url <- getUrlRender
        pure
-         ($(do fp <- pathRelativeToCabalPackage fp0
-               luciusFileReload fp)
+         ($(wrapStackRoot fp0 >>= luciusFileReload)
             (\x _ -> url x))|]
 
 luciusFileFromDebug :: FilePath -> ExpQ
-luciusFileFromDebug fp = [|pure ($(luciusFile fp) ())|]
+luciusFileFromDebug fp = [|pure ($(wrapStackRoot fp >>= luciusFile) ())|]

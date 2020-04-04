@@ -37,6 +37,9 @@ dependencies:
 - shakespeare
 - template-haskell
 - th-utilities
+- raw-strings-qq
+- filepath
+- directory
 
 flags:
  debug:
