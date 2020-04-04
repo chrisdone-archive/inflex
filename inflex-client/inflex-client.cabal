@@ -16,8 +16,6 @@ extra-source-files:
     src/Inflex.Doc.purs
     src/Inflex.Editor.purs
     src/Main.purs
-data-files:
-    app.js
 
 library
   exposed-modules:

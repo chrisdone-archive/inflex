@@ -8,7 +8,7 @@ build:
   script:
     # - "stack test --fast"
     - "mkdir build"
-    - "stack build --force-dirty --ghc-options=-O --copy-bins k3dash --local-bin-path=build"
+    - "stack build --force-dirty --ghc-options=-O --copy-bins inflex-server --local-bin-path=build"
   artifacts:
     paths:
       - build
