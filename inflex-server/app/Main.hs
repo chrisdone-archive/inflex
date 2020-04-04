@@ -38,6 +38,7 @@ import                 Duet.Simple
 import                 Duet.Tokenizer
 import                 Duet.Types
 import                 Lucid
+import                 Sendfile
 import                 Shakespearean
 import                 Text.Lucius
 import                 Yesod hiding (Html)
@@ -168,8 +169,8 @@ getShopAccountR = pure (pure ())
 postShopAccountR :: Handler (Html ())
 postShopAccountR = pure (pure ())
 
-postAppRefreshR :: Handler (Html ())
-postAppRefreshR = pure (pure ())
+postAppRefreshR :: Handler Value
+postAppRefreshR = refreshHandler
 
 getAppDashboardR :: Handler (Html ())
 getAppDashboardR = pure (pure ())
@@ -178,7 +179,7 @@ postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())
 
 getAppEditorR :: DocumentName -> Handler (Html ())
-getAppEditorR _ = pure (pure ())
+getAppEditorR _ = getAppR
 
 postAppEditorR ::  DocumentName -> Handler (Html ())
 postAppEditorR _ = pure (pure ())
@@ -246,7 +247,7 @@ getAppR = do
                     script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
 
 getAppJsR :: Handler TypedContent
-getAppJsR = sendFile "application/javascript" "../inflex-client/app.js"
+getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
 
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")

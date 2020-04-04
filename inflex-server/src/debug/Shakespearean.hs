@@ -12,19 +12,9 @@ import Language.Haskell.TH
 import Text.Lucius
 import Text.RawString.QQ
 
-luciusFileFrom :: FilePath -> Q Exp
-#ifdef DEBUG
-luciusFileFrom = luciusFileFromDebug
-#else
-luciusFileFrom = luciusFileFromRelease
-#endif
-
-luciusFileFromRelease :: FilePath -> ExpQ
-luciusFileFromRelease fp0 =
+luciusFileFrom :: FilePath -> ExpQ
+luciusFileFrom fp0 =
   [|do url <- getUrlRender
        pure
          ($(wrapStackRoot fp0 >>= luciusFileReload)
             (\x _ -> url x))|]
-
-luciusFileFromDebug :: FilePath -> ExpQ
-luciusFileFromDebug fp = [|pure ($(wrapStackRoot fp >>= luciusFile) ())|]

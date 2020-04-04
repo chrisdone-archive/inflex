@@ -40,6 +40,7 @@ dependencies:
 - raw-strings-qq
 - filepath
 - directory
+- file-embed
 
 flags:
  debug:
@@ -48,6 +49,15 @@ flags:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Sendfile
+    - Shakespearean
+  when:
+  - condition: flag(debug)
+    then:
+      source-dirs: src/debug
+    else:
+      source-dirs: src/release
 
 executables:
   inflex-server:
@@ -58,12 +68,6 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
-    when:
-      - condition: flag(debug)
-        then:
-          cpp-options: -DDEBUG
-        else:
-          cpp-options: -DRELEASE
     dependencies:
     - inflex-server
 
