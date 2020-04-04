@@ -12,7 +12,7 @@
 -- |
 
 import "monad-logger" Control.Monad.Logger
-import "duet"         Control.Monad.Supply
+import "inflex-engine"         Control.Monad.Supply
 import                Control.Monad.Writer
 import                Data.Bifunctor
 import                Data.Maybe
