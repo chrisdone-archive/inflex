@@ -151,6 +151,10 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO Lazy display of [infinite] data
+** TODO Use streaming JSON parsers (defensive)
+   - Note taken on [2020-04-11 Sat 23:42] \\
+     https://github.com/chrisdone/streaming-parsers
 ** TODO Make WAI only approve /health?token=SPECIALTOKENHERE
    - Note taken on [2020-04-04 Sat 13:41] \\
      https://www.digitalocean.com/community/questions/how-to-set-a-ip-restriction-on-nodeport-range-of-do-managed-kubernetes?comment=86684
