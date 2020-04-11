@@ -24,6 +24,8 @@ dependencies:
 - yesod
 - inflex-engine
 - inflex-client
+- warp
+- wai-extra
 - vector
 - text
 - aeson

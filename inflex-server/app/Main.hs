@@ -38,8 +38,11 @@ import                 Duet.Simple
 import                 Duet.Tokenizer
 import                 Duet.Types
 import                 Lucid
+import                 Network.Wai.Handler.Warp
+import                 Network.Wai.Middleware.Gzip
 import                 Sendfile
 import                 Shakespearean
+import                 System.Environment
 import                 Text.Lucius
 import                 Yesod hiding (Html)
 import                 Yesod.Lucid
@@ -48,7 +51,10 @@ import                 Yesod.Lucid
 -- Main entry point
 
 main :: IO ()
-main = warpEnv App
+main = do
+  port <- fmap read (getEnv "PORT")
+  app <- toWaiAppPlain App
+  run port (gzip def app)
 
 --------------------------------------------------------------------------------
 -- Types

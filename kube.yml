@@ -22,7 +22,7 @@ spec:
         # after changing this image to actual inflex.
         # Later, this sha256 will be replaced by "latest" or whatnot and CI can use "set image".
         # TODO: How do I let k8s access gitlab's registry?
-        image: registry.gitlab.com/sky-above/inflex:pipeline-132872929
+        image: registry.gitlab.com/sky-above/inflex:pipeline-134996599
         command:
           - inflex-server
         env:
