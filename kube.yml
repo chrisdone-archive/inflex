@@ -14,13 +14,17 @@ spec:
       labels:
         app: inflex-server
     spec:
+      imagePullSecrets:
+      - name: gitlab-registry
       containers:
       - name: inflex-server
         # TODO: Change the health token (and in load balancer section)
         # after changing this image to actual inflex.
         # Later, this sha256 will be replaced by "latest" or whatnot and CI can use "set image".
         # TODO: How do I let k8s access gitlab's registry?
-        image: chrisdone/lbtest@sha256:f26b21a619545e4d2fdbf1fbe5b07f6dadc426c3275bdea74d849a2fb89d63b8
+        image: registry.gitlab.com/sky-above/inflex:pipeline-132872929
+        command:
+          - inflex-server
         env:
           - name: PORT
             value: "80"

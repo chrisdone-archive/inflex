@@ -130,6 +130,9 @@ data App = App
 instance Yesod App
 
 mkYesod "App" [parseRoutes|
+  -- Infra
+  /health GET
+
   -- Shop
   / HomeR GET
   /register ShopRegisterR GET POST
@@ -189,6 +192,9 @@ getViewDocumentR _ _ = pure (pure ())
 
 postViewDocumentR :: Username -> DocumentName -> Handler (Html ())
 postViewDocumentR _ _ = pure (pure ())
+
+getHealthR :: Handler ()
+getHealthR = pure ()
 
 getHomeR :: Handler (Html ())
 getHomeR =
