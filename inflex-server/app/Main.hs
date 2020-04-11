@@ -131,7 +131,7 @@ instance Yesod App
 
 mkYesod "App" [parseRoutes|
   -- Infra
-  /health GET
+  /health HealthR GET
 
   -- Shop
   / HomeR GET
