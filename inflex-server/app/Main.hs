@@ -54,7 +54,7 @@ main :: IO ()
 main = do
   port <- fmap read (getEnv "PORT")
   app <- toWaiAppPlain App
-  run port (gzip def app)
+  run port (gzip def {gzipFiles = GzipCompress} app)
 
 --------------------------------------------------------------------------------
 -- Types
