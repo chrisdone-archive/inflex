@@ -17,19 +17,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-import                 Control.Concurrent.STM
 import                 Control.Monad.Catch (SomeException)
 import "monad-logger"  Control.Monad.Logger
 import                 Control.Monad.Reader
 import "inflex-engine" Control.Monad.Supply
 import                 Control.Monad.Writer
 import                 Data.Aeson
-import                 Data.ByteString (ByteString)
-import qualified       Data.ByteString.Char8 as S8
 import                 Data.HashMap.Strict (HashMap)
 import qualified       Data.HashMap.Strict as HM
 import                 Data.Semigroup ((<>))
-import qualified       Data.HashSet as Set
 import                 Data.Text (Text)
 import qualified       Data.Text as T
 import qualified       Data.UUID as UUID
@@ -42,9 +38,6 @@ import                 Duet.Simple
 import                 Duet.Tokenizer
 import                 Duet.Types
 import                 Lucid
-import                 Network.HTTP.Types
-import                 Network.Socket
-import                 Network.Wai
 import                 Network.Wai.Handler.Warp
 import                 Network.Wai.Middleware.Gzip
 import                 Sendfile
@@ -60,43 +53,8 @@ import                 Yesod.Lucid
 main :: IO ()
 main = do
   port <- fmap read (getEnv "PORT")
-  healthToken <- fmap (fmap S8.pack) (lookupEnv "HEALTH_TOKEN")
   app <- toWaiAppPlain App
-  balancer <- loadBalanceMiddleware healthToken
-  run port (balancer (gzip def {gzipFiles = GzipCompress} app))
-
-loadBalanceMiddleware :: Maybe ByteString -> IO Middleware
-loadBalanceMiddleware mtoken =
-  case mtoken of
-    Nothing -> pure id
-    Just token -> do
-      var <- newTVarIO mempty
-      pure
-        (\app req rep ->
-           let sockAddr = remoteHost req
-            in case sockAddr of
-                 SockAddrInet _port hostAddress -> do
-                   balancers <- readTVarIO var
-                   if Set.member hostAddress balancers
-                     then app req rep
-                     else if pathInfo req == ["health"] &&
-                             join (lookup "token" (queryString req)) ==
-                             Just token
-                            then do
-                              atomically
-                                (modifyTVar' var (Set.insert hostAddress))
-                              app req rep
-                            else rep
-                                   (responseLBS
-                                      status401
-                                      []
-                                      "Unauthorized request.")
-                 _ ->
-                   rep
-                     (responseLBS
-                        status400
-                        []
-                        "Invalid request from load balancer."))
+  run port (gzip def {gzipFiles = GzipCompress} app)
 
 --------------------------------------------------------------------------------
 -- Types

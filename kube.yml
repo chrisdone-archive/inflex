@@ -18,7 +18,7 @@ spec:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        image: registry.gitlab.com/sky-above/inflex:pipeline-135001472
+        image: registry.gitlab.com/sky-above/inflex:pipeline-135129099
         command:
           - inflex-server
         env:
@@ -29,13 +29,13 @@ spec:
         imagePullPolicy: Always
         readinessProbe:
           httpGet:
-            path: /
+            path: "/health?token=7QrcEkZmQ9jR57KE5MHH3kMJquGu9G"
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
         livenessProbe:
           httpGet:
-            path: /
+            path: "/health?token=7QrcEkZmQ9jR57KE5MHH3kMJquGu9G"
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 15
