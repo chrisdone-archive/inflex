@@ -18,10 +18,6 @@ spec:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        # TODO: Change the health token (and in load balancer section)
-        # after changing this image to actual inflex.
-        # Later, this sha256 will be replaced by "latest" or whatnot and CI can use "set image".
-        # TODO: How do I let k8s access gitlab's registry?
         image: registry.gitlab.com/sky-above/inflex:pipeline-135001472
         command:
           - inflex-server
@@ -30,8 +26,6 @@ spec:
             value: "80"
           - name: HEALTH_TOKEN
             value: "7QrcEkZmQ9jR57KE5MHH3kMJquGu9G"
-          # - name: PROXY_OPTIONAL
-          #   value: "true"
         imagePullPolicy: Always
         readinessProbe:
           httpGet:
@@ -65,7 +59,6 @@ metadata:
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "6"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
-    # service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
 spec:
   type: LoadBalancer
   selector:
