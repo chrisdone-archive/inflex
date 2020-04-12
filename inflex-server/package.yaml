@@ -26,6 +26,11 @@ dependencies:
 - inflex-client
 - warp
 - wai-extra
+- wai
+- network
+- http-types
+- bytestring
+- stm
 - vector
 - text
 - aeson
