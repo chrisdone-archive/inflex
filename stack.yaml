@@ -19,3 +19,5 @@ extra-deps:
   commit: c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e
 - github: chrisdone/yesod-lucid
   commit: cde88d0736a44163be70044a109798f578151db3
+- github: chrisdone/forge
+  commit: 064fec0762d934336988551a3473aada3b64f8a0

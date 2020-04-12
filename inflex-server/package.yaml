@@ -49,6 +49,9 @@ dependencies:
 - filepath
 - directory
 - file-embed
+- time
+- email-validate
+- forge
 
 flags:
  debug:
@@ -60,6 +63,11 @@ library:
   exposed-modules:
     - Sendfile
     - Shakespearean
+    - Inflex.Server.Types
+    - Inflex.Server.Handlers.Shop
+    - Inflex.Server.Handlers.Document
+    - Inflex.Server.App
+    - Inflex.Server.Dispatch
   when:
   - condition: flag(debug)
     then:

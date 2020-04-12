@@ -55,6 +55,17 @@ packages:
       sha256: ac78649b71c7b3f37070f62658794342f4d1ef9fdbc5a3764e43e931f5a7a86c
   original:
     url: https://github.com/chrisdone/yesod-lucid/archive/cde88d0736a44163be70044a109798f578151db3.tar.gz
+- completed:
+    size: 11944
+    url: https://github.com/chrisdone/forge/archive/064fec0762d934336988551a3473aada3b64f8a0.tar.gz
+    name: forge
+    version: 0.1.0.0
+    sha256: 4bae346c6529c28f5c7c75cb8bc7d79cf7e1bf36e4c44b662cd2f1cc8ae6bd4e
+    pantry-tree:
+      size: 858
+      sha256: aa1c0de93d061db3136ae8a2e5711a38c21eee44ae64074d416305e94e931afa
+  original:
+    url: https://github.com/chrisdone/forge/archive/064fec0762d934336988551a3473aada3b64f8a0.tar.gz
 snapshots:
 - completed:
     size: 524154
