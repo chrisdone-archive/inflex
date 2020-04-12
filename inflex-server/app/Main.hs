@@ -241,8 +241,10 @@ getViewDocumentR _ _ = pure (pure ())
 postViewDocumentR :: Username -> DocumentName -> Handler (Html ())
 postViewDocumentR _ _ = pure (pure ())
 
-getHealthR :: Handler ()
-getHealthR = pure ()
+getHealthR :: Handler Text
+getHealthR = do
+  req <- getRequest
+  pure (T.pack (show (reqWaiRequest req)))
 
 getHomeR :: Handler (Html ())
 getHomeR =
