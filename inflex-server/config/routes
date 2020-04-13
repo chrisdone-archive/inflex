@@ -3,7 +3,7 @@
 
 -- Shop
 / HomeR GET
-/register ShopRegisterR GET POST
+/register ShopRegisterR
 /login ShopLoginR GET POST
 /account ShopAccountR GET POST
 /shop/css ShopCssR GET

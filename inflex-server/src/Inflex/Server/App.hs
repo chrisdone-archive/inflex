@@ -1,3 +1,6 @@
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PackageImports #-}
@@ -9,7 +12,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,11 +22,26 @@
 
 module Inflex.Server.App where
 
-import                 Inflex.Server.Types
-import                 Yesod hiding (Html)
+import           Data.Pool
+import           Database.Persist.Quasi
+import           Inflex.Backend
+import           Inflex.Server.Types
+import           Yesod hiding (Html)
 
 data App = App
+  { appPool :: !(Pool SqlBackend)
+  }
 
 instance Yesod App
 
+instance YesodPersist App where
+    type YesodPersistBackend App = SqlBackend
+    runDB action = do
+        App pool <- getYesod
+        runSqlPool action pool
+
 mkYesodData "App" $(parseRoutesFile "config/routes")
+
+share
+  [mkPersist sqlSettings, mkMigrate "migrateAll"]
+  $(persistFileWith lowerCaseSettings "config/models")

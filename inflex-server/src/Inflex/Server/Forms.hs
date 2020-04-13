@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PackageImports #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE LambdaCase #-}
@@ -19,23 +19,23 @@
 
 -- |
 
-module Inflex.Server.Handlers.Forms where
+module Inflex.Server.Forms where
 
 import           Data.Functor.Identity
-import           Data.Text (Text)
-import qualified Data.Text as T
 import qualified Forge.Internal.Types as Forge
 import           Inflex.Server.Forge
+import           Inflex.Server.Types
 import           Lucid
-import           Text.Email.Validate as Email
 
 data RegisterSubmit = RegisterSubmit
-  { registerEmail :: !EmailAddress
-  , registerPassword :: !Text
+  { registerEmail :: !Email
+  , registerPassword :: !Password
   }
 
 registerForm :: Forge.Form 'Forge.Unverified Identity (HtmlT m ()) (Field m) error RegisterSubmit
-registerForm =
-  RegisterSubmit <$>
-  Forge.FieldForm (Forge.StaticFieldName "email") (EmailField Nothing) <*>
-  Forge.FieldForm (Forge.StaticFieldName "password") (PasswordField Nothing)
+registerForm = do
+  registerEmail <-
+    Forge.FieldForm (Forge.StaticFieldName "email") (EmailField Nothing)
+  registerPassword <-
+    Forge.FieldForm (Forge.StaticFieldName "password") (PasswordField Nothing)
+  pure RegisterSubmit {..}

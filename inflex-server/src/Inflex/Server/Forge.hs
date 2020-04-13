@@ -35,6 +35,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import qualified Forge.Internal.Types as Forge
+import           Inflex.Server.Types
 import qualified Lucid
 import qualified Lucid.Base
 import           Text.Email.Validate as Email
@@ -52,7 +53,7 @@ data Error
 -- | A standard Html5 field.
 data Field m a where
   TextField :: Maybe Text -> Field m Text
-  PasswordField :: Maybe Text -> Field m Text
+  PasswordField :: Maybe Text -> Field m Password
   DateField :: Maybe Day -> Field m Day
   TextareaField :: Maybe Text -> Field m Text
   IntegerField :: Maybe Integer -> Field m Integer
@@ -65,7 +66,7 @@ data Field m a where
     -> NonEmpty (a, Text)
     -> (Integer -> Bool -> Lucid.HtmlT m () -> Lucid.HtmlT m () -> Lucid.HtmlT m ())
     -> Field m a
-  EmailField :: Maybe EmailAddress -> Field m EmailAddress
+  EmailField :: Maybe EmailAddress -> Field m Email
   FixedField :: HasResolution a => Maybe (Fixed a) -> Field m (Fixed a)
   PhoneField :: Maybe Text -> Field m Text
   SliderField :: Eq a => SliderConfig a -> Field m a
@@ -143,7 +144,7 @@ parseFieldInput' key field input =
         _ -> Left (Forge.invalidInputFormat key input)
     PasswordField _ ->
       case input of
-        Forge.TextInput text :| [] -> pure text
+        Forge.TextInput text :| [] | not (T.null text) -> pure (Password text)
         _ -> Left (Forge.invalidInputFormat key input)
     DateField _ ->
       case input of
@@ -178,7 +179,7 @@ parseFieldInput' key field input =
       case input of
         Forge.TextInput text :| [] ->
           case Email.validate (T.encodeUtf8 text) of
-            Right i -> pure i
+            Right _i -> pure (Email text)
             Left {} -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
     MultiselectField _ choices -> do

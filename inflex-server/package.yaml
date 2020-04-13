@@ -9,6 +9,7 @@ copyright:           "2020 Author name here"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- config/*
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -20,6 +21,9 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/inflex-server#readme>
 
 dependencies:
+- validation
+- persistent-postgresql
+- persistent-sqlite
 - base >= 4.7 && < 5
 - yesod
 - inflex-engine
@@ -52,9 +56,16 @@ dependencies:
 - time
 - email-validate
 - forge
+- transformers
+- resource-pool
+- yesod-persistent
+- persistent
 
 flags:
  debug:
+   manual: True
+   default: False
+ sqlite:
    manual: True
    default: False
 
@@ -64,8 +75,11 @@ library:
     - Sendfile
     - Shakespearean
     - Inflex.Server.Types
+    - Inflex.Backend
     - Inflex.Server.Handlers.Shop
+    - Inflex.Server.Handlers.Shop.Register
     - Inflex.Server.Handlers.Document
+    - Inflex.Server.Forms
     - Inflex.Server.App
     - Inflex.Server.Dispatch
   when:
@@ -74,6 +88,11 @@ library:
       source-dirs: src/debug
     else:
       source-dirs: src/release
+  - condition: flag(sqlite)
+    then:
+      source-dirs: src/sqlite
+    else:
+      source-dirs: src/postgresql
 
 executables:
   inflex-server:

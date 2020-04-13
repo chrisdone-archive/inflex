@@ -1,11 +1,19 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 module Main (main) where
 
-import Inflex.Server.App
-import Inflex.Server.Dispatch ()
-import Network.Wai.Handler.Warp
-import Network.Wai.Middleware.Gzip
-import System.Environment
-import Yesod hiding (Html)
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Reader
+import qualified Data.ByteString.Char8 as S8
+import           Data.Pool
+import           Inflex.Backend
+import           Inflex.Server.App
+import           Inflex.Server.Dispatch ()
+import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.Gzip
+import           System.Environment
+import           Yesod hiding (Html)
 
 --------------------------------------------------------------------------------
 -- Main entry point
@@ -13,5 +21,23 @@ import Yesod hiding (Html)
 main :: IO ()
 main = do
   port <- fmap read (getEnv "PORT")
-  app <- toWaiAppPlain App
-  run port (gzip def {gzipFiles = GzipCompress} app)
+  withDBPool
+    (\pool -> do
+       withResource
+         pool
+         (runReaderT
+            (do runMigration migrateAll
+                manualMigration))
+       app <- liftIO (toWaiAppPlain App {appPool = pool})
+       liftIO (run port (gzip def {gzipFiles = GzipCompress} app)))
+
+withDBPool ::
+     (IsPersistBackend b, BaseBackend b ~ SqlBackend)
+  => (Pool b -> LoggingT IO a)
+  -> IO a
+withDBPool cont = do
+  dbstr <- getEnv "DBCONN"
+  runStdoutLoggingT
+    (filterLogger
+       (\_src _lvl -> False)
+       (withBackendPool (S8.pack dbstr) 10 cont))
