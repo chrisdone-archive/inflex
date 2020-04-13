@@ -1,4 +1,4 @@
 Account
-  username Username
-  email Email
+  username Username -- TODO: make unique
+  email Email -- TODO: make unique
   password Password
