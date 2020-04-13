@@ -1,10 +1,11 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -21,21 +22,38 @@
 
 module Inflex.Server.Forms where
 
-import           Data.Functor.Identity
 import qualified Forge.Internal.Types as Forge
+import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
-import           Lucid
 
 data RegisterSubmit = RegisterSubmit
   { registerEmail :: !Email
   , registerPassword :: !Password
+  , registerUsername :: !Username
   }
 
-registerForm :: Forge.Form 'Forge.Unverified Identity (HtmlT m ()) (Field m) error RegisterSubmit
+registerForm :: Form error RegisterSubmit
 registerForm = do
+  registerUsername <-
+    labelled
+      "Username"
+      (Forge.FieldForm
+         (Forge.StaticFieldName "username")
+         (UsernameField Nothing))
   registerEmail <-
-    Forge.FieldForm (Forge.StaticFieldName "email") (EmailField Nothing)
+    labelled
+      "Email"
+      (Forge.FieldForm (Forge.StaticFieldName "email") (EmailField Nothing))
   registerPassword <-
-    Forge.FieldForm (Forge.StaticFieldName "password") (PasswordField Nothing)
+    labelled
+      "Password"
+      (Forge.FieldForm
+         (Forge.StaticFieldName "password")
+         (PasswordField
+            PasswordConfig
+              { def = Nothing
+              , required = Required
+              , autocomplete = CompleteNewPassword
+              }))
   pure RegisterSubmit {..}

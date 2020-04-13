@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
@@ -44,6 +45,7 @@ handleShopRegisterR = do
                  Account
                    { accountEmail = registerEmail
                    , accountPassword = registerPassword
+                   , accountUsername = registerUsername
                    })
           htmlWithUrl
             (shopTemplate
@@ -61,7 +63,5 @@ registerView formView =
           (do formView
               p_ (button_ "Continue")))
 
-verifiedRegisterForm ::
-     Monad m
-  => Forge.VerifiedForm 'Forge.Unverified Identity (HtmlT m ()) (Field m) Error RegisterSubmit
+verifiedRegisterForm :: VerifiedForm Error RegisterSubmit
 verifiedRegisterForm = $$($$(Forge.verify [||registerForm||]))

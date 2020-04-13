@@ -1,4 +1,6 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -17,11 +19,16 @@
 module Inflex.Server.Forge
   ( Error(..)
   , Field(..)
+  , Required(..)
+  , Autocomplete(..)
+  , PasswordConfig(..)
+  , wrap
+  , labelled
   ) where
 
 import           Control.Applicative
 import           Control.Monad
-import           Data.Aeson
+import           Data.Aeson hiding (Result)
 import qualified Data.ByteString.Lazy as L
 import           Data.Char
 import           Data.Fixed
@@ -41,6 +48,25 @@ import qualified Lucid.Base
 import           Text.Email.Validate as Email
 import           Text.Read (readMaybe)
 
+-- | Wrap the view.
+wrap ::
+     (t -> t)
+  -> Forge.Form index parse t field error a
+  -> Forge.Form index parse t field error a
+wrap f = Forge.CeilingForm (\es html -> (f html,es))
+
+labelled ::
+     (Monad m)
+  => Lucid.HtmlT m ()
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a2
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a2
+labelled label =
+  wrap
+    (\html ->
+       Lucid.p_
+         (Lucid.label_
+            (label *> ": " *> html)))
+
 --------------------------------------------------------------------------------
 -- Data types for this interface
 
@@ -49,11 +75,30 @@ data Error
   = MissingInput Forge.Key
   | InvalidInputFormat Forge.Key (NonEmpty Forge.Input)
   deriving (Show, Eq)
+data RequiredT = RequiredT | OptionalT
+
+data Required a where
+  Required :: Required 'RequiredT
+  Optional :: Required 'OptionalT
+deriving instance Show (Required a)
+
+type family Result r a where
+  Result 'RequiredT a = a
+  Result 'OptionalT a = Maybe a
+
+data PasswordConfig r = PasswordConfig
+  { required :: Required r
+  , def :: Maybe Text
+  , autocomplete :: Autocomplete
+  } deriving (Show)
+
+data Autocomplete = CompleteNewPassword | CompleteOff | CompleteEmail
+ deriving (Show)
 
 -- | A standard Html5 field.
 data Field m a where
   TextField :: Maybe Text -> Field m Text
-  PasswordField :: Maybe Text -> Field m Password
+  PasswordField :: PasswordConfig r -> Field m (Result r Password)
   DateField :: Maybe Day -> Field m Day
   TextareaField :: Maybe Text -> Field m Text
   IntegerField :: Maybe Integer -> Field m Integer
@@ -66,7 +111,8 @@ data Field m a where
     -> NonEmpty (a, Text)
     -> (Integer -> Bool -> Lucid.HtmlT m () -> Lucid.HtmlT m () -> Lucid.HtmlT m ())
     -> Field m a
-  EmailField :: Maybe EmailAddress -> Field m Email
+  EmailField :: Maybe Email -> Field m Email
+  UsernameField :: Maybe Username -> Field m Username
   FixedField :: HasResolution a => Maybe (Fixed a) -> Field m (Fixed a)
   PhoneField :: Maybe Text -> Field m Text
   SliderField :: Eq a => SliderConfig a -> Field m a
@@ -142,10 +188,19 @@ parseFieldInput' key field input =
       case input of
         Forge.TextInput text :| [] -> pure text
         _ -> Left (Forge.invalidInputFormat key input)
-    PasswordField _ ->
-      case input of
-        Forge.TextInput text :| [] | not (T.null text) -> pure (Password text)
-        _ -> Left (Forge.invalidInputFormat key input)
+    PasswordField PasswordConfig{required} ->
+      case required of
+        Required ->
+          case input of
+            Forge.TextInput text :| []
+              | not (T.null text) -> pure (Password text)
+            _ -> Left (Forge.invalidInputFormat key input)
+        Optional ->
+          case input of
+            Forge.TextInput text :| []
+              | not (T.null text) -> pure (Just (Password text))
+              | otherwise -> pure Nothing
+            _ -> Left (Forge.invalidInputFormat key input)
     DateField _ ->
       case input of
         Forge.TextInput text :| [] ->
@@ -181,6 +236,13 @@ parseFieldInput' key field input =
           case Email.validate (T.encodeUtf8 text) of
             Right _i -> pure (Email text)
             Left {} -> Left (Forge.invalidInputFormat key input)
+        _ -> Left (Forge.invalidInputFormat key input)
+    UsernameField _ ->
+      case input of
+        Forge.TextInput text :| [] ->
+          case parseUsername text of
+            Just i -> pure i
+            Nothing -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
     MultiselectField _ choices -> do
       keys <-
@@ -294,12 +356,20 @@ viewField' key minput =
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
          ])
-    PasswordField mdef ->
+    PasswordField PasswordConfig {autocomplete, required, def = mdef} ->
       Lucid.input_
         ([ Lucid.type_ "password"
          , Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
+         , Lucid.autocomplete_
+             (case autocomplete of
+                CompleteNewPassword -> "new-password"
+                CompleteOff -> "off"
+                CompleteEmail -> "email")
          ] <>
+         (case required of
+            Required -> [Lucid.required_ "required"]
+            _ -> []) <>
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
@@ -334,7 +404,21 @@ viewField' key minput =
              [ minput <|>
                fmap
                  (pure . Forge.TextInput)
-                 (fmap (T.decodeUtf8 . Email.toByteString) mdef)
+                 (fmap (\(Email t) -> t) mdef)
+             ]
+         ])
+    UsernameField mdef ->
+      Lucid.input_
+        ([ Lucid.name_ (Forge.unKey key)
+         , vdomkey_ (Forge.unKey key)
+         , Lucid.type_ "text"
+         ] <>
+         [ Lucid.value_ value
+         | Just (Forge.TextInput value :| []) <-
+             [ minput <|>
+               fmap
+                 (pure . Forge.TextInput)
+                 (fmap (\(Username t) -> t) mdef)
              ]
          ])
     IntegerField mdef ->
