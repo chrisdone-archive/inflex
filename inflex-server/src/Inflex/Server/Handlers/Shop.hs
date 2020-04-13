@@ -29,6 +29,7 @@ module Inflex.Server.Handlers.Shop
   , getHomeR
   ) where
 
+import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Server.App
@@ -48,10 +49,10 @@ getHomeR =
     (shopTemplate
        (do h1_ "Inflex"
            p_ "Spreadsheets reimagined."
+           url <- ask
            p_
-             (do "A "
-                 a_ [href_ "https://skyabove.io/"] "Sky Above"
-                 " product.")))
+             (a_ [href_ (url ShopRegisterR)]
+                 "Register now")))
 
 --------------------------------------------------------------------------------
 -- Login
