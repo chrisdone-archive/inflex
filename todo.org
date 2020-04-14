@@ -161,9 +161,16 @@ their individual hashes (with the cycle removed).
 ** TODO Username/organization blacklists!
 https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-future-features/answer/Kyle-Neath
 ** TODO GDPR
-** TODO The cookies spiel - needed before register/login page?
 ** TODO Sending emails?
 ** TODO Cache-control to make shop faster
+** DONE The cookies spiel - needed before register/login page?
+   CLOSED: [2020-04-14 Tue 11:42]
+   - State "DONE"       from "TODO"       [2020-04-14 Tue 11:42]
+   - Note taken on [2020-04-14 Tue 11:41] \\
+     We can also just use server-side analysis with digital fingerprints to
+     track people/funnelling. No cookies required.
+   - Note taken on [2020-04-14 Tue 11:41] \\
+     Nope - not needed for registration/signup.
 ** TODO Server-side PureScript
    - Note taken on [2020-03-06 Fri 16:20] \\
      Use nodejs for now?
@@ -191,6 +198,7 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
      https://bellard.org/quickjs/bench.html
 
      NodeJS doesn't have a DOM anyway!
+*** DONE review duktape [GOOD]
 *** DONE Review hs-duktape [NOT GOOD]
     CLOSED: [2020-03-04 Wed 11:03]
     - State "DONE"       from "TODO"       [2020-03-04 Wed 11:03]
