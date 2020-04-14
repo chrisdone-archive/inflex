@@ -31,6 +31,7 @@ main = do
             (do runMigration migrateAll
                 manualMigration))
        app <- liftIO (toWaiAppPlain App {appPool = pool})
+       -- Not important for local dev, but will be important when deploying online.
        -- TODO: Middleware for password-protecting the site
        -- TODO: Middleware for blocking non-load-balancer requests
        liftIO (run port (gzip def {gzipFiles = GzipCompress} app)))
