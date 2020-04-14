@@ -61,6 +61,7 @@ spec:
   type: LoadBalancer
   selector:
     app: inflex-server
+  externalTrafficPolicy: Local
   ports:
     - name: http
       protocol: TCP

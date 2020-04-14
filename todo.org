@@ -223,6 +223,24 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
 - Scroll within scroll
 - Focus stealing
 * DigitalOcean
+  - Note taken on [2020-04-14 Tue 10:55] \\
+    externalTrafficPolicy is the key trick:
+
+    http://64.227.44.55:30909/ =>
+
+    #+BEGIN_SRC
+    remoteHost = 109.175.148.125:56616,
+    #+END_SRC
+
+    https://inflex.io/ =>
+
+    #+BEGIN_SRC
+    remoteHost = 10.106.0.4:39350,
+    #+END_SRC
+
+    We can set an environment variable like ACCEPT_CIDR and make a Wai
+    middleware which will only accept connections from IPs which are
+    within that CIDR.
   - Note taken on [2020-04-04 Sat 10:29] \\
     Load balancer name issue:
 
