@@ -33,7 +33,11 @@ main = do
        app <- liftIO (toWaiAppPlain App {appPool = pool})
        -- Not important for local dev, but will be important when deploying online.
        -- TODO: Middleware for password-protecting the site
+       --    <https://hackage.haskell.org/package/wai-extra-3.0.29.1/docs/Network-Wai-Middleware-HttpAuth.html>
        -- TODO: Middleware for blocking non-load-balancer requests
+       --   remoteHost = 109.175.148.125:56616,
+       --     vs
+       --   remoteHost = 10.106.0.4:39350,
        liftIO (run port (gzip def {gzipFiles = GzipCompress} app)))
 
 withDBPool ::
