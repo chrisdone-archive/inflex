@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -57,15 +58,40 @@ wrap f = Forge.CeilingForm (\es html -> (f html,es))
 
 labelled ::
      (Monad m)
-  => Lucid.HtmlT m ()
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a2
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a2
+  => Text
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a2
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a2
 labelled label =
-  wrap
-    (\html ->
-       Lucid.p_
-         (Lucid.label_
-            (label *> ": " *> html)))
+  wrap Lucid.p_ .
+  wrapErrorsAllowBubble label .
+  wrap (\html -> (Lucid.label_ (Lucid.toHtml label *> ": " *> html)))
+
+-- | Wrap a formlet with its errors. Allow errors to bubble up.
+wrapErrorsAllowBubble ::
+     Monad m
+  => Text
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
+wrapErrorsAllowBubble label =
+  Forge.CeilingForm
+    (\errors html' ->
+       ( do html'
+            Lucid.ul_
+              [Lucid.class_ "inline-errors", vdomkey_ key]
+              (mapM_ (Lucid.li_ . showError) errors)
+       , map (ContextedError label) errors))
+  where key = "inline-errors:" <> label -- Ensures convenient uniqueness for the DOM differ.
+
+-- | Convert an error to HTML.
+showError :: Monad m => Error -> Lucid.HtmlT m ()
+showError =
+  \case
+    ContextedError label e -> do
+      Lucid.toHtml label
+      ": "
+      showError e
+    MissingInput {} -> "Missing input: please fill this one in."
+    InvalidInputFormat {} -> "Invalid input format."
 
 --------------------------------------------------------------------------------
 -- Data types for this interface
@@ -74,6 +100,7 @@ labelled label =
 data Error
   = MissingInput Forge.Key
   | InvalidInputFormat Forge.Key (NonEmpty Forge.Input)
+  | ContextedError Text Error
   deriving (Show, Eq)
 data RequiredT = RequiredT | OptionalT
 
@@ -188,12 +215,14 @@ parseFieldInput' key field input =
       case input of
         Forge.TextInput text :| [] -> pure text
         _ -> Left (Forge.invalidInputFormat key input)
-    PasswordField PasswordConfig{required} ->
+    PasswordField PasswordConfig {required} ->
       case required of
         Required ->
           case input of
             Forge.TextInput text :| []
+              -- TODO: Set minimum length
               | not (T.null text) -> pure (Password text)
+              | otherwise -> Left (Forge.missingInputError key)
             _ -> Left (Forge.invalidInputFormat key input)
         Optional ->
           case input of
@@ -232,17 +261,21 @@ parseFieldInput' key field input =
         _ -> Left (Forge.invalidInputFormat key input)
     EmailField _ ->
       case input of
-        Forge.TextInput text :| [] ->
-          case Email.validate (T.encodeUtf8 text) of
-            Right _i -> pure (Email text)
-            Left {} -> Left (Forge.invalidInputFormat key input)
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text -> Left (Forge.missingInputError key)
+          | otherwise ->
+            case Email.validate (T.encodeUtf8 text) of
+              Right _i -> pure (Email text)
+              Left {} -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
     UsernameField _ ->
       case input of
-        Forge.TextInput text :| [] ->
-          case parseUsername text of
-            Just i -> pure i
-            Nothing -> Left (Forge.invalidInputFormat key input)
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text -> Left (Forge.missingInputError key)
+          | otherwise ->
+            case parseUsername text of
+              Just i -> pure i
+              Nothing -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
     MultiselectField _ choices -> do
       keys <-

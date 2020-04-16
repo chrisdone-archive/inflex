@@ -59,7 +59,7 @@ registerView formView =
     (do url <- ask
         h1_ "Register"
         form_
-          [action_ (url ShopRegisterR), method_ "POST"]
+          [action_ (url ShopRegisterR), method_ "POST", novalidate_ ""]
           (do formView
               p_ (button_ "Continue")))
 

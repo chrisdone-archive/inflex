@@ -33,7 +33,7 @@ data RegisterSubmit = RegisterSubmit
   , registerUsername :: !Username
   }
 
-registerForm :: Form error RegisterSubmit
+registerForm :: Form Error RegisterSubmit
 registerForm = do
   registerUsername <-
     labelled
