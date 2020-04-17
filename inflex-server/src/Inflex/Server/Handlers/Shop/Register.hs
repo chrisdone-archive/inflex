@@ -80,6 +80,8 @@ getCheckoutCreateR :: Handler (Html ())
 getCheckoutCreateR = do
   render <- getUrlRender
   Config {stripeConfig} <- fmap appConfig getYesod
+  -- TODO: https://stripe.com/docs/payments/checkout/subscriptions/starting#prefilling-customer-data
+  -- TODO: Set Trial flag https://stripe.com/docs/payments/checkout/subscriptions/starting#handling-checkout-trials
   result <-
     createSession
       StripeSession
