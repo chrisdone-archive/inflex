@@ -38,6 +38,7 @@ import           Yesod.Lucid
 
 data App = App
   { appPool :: !(Pool SqlBackend)
+  , appConfig :: !Config
   }
 
 instance Yesod App
@@ -45,7 +46,7 @@ instance Yesod App
 instance YesodPersist App where
     type YesodPersistBackend App = SqlBackend
     runDB action = do
-        App pool <- getYesod
+        App{appPool=pool} <- getYesod
         runSqlPool action pool
 
 mkYesodData "App" $(parseRoutesFile "config/routes")

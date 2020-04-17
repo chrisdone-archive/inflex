@@ -21,6 +21,10 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/inflex-server#readme>
 
 dependencies:
+- rio
+- unliftio
+- http-conduit
+- yaml
 - validation
 - persistent-postgresql
 - persistent-sqlite

@@ -1,9 +1,15 @@
 -- Infra
 /health HealthR GET
 
+-- Stripe
+/api/v1/stripe StripeR POST
+
 -- Shop
 / HomeR GET
 /register ShopRegisterR
+/register/checkout/create CheckoutCreateR GET
+/register/checkout/cancel CheckoutCancelR GET
+/register/checkout/success CheckoutSuccessR GET
 /login ShopLoginR GET POST
 /account ShopAccountR GET POST
 /shop/css ShopCssR GET

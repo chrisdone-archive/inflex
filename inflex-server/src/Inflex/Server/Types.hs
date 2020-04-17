@@ -23,7 +23,15 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.Persist
 import           Database.Persist.Sql
+import           GHC.Generics
+import           Stripe
 import           Yesod hiding (Html)
+
+data Config = Config
+  { stripeConfig :: StripeConfig
+  , databaseConn :: Text
+  } deriving (Generic)
+instance FromJSON Config
 
 -- | TODO: Implement manual PathPiece
 newtype DocumentName = DocumentName Text
