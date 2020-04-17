@@ -27,8 +27,6 @@ module Inflex.Server.Handlers.Document
   , getAppEditorR
   , postRefreshR
   , getViewDocumentR
-  , postAppDashboardR
-  , getAppDashboardR
   ) where
 
 import                 Control.Monad.Catch (SomeException)
@@ -303,9 +301,3 @@ getAppEditorR _ = getAppR
 
 getViewDocumentR :: Username -> DocumentName -> Handler ()
 getViewDocumentR _ _ = pure ()
-
-getAppDashboardR :: Handler (Html ())
-getAppDashboardR = pure (pure ())
-
-postAppDashboardR :: Handler (Html ())
-postAppDashboardR = pure (pure ())
