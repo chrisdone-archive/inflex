@@ -8,6 +8,8 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Inflex.Server.App
 import           Yesod
 
+-- TODO: check sigs https://stripe.com/docs/webhooks/signatures
+
 postStripeR :: Handler ()
 postStripeR = do
   body :: Value <- requireCheckJsonBody
