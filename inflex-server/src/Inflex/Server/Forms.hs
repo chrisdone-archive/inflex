@@ -27,13 +27,7 @@ import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
 
-data RegisterSubmit = RegisterSubmit
-  { registerEmail :: !Email
-  , registerPassword :: !Password
-  , registerUsername :: !Username
-  }
-
-registerForm :: Form Error RegisterSubmit
+registerForm :: Form Error RegistrationDetails
 registerForm = do
   registerUsername <-
     labelled
@@ -56,4 +50,4 @@ registerForm = do
               , required = Required
               , autocomplete = CompleteNewPassword
               }))
-  pure RegisterSubmit {..}
+  pure RegistrationDetails {..}

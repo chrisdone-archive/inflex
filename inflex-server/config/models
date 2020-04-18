@@ -2,3 +2,12 @@ Account
   username Username -- TODO: make unique
   email Email -- TODO: make unique
   password Password -- TODO: use hash with salt
+  UniqueUsername username
+  UniqueEmail username
+  deriving Show
+
+Session
+  uuid SessionUUID
+  state SessionState
+  UniqueUUID uuid
+  deriving Show

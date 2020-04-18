@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PackageImports #-}
@@ -18,9 +19,11 @@
 
 module Inflex.Server.Types where
 
+import           Control.Monad
 import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.UUID as UUID
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
@@ -38,8 +41,17 @@ newtype DocumentName = DocumentName Text
   deriving (Show, Read, PathPiece, Eq)
 
 -- | TODO: Implement manual PathPiece
-newtype Username = Username Text
-  deriving (Show, Read, PathPiece, Eq, PersistFieldSql, PersistField)
+newtype Username =
+  Username Text
+  deriving ( Show
+           , Read
+           , PathPiece
+           , Eq
+           , PersistFieldSql
+           , PersistField
+           , FromJSON -- TODO: Manual parse
+           , ToJSON
+           )
 
 parseUsername :: Text -> Maybe Username
 parseUsername (T.strip -> txt) =
@@ -49,7 +61,7 @@ parseUsername (T.strip -> txt) =
     else Nothing
 
 newtype Password = Password Text
-  deriving (Read, PathPiece, Eq, PersistFieldSql, PersistField)
+  deriving (Read, PathPiece, Eq, PersistFieldSql, PersistField, FromJSON, ToJSON)
 instance Show Password where
   show _ = "Password _"
 
@@ -60,5 +72,39 @@ parsePassword txt =
     then pure (Password txt)
     else Nothing
 
-newtype Email = Email Text
-  deriving (Show, Read, Eq, PersistFieldSql, PersistField)
+instance PersistFieldSql UUID where
+  sqlType _ = SqlString
+instance PersistField UUID where
+ toPersistValue = toPersistValue . UUID.toText
+ fromPersistValue = fromPersistValue >=> maybe (Left "Bad UUID") Right . UUID.fromText
+
+newtype Email =
+  Email Text
+  deriving (Show, Read, Eq, PersistFieldSql, PersistField, FromJSON, ToJSON)
+
+data SessionState =
+  Unregistered RegistrationState
+  deriving (Show, Generic)
+instance FromJSON SessionState
+instance ToJSON SessionState
+
+data RegistrationDetails = RegistrationDetails
+  { registerEmail :: !Email
+  , registerPassword :: !Password
+  , registerUsername :: !Username
+  } deriving (Show, Generic)
+instance FromJSON RegistrationDetails
+instance ToJSON RegistrationDetails
+
+data RegistrationState
+  = EnterDetails
+  | CreateCheckout RegistrationDetails
+  deriving (Show, Generic)
+instance FromJSON RegistrationState
+instance ToJSON RegistrationState
+
+newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
+  deriving (Show, PersistField, PersistFieldSql)
+
+$(derivePersistFieldJSON "SessionState")
+$(derivePersistFieldJSON "RegistrationState")

@@ -40,25 +40,8 @@ import           Yesod.Lucid
 -- Registration form
 
 handleShopRegisterR :: Handler (Html ())
-handleShopRegisterR = do
-  submission <- generateForm verifiedRegisterForm
-  case submission of
-    NotSubmitted view -> htmlWithUrl (registerView view)
-    Submitted parse -> do
-      let Forge.Generated {generatedView = view, generatedValue = result} =
-            runIdentity parse
-      case result of
-        Failure _errors -> htmlWithUrl (registerView view)
-        Success RegisterSubmit {..} -> do
-          _accountId <-
-            runDB
-              (insert
-                 Account
-                   { accountEmail = registerEmail
-                   , accountPassword = registerPassword
-                   , accountUsername = registerUsername
-                   })
-          redirect CheckoutCreateR
+handleShopRegisterR = do session <-
+                         undefined
 
 registerView :: Lucid App () -> Lucid App ()
 registerView formView =
@@ -70,7 +53,7 @@ registerView formView =
           (do formView
               p_ (button_ "Continue")))
 
-verifiedRegisterForm :: VerifiedForm Error RegisterSubmit
+verifiedRegisterForm :: VerifiedForm Error RegistrationDetails
 verifiedRegisterForm = $$($$(Forge.verify [||registerForm||]))
 
 --------------------------------------------------------------------------------
