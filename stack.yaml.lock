@@ -66,6 +66,41 @@ packages:
       sha256: aa1c0de93d061db3136ae8a2e5711a38c21eee44ae64074d416305e94e931afa
   original:
     url: https://github.com/chrisdone/forge/archive/064fec0762d934336988551a3473aada3b64f8a0.tar.gz
+- completed:
+    hackage: optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
+    pantry-tree:
+      size: 1003
+      sha256: 8a74dbcd983fcc96b7b6c5c9fc6da7240dd2e5bdab7caa4927b8287a4cbe5c0f
+  original:
+    hackage: optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
+- completed:
+    hackage: optics-core-0.2@sha256:6966f4f8cc9163b63d87dcca2d2617684b4ac8a80c5e50c69e9f3adf4dcdf0e9,4409
+    pantry-tree:
+      size: 4818
+      sha256: 4797bbb8dad9a21ed5d10fd6436a9114df19ebf742a69e9c2a0cd4fceab41a93
+  original:
+    hackage: optics-core-0.2@sha256:6966f4f8cc9163b63d87dcca2d2617684b4ac8a80c5e50c69e9f3adf4dcdf0e9,4409
+- completed:
+    hackage: optics-extra-0.2@sha256:211ce1dfd1b3ffd95c1158d8c8beb53cbd17c4d477169e226b1831607f6789eb,3370
+    pantry-tree:
+      size: 1809
+      sha256: cce8df05ef2e673461efa35734e072c54b78c73a17ee4a1e59c94252a3d53788
+  original:
+    hackage: optics-extra-0.2@sha256:211ce1dfd1b3ffd95c1158d8c8beb53cbd17c4d477169e226b1831607f6789eb,3370
+- completed:
+    hackage: optics-th-0.2@sha256:b4f6c5a3f134c697837190ed6da969dd284aefe79e43c3ef793093b607bb83b9,1929
+    pantry-tree:
+      size: 653
+      sha256: f6b5caed956d3761b35769ac518d3f0f407449dafe33154992386f02d9489bad
+  original:
+    hackage: optics-th-0.2@sha256:b4f6c5a3f134c697837190ed6da969dd284aefe79e43c3ef793093b607bb83b9,1929
+- completed:
+    hackage: indexed-profunctors-0.1@sha256:ddf618d0d4c58319c1e735e746bc69a1021f13b6f475dc9614b80af03432e6d4,1016
+    pantry-tree:
+      size: 235
+      sha256: cfd66c0a53be1b45eae72df112ea1158614458bb7b1c9cbbe3410b04ab011ec6
+  original:
+    hackage: indexed-profunctors-0.1@sha256:ddf618d0d4c58319c1e735e746bc69a1021f13b6f475dc9614b80af03432e6d4,1016
 snapshots:
 - completed:
     size: 524154

@@ -6,7 +6,6 @@ import           Control.Exception
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Reader
-import qualified Data.ByteString.Char8 as S8
 import           Data.Pool
 import qualified Data.Text.Encoding as T
 import           Data.Yaml

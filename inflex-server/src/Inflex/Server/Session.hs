@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -11,6 +13,7 @@ module Inflex.Server.Session
   , assumeSession
   ) where
 
+import           RIO (try)
 import qualified Data.Text.Encoding as T
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
@@ -36,9 +39,9 @@ assumeSession sessionState = do
       pure session
     Just session -> pure session
 
-updateSession :: Entity Session -> YesodDB App ()
-updateSession (Entity sessionId session) =
-  update sessionId [SessionState =. sessionState session]
+updateSession :: SessionId -> SessionState -> YesodDB App ()
+updateSession sessionId state =
+  update sessionId [SessionState =. state]
 
 requireSession :: Route App -> Handler (Entity Session)
 requireSession route = do
@@ -55,7 +58,11 @@ lookupSession = do
     Nothing -> pure Nothing
 
 querySession :: SessionUUID -> YesodDB App (Maybe (Entity Session))
-querySession sessionUuid = selectFirst [SessionUuid ==. sessionUuid] []
+querySession sessionUuid = do
+  result <- try (selectFirst [SessionUuid ==. sessionUuid] [])
+  case result of
+    Left (_ :: PersistException) -> pure Nothing
+    Right ok -> pure ok
 
 generateSession :: SessionState -> YesodDB App (Entity Session)
 generateSession sessionState = loop

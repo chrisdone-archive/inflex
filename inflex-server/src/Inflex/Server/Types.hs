@@ -27,6 +27,7 @@ import           Data.UUID as UUID
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
+import           Optics.TH
 import           Stripe
 import           Yesod hiding (Html)
 
@@ -82,8 +83,9 @@ newtype Email =
   Email Text
   deriving (Show, Read, Eq, PersistFieldSql, PersistField, FromJSON, ToJSON)
 
-data SessionState =
-  Unregistered RegistrationState
+data SessionState
+  = Unregistered RegistrationState
+  | Registered
   deriving (Show, Generic)
 instance FromJSON SessionState
 instance ToJSON SessionState
@@ -99,12 +101,16 @@ instance ToJSON RegistrationDetails
 data RegistrationState
   = EnterDetails
   | CreateCheckout RegistrationDetails
+  | WaitingForStripe RegistrationDetails
   deriving (Show, Generic)
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState
 
 newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
   deriving (Show, PersistField, PersistFieldSql)
+
+$(makePrisms ''RegistrationState)
+$(makePrisms ''SessionState)
 
 $(derivePersistFieldJSON "SessionState")
 $(derivePersistFieldJSON "RegistrationState")

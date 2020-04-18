@@ -25,6 +25,8 @@ dependencies:
 - unliftio
 - http-conduit
 - yaml
+- cookie
+- optics
 - validation
 - persistent-postgresql
 - persistent-sqlite
