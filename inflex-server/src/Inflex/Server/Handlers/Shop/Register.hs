@@ -66,19 +66,27 @@ registerRedirect state =
 
 withRegistrationState ::
      Prism' RegistrationState a
-  -> (SessionId -> a -> Handler (Html ()))
+  -> (SessionState -> SessionId -> a -> Handler (Html ()))
   -> Handler (Html ())
 withRegistrationState theCons cont = do
-  session <- assumeSession (Unregistered (EnterDetails Nothing))
+  session <- assumeSession registerStart
   case session of
     (Entity sessionId Session {sessionState = state}) ->
       case state of
         Unregistered registerState ->
           case preview theCons registerState of
             Nothing -> registerRedirect registerState
-            Just a -> cont sessionId a
-        Registered{} ->
-          htmlWithUrl "You are already registered! Let's go to the dashboard."
+            Just a -> cont state sessionId a
+        Registered {} ->
+          htmlWithUrl
+            (shopTemplate
+               state
+               (p_ "You are already registered! Let's go to the dashboard."))
+        NoSessionState {} -> do
+          runDB (updateSession sessionId registerStart)
+          redirect EnterDetailsR
+  where
+    registerStart = Unregistered (EnterDetails Nothing)
 
 --------------------------------------------------------------------------------
 -- Registration form
@@ -86,17 +94,17 @@ withRegistrationState theCons cont = do
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _EnterDetails go
   where
-    go sessionId mRegistrationDetails = do
+    go state sessionId mRegistrationDetails = do
       submission <-
         generateForm
           (verifiedRegisterForm (Forge.maybeDefault mRegistrationDetails))
       case submission of
-        NotSubmitted v -> htmlWithUrl (registerView v)
+        NotSubmitted v -> htmlWithUrl (registerView state v)
         Submitted parse -> do
           let Forge.Generated {generatedView = v, generatedValue = result} =
                 runIdentity parse
           case result of
-            Failure _errors -> htmlWithUrl (registerView v)
+            Failure _errors -> htmlWithUrl (registerView state v)
             Success registrationDetails -> do
               runDB
                 (updateSession
@@ -104,9 +112,10 @@ handleEnterDetailsR = withRegistrationState _EnterDetails go
                    (Unregistered (CreateCheckout registrationDetails)))
               redirect CheckoutCreateR
 
-registerView :: Lucid App () -> Lucid App ()
-registerView formView =
+registerView :: SessionState -> Lucid App () -> Lucid App ()
+registerView sessionState formView =
   shopTemplate
+    sessionState
     (do url <- ask
         h1_ "Register"
         form_
@@ -123,7 +132,7 @@ verifiedRegisterForm = $$($$(Forge.verify1 [||registerForm||]))
 getCheckoutCreateR :: Handler (Html ())
 getCheckoutCreateR = withRegistrationState _CreateCheckout go
   where
-    go sessionId registrationDetails = do
+    go _state sessionId registrationDetails = do
       render <- getUrlRender
       Config {stripeConfig} <- fmap appConfig getYesod
       -- TODO: Set sessionId from _sessionId
@@ -178,7 +187,7 @@ stripe.redirectToCheckout({
 getCheckoutWaitingR :: Handler (Html ())
 getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
   where
-    go sessionId registrationDetails = do
+    go _state sessionId registrationDetails = do
       -- TODO: Actually check Stripe confirmation.
       runDB
         (updateSession
@@ -196,7 +205,7 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
 getCheckoutCancelR :: Handler (Html ())
 getCheckoutCancelR = withRegistrationState _WaitingForStripe go
   where
-    go sessionId registrationDetails = do
+    go _state sessionId registrationDetails = do
       runDB
         (updateSession
            sessionId
@@ -212,7 +221,7 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 getCheckoutSuccessR :: Handler (Html ())
 getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
   where
-    go sessionId RegistrationDetails {..} = do
+    go _state sessionId RegistrationDetails {..} = do
       _ <-
         runDB
           (do void
@@ -222,7 +231,13 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
                      , accountPassword = registerPassword
                      , accountEmail = registerEmail
                      })
-              updateSession sessionId Registered)
+              updateSession
+                sessionId
+                (Registered
+                   LoginState
+                     { loginEmail = registerEmail
+                     , loginUsername = registerUsername
+                     }))
       htmlWithUrl
         (do h1_ "Checkout succeeded!"
             p_ "Great success!"

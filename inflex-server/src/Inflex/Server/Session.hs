@@ -10,7 +10,9 @@ module Inflex.Server.Session
   , requireSession
   , lookupSession
   , generateSession
+  , deleteSession
   , assumeSession
+  , withLogin
   ) where
 
 import           RIO (try)
@@ -18,7 +20,14 @@ import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
 import           Inflex.Server.App
 import           Inflex.Server.Types
-import           Yesod hiding (lookupSession)
+import           Yesod hiding (lookupSession, deleteSession)
+
+withLogin :: (SessionId -> LoginState -> Handler a) -> Handler a
+withLogin cont = do
+  session <- requireSession LoginR
+  case entityVal session of
+    Session{sessionState=Registered state} -> cont (entityKey session) state
+    _ -> redirect LoginR
 
 assumeSession :: SessionState -> Handler (Entity Session)
 assumeSession sessionState = do
@@ -47,6 +56,9 @@ requireSession route = do
   case result of
     Nothing -> redirect route
     Just session -> pure session
+
+deleteSession :: SessionId -> YesodDB App ()
+deleteSession = delete
 
 lookupSession :: Handler (Maybe (Entity Session))
 lookupSession = do

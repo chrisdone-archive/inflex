@@ -11,9 +11,12 @@
 /register/checkout/cancel CheckoutCancelR GET
 /register/checkout/waiting CheckoutWaitingR GET
 /register/checkout/success CheckoutSuccessR GET
-/login ShopLoginR GET POST
 /account ShopAccountR GET POST
 /shop/css ShopCssR GET
+
+-- Auth
+/login LoginR
+/logout LogoutR POST
 
 -- App
 /dashboard AppDashboardR GET POST

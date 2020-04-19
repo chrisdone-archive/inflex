@@ -25,6 +25,7 @@ module Inflex.Server.Forms where
 import qualified Forge.Internal.Types as Forge
 import           Inflex.Server.App
 import           Inflex.Server.Forge
+import           Inflex.Server.Forge
 import           Inflex.Server.Types
 
 registerForm :: Forge.Default RegistrationDetails -> Form Error RegistrationDetails
@@ -44,7 +45,7 @@ registerForm mregistrationDetails = do
          (Forge.StaticFieldName "email")
          Forge.RequiredField
          (fmap registerEmail mregistrationDetails)
-         EmailField)
+         (EmailField CompleteEmail))
   registerPassword <-
     labelled
       "Password"
@@ -54,3 +55,23 @@ registerForm mregistrationDetails = do
          (fmap registerPassword mregistrationDetails)
          (PasswordField PasswordConfig {autocomplete = CompleteNewPassword}))
   pure RegistrationDetails {..}
+
+loginForm :: Form Error (Email, Password)
+loginForm = do
+  loginEmail <-
+    labelled
+      "Email"
+      (Forge.FieldForm
+         (Forge.StaticFieldName "email")
+         Forge.RequiredField
+         Forge.noDefault
+         (EmailField CompleteEmail))
+  loginPassword <-
+    labelled
+      "Password"
+      (Forge.FieldForm
+         (Forge.StaticFieldName "password")
+         Forge.RequiredField
+         Forge.noDefault
+         (PasswordField PasswordConfig {autocomplete = CurrentPassword}))
+  pure (loginEmail, loginPassword)

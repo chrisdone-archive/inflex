@@ -23,8 +23,6 @@ module Inflex.Server.Handlers.Shop
   ( getShopCssR
   , postShopAccountR
   , getShopAccountR
-  , postShopLoginR
-  , getShopLoginR
   , getHealthR
   , getHomeR
   ) where
@@ -33,35 +31,35 @@ import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Server.App
+import           Inflex.Server.Session
+import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
 import           Shakespearean
 import           Text.Lucius
-import           Yesod hiding (Html, Field)
+import           Yesod hiding (Html, Field, lookupSession)
 import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Home
 
 getHomeR :: Handler (Html ())
-getHomeR =
+getHomeR = do
+  msession <- lookupSession
+  let state = maybe NoSessionState (sessionState . entityVal) msession
   htmlWithUrl
     (shopTemplate
+       state
        (do h1_ "Inflex"
            p_ "Spreadsheets reimagined."
            url <- ask
-           p_
-             (a_ [href_ (url EnterDetailsR)]
-                 "Register now")))
-
---------------------------------------------------------------------------------
--- Login
-
-getShopLoginR :: Handler (Html ())
-getShopLoginR = pure (pure ())
-
-postShopLoginR :: Handler (Html ())
-postShopLoginR = pure (pure ())
+           case state of
+             NoSessionState {} ->
+               p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+             Unregistered {} ->
+               p_ (a_ [href_ (url EnterDetailsR)] "Continue registration")
+             Registered {} ->
+               p_ "Welcome back!"))
 
 --------------------------------------------------------------------------------
 -- Account

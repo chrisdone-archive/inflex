@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 
 module Inflex.Server.Handlers.Dashboard
@@ -5,12 +6,13 @@ module Inflex.Server.Handlers.Dashboard
   , getAppDashboardR
   ) where
 
-import Inflex.Server.App
 import Lucid
-import Yesod hiding (Html)
+import Inflex.Server.App
+import Inflex.Server.Session
+import Yesod.Lucid
 
 getAppDashboardR :: Handler (Html ())
-getAppDashboardR = pure (pure ())
+getAppDashboardR = withLogin (\_ _ -> htmlWithUrl (p_ "Dashboard here!"))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())

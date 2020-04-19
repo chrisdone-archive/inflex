@@ -107,7 +107,7 @@ data PasswordConfig r = PasswordConfig
   { autocomplete :: Autocomplete
   } deriving (Show)
 
-data Autocomplete = CompleteNewPassword | CompleteOff | CompleteEmail
+data Autocomplete = CompleteNewPassword | CompleteOff | CompleteEmail | CurrentPassword
  deriving (Show)
 
 -- | A standard Html5 field.
@@ -125,7 +125,7 @@ data Field m a where
     => NonEmpty (a, Text)
     -> (Integer -> Bool -> Lucid.HtmlT m () -> Lucid.HtmlT m () -> Lucid.HtmlT m ())
     -> Field m a
-  EmailField :: Field m Email
+  EmailField :: Autocomplete -> Field m Email
   UsernameField :: Field m Username
   FixedField :: HasResolution a => Field m (Fixed a)
   PhoneField :: Field m Text
@@ -278,7 +278,7 @@ parseFieldInput' key required input =
               Just i -> pure (liftRequired required i)
               Nothing -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
-    EmailField ->
+    EmailField _autocomplete ->
       case input of
         Forge.TextInput (T.strip -> text) :| []
           | T.null text ->
@@ -429,7 +429,8 @@ viewField' key required mdef minput =
              (case autocomplete of
                 CompleteNewPassword -> "new-password"
                 CompleteOff -> "off"
-                CompleteEmail -> "email")
+                CompleteEmail -> "email"
+                CurrentPassword -> "current-password")
          ] <>
          (case required of
             Forge.RequiredField -> [Lucid.required_ "required"]
@@ -457,18 +458,22 @@ viewField' key required mdef minput =
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
          ])
-    EmailField ->
+    EmailField autocomplete ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
+         , Lucid.autocomplete_
+             (case autocomplete of
+                CompleteNewPassword -> "new-password"
+                CompleteOff -> "off"
+                CompleteEmail -> "email"
+                CurrentPassword -> "current-password")
          , Lucid.type_ "email"
          ] <>
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
              [ minput <|>
-               fmap
-                 (pure . Forge.TextInput)
-                 (fmap (\(Email t) -> t) mdef)
+               fmap (pure . Forge.TextInput) (fmap (\(Email t) -> t) mdef)
              ]
          ])
     UsernameField ->
@@ -480,9 +485,7 @@ viewField' key required mdef minput =
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
              [ minput <|>
-               fmap
-                 (pure . Forge.TextInput)
-                 (fmap (\(Username t) -> t) mdef)
+               fmap (pure . Forge.TextInput) (fmap (\(Username t) -> t) mdef)
              ]
          ])
     IntegerField ->

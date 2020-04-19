@@ -27,6 +27,7 @@ import           Data.UUID as UUID
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
+import           Lucid
 import           Optics.TH
 import           Stripe
 import           Yesod hiding (Html)
@@ -52,6 +53,7 @@ newtype Username =
            , PersistField
            , FromJSON -- TODO: Manual parse
            , ToJSON
+           , ToHtml
            )
 
 parseUsername :: Text -> Maybe Username
@@ -79,16 +81,32 @@ instance PersistField UUID where
  toPersistValue = toPersistValue . UUID.toText
  fromPersistValue = fromPersistValue >=> maybe (Left "Bad UUID") Right . UUID.fromText
 
-newtype Email =
-  Email Text
-  deriving (Show, Read, Eq, PersistFieldSql, PersistField, FromJSON, ToJSON)
+newtype Email = Email
+  { unEmail :: Text
+  } deriving ( Show
+             , Read
+             , Eq
+             , PersistFieldSql
+             , PersistField
+             , FromJSON
+             , ToJSON
+             , ToHtml
+             )
 
 data SessionState
   = Unregistered RegistrationState
-  | Registered
+  | Registered LoginState
+  | NoSessionState
   deriving (Show, Generic)
 instance FromJSON SessionState
 instance ToJSON SessionState
+
+data LoginState = LoginState
+  { loginEmail :: Email
+  , loginUsername :: Username
+  }deriving (Show, Generic)
+instance FromJSON LoginState
+instance ToJSON LoginState
 
 data RegistrationDetails = RegistrationDetails
   { registerEmail :: !Email
