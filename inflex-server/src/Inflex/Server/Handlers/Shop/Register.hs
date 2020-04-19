@@ -67,7 +67,7 @@ withRegistrationState theCons cont = do
             Nothing -> registerRedirect registerState
             Just a -> cont sessionId a
         Registered{} ->
-          htmlWithUrl "You are already registered!"
+          htmlWithUrl "You are already registered! Let's go to the dashboard."
 
 --------------------------------------------------------------------------------
 -- Registration form
