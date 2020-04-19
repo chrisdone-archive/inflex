@@ -18,6 +18,7 @@ module Inflex.Server.Handlers.Shop.Register
   , getCheckoutCreateR
   , getCheckoutCancelR
   , getCheckoutSuccessR
+  , getCheckoutWaitingR
   ) where
 
 import           Control.Monad.Reader
@@ -48,14 +49,16 @@ registerRedirect =
   \case
     CreateCheckout {} -> redirect CheckoutCreateR
     EnterDetails {} -> redirect ShopRegisterR
-    WaitingForStripe {} -> redirect CheckoutSuccessR
+    WaitingForStripe {} -> redirect CheckoutWaitingR
+    CancelledCheckout{} -> redirect CheckoutCancelR
+    CheckoutSucceeded{} -> redirect CheckoutSuccessR
 
 withRegistrationState ::
      Prism' RegistrationState a
   -> (SessionId -> a -> Handler (Html ()))
   -> Handler (Html ())
 withRegistrationState theCons cont = do
-  session <- assumeSession (Unregistered EnterDetails)
+  session <- assumeSession (Unregistered (EnterDetails Nothing))
   case session of
     (Entity sessionId Session {sessionState = state}) ->
       case state of
@@ -72,8 +75,10 @@ withRegistrationState theCons cont = do
 handleShopRegisterR :: Handler (Html ())
 handleShopRegisterR = withRegistrationState _EnterDetails go
   where
-    go sessionId () = do
-      submission <- generateForm verifiedRegisterForm
+    go sessionId mRegistrationDetails = do
+      submission <-
+        generateForm
+          (verifiedRegisterForm (Forge.maybeDefault mRegistrationDetails))
       case submission of
         NotSubmitted v -> htmlWithUrl (registerView v)
         Submitted parse -> do
@@ -98,8 +103,8 @@ registerView formView =
           (do formView
               p_ (button_ "Continue")))
 
-verifiedRegisterForm :: VerifiedForm Error RegistrationDetails
-verifiedRegisterForm = $$($$(Forge.verify [||registerForm||]))
+verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm Error RegistrationDetails
+verifiedRegisterForm = $$($$(Forge.verify1 [||registerForm||]))
 
 --------------------------------------------------------------------------------
 -- Checkout create page
@@ -117,7 +122,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
         createSession
           StripeSession
             { stripeConfig
-            , successUrl = render CheckoutSuccessR
+            , successUrl = render CheckoutWaitingR
             , cancelUrl = render CheckoutCancelR
             }
       case result of
@@ -157,6 +162,17 @@ stripe.redirectToCheckout({
 |]
 
 --------------------------------------------------------------------------------
+-- Checkout waiting page
+
+getCheckoutWaitingR :: Handler (Html ())
+getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
+  where
+    go _sessionId _registrationDetails =
+      htmlWithUrl
+        (do h1_ "Waiting for Stripe confirmation"
+            p_ "Waiting!")
+
+--------------------------------------------------------------------------------
 -- Checkout cancel page
 
 getCheckoutCancelR :: Handler (Html ())
@@ -171,7 +187,7 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 -- Checkout success page
 
 getCheckoutSuccessR :: Handler (Html ())
-getCheckoutSuccessR = withRegistrationState _WaitingForStripe go
+getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
   where
     go _sessionId _registrationDetails =
       htmlWithUrl

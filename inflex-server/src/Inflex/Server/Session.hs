@@ -14,12 +14,10 @@ module Inflex.Server.Session
   ) where
 
 import           RIO (try)
-import qualified Data.Text.Encoding as T
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
 import           Inflex.Server.App
 import           Inflex.Server.Types
-import           Web.Cookie
 import           Yesod hiding (lookupSession)
 
 assumeSession :: SessionState -> Handler (Entity Session)
@@ -30,12 +28,12 @@ assumeSession sessionState = do
       session <- runDB (generateSession sessionState)
       -- TODO: Set expiry, secure, etc.
       -- <https://hackage.haskell.org/package/cookie-0.4.0/docs/Web-Cookie.html#t:SetCookie>
-      setCookie
-        (def
-           { setCookieName = "SESSION-UUID"
-           , setCookieValue =
-               T.encodeUtf8 (UUID.toText (unSessionUUID (sessionUuid (entityVal session))))
-           })
+      -- For some reason Set-Cookie sends two Set-Cookie headers, one
+      -- with an empty value which breaks everything.
+      addHeader
+        "Set-Cookie"
+        ("SESSION_UUID=" <>
+         UUID.toText (unSessionUUID (sessionUuid (entityVal session))))
       pure session
     Just session -> pure session
 
@@ -52,7 +50,7 @@ requireSession route = do
 
 lookupSession :: Handler (Maybe (Entity Session))
 lookupSession = do
-  result <- lookupCookie "SESSION-UUID"
+  result <- lookupCookie "SESSION_UUID"
   case result >>= UUID.fromText of
     Just sessionUUID -> runDB (querySession (SessionUUID sessionUUID))
     Nothing -> pure Nothing
@@ -62,7 +60,9 @@ querySession sessionUuid = do
   result <- try (selectFirst [SessionUuid ==. sessionUuid] [])
   case result of
     Left (_ :: PersistException) -> pure Nothing
-    Right ok -> pure ok
+    Right ok -> do
+      liftIO (print ok)
+      pure ok
 
 generateSession :: SessionState -> YesodDB App (Entity Session)
 generateSession sessionState = loop

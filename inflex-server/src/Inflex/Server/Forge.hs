@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -20,7 +21,6 @@
 module Inflex.Server.Forge
   ( Error(..)
   , Field(..)
-  , Required(..)
   , Autocomplete(..)
   , PasswordConfig(..)
   , wrap
@@ -102,21 +102,9 @@ data Error
   | InvalidInputFormat Forge.Key (NonEmpty Forge.Input)
   | ContextedError Text Error
   deriving (Show, Eq)
-data RequiredT = RequiredT | OptionalT
-
-data Required a where
-  Required :: Required 'RequiredT
-  Optional :: Required 'OptionalT
-deriving instance Show (Required a)
-
-type family Result r a where
-  Result 'RequiredT a = a
-  Result 'OptionalT a = Maybe a
 
 data PasswordConfig r = PasswordConfig
-  { required :: Required r
-  , def :: Maybe Text
-  , autocomplete :: Autocomplete
+  { autocomplete :: Autocomplete
   } deriving (Show)
 
 data Autocomplete = CompleteNewPassword | CompleteOff | CompleteEmail
@@ -124,30 +112,28 @@ data Autocomplete = CompleteNewPassword | CompleteOff | CompleteEmail
 
 -- | A standard Html5 field.
 data Field m a where
-  TextField :: Maybe Text -> Field m Text
-  PasswordField :: PasswordConfig r -> Field m (Result r Password)
-  DateField :: Maybe Day -> Field m Day
-  TextareaField :: Maybe Text -> Field m Text
-  IntegerField :: Maybe Integer -> Field m Integer
-  CheckboxField :: Maybe Bool -> Field m Bool
-  MultiselectField :: Eq a => Maybe [a] -> NonEmpty (a, Text) -> Field m [a]
-  DropdownField :: Eq a => Maybe a -> NonEmpty (a, Text) -> Field m a
+  TextField :: Field m Text
+  PasswordField :: PasswordConfig r -> Field m Password
+  DateField :: Field m Day
+  TextareaField :: Field m Text
+  IntegerField :: Field m Integer
+  CheckboxField :: Field m Bool
+  MultiselectField :: Eq a => NonEmpty (a, Text) -> Field m (NonEmpty a)
+  DropdownField :: Eq a => NonEmpty (a, Text) -> Field m a
   RadioGroupField
     :: (Eq a)
-    => Maybe a
-    -> NonEmpty (a, Text)
+    => NonEmpty (a, Text)
     -> (Integer -> Bool -> Lucid.HtmlT m () -> Lucid.HtmlT m () -> Lucid.HtmlT m ())
     -> Field m a
-  EmailField :: Maybe Email -> Field m Email
-  UsernameField :: Maybe Username -> Field m Username
-  FixedField :: HasResolution a => Maybe (Fixed a) -> Field m (Fixed a)
-  PhoneField :: Maybe Text -> Field m Text
+  EmailField :: Field m Email
+  UsernameField :: Field m Username
+  FixedField :: HasResolution a => Field m (Fixed a)
+  PhoneField :: Field m Text
   SliderField :: Eq a => SliderConfig a -> Field m a
 
 -- | Slider configuration.
 data SliderConfig a = SliderConfig
   { choices :: NonEmpty (a, Text)
-  , def :: Maybe a
   } deriving (Show)
 
 --------------------------------------------------------------------------------
@@ -161,8 +147,8 @@ instance Forge.FormError Error where
 -- | Instantiation of the standard Html5 fields.
 instance (Forge.FormError error, Monad m) =>
          Forge.FormField (Lucid.HtmlT m ()) (Field m) error where
-  parseFieldInput key field input = parseFieldInput' key field input
-  viewField key minput = viewField' key minput
+  parseFieldInput = parseFieldInput'
+  viewField = viewField'
 
 -- | Used to be replaced with @key@ in the virtual-dom library.
 vdomkey_ :: Text -> Lucid.Attribute
@@ -173,13 +159,14 @@ vdomkeyAttributeName :: Text
 vdomkeyAttributeName = "data-key"
 
 parseFieldInput' ::
-     Forge.FormError e
+     forall a r e m. Forge.FormError e
   => Forge.Key
-  -> Field m a
+  -> Forge.FieldRequired r
   -> NonEmpty Forge.Input
-  -> Either e a
-parseFieldInput' key field input =
-  case field of
+  -> Field m a
+  -> Either e (Forge.FieldResult r a)
+parseFieldInput' key required input =
+  \case
     SliderField SliderConfig {choices} -> do
       keys <-
         mapM
@@ -199,85 +186,123 @@ parseFieldInput' key field input =
           keys
       case listToMaybe (toList values) of
         Nothing -> Left (Forge.missingInputError key)
-        Just a -> pure a
+        Just a -> pure (liftRequired required a)
       where keyedChoices =
               map
                 (\(i, (value, _title)) -> (i, value))
                 (zip [0 :: Integer ..] (toList choices))
-    CheckboxField _ ->
+    CheckboxField ->
       pure
-        (any
-           (\case
-              Forge.TextInput "true" -> True
-              _ -> False)
-           (toList input))
-    TextField _ ->
+        (liftRequired
+           required
+           (any
+              (\case
+                 Forge.TextInput "true" -> True
+                 _ -> False)
+              (toList input)))
+    TextField ->
       case input of
-        Forge.TextInput text :| [] -> pure text
+        Forge.TextInput text :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise -> pure (liftRequired required text)
         _ -> Left (Forge.invalidInputFormat key input)
-    PasswordField PasswordConfig {required} ->
+    PasswordField PasswordConfig {} ->
       case required of
-        Required ->
+        Forge.RequiredField ->
           case input of
             Forge.TextInput text :| []
               -- TODO: Set minimum length
               | not (T.null text) -> pure (Password text)
               | otherwise -> Left (Forge.missingInputError key)
             _ -> Left (Forge.invalidInputFormat key input)
-        Optional ->
+        Forge.OptionalField ->
           case input of
             Forge.TextInput text :| []
               | not (T.null text) -> pure (Just (Password text))
               | otherwise -> pure Nothing
             _ -> Left (Forge.invalidInputFormat key input)
-    DateField _ ->
+    DateField ->
       case input of
-        Forge.TextInput text :| [] ->
-          case parseDate text of
-            Just date -> pure date
-            Nothing -> Left (Forge.invalidInputFormat key input)
-        _ -> Left (Forge.invalidInputFormat key input)
-    TextareaField _ ->
-      case input of
-        Forge.TextInput textarea :| [] -> pure textarea
-        _ -> Left (Forge.invalidInputFormat key input)
-    PhoneField _ ->
-      case input of
-        Forge.TextInput phone :| [] -> pure phone
-        _ -> Left (Forge.invalidInputFormat key input)
-    IntegerField _ ->
-      case input of
-        Forge.TextInput text :| [] ->
-          case readMaybe (T.unpack text) of
-            Just i -> pure i
-            Nothing -> Left (Forge.invalidInputFormat key input)
-        _ -> Left (Forge.invalidInputFormat key input)
-    FixedField _ ->
-      case input of
-        Forge.TextInput text :| [] ->
-          case readFixed (T.unpack text) of
-            Just i -> pure i
-            Nothing -> Left (Forge.invalidInputFormat key input)
-        _ -> Left (Forge.invalidInputFormat key input)
-    EmailField _ ->
-      case input of
-        Forge.TextInput (T.strip -> text) :| []
-          | T.null text -> Left (Forge.missingInputError key)
+        Forge.TextInput text :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
           | otherwise ->
-            case Email.validate (T.encodeUtf8 text) of
-              Right _i -> pure (Email text)
-              Left {} -> Left (Forge.invalidInputFormat key input)
-        _ -> Left (Forge.invalidInputFormat key input)
-    UsernameField _ ->
-      case input of
-        Forge.TextInput (T.strip -> text) :| []
-          | T.null text -> Left (Forge.missingInputError key)
-          | otherwise ->
-            case parseUsername text of
-              Just i -> pure i
+            case parseDate text of
+              Just date -> pure (liftRequired required date)
               Nothing -> Left (Forge.invalidInputFormat key input)
         _ -> Left (Forge.invalidInputFormat key input)
-    MultiselectField _ choices -> do
+    TextareaField ->
+      case input of
+        Forge.TextInput textarea :| []
+          | T.null textarea ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise -> pure (liftRequired required textarea)
+        _ -> Left (Forge.invalidInputFormat key input)
+    PhoneField ->
+      case input of
+        Forge.TextInput (T.strip -> phone) :| []
+          | T.null phone ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise -> pure (liftRequired required phone)
+        _ -> Left (Forge.invalidInputFormat key input)
+    IntegerField ->
+      case input of
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise ->
+            case readMaybe (T.unpack text) :: Maybe Integer of
+              Just i -> pure (liftRequired required i)
+              Nothing -> Left (Forge.invalidInputFormat key input)
+        _ -> Left (Forge.invalidInputFormat key input)
+    FixedField ->
+      case input of
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise ->
+            case readFixed (T.unpack text) :: Maybe a of
+              Just i -> pure (liftRequired required i)
+              Nothing -> Left (Forge.invalidInputFormat key input)
+        _ -> Left (Forge.invalidInputFormat key input)
+    EmailField ->
+      case input of
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise ->
+            case Email.validate (T.encodeUtf8 text) of
+              Right _i -> pure (liftRequired required (Email text))
+              Left {} -> Left (Forge.invalidInputFormat key input)
+        _ -> Left (Forge.invalidInputFormat key input)
+    UsernameField ->
+      case input of
+        Forge.TextInput (T.strip -> text) :| []
+          | T.null text ->
+            case required of
+              Forge.RequiredField -> Left (Forge.missingInputError key)
+              Forge.OptionalField -> Right Nothing
+          | otherwise ->
+            case parseUsername text of
+              Just i -> pure (liftRequired required i)
+              Nothing -> Left (Forge.invalidInputFormat key input)
+        _ -> Left (Forge.invalidInputFormat key input)
+    MultiselectField choices -> do
       keys <-
         mapM
           (\case
@@ -291,12 +316,12 @@ parseFieldInput' key field input =
                Nothing -> Left (Forge.invalidInputFormat key input)
                Just ok -> pure ok)
           keys
-      pure (toList values)
+      pure (liftRequired required values)
       where keyedChoices =
               map
                 (\(i, (value, title)) -> (uniqueKey i title, value))
                 (zip [0 :: Integer ..] (toList choices))
-    DropdownField _ choices -> do
+    DropdownField choices -> do
       keys <-
         mapM
           (\case
@@ -312,12 +337,12 @@ parseFieldInput' key field input =
           keys
       case listToMaybe (toList values) of
         Nothing -> Left (Forge.missingInputError key)
-        Just a -> pure a
+        Just a -> pure (liftRequired required a)
       where keyedChoices =
               map
                 (\(i, (value, title)) -> (uniqueKey i title, value))
                 (zip [0 :: Integer ..] (toList choices))
-    RadioGroupField _ choices _render -> do
+    RadioGroupField choices _render -> do
       keys <-
         mapM
           (\case
@@ -333,17 +358,23 @@ parseFieldInput' key field input =
           keys
       case listToMaybe (toList values) of
         Nothing -> Left (Forge.missingInputError key)
-        Just a -> pure a
+        Just a -> pure (liftRequired required a)
       where keyedChoices =
               map
                 (\(i, (value, title)) -> (uniqueKey i title, value))
                 (zip [0 :: Integer ..] (toList choices))
 
 viewField' ::
-     Monad m => Forge.Key -> Maybe (NonEmpty Forge.Input) -> Field m a -> Lucid.HtmlT m ()
-viewField' key minput =
+     Monad m
+  => Forge.Key
+  -> Forge.FieldRequired r
+  -> Maybe a
+  -> Maybe (NonEmpty Forge.Input)
+  -> Field m a
+  -> Lucid.HtmlT m ()
+viewField' key required mdef minput =
   \case
-    DateField mdef ->
+    DateField ->
       Lucid.input_
         [ Lucid.type_ "date"
         , Lucid.name_ (Forge.unKey key)
@@ -359,7 +390,7 @@ viewField' key minput =
                      Nothing -> mdef
               in maybe "" showDate mdate)
         ]
-    CheckboxField mdef -> do
+    CheckboxField -> do
       Lucid.input_
         [ Lucid.type_ "hidden"
         , Lucid.name_ (Forge.unKey key)
@@ -382,14 +413,14 @@ viewField' key minput =
                      _ -> False)
                   (toList input)
               ]))
-    TextField mdef ->
+    TextField ->
       Lucid.input_
         ([Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)] <>
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
          ])
-    PasswordField PasswordConfig {autocomplete, required, def = mdef} ->
+    PasswordField PasswordConfig {autocomplete} ->
       Lucid.input_
         ([ Lucid.type_ "password"
          , Lucid.name_ (Forge.unKey key)
@@ -401,13 +432,13 @@ viewField' key minput =
                 CompleteEmail -> "email")
          ] <>
          (case required of
-            Required -> [Lucid.required_ "required"]
+            Forge.RequiredField -> [Lucid.required_ "required"]
             _ -> []) <>
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
-             [minput <|> fmap (pure . Forge.TextInput) mdef]
+             [minput <|> fmap (pure . Forge.TextInput) (fmap unPassword mdef)]
          ])
-    TextareaField mdef ->
+    TextareaField ->
       Lucid.textarea_
         ([Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)])
         (maybe
@@ -416,7 +447,7 @@ viewField' key minput =
               Forge.TextInput value :| [] -> Lucid.toHtml value
               _ -> mempty)
            (minput <|> fmap (pure . Forge.TextInput) mdef))
-    PhoneField mdef ->
+    PhoneField ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -426,7 +457,7 @@ viewField' key minput =
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
          ])
-    EmailField mdef ->
+    EmailField ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -440,7 +471,7 @@ viewField' key minput =
                  (fmap (\(Email t) -> t) mdef)
              ]
          ])
-    UsernameField mdef ->
+    UsernameField ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -454,7 +485,7 @@ viewField' key minput =
                  (fmap (\(Username t) -> t) mdef)
              ]
          ])
-    IntegerField mdef ->
+    IntegerField ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -465,7 +496,7 @@ viewField' key minput =
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput . T.pack . show) mdef]
          ])
-    FixedField mdef ->
+    FixedField ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -476,7 +507,7 @@ viewField' key minput =
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput . T.pack . show) mdef]
          ])
-    MultiselectField mdef choices ->
+    MultiselectField choices ->
       Lucid.select_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -504,7 +535,7 @@ viewField' key minput =
                        _ -> [])
                 (Lucid.toHtml label))
            (zip [0 :: Integer ..] (toList choices)))
-    DropdownField mdef choices ->
+    DropdownField choices ->
       Lucid.select_
         [Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)]
         (mapM_
@@ -529,7 +560,7 @@ viewField' key minput =
                        _ -> [])
                 (Lucid.toHtml label))
            (zip [0 :: Integer ..] (toList choices)))
-    SliderField SliderConfig {def = mdef, choices} ->
+    SliderField SliderConfig {choices} ->
       Lucid.input_
         ([ Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
@@ -555,7 +586,7 @@ viewField' key minput =
                  given <|> defaulted of
            Nothing -> []
            Just label -> [Lucid.value_ (fromString (show label))])
-    RadioGroupField mdef choices render ->
+    RadioGroupField choices render ->
       mapM_
         (\(i, (a, label)) ->
            let checked =
@@ -608,3 +639,9 @@ parseDate t = parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t)
 
 showDate :: Day -> Text
 showDate = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+
+liftRequired :: Forge.FieldRequired r -> a -> Forge.FieldResult r a
+liftRequired r a =
+  case r of
+    Forge.RequiredField -> a
+    Forge.OptionalField -> Just a

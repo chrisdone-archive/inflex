@@ -20,7 +20,7 @@ extra-deps:
 - github: chrisdone/yesod-lucid
   commit: cde88d0736a44163be70044a109798f578151db3
 - github: chrisdone/forge
-  commit: 064fec0762d934336988551a3473aada3b64f8a0
+  commit: 1bea561eec4e52687ad3b87afe7fc69785c70751
 - optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
 - optics-core-0.2@sha256:6966f4f8cc9163b63d87dcca2d2617684b4ac8a80c5e50c69e9f3adf4dcdf0e9,4409
 - optics-extra-0.2@sha256:211ce1dfd1b3ffd95c1158d8c8beb53cbd17c4d477169e226b1831607f6789eb,3370

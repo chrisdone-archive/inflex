@@ -9,6 +9,7 @@
 /register ShopRegisterR
 /register/checkout/create CheckoutCreateR GET
 /register/checkout/cancel CheckoutCancelR GET
+/register/checkout/waiting CheckoutWaitingR GET
 /register/checkout/success CheckoutSuccessR GET
 /login ShopLoginR GET POST
 /account ShopAccountR GET POST

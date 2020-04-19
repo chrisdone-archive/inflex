@@ -27,27 +27,30 @@ import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
 
-registerForm :: Form Error RegistrationDetails
-registerForm = do
+registerForm :: Forge.Default RegistrationDetails -> Form Error RegistrationDetails
+registerForm mregistrationDetails = do
   registerUsername <-
     labelled
       "Username"
       (Forge.FieldForm
          (Forge.StaticFieldName "username")
-         (UsernameField Nothing))
+         Forge.RequiredField
+         Forge.noDefault
+         UsernameField)
   registerEmail <-
     labelled
       "Email"
-      (Forge.FieldForm (Forge.StaticFieldName "email") (EmailField Nothing))
+      (Forge.FieldForm
+         (Forge.StaticFieldName "email")
+         Forge.RequiredField
+         Forge.noDefault
+         EmailField)
   registerPassword <-
     labelled
       "Password"
       (Forge.FieldForm
          (Forge.StaticFieldName "password")
-         (PasswordField
-            PasswordConfig
-              { def = Nothing
-              , required = Required
-              , autocomplete = CompleteNewPassword
-              }))
+         Forge.RequiredField
+         Forge.noDefault
+         (PasswordField PasswordConfig {autocomplete = CompleteNewPassword}))
   pure RegistrationDetails {..}

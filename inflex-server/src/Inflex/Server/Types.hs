@@ -61,7 +61,7 @@ parseUsername (T.strip -> txt) =
     then pure (Username txt)
     else Nothing
 
-newtype Password = Password Text
+newtype Password = Password {unPassword :: Text}
   deriving (Read, PathPiece, Eq, PersistFieldSql, PersistField, FromJSON, ToJSON)
 instance Show Password where
   show _ = "Password _"
@@ -99,9 +99,11 @@ instance FromJSON RegistrationDetails
 instance ToJSON RegistrationDetails
 
 data RegistrationState
-  = EnterDetails
+  = EnterDetails (Maybe RegistrationDetails)
   | CreateCheckout RegistrationDetails
   | WaitingForStripe RegistrationDetails
+  | CancelledCheckout RegistrationDetails
+  | CheckoutSucceeded RegistrationDetails
   deriving (Show, Generic)
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState

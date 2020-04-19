@@ -56,16 +56,16 @@ packages:
   original:
     url: https://github.com/chrisdone/yesod-lucid/archive/cde88d0736a44163be70044a109798f578151db3.tar.gz
 - completed:
-    size: 11944
-    url: https://github.com/chrisdone/forge/archive/064fec0762d934336988551a3473aada3b64f8a0.tar.gz
+    size: 12380
+    url: https://github.com/chrisdone/forge/archive/1bea561eec4e52687ad3b87afe7fc69785c70751.tar.gz
     name: forge
     version: 0.1.0.0
-    sha256: 4bae346c6529c28f5c7c75cb8bc7d79cf7e1bf36e4c44b662cd2f1cc8ae6bd4e
+    sha256: 52ebcaad394879489cdde89e683d252b0882e4ff70385d2552b695cffd2ed32d
     pantry-tree:
       size: 858
-      sha256: aa1c0de93d061db3136ae8a2e5711a38c21eee44ae64074d416305e94e931afa
+      sha256: afc235279fa04096a415f69191d98a396d17e1502c9fe0af5e1fda0bd0a7a074
   original:
-    url: https://github.com/chrisdone/forge/archive/064fec0762d934336988551a3473aada3b64f8a0.tar.gz
+    url: https://github.com/chrisdone/forge/archive/1bea561eec4e52687ad3b87afe7fc69785c70751.tar.gz
 - completed:
     hackage: optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
     pantry-tree:
