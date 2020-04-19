@@ -51,7 +51,7 @@ getHomeR =
            p_ "Spreadsheets reimagined."
            url <- ask
            p_
-             (a_ [href_ (url ShopRegisterR)]
+             (a_ [href_ (url EnterDetailsR)]
                  "Register now")))
 
 --------------------------------------------------------------------------------

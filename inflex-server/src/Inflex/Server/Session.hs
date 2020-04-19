@@ -33,7 +33,7 @@ assumeSession sessionState = do
       addHeader
         "Set-Cookie"
         ("SESSION_UUID=" <>
-         UUID.toText (unSessionUUID (sessionUuid (entityVal session))))
+         UUID.toText (unSessionUUID (sessionUuid (entityVal session))) <> "; Path=/")
       pure session
     Just session -> pure session
 

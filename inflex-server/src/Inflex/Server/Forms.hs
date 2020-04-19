@@ -35,7 +35,7 @@ registerForm mregistrationDetails = do
       (Forge.FieldForm
          (Forge.StaticFieldName "username")
          Forge.RequiredField
-         Forge.noDefault
+         (fmap registerUsername mregistrationDetails)
          UsernameField)
   registerEmail <-
     labelled
@@ -43,7 +43,7 @@ registerForm mregistrationDetails = do
       (Forge.FieldForm
          (Forge.StaticFieldName "email")
          Forge.RequiredField
-         Forge.noDefault
+         (fmap registerEmail mregistrationDetails)
          EmailField)
   registerPassword <-
     labelled
@@ -51,6 +51,6 @@ registerForm mregistrationDetails = do
       (Forge.FieldForm
          (Forge.StaticFieldName "password")
          Forge.RequiredField
-         Forge.noDefault
+         (fmap registerPassword mregistrationDetails)
          (PasswordField PasswordConfig {autocomplete = CompleteNewPassword}))
   pure RegistrationDetails {..}

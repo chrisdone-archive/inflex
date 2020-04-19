@@ -14,7 +14,7 @@
 -- |
 
 module Inflex.Server.Handlers.Shop.Register
-  ( handleShopRegisterR
+  ( handleEnterDetailsR
   , getCheckoutCreateR
   , getCheckoutCancelR
   , getCheckoutSuccessR
@@ -44,14 +44,24 @@ import           Yesod.Lucid
 --------------------------------------------------------------------------------
 -- State to page mapping
 
-registerRedirect :: RegistrationState -> Handler a
-registerRedirect =
-  \case
-    CreateCheckout {} -> redirect CheckoutCreateR
-    EnterDetails {} -> redirect ShopRegisterR
-    WaitingForStripe {} -> redirect CheckoutWaitingR
-    CancelledCheckout{} -> redirect CheckoutCancelR
-    CheckoutSucceeded{} -> redirect CheckoutSuccessR
+registerRedirect :: RegistrationState -> Handler (Html ())
+registerRedirect state =
+  case state of
+    CreateCheckout {} -> redirect' CheckoutCreateR
+    EnterDetails {} -> redirect' EnterDetailsR
+    WaitingForStripe {} -> redirect' CheckoutWaitingR
+    CheckoutSucceeded {} -> redirect' CheckoutSuccessR
+  where
+    redirect' route =
+      htmlWithUrl
+        (do url <- ask
+            p_ (do "Wrong state constructor: "
+                   code_ (toHtml (show state)))
+            p_
+              (a_
+                 [href_ (url route)]
+                 (do "Redirect to "
+                     toHtml (url route))))
 
 withRegistrationState ::
      Prism' RegistrationState a
@@ -72,8 +82,8 @@ withRegistrationState theCons cont = do
 --------------------------------------------------------------------------------
 -- Registration form
 
-handleShopRegisterR :: Handler (Html ())
-handleShopRegisterR = withRegistrationState _EnterDetails go
+handleEnterDetailsR :: Handler (Html ())
+handleEnterDetailsR = withRegistrationState _EnterDetails go
   where
     go sessionId mRegistrationDetails = do
       submission <-
@@ -99,7 +109,7 @@ registerView formView =
     (do url <- ask
         h1_ "Register"
         form_
-          [action_ (url ShopRegisterR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
+          [action_ (url EnterDetailsR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
           (do formView
               p_ (button_ "Continue")))
 
@@ -193,10 +203,15 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
       runDB
         (updateSession
            sessionId
-           (Unregistered (CancelledCheckout registrationDetails)))
+           (Unregistered (EnterDetails (pure registrationDetails))))
       htmlWithUrl
         (do h1_ "Checkout cancelled"
-            p_ "Cancelled!")
+            p_ "Going back to registration..."
+            url <- ask
+            meta_
+              [ httpEquiv_ "refresh"
+              , content_ ("3;url=" <> url EnterDetailsR)
+              ])
 
 --------------------------------------------------------------------------------
 -- Checkout success page

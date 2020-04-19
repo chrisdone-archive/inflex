@@ -6,7 +6,7 @@
 
 -- Shop
 / HomeR GET
-/register ShopRegisterR
+/register EnterDetailsR
 /register/checkout/create CheckoutCreateR GET
 /register/checkout/cancel CheckoutCancelR GET
 /register/checkout/waiting CheckoutWaitingR GET

@@ -41,6 +41,9 @@ generateForm verifiedForm = do
                 (M.fromListWith
                    (<>)
                    (map (first Key . second (pure . TextInput)) inputs))
+          liftIO (putStrLn "generateForm: POST request")
           pure (Submitted (generate inputMap verifiedForm))
-     | method == "GET" -> pure (NotSubmitted (view verifiedForm))
+     | method == "GET" ->
+       do liftIO (putStrLn "generateForm: GET request")
+          pure (NotSubmitted (view verifiedForm))
      | otherwise -> invalidArgs []

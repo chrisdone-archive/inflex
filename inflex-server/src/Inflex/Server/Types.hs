@@ -102,7 +102,6 @@ data RegistrationState
   = EnterDetails (Maybe RegistrationDetails)
   | CreateCheckout RegistrationDetails
   | WaitingForStripe RegistrationDetails
-  | CancelledCheckout RegistrationDetails
   | CheckoutSucceeded RegistrationDetails
   deriving (Show, Generic)
 instance FromJSON RegistrationState

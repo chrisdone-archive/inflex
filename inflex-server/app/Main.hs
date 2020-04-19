@@ -35,7 +35,7 @@ main = do
          (runReaderT
             (do runMigration migrateAll
                 manualMigration))
-       app <- liftIO (toWaiAppPlain App {appPool = pool, appConfig = config})
+       app <- liftIO (toWaiApp {-Plain-} App {appPool = pool, appConfig = config})
        -- Not important for local dev, but will be important when deploying online.
        -- TODO: Middleware for password-protecting the site
        --    <https://hackage.haskell.org/package/wai-extra-3.0.29.1/docs/Network-Wai-Middleware-HttpAuth.html>
