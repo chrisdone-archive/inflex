@@ -99,7 +99,7 @@ registerView formView =
     (do url <- ask
         h1_ "Register"
         form_
-          [action_ (url ShopRegisterR), method_ "POST", novalidate_ ""]
+          [action_ (url ShopRegisterR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
           (do formView
               p_ (button_ "Continue")))
 
@@ -189,7 +189,11 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
 getCheckoutCancelR :: Handler (Html ())
 getCheckoutCancelR = withRegistrationState _WaitingForStripe go
   where
-    go _sessionId _registrationDetails =
+    go sessionId registrationDetails = do
+      runDB
+        (updateSession
+           sessionId
+           (Unregistered (CancelledCheckout registrationDetails)))
       htmlWithUrl
         (do h1_ "Checkout cancelled"
             p_ "Cancelled!")
