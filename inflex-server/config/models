@@ -11,3 +11,10 @@ Session
   state SessionState
   UniqueUUID uuid
   deriving Show
+
+Document
+  owner AccountId
+  name DocumentSlug
+  content DocumentDecs
+  UniqueAccountDocument owner name
+  deriving Show

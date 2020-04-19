@@ -20,10 +20,10 @@
 
 -- App
 /dashboard AppDashboardR GET POST
-/editor/#DocumentName AppEditorR GET
+/editor/#DocumentSlug AppEditorR GET
 /app/api/refresh AppRefreshR POST
 /app/js AppJsR GET
 /app/css AppCssR GET
 
 -- Vanity URLs for user documents
-!/#Username/#DocumentName ViewDocumentR GET
+!/#Username/#DocumentSlug ViewDocumentR GET

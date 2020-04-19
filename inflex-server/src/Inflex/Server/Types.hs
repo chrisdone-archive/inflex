@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -24,6 +25,7 @@ import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
+import           Data.Vector (Vector)
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
@@ -39,8 +41,9 @@ data Config = Config
 instance FromJSON Config
 
 -- | TODO: Implement manual PathPiece
-newtype DocumentName = DocumentName Text
-  deriving (Show, Read, PathPiece, Eq)
+-- | TODO: Stricter FromJSON
+newtype DocumentSlug = DocumentSlug Text
+  deriving (Show, Read, PathPiece, Eq, ToJSON, FromJSON, PersistFieldSql, PersistField)
 
 -- | TODO: Implement manual PathPiece
 newtype Username =
@@ -128,8 +131,60 @@ instance ToJSON RegistrationState
 newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
   deriving (Show, PersistField, PersistFieldSql)
 
+newtype DocumentDecs =
+  DocumentDecs (Vector DecIn)
+  deriving (Show, FromJSON, ToJSON)
+
+data DecIn = DecIn
+  { name :: Text
+  , rhs :: Text
+  } deriving (Show)
+instance ToJSON DecIn where
+  toJSON DecIn{name,rhs} = object ["name".=name,"rhs".=rhs]
+instance FromJSON DecIn where
+  parseJSON j = do
+    o <- parseJSON j
+    DecIn <$> o .: "name" <*> o .: "rhs"
+
+data Editor
+  = IntegerE Integer
+  | ArrayE (Vector Editor)
+  -- | RationalE Rational
+  -- | TextE Text
+  -- | RecordE (HashMap Text Editor)
+  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
+  | MiscE Text
+  deriving (Show)
+instance ToJSON Editor where
+  toJSON =
+    \case
+      IntegerE integer ->
+        object ["type" .= "integer", "integer" .= T.pack (show integer)]
+      ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
+      MiscE t -> object ["type" .= "misc", "misc" .= t]
+
+data DecOut = DecOut
+  { name :: Text
+  , rhs :: Text
+  , result :: Either Text Editor
+  } deriving (Show)
+instance ToJSON DecOut where
+  toJSON DecOut {name, rhs, result} =
+    object
+      [ "name" .= name
+      , "rhs" .= rhs
+      , "result" .=
+        case result of
+          Left {} -> "error" :: Text
+          Right {} -> "success"
+      , case result of
+          Left e -> "error" .= e
+          Right d -> "editor" .= d
+      ]
+
 $(makePrisms ''RegistrationState)
 $(makePrisms ''SessionState)
 
 $(derivePersistFieldJSON "SessionState")
+$(derivePersistFieldJSON "DocumentDecs")
 $(derivePersistFieldJSON "RegistrationState")

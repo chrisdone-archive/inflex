@@ -58,61 +58,12 @@ import                 Text.Lucius
 import                 Yesod hiding (Html)
 import                 Yesod.Lucid
 
-data DecIn = DecIn
-  { name :: Text
-  , rhs :: Text
-  } deriving (Show)
-instance FromJSON DecIn where
-  parseJSON j = do
-    o <- parseJSON j
-    DecIn <$> o .: "name" <*> o .: "rhs"
-
-data Editor
-  = IntegerE Integer
-  | ArrayE (Vector Editor)
-  -- | RationalE Rational
-  -- | TextE Text
-  -- | RecordE (HashMap Text Editor)
-  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
-  | MiscE Text
-  deriving (Show)
-instance ToJSON Editor where
-  toJSON =
-    \case
-      IntegerE integer ->
-        object ["type" .= "integer", "integer" .= T.pack (show integer)]
-      ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
-      MiscE t -> object ["type" .= "misc", "misc" .= t]
-
 expressionToEditor :: Expression Type Name l -> Editor
 expressionToEditor =
   \case
     LiteralExpression unkindedType (IntegerLiteral integer) -> IntegerE integer
     ArrayExpression unkindedType es -> ArrayE (fmap expressionToEditor es)
     e  -> MiscE (T.pack (printExpression defaultPrint e))
-
-data DecOut = DecOut
-  { name :: Text
-  , rhs :: Text
-  , result :: Either Text Editor
-  } deriving (Show)
-instance ToJSON DecOut where
-  toJSON DecOut {name, rhs, result} =
-    object
-      [ "name" .= name
-      , "rhs" .= rhs
-      , "result" .=
-        case result of
-          Left {} -> "error" :: Text
-          Right {} -> "success"
-      , case result of
-          Left e -> "error" .= e
-          Right d -> "editor" .= d
-      ]
-
-
---------------------------------------------------------------------------------
--- Constants
 
 maxSteps :: Int
 maxSteps = 100
@@ -296,8 +247,8 @@ parseDecIn DecIn {name, rhs} =
         Left e -> Left e
         Right expr -> pure (Identifier (T.unpack ident), expr)
 
-getAppEditorR :: DocumentName -> Handler (Html ())
+getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR _ = getAppR
 
-getViewDocumentR :: Username -> DocumentName -> Handler ()
+getViewDocumentR :: Username -> DocumentSlug -> Handler ()
 getViewDocumentR _ _ = pure ()
