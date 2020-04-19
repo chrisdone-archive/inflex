@@ -27,6 +27,7 @@ import           Data.Text (Text)
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
+import           Inflex.Server.Lucid
 import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Forms
@@ -81,7 +82,8 @@ withRegistrationState theCons cont = do
           htmlWithUrl
             (shopTemplate
                state
-               (p_ "You are already registered! Let's go to the dashboard."))
+               (do p_ "You are already registered! Let's go to the dashboard."
+                   redirect_ 2 AppDashboardR))
         NoSessionState {} -> do
           runDB (updateSession sessionId registerStart)
           redirect EnterDetailsR
@@ -161,10 +163,12 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
                          noscript_
                            "Please enable JavaScript so that we can securely send you to Stripe."
                          p_ "Redirecting you to Stripe ..."
-                         julius_
-                           (stripeJavaScript
-                              (publishableApiKey stripeConfig)
-                              checkoutSessionId))))
+                         if True -- TODO: Remove or make debug/release.
+                            then redirect_ 3 CheckoutWaitingR
+                            else julius_
+                                   (stripeJavaScript
+                                      (publishableApiKey stripeConfig)
+                                      checkoutSessionId))))
 
 stripeJavaScript :: PublishableApiKey -> CheckoutSessionId -> JavascriptUrl (Route App)
 stripeJavaScript stripePublishableKey checkoutSessionId = [julius|
@@ -224,21 +228,24 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
     go _state sessionId RegistrationDetails {..} = do
       _ <-
         runDB
-          (do void
-                (insertUniqueEntity
-                   Account
-                     { accountUsername = registerUsername
-                     , accountPassword = registerPassword
-                     , accountEmail = registerEmail
-                     })
+          (do -- TODO: This check needs to happen sooner rather than later.
+              entity <-
+                insertBy
+                  Account
+                    { accountUsername = registerUsername
+                    , accountPassword = registerPassword
+                    , accountEmail = registerEmail
+                    }
               updateSession
                 sessionId
                 (Registered
                    LoginState
                      { loginEmail = registerEmail
                      , loginUsername = registerUsername
+                     , loginAccountId = fromAccountId (either entityKey id entity)
                      }))
       htmlWithUrl
         (do h1_ "Checkout succeeded!"
             p_ "Great success!"
-            p_ "Now we go to the dashboard...")
+            p_ "Now we go to the dashboard..."
+            redirect_ 2 AppDashboardR)

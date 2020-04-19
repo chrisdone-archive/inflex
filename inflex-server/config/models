@@ -13,8 +13,9 @@ Session
   deriving Show
 
 Document
-  owner AccountId
+  account AccountId
   name DocumentSlug
   content DocumentDecs
-  UniqueAccountDocument owner name
+  created UTCTime
+  UniqueAccountDocument account name
   deriving Show

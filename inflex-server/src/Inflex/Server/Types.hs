@@ -22,6 +22,7 @@ module Inflex.Server.Types where
 
 import           Control.Monad
 import           Data.Char
+import           Data.Int
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
@@ -42,8 +43,18 @@ instance FromJSON Config
 
 -- | TODO: Implement manual PathPiece
 -- | TODO: Stricter FromJSON
-newtype DocumentSlug = DocumentSlug Text
-  deriving (Show, Read, PathPiece, Eq, ToJSON, FromJSON, PersistFieldSql, PersistField)
+newtype DocumentSlug =
+  DocumentSlug Text
+  deriving ( Show
+           , Read
+           , PathPiece
+           , Eq
+           , ToJSON
+           , FromJSON
+           , PersistFieldSql
+           , PersistField
+           , ToHtml
+           )
 
 -- | TODO: Implement manual PathPiece
 newtype Username =
@@ -96,6 +107,24 @@ newtype Email = Email
              , ToHtml
              )
 
+newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
+  deriving (Show, PersistField, PersistFieldSql)
+
+data DecIn = DecIn
+  { name :: Text
+  , rhs :: Text
+  } deriving (Show)
+instance ToJSON DecIn where
+  toJSON DecIn{name,rhs} = object ["name".=name,"rhs".=rhs]
+instance FromJSON DecIn where
+  parseJSON j = do
+    o <- parseJSON j
+    DecIn <$> o .: "name" <*> o .: "rhs"
+
+newtype DocumentDecs =
+  DocumentDecs (Vector DecIn)
+  deriving (Show, FromJSON, ToJSON)
+
 data SessionState
   = Unregistered RegistrationState
   | Registered LoginState
@@ -107,9 +136,15 @@ instance ToJSON SessionState
 data LoginState = LoginState
   { loginEmail :: Email
   , loginUsername :: Username
+  , loginAccountId :: AccountID
   }deriving (Show, Generic)
 instance FromJSON LoginState
 instance ToJSON LoginState
+
+newtype AccountID = AccountID Int64
+  deriving (Show, Generic)
+instance FromJSON AccountID
+instance ToJSON AccountID
 
 data RegistrationDetails = RegistrationDetails
   { registerEmail :: !Email
@@ -128,23 +163,6 @@ data RegistrationState
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState
 
-newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
-  deriving (Show, PersistField, PersistFieldSql)
-
-newtype DocumentDecs =
-  DocumentDecs (Vector DecIn)
-  deriving (Show, FromJSON, ToJSON)
-
-data DecIn = DecIn
-  { name :: Text
-  , rhs :: Text
-  } deriving (Show)
-instance ToJSON DecIn where
-  toJSON DecIn{name,rhs} = object ["name".=name,"rhs".=rhs]
-instance FromJSON DecIn where
-  parseJSON j = do
-    o <- parseJSON j
-    DecIn <$> o .: "name" <*> o .: "rhs"
 
 data Editor
   = IntegerE Integer

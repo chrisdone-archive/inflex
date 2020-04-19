@@ -29,9 +29,9 @@ handleLoginR = do
   case submission of
     NotSubmitted v -> htmlWithUrl (loginView state v)
     Submitted parse -> do
-      let Forge.Generated {generatedView = v, generatedValue = result} =
+      let Forge.Generated {generatedView = v, generatedValue = generatedResult} =
             runIdentity parse
-      case result of
+      case generatedResult of
         Failure _errors -> htmlWithUrl (loginView state v)
         Success (email, password) -> do
           maccount <-
@@ -41,7 +41,7 @@ handleLoginR = do
                  [])
           case maccount of
             Nothing -> htmlWithUrl (loginView state v)
-            Just (Entity _ account) -> do
+            Just (Entity key account) -> do
               runDB
                 (updateSession
                    sessionId
@@ -49,6 +49,7 @@ handleLoginR = do
                       LoginState
                         { loginEmail = email
                         , loginUsername = accountUsername account
+                        , loginAccountId = fromAccountId key
                         }))
               redirect AppDashboardR
 
