@@ -167,9 +167,20 @@ stripe.redirectToCheckout({
 getCheckoutWaitingR :: Handler (Html ())
 getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
   where
-    go _sessionId _registrationDetails =
+    go sessionId registrationDetails = do
+      -- TODO: Actually check Stripe confirmation.
+      runDB
+        (updateSession
+           sessionId
+           (Unregistered (CheckoutSucceeded registrationDetails)))
       htmlWithUrl
-        (do h1_ "Waiting for Stripe confirmation"
+        (do url <- ask
+            -- TODO: Only redirect on stripe confirmation.
+            meta_
+              [ httpEquiv_ "refresh"
+              , content_ ("5;url=" <> url CheckoutSuccessR)
+              ]
+            h1_ "Waiting for Stripe confirmation"
             p_ "Waiting!")
 
 --------------------------------------------------------------------------------
@@ -189,7 +200,17 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 getCheckoutSuccessR :: Handler (Html ())
 getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
   where
-    go _sessionId _registrationDetails =
+    go sessionId RegistrationDetails {..} = do
+      _ <-
+        runDB
+          (do void
+                (insertUniqueEntity
+                   Account
+                     { accountUsername = registerUsername
+                     , accountPassword = registerPassword
+                     , accountEmail = registerEmail
+                     })
+              updateSession sessionId Registered)
       htmlWithUrl
         (do h1_ "Checkout succeeded!"
             p_ "Great success!"
