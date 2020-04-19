@@ -30,6 +30,7 @@ import qualified Forge.Verify as Forge
 import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Forms
+import           Inflex.Server.Lucid
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
@@ -184,12 +185,8 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
            sessionId
            (Unregistered (CheckoutSucceeded registrationDetails)))
       htmlWithUrl
-        (do url <- ask
-            -- TODO: Only redirect on stripe confirmation.
-            meta_
-              [ httpEquiv_ "refresh"
-              , content_ ("5;url=" <> url CheckoutSuccessR)
-              ]
+        (do -- TODO: Only redirect on stripe confirmation.
+            redirect_ 5 CheckoutSuccessR
             h1_ "Waiting for Stripe confirmation"
             p_ "Waiting!")
 
@@ -207,11 +204,7 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
       htmlWithUrl
         (do h1_ "Checkout cancelled"
             p_ "Going back to registration..."
-            url <- ask
-            meta_
-              [ httpEquiv_ "refresh"
-              , content_ ("3;url=" <> url EnterDetailsR)
-              ])
+            redirect_ 3 EnterDetailsR)
 
 --------------------------------------------------------------------------------
 -- Checkout success page
