@@ -21,7 +21,6 @@
 
 module Inflex.Server.Handlers.Document
   ( postAppRefreshR
-  , getAppR
   , getAppCssR
   , getAppJsR
   , getAppEditorR
@@ -35,6 +34,7 @@ import                 Control.Monad.Reader
 import "inflex-engine" Control.Monad.Supply
 import                 Control.Monad.Writer
 import                 Data.Aeson
+import                 Data.Foldable
 import                 Data.HashMap.Strict (HashMap)
 import qualified       Data.HashMap.Strict as HM
 import                 Data.Semigroup ((<>))
@@ -50,6 +50,7 @@ import                 Duet.Simple
 import                 Duet.Tokenizer
 import                 Duet.Types
 import                 Inflex.Server.App
+import                 Inflex.Server.Session
 import                 Inflex.Server.Types
 import                 Lucid
 import                 Sendfile
@@ -77,35 +78,50 @@ initialDecs =
 postAppRefreshR :: Handler Value
 postAppRefreshR = refreshHandler
 
-getAppR :: Handler (Html ())
-getAppR = do
-  initialDecs' <-
-    liftIO
-      (do decs <-
-            fmap
-              HM.fromList
-              (traverse
-                 (\dec -> do
-                    uuid <- V4.nextRandom
-                    pure (UUID.toText uuid, dec))
-                 initialDecs)
-          evaluateInputDocument decs)
-  htmlWithUrl
-    (do doctype_
-        url <- ask
-        html_
-          (do head_
-                (do link_ [rel_ "shortcut icon" ,href_ "#"]
-                    title_ "InflexApp"
-                    link_
-                      [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
-              body_
-                (do script_
-                      [type_ "text/javascript"]
-                      (do toHtmlRaw "window['inflexDocument'] = "
-                          toHtmlRaw (encode initialDecs')
-                          ";")
-                    script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
+getAppEditorR :: DocumentSlug -> Handler (Html ())
+getAppEditorR slug =
+  withLogin
+    (\_ LoginState {loginAccountId} -> do
+       initialDecs' <-
+         do mdoc <-
+              runDB
+                (selectFirst
+                   [ DocumentAccount ==. fromAccountID loginAccountId
+                   , DocumentName ==. slug
+                   ]
+                   [])
+            case mdoc of
+              Nothing -> notFound
+              Just (Entity _ Document {documentContent = DocumentDecs decs, ..}) ->
+                liftIO
+                  (do decs' <-
+                        fmap
+                          (HM.fromList . toList)
+                          (traverse
+                             (\dec -> do
+                                uuid <- V4.nextRandom
+                                pure (UUID.toText uuid, dec))
+                             decs)
+                      evaluateInputDocument decs')
+       htmlWithUrl
+         (do doctype_
+             url <- ask
+             html_
+               (do head_
+                     (do link_ [rel_ "shortcut icon", href_ "#"]
+                         title_ "InflexApp"
+                         link_
+                           [ rel_ "stylesheet"
+                           , type_ "text/css"
+                           , href_ (url AppCssR)
+                           ])
+                   body_
+                     (do script_
+                           [type_ "text/javascript"]
+                           (do toHtmlRaw "window['inflexDocument'] = "
+                               toHtmlRaw (encode initialDecs')
+                               ";")
+                         script_ [type_ "text/javascript", src_ (url AppJsR)] ""))))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
@@ -246,9 +262,6 @@ parseDecIn DecIn {name, rhs} =
       case parseTextWith expParser (T.unpack name <> "'s expression") rhs of
         Left e -> Left e
         Right expr -> pure (Identifier (T.unpack ident), expr)
-
-getAppEditorR :: DocumentSlug -> Handler (Html ())
-getAppEditorR _ = getAppR
 
 getViewDocumentR :: Username -> DocumentSlug -> Handler ()
 getViewDocumentR _ _ = pure ()

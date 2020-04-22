@@ -20,6 +20,7 @@
 
 -- App
 /dashboard AppDashboardR GET POST
+/dashboard/new NewDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
 /app/api/refresh AppRefreshR POST
 /app/js AppJsR GET
