@@ -12,9 +12,10 @@ import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
+import Data.String (Replacement(..), Pattern(..), replaceAll)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
-import Data.UUID (UUID(..), uuidToString)
+import Data.UUID (UUID(..), uuidToString, genUUIDV4)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -23,6 +24,7 @@ import Effect.Class.Console (log)
 import Foreign.Object as Foreign
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Inflex.Dec as Dec
 import Inflex.Editor as Editor
 import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>))
@@ -30,7 +32,7 @@ import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>))
 --------------------------------------------------------------------------------
 -- Component types
 
-data Command = Initialize | UpdateDec UUID Dec.Dec
+data Command = Initialize | UpdateDec UUID Dec.Dec | NewDec
 
 type State = {
   decs :: Map UUID Dec.Dec
@@ -69,6 +71,52 @@ eval =
       case decOutsParser decs of
         Left e -> log e
         Right decs' -> H.modify_ (\s -> s {decs = decs'})
+    NewDec -> do
+      uuid <- H.liftEffect genUUIDV4
+      H.liftEffect (log "Asking server for an update...")
+      s <- H.get
+      let decs' =
+            M.insert
+              uuid
+              (Dec.Dec
+                 { name: "x_" <> replaceAll (Pattern "-") (Replacement "_") (uuidToString uuid)
+                 , rhs: "_"
+                 , result: Left "New decl"
+                 })
+              (s . decs)
+      result2 <-
+        H.liftAff
+          (AX.post
+             ResponseFormat.json
+             "/app/api/refresh"
+             (Just
+                (RequestBody.json
+                   (J.fromObject
+                      (Foreign.fromFoldable
+                         (map
+                            (\(Tuple uuid' (Dec.Dec dec')) ->
+                               Tuple
+                                 (uuidToString uuid')
+                                 (J.fromObject
+                                    (Foreign.fromHomogeneous
+                                       { name:
+                                           J.fromString (dec' . name)
+                                       , rhs:
+                                           J.fromString (dec' . rhs)
+                                       })))
+                            (M.toUnfoldable decs') :: Array (Tuple String J.Json)))))))
+      case result2 of
+        Left err ->
+          log $
+          "POST /api response failed to decode:" <>
+          AX.printError err
+        Right response -> do
+          log $
+            "POST /api response:" <>
+            J.stringify (response . body)
+          case decOutsParser (response . body) of
+            Left err -> log ("error parsing JSON:" <> err)
+            Right decs'' -> H.modify_ (\s' -> s' {decs = decs''})
     UpdateDec uuid dec -> do
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
@@ -207,7 +255,11 @@ render :: forall q state keys m. MonadEffect m =>
 render state =
   HH.div
     []
-    (map
+    ([ HH.button
+         [HE.onClick (\e -> pure NewDec)]
+         [HH.text "New declaration"]
+     ] <>
+     map
        (\(Tuple uuid dec) ->
           HH.slot
             (SProxy :: SProxy "Dec")
