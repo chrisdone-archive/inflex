@@ -14,6 +14,8 @@ import Data.Foldable
 import Data.String
 import Data.Time
 import Database.Persist.Sql
+import Formatting
+import Formatting.Time
 import Inflex.Server.App
 import Inflex.Server.Session
 import Inflex.Server.Types
@@ -31,6 +33,7 @@ getAppDashboardR =
            (selectList
               [DocumentAccount ==. fromAccountID loginAccountId]
               [Desc DocumentCreated])
+       now <- liftIO getCurrentTime
        htmlWithUrl
          (shopTemplate
             (Registered state)
@@ -54,16 +57,31 @@ getAppDashboardR =
                         (div_
                            [class_ "col"]
                            (do div_
-                                 [class_ "list-group"]
+                                 [class_ "card-deck"]
                                  (forM_
                                     documents
                                     (\(Entity _documentId Document {..}) ->
-                                       a_
-                                         [ class_
-                                             "list-group-item list-group-item-action"
-                                         , href_ (url (AppEditorR documentName))
-                                         ]
-                                         (toHtml documentName))))))))))
+                                       div_
+                                         [class_ "card"]
+                                         (do img_ []
+                                             div_
+                                               [class_ "card-body"]
+                                               (do h5_
+                                                     [class_ "card-title"]
+                                                     (a_
+                                                        [ href_ (url (AppEditorR documentName))
+                                                        ]
+                                                        (toHtml documentName))
+                                                   p_
+                                                     [class_ "card-text"]
+                                                     "Example description here...")
+                                             div_
+                                               [class_ "card-footer"]
+                                               (small_
+                                                  [class_ "text-muted"]
+                                                  (do "Created "
+                                                      toHtml (format (diff True)
+                                                                     (diffUTCTime documentCreated now))))))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())
