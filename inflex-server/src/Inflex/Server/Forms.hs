@@ -31,7 +31,7 @@ import           Inflex.Server.Types
 registerForm :: Forge.Default RegistrationDetails -> Form Error RegistrationDetails
 registerForm mregistrationDetails = do
   registerUsername <-
-    labelled
+    formGroup
       "Username"
       (Forge.FieldForm
          (Forge.StaticFieldName "username")
@@ -39,7 +39,7 @@ registerForm mregistrationDetails = do
          (fmap registerUsername mregistrationDetails)
          UsernameField)
   registerEmail <-
-    labelled
+    formGroup
       "Email"
       (Forge.FieldForm
          (Forge.StaticFieldName "email")
@@ -47,7 +47,7 @@ registerForm mregistrationDetails = do
          (fmap registerEmail mregistrationDetails)
          (EmailField CompleteEmail))
   registerPassword <-
-    labelled
+    formGroup
       "Password"
       (Forge.FieldForm
          (Forge.StaticFieldName "password")
@@ -59,7 +59,7 @@ registerForm mregistrationDetails = do
 loginForm :: Form Error (Email, Password)
 loginForm = do
   loginEmail <-
-    labelled
+    formGroup
       "Email"
       (Forge.FieldForm
          (Forge.StaticFieldName "email")
@@ -67,7 +67,7 @@ loginForm = do
          Forge.noDefault
          (EmailField CompleteEmail))
   loginPassword <-
-    labelled
+    formGroup
       "Password"
       (Forge.FieldForm
          (Forge.StaticFieldName "password")

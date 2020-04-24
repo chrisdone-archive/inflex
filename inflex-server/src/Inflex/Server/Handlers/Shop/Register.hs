@@ -31,7 +31,6 @@ import           Inflex.Server.Lucid
 import           Inflex.Server.App
 import           Inflex.Server.Forge
 import           Inflex.Server.Forms
-import           Inflex.Server.Lucid
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
@@ -55,15 +54,19 @@ registerRedirect state =
     CheckoutSucceeded {} -> redirect' CheckoutSuccessR
   where
     redirect' route =
-      htmlWithUrl
-        (do url <- ask
-            p_ (do "Wrong state constructor: "
-                   code_ (toHtml (show state)))
-            p_
-              (a_
-                 [href_ (url route)]
-                 (do "Redirect to "
-                     toHtml (url route))))
+      htmlWithUrl -- TODO: Fix the below for real-world use.
+        (shopTemplate
+           (Unregistered state)
+           (containedColumn_
+              (do url <- ask
+                  p_
+                    (do "Wrong state constructor: "
+                        code_ (toHtml (show state)))
+                  p_
+                    (a_
+                       [href_ (url route)]
+                       (do "Redirect to "
+                           toHtml (url route))))))
 
 withRegistrationState ::
      Prism' RegistrationState a
@@ -82,8 +85,12 @@ withRegistrationState theCons cont = do
           htmlWithUrl
             (shopTemplate
                state
-               (do p_ "You are already registered! Let's go to the dashboard."
-                   redirect_ 2 AppDashboardR))
+               (containedColumn_
+                  (do h1_ "Already registered!"
+                      p_
+                        "You are already registered! Taking you to the dashboard..."
+                      spinner_
+                      redirect_ 2 AppDashboardR)))
         NoSessionState {} -> do
           runDB (updateSession sessionId registerStart)
           redirect EnterDetailsR
@@ -118,12 +125,13 @@ registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =
   shopTemplate
     sessionState
-    (do url <- ask
-        h1_ "Register"
-        form_
-          [action_ (url EnterDetailsR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
-          (do formView
-              p_ (button_ "Continue")))
+    (containedColumn_
+       (do url <- ask
+           h1_ "Register"
+           form_
+             [action_ (url EnterDetailsR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
+             (do formView
+                 p_ (button_ [class_ "btn btn-primary"] "Continue"))))
 
 verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm Error RegistrationDetails
 verifiedRegisterForm = $$($$(Forge.verify1 [||registerForm||]))
@@ -134,7 +142,7 @@ verifiedRegisterForm = $$($$(Forge.verify1 [||registerForm||]))
 getCheckoutCreateR :: Handler (Html ())
 getCheckoutCreateR = withRegistrationState _CreateCheckout go
   where
-    go _state sessionId registrationDetails = do
+    go state sessionId registrationDetails = do
       render <- getUrlRender
       Config {stripeConfig} <- fmap appConfig getYesod
       -- TODO: Set sessionId from _sessionId
@@ -155,20 +163,21 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
                sessionId
                (Unregistered (WaitingForStripe registrationDetails)))
           htmlWithUrl
-            (html_
-               (do head_
-                     (script_ [src_ "https://js.stripe.com/v3/"] ("" :: Text))
-                   body_
-                     (do h1_ "One moment"
-                         noscript_
-                           "Please enable JavaScript so that we can securely send you to Stripe."
-                         p_ "Redirecting you to Stripe ..."
-                         if True -- TODO: Remove or make debug/release.
-                            then redirect_ 3 CheckoutWaitingR
-                            else julius_
-                                   (stripeJavaScript
-                                      (publishableApiKey stripeConfig)
-                                      checkoutSessionId))))
+            (shopTemplate
+               state
+               (containedColumn_
+                (do script_ [src_ "https://js.stripe.com/v3/"] ("" :: Text)
+                    h1_ "Redirecting you to Stripe"
+                    noscript_
+                      "Please enable JavaScript so that we can securely send you to Stripe."
+                    p_ "Redirecting you to Stripe ..."
+                    spinner_
+                    if True -- TODO: Remove or make debug/release.
+                      then redirect_ 3 CheckoutWaitingR
+                      else julius_
+                             (stripeJavaScript
+                                (publishableApiKey stripeConfig)
+                                checkoutSessionId))))
 
 stripeJavaScript :: PublishableApiKey -> CheckoutSessionId -> JavascriptUrl (Route App)
 stripeJavaScript stripePublishableKey checkoutSessionId = [julius|
@@ -191,17 +200,19 @@ stripe.redirectToCheckout({
 getCheckoutWaitingR :: Handler (Html ())
 getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
   where
-    go _state sessionId registrationDetails = do
-      -- TODO: Actually check Stripe confirmation.
-      runDB
+    go state sessionId registrationDetails = do
+      runDB -- TODO: Actually check Stripe confirmation.
         (updateSession
            sessionId
            (Unregistered (CheckoutSucceeded registrationDetails)))
       htmlWithUrl
-        (do -- TODO: Only redirect on stripe confirmation.
-            redirect_ 5 CheckoutSuccessR
-            h1_ "Waiting for Stripe confirmation"
-            p_ "Waiting!")
+        (shopTemplate
+           state -- TODO: Only redirect on stripe confirmation.
+           (containedColumn_
+              (do redirect_ 5 CheckoutSuccessR
+                  h1_ "Waiting for Stripe"
+                  p_ "We're waiting for the Stripe payment service to tell us whether payment succeeded..."
+                  spinner_)))
 
 --------------------------------------------------------------------------------
 -- Checkout cancel page
@@ -209,15 +220,18 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
 getCheckoutCancelR :: Handler (Html ())
 getCheckoutCancelR = withRegistrationState _WaitingForStripe go
   where
-    go _state sessionId registrationDetails = do
+    go state sessionId registrationDetails = do
       runDB
         (updateSession
            sessionId
            (Unregistered (EnterDetails (pure registrationDetails))))
       htmlWithUrl
-        (do h1_ "Checkout cancelled"
-            p_ "Going back to registration..."
-            redirect_ 3 EnterDetailsR)
+        (shopTemplate
+           state
+           (do h1_ "Checkout cancelled"
+               p_ "Going back to registration..."
+               spinner_
+               redirect_ 3 EnterDetailsR))
 
 --------------------------------------------------------------------------------
 -- Checkout success page
@@ -225,11 +239,11 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 getCheckoutSuccessR :: Handler (Html ())
 getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
   where
-    go _state sessionId RegistrationDetails {..} = do
+    go state sessionId RegistrationDetails {..} = do
       _ <-
         runDB
-          (do -- TODO: This check needs to happen sooner rather than later.
-              entity <-
+              -- TODO: This check needs to happen sooner rather than later.
+          (do entity <-
                 insertBy
                   Account
                     { accountUsername = registerUsername
@@ -242,10 +256,15 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
                    LoginState
                      { loginEmail = registerEmail
                      , loginUsername = registerUsername
-                     , loginAccountId = fromAccountId (either entityKey id entity)
+                     , loginAccountId =
+                         fromAccountId (either entityKey id entity)
                      }))
       htmlWithUrl
-        (do h1_ "Checkout succeeded!"
-            p_ "Great success!"
-            p_ "Now we go to the dashboard..."
-            redirect_ 2 AppDashboardR)
+        (shopTemplate
+           state
+           (containedColumn_
+            (do h1_ "Checkout succeeded!"
+                p_ "Great success!"
+                p_ "Going to the dashboard..."
+                spinner_
+                redirect_ 2 AppDashboardR)))

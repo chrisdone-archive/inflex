@@ -11,6 +11,7 @@ import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Server.App
 import           Inflex.Server.Forge
+import           Inflex.Server.Lucid
 import           Inflex.Server.Forms
 import           Inflex.Server.Session
 import           Inflex.Server.Types
@@ -60,11 +61,12 @@ loginView :: SessionState -> Lucid App () -> Lucid App ()
 loginView state formView =
   shopTemplate
     state
-    (do h1_ "Login"
-        form_
-          [method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
-          (do formView
-              p_ (button_ "Continue")))
+    (containedColumn_
+     (do h1_ "Login"
+         form_
+           [method_ "POST"]
+           (do formView
+               p_ (button_ "Continue"))))
 
 postLogoutR :: Handler ()
 postLogoutR = do

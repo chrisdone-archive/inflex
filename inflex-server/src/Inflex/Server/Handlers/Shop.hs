@@ -50,16 +50,23 @@ getHomeR = do
   htmlWithUrl
     (shopTemplate
        state
-       (do h1_ "Inflex"
-           p_ "Spreadsheets reimagined."
-           url <- ask
-           case state of
-             NoSessionState {} ->
-               p_ (a_ [href_ (url EnterDetailsR)] "Register now")
-             Unregistered {} ->
-               p_ (a_ [href_ (url EnterDetailsR)] "Continue registration")
-             Registered {} ->
-               p_ "Welcome back!"))
+       (div_
+          [class_ "container-fluid"]
+          (div_
+             [class_ "row"]
+             (div_
+                [class_ "col"]
+                (do url <- ask
+                    case state of
+                      NoSessionState {} -> do
+                        p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+                      Unregistered {} ->
+                        p_
+                          (a_
+                             [href_ (url EnterDetailsR)]
+                             "Continue registration")
+                      Registered {} ->
+                        p_ (a_ [href_ (url AppDashboardR)] "Go to dashboard"))))))
 
 --------------------------------------------------------------------------------
 -- Account

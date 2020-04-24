@@ -1,4 +1,15 @@
-body {
-  font-family: sans-serif;
-  color: #333;
+/********************************************************************************
+ * Navigation
+ */
+
+.navbar-light .navbar-brand svg {
+  path, ellipse {
+    fill: #333 !important;
+  }
+}
+
+.navbar-dark .navbar-brand svg {
+  path, ellipse {
+    fill: #eee !important;
+  }
 }

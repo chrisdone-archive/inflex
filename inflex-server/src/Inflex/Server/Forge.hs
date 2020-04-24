@@ -24,7 +24,7 @@ module Inflex.Server.Forge
   , Autocomplete(..)
   , PasswordConfig(..)
   , wrap
-  , labelled
+  , formGroup
   ) where
 
 import           Control.Applicative
@@ -56,31 +56,27 @@ wrap ::
   -> Forge.Form index parse t field error a
 wrap f = Forge.CeilingForm (\es html -> (f html,es))
 
-labelled ::
-     (Monad m)
-  => Text
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a2
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a2
-labelled label =
-  wrap Lucid.p_ .
-  wrapErrorsAllowBubble label .
-  wrap (\html -> (Lucid.label_ (Lucid.toHtml label *> ": " *> html)))
-
 -- | Wrap a formlet with its errors. Allow errors to bubble up.
-wrapErrorsAllowBubble ::
+formGroup ::
      Monad m
   => Text
   -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
   -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
-wrapErrorsAllowBubble label =
+formGroup label =
   Forge.CeilingForm
     (\errors html' ->
-       ( do html'
-            Lucid.ul_
-              [Lucid.class_ "inline-errors", vdomkey_ key]
-              (mapM_ (Lucid.li_ . showError) errors)
+       ( do Lucid.div_
+              [Lucid.class_ "form-group"]
+              (do Lucid.label_ (Lucid.toHtml label)
+                  Lucid.with html' [Lucid.class_ " is-invalid" | not (null errors)]
+                  unless
+                    (null errors)
+                    (Lucid.div_
+                       [Lucid.class_ "invalid-feedback", vdomkey_ key]
+                       (mapM_ (Lucid.span_ . showError) errors)))
        , map (ContextedError label) errors))
-  where key = "inline-errors:" <> label -- Ensures convenient uniqueness for the DOM differ.
+  where
+    key = "inline-errors:" <> label -- Ensures convenient uniqueness for the DOM differ.
 
 -- | Convert an error to HTML.
 showError :: Monad m => Error -> Lucid.HtmlT m ()
@@ -376,7 +372,7 @@ viewField' key required mdef minput =
   \case
     DateField ->
       Lucid.input_
-        [ Lucid.type_ "date"
+        [ Lucid.class_ "form-control", Lucid.type_ "date"
         , Lucid.name_ (Forge.unKey key)
         , vdomkey_ (Forge.unKey key)
         , Lucid.value_
@@ -392,13 +388,13 @@ viewField' key required mdef minput =
         ]
     CheckboxField -> do
       Lucid.input_
-        [ Lucid.type_ "hidden"
+        [ Lucid.class_ "form-control", Lucid.type_ "hidden"
         , Lucid.name_ (Forge.unKey key)
         , vdomkey_ (Forge.unKey key <> "/hidden")
         , Lucid.value_ "false"
         ]
       Lucid.input_
-        ([ Lucid.type_ "checkbox"
+        ([ Lucid.class_ "form-control", Lucid.type_ "checkbox"
          , Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key <> "/checkbox")
          , Lucid.value_ "true"
@@ -413,16 +409,21 @@ viewField' key required mdef minput =
                      _ -> False)
                   (toList input)
               ]))
+    -- TODO: Add required html5 attribute to this and other fields that support it.
     TextField ->
       Lucid.input_
-        ([Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)] <>
+        ([Lucid.class_ "form-control",
+          Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)] <>
          [ Lucid.value_ value
          | Just (Forge.TextInput value :| []) <-
              [minput <|> fmap (pure . Forge.TextInput) mdef]
          ])
+    -- TODO: Add regex for validations on this.
+    -- Also provide title= for the pattern on failure.
     PasswordField PasswordConfig {autocomplete} ->
       Lucid.input_
-        ([ Lucid.type_ "password"
+        ([ Lucid.class_ "form-control",
+           Lucid.type_ "password"
          , Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.autocomplete_
@@ -450,7 +451,8 @@ viewField' key required mdef minput =
            (minput <|> fmap (pure . Forge.TextInput) mdef))
     PhoneField ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.type_ "tel"
          ] <>
@@ -460,7 +462,8 @@ viewField' key required mdef minput =
          ])
     EmailField autocomplete ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.autocomplete_
              (case autocomplete of
@@ -476,9 +479,12 @@ viewField' key required mdef minput =
                fmap (pure . Forge.TextInput) (fmap (\(Email t) -> t) mdef)
              ]
          ])
+    -- TODO: Add regex for validations on this.
+    -- Also provide title= for the pattern on failure.
     UsernameField ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.type_ "text"
          ] <>
@@ -490,7 +496,8 @@ viewField' key required mdef minput =
          ])
     IntegerField ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.type_ "text"
          , Lucid.pattern_ "-?[0-9]*"
@@ -501,7 +508,8 @@ viewField' key required mdef minput =
          ])
     FixedField ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.type_ "text"
          , Lucid.pattern_ "-?[0-9.]*"
@@ -540,7 +548,8 @@ viewField' key required mdef minput =
            (zip [0 :: Integer ..] (toList choices)))
     DropdownField choices ->
       Lucid.select_
-        [Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)]
+        [Lucid.class_ "form-control",
+         Lucid.name_ (Forge.unKey key), vdomkey_ (Forge.unKey key)]
         (mapM_
            (\(i, (a, label)) ->
               Lucid.option_
@@ -565,7 +574,8 @@ viewField' key required mdef minput =
            (zip [0 :: Integer ..] (toList choices)))
     SliderField SliderConfig {choices} ->
       Lucid.input_
-        ([ Lucid.name_ (Forge.unKey key)
+        ([ Lucid.class_ "form-control",
+           Lucid.name_ (Forge.unKey key)
          , vdomkey_ (Forge.unKey key)
          , Lucid.type_ "text"
          , Lucid.class_ "forge-slider-field"
