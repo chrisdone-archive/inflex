@@ -77,11 +77,18 @@ render :: forall keys q m. MonadEffect m =>
                   Command
 render (State {dec: Dec {name, rhs, result}, display}) =
   HH.div
-    [HP.class_ (HH.ClassName "dec")]
-    [ HH.span [HP.class_ (HH.ClassName "dec-name")] [HH.text name]
-    , HH.span [HP.class_ (HH.ClassName "dec-eq")] [HH.text "="]
-    , HH.span
-        [HP.class_ (HH.ClassName "dec-rhs")]
+    [HP.class_ (HH.ClassName "card mt-3")]
+    [ HH.div
+        [HP.class_ (HH.ClassName "card-header")]
+        [ if false
+            then HH.input
+                   [ HP.class_ (HH.ClassName "form-control")
+                   , HP.placeholder "Name"
+                   ]
+            else HH.text name
+        ]
+    , HH.div
+        [HP.class_ (HH.ClassName "card-body")]
         [ HH.slot
             (SProxy :: SProxy "editor")
             unit

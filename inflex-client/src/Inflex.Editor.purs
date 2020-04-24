@@ -148,7 +148,7 @@ render (State {display, code, editor}) =
         []
         [ HH.input
             [ HP.value code
-            , HP.class_ (HH.ClassName "editor")
+            , HP.class_ (HH.ClassName "form-control")
             , manage InputElementChanged
             , HE.onKeyUp
                 (\k ->
@@ -160,38 +160,34 @@ render (State {display, code, editor}) =
             ]
         ]
     DisplayEditor ->
-      HH.span
+      HH.div
         [ HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))
-        , HP.class_ (HH.ClassName "clickable")
         ]
         [ let renderEditor =
                 case _ of
                   IntegerE i -> HH.text i
                   ArrayE es ->
-                    HH.table
-                      [HP.class_ (HH.ClassName "array-editor")]
+                    HH.div
+                      [HP.class_ (HH.ClassName "list-group list-group-flus")]
                       (mapWithIndex
                          (\i subEditor ->
-                            HH.tr
-                              []
-                              [ HH.td
-                                  [HP.class_ (HH.ClassName "stretch-child")]
-                                  [ HH.slot
-                                      (SProxy :: SProxy "editor")
-                                      i
-                                      component
-                                      (EditorAndCode
-                                         { editor: subEditor
-                                         , code:
-                                             editorCode subEditor
-                                         })
-                                      (\rhs ->
-                                         Just
-                                           (FinishEditing
-                                              (editorCode
-                                                 (ArrayE
-                                                    (editArray i (MiscE rhs) es)))))
-                                  ]
+                            HH.div
+                              [HP.class_ (HH.ClassName "list-group-item")]
+                              [ HH.slot
+                                  (SProxy :: SProxy "editor")
+                                  i
+                                  component
+                                  (EditorAndCode
+                                     { editor: subEditor
+                                     , code:
+                                         editorCode subEditor
+                                     })
+                                  (\rhs ->
+                                     Just
+                                       (FinishEditing
+                                          (editorCode
+                                             (ArrayE
+                                                (editArray i (MiscE rhs) es)))))
                               ])
                          es)
                   MiscE t -> HH.text t

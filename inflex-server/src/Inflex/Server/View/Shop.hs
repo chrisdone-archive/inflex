@@ -44,16 +44,20 @@ shopTemplate state body = do
                 [class_ "navbar navbar-light bg-light"]
                 (do a_
                       [class_ "navbar-brand mr-0 mr-md-2", href_ (url HomeR)]
-                      (toHtmlRaw $(wrapStackRoot "inflex-server/svg/logo.svg" >>= embedFile))
+                      (toHtmlRaw
+                         $(wrapStackRoot "inflex-server/svg/logo.svg" >>=
+                           embedFile))
                     div_
                       [class_ "navbar-nav ml-md-auto"]
                       (case state of
                          NoSessionState -> a_ [href_ (url LoginR)] "Login"
                          Registered loginState -> do
-                           a_ [] (toHtml (loginUsername loginState))
-                           " "
+                           when
+                             False
+                             (do a_ [] (toHtml (loginUsername loginState))
+                                 " ")
                            form_
                              [action_ (url LogoutR), method_ "post"]
-                             (button_ "Logout")
+                             (button_ [class_ "btn-primary btn"] "Logout")
                          Unregistered {} -> a_ [href_ (url LoginR)] "Login"))
               body))

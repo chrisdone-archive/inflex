@@ -2,6 +2,7 @@
 
 module Inflex.Doc (component) where
 
+import Halogen.HTML.Properties as HP
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -254,17 +255,20 @@ render :: forall q state keys m. MonadEffect m =>
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Dec String | keys) m Command) Command
 render state =
   HH.div
-    []
-    ([ HH.button
-         [HE.onClick (\e -> pure NewDec)]
-         [HH.text "New declaration"]
-     ] <>
-     map
-       (\(Tuple uuid dec) ->
-          HH.slot
-            (SProxy :: SProxy "Dec")
-            (uuidToString uuid)
-            Dec.component
-            dec
-            (\dec' -> pure (UpdateDec uuid dec')))
-       (M.toUnfoldable (state . decs)))
+    [HP.class_ (HH.ClassName "container-fluid")]
+    [ HH.div
+        [HP.class_ (HH.ClassName "editor")]
+        ([ HH.button
+             [HP.class_ (HH.ClassName "mt-3 btn-primary btn"), HE.onClick (\e -> pure NewDec)]
+             [HH.text "New declaration"]
+         ] <>
+         map
+           (\(Tuple uuid dec) ->
+              HH.slot
+                (SProxy :: SProxy "Dec")
+                (uuidToString uuid)
+                Dec.component
+                dec
+                (\dec' -> pure (UpdateDec uuid dec')))
+           (M.toUnfoldable (state . decs)))
+    ]

@@ -13,3 +13,17 @@
     fill: #eee !important;
   }
 }
+
+.navbar-light .navbar-brand:hover svg {
+  path, ellipse {
+    fill: #007bff !important;
+    transition: 0.7s;
+  }
+}
+
+.navbar-dark .navbar-brand:hover svg {
+  path, ellipse {
+    fill: #007bff !important;
+    transition: 0.7s;
+  }
+}

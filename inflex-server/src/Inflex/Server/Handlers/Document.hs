@@ -43,6 +43,8 @@ import qualified       Data.Text as T
 import qualified       Data.UUID as UUID
 import qualified       Data.UUID.V4 as V4
 import                 Data.Vector (Vector)
+import                 Data.Vector (Vector)
+import qualified       Data.Vector as V
 import                 Duet.Infer
 import                 Duet.Parser
 import                 Duet.Printer
@@ -52,6 +54,7 @@ import                 Duet.Types
 import                 Inflex.Server.App
 import                 Inflex.Server.Session
 import                 Inflex.Server.Types
+import                 Inflex.Server.View.Shop
 import                 Lucid
 import                 Sendfile
 import                 Shakespearean
@@ -75,7 +78,7 @@ postAppRefreshR = refreshHandler
 getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR slug =
   withLogin
-    (\_ LoginState {loginAccountId} -> do
+    (\_ state@(LoginState {loginAccountId}) -> do
        initialDecs' <-
          do mdoc <-
               runDB
@@ -95,27 +98,33 @@ getAppEditorR slug =
                              (\dec -> do
                                 uuid <- V4.nextRandom
                                 pure (UUID.toText uuid, dec))
-                             decs)
+                             (if False
+                                 then decs
+                                 else V.fromList [DecIn {name = "wibble", rhs = "[1,123 + 456,23]"}]))
                       evaluateInputDocument decs')
        htmlWithUrl
-         (do doctype_
-             url <- ask
-             html_
-               (do head_
-                     (do link_ [rel_ "shortcut icon", href_ "#"]
-                         title_ "InflexApp"
-                         link_
-                           [ rel_ "stylesheet"
-                           , type_ "text/css"
-                           , href_ (url AppCssR)
-                           ])
-                   body_
-                     (do script_
-                           [type_ "text/javascript"]
-                           (do toHtmlRaw "window['inflexDocument'] = "
-                               toHtmlRaw (encode initialDecs')
-                               ";")
-                         script_ [type_ "text/javascript", src_ (url AppJsR)] ""))))
+         (shopTemplate
+            (Registered state)
+            (do doctype_
+                url <- ask
+                html_
+                  (do head_
+                        (do link_ [rel_ "shortcut icon", href_ "#"]
+                            title_ "InflexApp"
+                            link_
+                              [ rel_ "stylesheet"
+                              , type_ "text/css"
+                              , href_ (url AppCssR)
+                              ])
+                      body_
+                        (do script_
+                              [type_ "text/javascript"]
+                              (do toHtmlRaw "window['inflexDocument'] = "
+                                  toHtmlRaw (encode initialDecs')
+                                  ";")
+                            script_
+                              [type_ "text/javascript", src_ (url AppJsR)]
+                              "")))))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
