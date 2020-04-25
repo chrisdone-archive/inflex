@@ -53,6 +53,7 @@ import                 Inflex.Server.App
 import                 Inflex.Server.Session
 import                 Inflex.Server.Types
 import                 Inflex.Server.View.Shop
+import                 Inflex.Server.View.App
 import                 Lucid
 import                 Sendfile
 import                 Shakespearean
@@ -99,7 +100,7 @@ getAppEditorR slug =
                              decs)
                       fmap (documentId, ) (evaluateInputDocument decs'))
        htmlWithUrl
-         (shopTemplate
+         (appTemplate
             (Registered state)
             (do doctype_
                 url <- ask
