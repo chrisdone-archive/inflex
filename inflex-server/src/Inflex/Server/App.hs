@@ -50,11 +50,13 @@ instance YesodPersist App where
         App{appPool=pool} <- getYesod
         runSqlPool action pool
 
-mkYesodData "App" $(parseRoutesFile "config/routes")
+
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
   $(persistFileWith lowerCaseSettings "config/models")
+
+mkYesodData "App" $(parseRoutesFile "config/routes")
 
 fromAccountId :: AccountId -> AccountID
 fromAccountId = AccountID . fromSqlKey

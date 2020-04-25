@@ -5,3 +5,7 @@
 exports.initialDecs = function() {
   return window['inflexDocument'];
 }
+
+exports.getDocumentId = function() {
+  return window['inflexDocumentId'];
+}

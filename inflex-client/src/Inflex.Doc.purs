@@ -2,7 +2,6 @@
 
 module Inflex.Doc (component) where
 
-import Halogen.HTML.Properties as HP
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -12,8 +11,8 @@ import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
-import Data.Symbol (SProxy(..))
 import Data.String (Replacement(..), Pattern(..), replaceAll)
+import Data.Symbol (SProxy(..))
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID(..), uuidToString, genUUIDV4)
@@ -26,9 +25,10 @@ import Foreign.Object as Foreign
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HP
 import Inflex.Dec as Dec
 import Inflex.Editor as Editor
-import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>))
+import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show)
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -47,6 +47,8 @@ type Output = Unit
 -- Foreign imports
 
 foreign import initialDecs :: Effect J.Json
+
+foreign import getDocumentId :: Effect Int
 
 --------------------------------------------------------------------------------
 -- Component
@@ -85,11 +87,12 @@ eval =
                  , result: Left "New decl"
                  })
               (s . decs)
+      documentId <- H.liftEffect getDocumentId
       result2 <-
         H.liftAff
           (AX.post
              ResponseFormat.json
-             "/app/api/refresh"
+             ("/app/api/refresh/" <> show documentId)
              (Just
                 (RequestBody.json
                    (J.fromObject
@@ -122,11 +125,12 @@ eval =
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
       let decs' = M.insert uuid dec (s . decs)
+      documentId <- H.liftEffect getDocumentId
       result2 <-
         H.liftAff
           (AX.post
              ResponseFormat.json
-             "/app/api/refresh"
+             ("/app/api/refresh/" <> show documentId)
              (Just
                 (RequestBody.json
                    (J.fromObject

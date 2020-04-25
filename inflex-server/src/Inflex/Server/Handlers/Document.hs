@@ -42,8 +42,6 @@ import                 Data.Text (Text)
 import qualified       Data.Text as T
 import qualified       Data.UUID as UUID
 import qualified       Data.UUID.V4 as V4
-import                 Data.Vector (Vector)
-import                 Data.Vector (Vector)
 import qualified       Data.Vector as V
 import                 Duet.Infer
 import                 Duet.Parser
@@ -72,14 +70,14 @@ expressionToEditor =
 maxSteps :: Int
 maxSteps = 100
 
-postAppRefreshR :: Handler Value
+postAppRefreshR :: DocumentId -> Handler Value
 postAppRefreshR = refreshHandler
 
 getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR slug =
   withLogin
     (\_ state@(LoginState {loginAccountId}) -> do
-       initialDecs' <-
+       (documentId, initialDecs') <-
          do mdoc <-
               runDB
                 (selectFirst
@@ -89,7 +87,7 @@ getAppEditorR slug =
                    [])
             case mdoc of
               Nothing -> notFound
-              Just (Entity _ Document {documentContent = DocumentDecs decs, ..}) ->
+              Just (Entity documentId Document {documentContent = DocumentDecs decs, ..}) ->
                 liftIO
                   (do decs' <-
                         fmap
@@ -98,10 +96,8 @@ getAppEditorR slug =
                              (\dec -> do
                                 uuid <- V4.nextRandom
                                 pure (UUID.toText uuid, dec))
-                             (if False
-                                 then decs
-                                 else V.fromList [DecIn {name = "wibble", rhs = "[1,123 + 456,23]"}]))
-                      evaluateInputDocument decs')
+                             decs)
+                      fmap (documentId, ) (evaluateInputDocument decs'))
        htmlWithUrl
          (shopTemplate
             (Registered state)
@@ -121,6 +117,9 @@ getAppEditorR slug =
                               [type_ "text/javascript"]
                               (do toHtmlRaw "window['inflexDocument'] = "
                                   toHtmlRaw (encode initialDecs')
+                                  ";"
+                                  toHtmlRaw "window['inflexDocumentId'] = "
+                                  toHtmlRaw (encode documentId)
                                   ";")
                             script_
                               [type_ "text/javascript", src_ (url AppJsR)]
@@ -132,19 +131,29 @@ getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
 
-getShopCssR :: Handler Css
-getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")
-
-postRefreshR :: Handler TypedContent
-postRefreshR = selectRep (provideRep refreshHandler)
+postRefreshR :: DocumentId -> Handler TypedContent
+postRefreshR documentId = selectRep (provideRep (refreshHandler documentId))
 
 --------------------------------------------------------------------------------
 -- Refresh handler
 
-refreshHandler :: HandlerFor App Value
-refreshHandler = do
-  inputDocument :: HashMap Text DecIn <- requireCheckJsonBody
-  evaluateInputDocument inputDocument
+refreshHandler :: DocumentId -> HandlerFor App Value
+refreshHandler documentId =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       mdoc <-
+         runDB
+           (selectFirst
+              [ DocumentAccount ==. fromAccountID loginAccountId
+              , DocumentId ==. documentId
+              ]
+              [])
+       case mdoc of
+         Nothing -> notFound
+         Just (Entity documentId _) -> do
+           inputDocument :: HashMap Text DecIn <- requireCheckJsonBody
+           runDB (update documentId [DocumentContent =. DocumentDecs (V.fromList (HM.elems inputDocument))])
+           evaluateInputDocument inputDocument)
 
 evaluateInputDocument :: Monad m => HashMap Text DecIn -> m Value
 evaluateInputDocument inputDocument = do

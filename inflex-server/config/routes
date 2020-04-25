@@ -22,7 +22,7 @@
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
-/app/api/refresh AppRefreshR POST
+/app/api/refresh/#DocumentId AppRefreshR POST
 /app/js AppJsR GET
 /app/css AppCssR GET
 
