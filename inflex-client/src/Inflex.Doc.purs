@@ -85,6 +85,7 @@ eval =
                  { name: "x_" <> replaceAll (Pattern "-") (Replacement "_") (uuidToString uuid)
                  , rhs: "_"
                  , result: Left "New decl"
+                 , new: true
                  })
               (s . decs)
       documentId <- H.liftEffect getDocumentId
@@ -197,7 +198,7 @@ decOutsParser =
                            (J.caseJsonString (Left "not a string") Right)
                            (Foreign.lookup "error" dec)
                        pure
-                         (Dec.Dec {name, rhs, result: Left error})
+                         (Dec.Dec {name, rhs, result: Left error, new: false})
                      "success" -> do
                        editor <-
                          maybe
@@ -247,7 +248,7 @@ decOutsParser =
                            (Foreign.lookup "editor" dec)
                        pure
                          (Dec.Dec
-                            {name, rhs, result: Right editor})
+                            {name, rhs, result: Right editor, new: false})
                      _ -> Left "invalid result"))
              mp)
 

@@ -44,11 +44,12 @@ data State = State
 data Command
   = SetEditor EditorAndCode
   | StartEditor
-  | SetInput String
   | FinishEditing String
-  | PreventDefault Event Command
+  | PreventDefault Event
+                   Command
   | Autoresize
   | NoOp
+  | SetInput String
   | InputElementChanged (ElemRef Element)
 
 --------------------------------------------------------------------------------
@@ -107,6 +108,9 @@ component =
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
 eval =
   case _ of
+    SetInput i -> do
+      H.liftEffect (log "Inflex.Editor: eval(SetInput)")
+      H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged elemRef ->
       case elemRef of
         Created element ->
@@ -121,8 +125,7 @@ eval =
       State {display, editor} <- H.get
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
-    SetInput i ->
-      H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
+
     SetEditor (EditorAndCode {editor, code}) ->
       H.put (State {editor, code, display: DisplayEditor})
     Autoresize -> do
