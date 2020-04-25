@@ -7,3 +7,7 @@ textarea:focus, input:focus{
 .document {
   cursor: crosshair;
 }
+
+.declaration {
+  display: inline-block;
+}

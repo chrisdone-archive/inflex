@@ -262,12 +262,16 @@ render state =
   HH.div
     [HP.class_ (HH.ClassName "container-fluid")]
     [ HH.div
-        [HP.class_ (HH.ClassName "editor")]
-        ([ HH.button
-             [HP.class_ (HH.ClassName "mt-3 btn-primary btn"), HE.onClick (\e -> pure NewDec)]
-             [HH.text "New declaration"]
-         ] <>
-         map
+        [HP.class_ (HH.ClassName "row")]
+        [ HH.button
+            [ HP.class_ (HH.ClassName "mt-3 ml-3 mr-3 btn-primary btn")
+            , HE.onClick (\e -> pure NewDec)
+            ]
+            [HH.text "New declaration"]
+        ]
+    , HH.div
+        [HP.class_ (HH.ClassName "row")]
+        (map
            (\(Tuple uuid dec) ->
               HH.slot
                 (SProxy :: SProxy "Dec")
