@@ -517,6 +517,7 @@ getTypeVariablesOf f = nub . concatMap f
 
 -- | Get the kind of a type.
 typeKind :: Type Name -> Kind
+typeKind (RowType {}) = RecordKind
 typeKind (ConstructorType typeConstructor) = typeConstructorKind typeConstructor
 typeKind (VariableType typeVariable) = typeVariableKind typeVariable
 typeKind (ApplicationType typ _) =

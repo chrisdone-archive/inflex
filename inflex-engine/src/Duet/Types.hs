@@ -454,6 +454,7 @@ instance GenUnchecked (Kind)
 data Kind
   = StarKind
   | FunctionKind Kind Kind
+  | RecordKind
   deriving (Eq, Ord, Show, Generic, Data, Typeable)
 
 instance NFData (Location)

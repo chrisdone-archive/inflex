@@ -109,6 +109,7 @@ renameField specials typeConstructors vars name fe = do
           f' <- go f
           let fKind = typeKind f'
           case fKind of
+            RecordKind -> error "TODO: renameField: Kind inference for records."
             FunctionKind argKind _ -> do
               x' <- go x
               let xKind = typeKind x'
@@ -405,6 +406,7 @@ renameType specials tyVars types t = either go pure (isType t)
         UnkindedTypeApp f a -> do
           f' <- go f
           case typeKind f' of
+            RecordKind -> error "renameType: RecordKind"
             FunctionKind argKind _ -> do
               a' <- go a
               if typeKind a' == argKind

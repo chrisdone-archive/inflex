@@ -375,6 +375,7 @@ printKind :: Kind -> [Char]
 printKind =
   \case
     StarKind -> "Type"
+    RecordKind -> "Record"
     FunctionKind x' y -> printKind x' ++ " -> " ++ printKind y
 
 printTypeSansParens :: (Printable i) => Print i l ->  SpecialTypes i -> Type i -> [Char]
@@ -441,6 +442,8 @@ printTypeConstructor :: Printable j => Print i l -> TypeConstructor j -> String
 printTypeConstructor printer (TypeConstructor identifier kind) =
   case kind of
     StarKind -> printIdentifier printer identifier
+    RecordKind -> printIdentifier printer identifier
+                  -- TODO: print "printTypeConstructor: unexpected record kind for type constructor!"
     FunctionKind {} -> printIdentifier printer identifier
         -- _ -> "(" ++ printIdentifier identifier ++ " :: " ++ printKind kind ++ ")"
 
