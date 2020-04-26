@@ -595,48 +595,49 @@ unifyRows ::
   -> Row Name
   -> m [Substitution Name]
 unifyRows row1@(Row v1 fs1) row2@(Row v2 fs2) = do
-  cs' <-
+  constraints <-
     case (fs1, v1, fs2, v2) of
       ([], Nothing, [], Nothing) -> pure []
       -- Below: Just unify a row variable with no fields with any other row.
-      ([], Just u, sd, r) -> pure [Substitution u (RowType (Row r sd))]
-      (sd, r, [], Just u) -> pure [Substitution u (RowType (Row r sd))]
+      ([], Just u, sd, r) -> pure [(,) u (RowType (Row r sd))]
+      (sd, r, [], Just u) -> pure [(,) u (RowType (Row r sd))]
       -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
       -- forming { p: s, f: t }, provided the open row is a subset
       -- of the closed row.
       (sd1, Nothing, sd2, Just u2)
         | sd2 `rowIsSubset` sd1 -> do
           pure
-            [ (Substitution
-                 u2
-                 (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2)))))
+            [ (,)
+                u2
+                (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2))))
             ]
        -- Below: Same as above, but flipped.
       (sd1, Just u1, sd2, Nothing)
         | sd1 `rowIsSubset` sd2 -> do
           pure
-            [ (Substitution
-                 u1
-                 (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2)))))
+            [ (,)
+                u1
+                (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2))))
             ]
       -- Below: Two open records, their fields must unify and we
       -- produce a union row type of both.
-      -- TODO: implement this check.
       (_, Just {}, _, Just {}) -> do
         pure []
       _ -> throwM (RowMismatch row1 row2)
   let common = intersect (map fieldName fs1) (map fieldName fs2)
-      zippedFields =
-        mapMaybe
-          (\name ->
-             (,) <$> (find ((== name) . fieldName) fs1) <*>
-             (find ((== name) . fieldName) fs2))
-          common
-  zippedFieldsCs <-
-    unifyTypeList
-      (map (fieldType . fst) zippedFields)
-      (map (fieldType . snd) zippedFields)
-  pure (zippedFieldsCs @@ cs')
+      fieldsToUnify =
+        fmap
+          (first fieldType . second fieldType)
+          (mapMaybe
+             (\name ->
+                (,) <$> (find ((== name) . fieldName) fs1) <*>
+                (find ((== name) . fieldName) fs2))
+             common)
+      constraintsToUnify =
+        map (\(tyvar, t) -> (VariableType tyvar, t)) constraints
+  unifyTypeList
+    (map fst (fieldsToUnify <> constraintsToUnify))
+    (map snd (fieldsToUnify <> constraintsToUnify))
   where
     rowIsSubset sub sup = all (`elem` map fieldName sup) (map fieldName sub)
 
