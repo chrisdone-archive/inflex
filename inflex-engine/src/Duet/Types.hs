@@ -435,7 +435,6 @@ instance (GenUnchecked i) => GenUnchecked (Row i)
 data Field i = Field
   { fieldName :: !Identifier
   , fieldType :: !(Type i)
-  , fieldPII :: !Bool
   } deriving (Show, Eq, Data, Generic, Typeable)
 
 instance (NFData i) => NFData (Field i)

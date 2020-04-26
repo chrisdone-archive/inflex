@@ -386,9 +386,31 @@ printTypeSansParens printer specialTypes =
         " -> " ++ printTypeSansParens printer specialTypes y'
     o -> printType printer specialTypes o
 
+printRow :: Printable i => Print i l -> SpecialTypes i -> Row i -> [Char]
+printRow printer specialTypes (Row var fs) =
+  case var of
+    Nothing ->
+      "{" <>
+      mconcat (intersperse "," (map (printField printer specialTypes) fs)) <>
+      "}"
+    Just v ->
+      if null fs
+        then "{" <> printTypeVariable printer v <> "}"
+        else "{" <>
+             mconcat
+               (intersperse "," (map (printField printer specialTypes) fs)) <>
+             "|" <>
+             printTypeVariable printer v <>
+             "}"
+
+printField :: Printable i => Print i l -> SpecialTypes i -> Field i -> String
+printField printer specialTypes (Field name ty) =
+  printIdentifier printer name <> " :: " <> printType printer specialTypes ty
+
 instance PrintableType Type where
   printType printer specialTypes =
     \case
+      RowType row -> printRow printer specialTypes row
       VariableType v -> printTypeVariable printer v
       ConstructorType tyCon -> printTypeConstructor printer tyCon
       ApplicationType (ApplicationType func x') y
