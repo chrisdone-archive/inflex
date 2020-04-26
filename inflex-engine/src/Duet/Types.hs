@@ -15,25 +15,17 @@
 
 module Duet.Types where
 
-import Control.DeepSeq
-import Control.Monad.Catch
-import Control.Monad.State
-import Data.Char
-import Data.Data (Data, Typeable)
-import Data.GenValidity
-import Data.GenValidity.Map ()
-import Data.GenValidity.Vector ()
-import Data.Map.Strict (Map)
-import Data.String
-import Data.Text (Text)
-import Data.Vector (Vector)
-import GHC.Generics
-import Test.QuickCheck (elements)
-import Text.Parsec (ParseError)
+import           Control.Monad.Catch
+import           Control.Monad.State
+import           Data.Data (Data, Typeable)
+import           Data.Map.Strict (Map)
+import           Data.String
+import           Data.Text (Text)
+import           Data.Vector (Vector)
+import           GHC.Generics
+import           Text.Parsec (ParseError)
 
 -- | A declaration.
-instance (NFData l, NFData i, NFData (t i)) => NFData (Decl t i l)
-instance (Ord i, GenUnchecked l, GenUnchecked i, GenUnchecked (t i)) => GenUnchecked (Decl t i l)
 
 
 data Decl t i l
@@ -44,8 +36,6 @@ data Decl t i l
   | InstanceDecl l (Instance t i l)
   deriving (Show, Generic, Data, Typeable)
 
-instance (NFData l, NFData i, NFData (t i)) => NFData (Binding t i l)
-instance (GenUnchecked l, GenUnchecked i, GenUnchecked (t i)) => GenUnchecked (Binding t i l)
 
 
 data Binding t i l
@@ -74,8 +64,6 @@ declLabel =
     InstanceDecl l _ -> l
 
 -- | Data type.
-instance (NFData i, NFData (t i)) => NFData (DataType t i )
-instance (GenUnchecked i, GenUnchecked (t i)) => GenUnchecked (DataType t i )
 
 
 data DataType t i = DataType
@@ -97,8 +85,6 @@ dataTypeToConstructor (DataType name vs _) =
   toTypeConstructor name vs
 
 -- | A data type constructor.
-instance (NFData i, NFData (t i)) => NFData (DataTypeConstructor t i)
-instance (GenUnchecked i, GenUnchecked (t i)) => GenUnchecked (DataTypeConstructor t i)
 
 
 data DataTypeConstructor t i = DataTypeConstructor
@@ -107,8 +93,6 @@ data DataTypeConstructor t i = DataTypeConstructor
   } deriving (Show, Generic, Data, Typeable)
 
 -- | Type for a data typed parsed from user input.
-instance (NFData i) => NFData (UnkindedType i)
-instance (GenUnchecked i) => GenUnchecked (UnkindedType i)
 
 
 data UnkindedType i
@@ -119,8 +103,6 @@ data UnkindedType i
 
 -- | Special built-in types you need for type-checking patterns and
 -- literals.
-instance (NFData i) => NFData (SpecialTypes i )
-instance (GenUnchecked i) => GenUnchecked (SpecialTypes i )
 
 
 data SpecialTypes i = SpecialTypes
@@ -134,8 +116,6 @@ data SpecialTypes i = SpecialTypes
   } deriving (Show, Generic, Data, Typeable)
 
 -- | Special built-in signatures.
-instance (NFData i) => NFData (SpecialSigs i)
-instance (GenUnchecked i) => GenUnchecked (SpecialSigs i)
 
 
 data SpecialSigs i = SpecialSigs
@@ -168,12 +148,8 @@ data Name
   | MethodName !Int String
   | PrimopName Primop
   deriving (Show, Generic, Data, Typeable, Eq, Ord)
-instance NFData Name
-instance GenUnchecked Name
 
 -- | Pre-defined operations.
-instance NFData (Primop)
-instance GenUnchecked (Primop)
 data Primop
   = PrimopIntegerPlus
   | PrimopIntegerSubtract
@@ -188,8 +164,6 @@ data Primop
   deriving (Show, Generic, Data, Typeable, Eq, Ord, Enum, Bounded)
 
 -- | State of inferring.
-instance NFData (InferState)
-instance GenUnchecked (InferState)
 data InferState = InferState
   { inferStateSubstitutions :: ![Substitution Name]
   , inferStateCounter :: !Int
@@ -213,11 +187,7 @@ instance Exception StepException
 
 newtype UUID = UUID String
   deriving (Ord, Eq, Show, Generic, Data, Typeable)
-instance NFData UUID
-instance GenUnchecked UUID
 
-instance NFData (RenamerException)
-instance GenUnchecked (RenamerException)
 data RenamerException
   = IdentifierNotInVarScope !(Map Identifier Name) !Identifier !Location
   | IdentifierNotInConScope !(Map Identifier Name) !Identifier
@@ -242,8 +212,6 @@ instance Exception ContextException
 
 -- | An exception that may be thrown when reading in source code,
 -- before we do any type-checking.-}
-instance NFData (ReadException)
-instance GenUnchecked (ReadException)
 data ReadException
   = ClassAlreadyDefined
   | NoSuchClassForInstance
@@ -252,24 +220,22 @@ data ReadException
   deriving (Show, Generic, Data, Typeable, Typeable)
 instance Exception ReadException
 
-instance NFData (ResolveException)
-instance GenUnchecked (ResolveException)
 data ResolveException =
   NoInstanceFor (Predicate Type Name)
   deriving (Show, Generic, Data, Typeable, Typeable)
 instance Exception ResolveException
 
 -- | A type error.
-instance NFData (InferException)
-instance GenUnchecked (InferException)
 data InferException
   = ExplicitTypeMismatch (Scheme Type Name Type) (Scheme Type Name Type)
   | ContextTooWeak
   | OccursCheckFails
   | KindMismatch
   | TypeMismatch (Type Name) (Type Name)
+  | RowMismatch (Row Name) (Row Name)
   | ListsDoNotUnify
   | TypeMismatchOneWay
+  | PolymorphicField (Scheme Type Name Type)
   | NotInScope ![TypeSignature Type Name Name] !Name
   | ClassMismatch
   | MergeFail
@@ -281,8 +247,6 @@ data InferException
 instance Exception InferException
 
 -- | Specify the type of @a@.
-instance (NFData (t i), NFData i, NFData a) => NFData (TypeSignature t i a)
-instance (GenUnchecked (t i), GenUnchecked i, GenUnchecked a) => GenUnchecked (TypeSignature t i a)
 
 
 data TypeSignature (t :: * -> *) i a = TypeSignature
@@ -290,8 +254,6 @@ data TypeSignature (t :: * -> *) i a = TypeSignature
   , typeSignatureScheme :: Scheme t i t
   } deriving (Show, Generic, Data, Typeable, Functor, Traversable, Foldable, Eq)
 
-instance (NFData (t i),  NFData i, NFData l) => NFData (BindGroup t i l)
-instance (GenUnchecked (t i),  GenUnchecked i, GenUnchecked l) => GenUnchecked (BindGroup t i l)
 
 
 data BindGroup (t :: * -> *) i l = BindGroup
@@ -299,8 +261,6 @@ data BindGroup (t :: * -> *) i l = BindGroup
   , bindGroupImplicitlyTypedBindings :: ![[ImplicitlyTypedBinding t i l]]
   } deriving (Show, Generic, Data, Typeable, Functor, Traversable, Foldable, Eq)
 
-instance (NFData (t i),  NFData i, NFData l) => NFData (ImplicitlyTypedBinding t i l)
-instance (GenUnchecked (t i),  GenUnchecked i, GenUnchecked l) => GenUnchecked (ImplicitlyTypedBinding t i l)
 
 
 data ImplicitlyTypedBinding (t :: * -> *) i l = ImplicitlyTypedBinding
@@ -317,8 +277,6 @@ data ImplicitlyTypedBinding (t :: * -> *) i l = ImplicitlyTypedBinding
 -- Haskell requires that each Alt in the definition of a given
 -- identifier has the same number of left-hand side arguments, but we
 -- do not need to enforce that here.
-instance (NFData (t i),  NFData l,NFData i) => NFData (ExplicitlyTypedBinding t i l)
-instance (GenUnchecked (t i),  GenUnchecked l,GenUnchecked i) => GenUnchecked (ExplicitlyTypedBinding t i l)
 
 
 data ExplicitlyTypedBinding t i l = ExplicitlyTypedBinding
@@ -336,8 +294,6 @@ data ExplicitlyTypedBinding t i l = ExplicitlyTypedBinding
 -- v to a monotype t. The type t must be chosen so that all of the
 -- predicates in ps that involve v will be satisfied once t has been
 -- substituted for v.
-instance (NFData i) => NFData (Ambiguity i)
-instance (GenUnchecked i) => GenUnchecked (Ambiguity i)
 
 
 data Ambiguity i = Ambiguity
@@ -349,8 +305,6 @@ data Ambiguity i = Ambiguity
 -- definition. With a more complete syntax for Expr, values of type
 -- Alt might also be used in the representation of lambda and case
 -- expressions.
-instance (NFData (t i),  NFData l, NFData i) => NFData (Alternative t i l)
-instance (GenUnchecked (t i),  GenUnchecked l, GenUnchecked i) => GenUnchecked (Alternative t i l)
 
 
 data Alternative t i l = Alternative
@@ -361,8 +315,6 @@ data Alternative t i l = Alternative
 
 -- | Substitutions-finite functions, mapping type variables to
 -- types-play a major role in type inference.
-instance (NFData i) => NFData (Substitution i)
-instance (GenUnchecked i) => GenUnchecked (Substitution i)
 
 
 data Substitution i = Substitution
@@ -371,8 +323,6 @@ data Substitution i = Substitution
   } deriving (Show, Generic, Data, Typeable)
 
 -- | A type variable.
-instance (NFData i) => NFData (TypeVariable i)
-instance (GenUnchecked i) => GenUnchecked (TypeVariable i)
 
 
 data TypeVariable i = TypeVariable
@@ -384,16 +334,10 @@ data TypeVariable i = TypeVariable
 newtype Identifier = Identifier
   { identifierString :: String
   } deriving (Eq, IsString, Ord, Show , Generic, Data, Typeable)
-instance NFData Identifier
-instance GenUnchecked Identifier where
-  genUnchecked = fmap Identifier (elements (let xs = ["a", "b","c","d","e","f","g","h"]
-                                            in xs <> map (map toUpper) xs))
 
 -- | Haskell types can be qualified by adding a (possibly empty) list
 -- of predicates, or class constraints, to restrict the ways in which
 -- type variables are instantiated.
-instance (NFData (t i), NFData typ, NFData i) => NFData (Qualified t i typ)
-instance (GenUnchecked (t i), GenUnchecked typ, GenUnchecked i) => GenUnchecked (Qualified t i typ)
 
 
 data Qualified t i typ = Qualified
@@ -402,8 +346,6 @@ data Qualified t i typ = Qualified
   } deriving (Eq, Show , Generic, Data, Typeable)
 
 -- | One of potentially many predicates.
-instance (NFData (t i), NFData i) => NFData (Predicate t i)
-instance (GenUnchecked (t i), GenUnchecked i) => GenUnchecked (Predicate t i)
 
 
 data Predicate t i =
@@ -411,8 +353,6 @@ data Predicate t i =
   deriving (Eq, Show , Generic, Data, Typeable)
 
 -- | A simple Haskell type.
-instance (NFData i) => NFData (Type i)
-instance (GenUnchecked i) => GenUnchecked (Type i)
 
 -- | A row type.
 data Row i = Row
@@ -428,8 +368,6 @@ polymorphicRow var fs = Row {rowVariable = Just var, rowFields = fs}
 monomorphicRow :: [Field i] -> Row i
 monomorphicRow fs = Row {rowVariable = Nothing, rowFields = fs}
 
-instance (NFData i) => NFData (Row i)
-instance (GenUnchecked i) => GenUnchecked (Row i)
 
 -- | A field is a name/type pair with additional metadata.
 data Field i = Field
@@ -437,8 +375,6 @@ data Field i = Field
   , fieldType :: !(Type i)
   } deriving (Show, Eq, Data, Generic, Typeable)
 
-instance (NFData i) => NFData (Field i)
-instance (GenUnchecked i) => GenUnchecked (Field i)
 
 -- | The root, big momma type for types.
 data Type i
@@ -449,16 +385,12 @@ data Type i
   deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Kind of a type.
-instance NFData (Kind)
-instance GenUnchecked (Kind)
 data Kind
   = StarKind
   | FunctionKind Kind Kind
-  | RecordKind
+  | RowKind
   deriving (Eq, Ord, Show, Generic, Data, Typeable)
 
-instance NFData (Location)
-instance GenUnchecked (Location)
 data Location = Location
   { locationStartLine :: !Int
   , locationStartColumn :: !Int
@@ -467,10 +399,6 @@ data Location = Location
   } deriving (Show, Generic, Data, Typeable, Eq)
 
 -- | A Haskell expression.
-instance (NFData (t i),  NFData l,NFData i) => NFData (Expression t  i l)
-instance (GenUnchecked (t i),  GenUnchecked l,GenUnchecked i) => GenUnchecked (Expression t  i l)
-
-
 
 data Expression (t :: * -> *) i l
   = VariableExpression l i
@@ -485,11 +413,9 @@ data Expression (t :: * -> *) i l
   | CaseExpression l (Expression t i l) [CaseAlt t i l]
   | ParensExpression l (Expression t i l)
   | ArrayExpression l (Vector (Expression t i l))
+  | RowExpression l (Map Identifier (Expression t i l))
+  | PropExpression l (Expression t i l) Identifier
   deriving (Show, Generic, Data, Typeable, Functor, Traversable, Foldable, Eq)
-
-instance (NFData (t i),  NFData l,NFData i) => NFData (CaseAlt t  i l)
-instance (GenUnchecked (t i),  GenUnchecked l,GenUnchecked i) => GenUnchecked (CaseAlt t  i l)
-
 
 data CaseAlt t i l = CaseAlt
   { caseAltLabel :: l
@@ -512,10 +438,10 @@ expressionLabel =
      VariableExpression l _ -> l
      ConstructorExpression l _ -> l
      ParensExpression l _ -> l
+     PropExpression l _ _ -> l
+     RowExpression l _ -> l
 
 -- | A pattern match.
-instance (NFData l,NFData i) => NFData (Pattern t  i l)
-instance (GenUnchecked l,GenUnchecked i) => GenUnchecked (Pattern t  i l)
 
 
 data Pattern (t :: * -> *) i l
@@ -537,8 +463,6 @@ patternLabel (AsPattern l  _ _) = l
 patternLabel (LiteralPattern l _) =l
 patternLabel (BangPattern p) = patternLabel p
 
-instance NFData (Literal)
-instance GenUnchecked (Literal)
 data Literal
   = IntegerLiteral Integer
   | CharacterLiteral Char
@@ -547,8 +471,6 @@ data Literal
   deriving (Show, Generic, Data, Typeable, Eq)
 
 -- | A class.
-instance (NFData (t i), NFData l,NFData i) => NFData (Class t  i l)
-instance (Ord i, GenUnchecked (t i), GenUnchecked l,GenUnchecked i) => GenUnchecked (Class t  i l)
 
 data Class (t :: * -> *) i l = Class
   { classTypeVariables :: ![TypeVariable i]
@@ -559,8 +481,6 @@ data Class (t :: * -> *) i l = Class
   } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor)
 
 -- | Class instance.
-instance (NFData (t i),  NFData l,NFData i) => NFData (Instance t i l)
-instance (Ord i, GenUnchecked (t i),  GenUnchecked l,GenUnchecked i) => GenUnchecked (Instance t i l)
 
 
 data Instance (t :: * -> *) i l = Instance
@@ -572,8 +492,6 @@ instanceClassName :: Instance t1 i t -> i
 instanceClassName (Instance (Forall _ (Qualified _ (IsIn x _))) _) = x
 
 -- | A dictionary for a class.
-instance (NFData (t i),  NFData l,NFData i) => NFData (Dictionary t i l)
-instance (Ord i, GenUnchecked (t i),  GenUnchecked l,GenUnchecked i) => GenUnchecked (Dictionary t i l)
 
 data Dictionary (t :: * -> *) i l = Dictionary
   { dictionaryName :: i
@@ -583,8 +501,6 @@ data Dictionary (t :: * -> *) i l = Dictionary
 
 
 -- | A type constructor.
-instance (NFData i) => NFData (TypeConstructor i)
-instance (GenUnchecked i) => GenUnchecked (TypeConstructor i)
 
 data TypeConstructor i = TypeConstructor
   { typeConstructorIdentifier :: !i
@@ -592,16 +508,12 @@ data TypeConstructor i = TypeConstructor
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A type scheme.
-instance (NFData (typ i), NFData (t i), NFData i) => NFData (Scheme t i typ)
-instance (GenUnchecked (typ i), GenUnchecked (t i), GenUnchecked i) => GenUnchecked (Scheme t i typ)
 
 
 data Scheme t i typ =
   Forall [TypeVariable i] (Qualified t i (typ i))
   deriving (Eq, Show, Generic, Data, Typeable)
 
-instance (NFData a) => NFData (Result a)
-instance (GenUnchecked a) => GenUnchecked (Result a)
 
 
 data Result a
@@ -665,8 +577,6 @@ instance Identifiable Name where
       PrimopName {} -> pure n
 
 -- | Context for the type checker.
-instance (NFData (t i),NFData l,  NFData i) => NFData (Context t i l)
-instance (Ord i, GenUnchecked (t i),GenUnchecked l,  GenUnchecked i) => GenUnchecked (Context t i l)
 
 data Context t i l = Context
   { contextSpecialSigs :: SpecialSigs i
@@ -678,8 +588,6 @@ data Context t i l = Context
   } deriving (Show, Generic, Data, Typeable)
 
 -- | Builtin context.
-instance (NFData l,NFData (t i), NFData i) => NFData (Builtins t i l)
-instance (Ord i, GenUnchecked l,GenUnchecked (t i), GenUnchecked i) => GenUnchecked (Builtins t i l)
 
 data Builtins t i l = Builtins
   { builtinsSpecialSigs :: SpecialSigs i

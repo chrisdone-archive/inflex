@@ -155,6 +155,8 @@ printExpression :: (Printable i, PrintableType t) => Print i l -> (Expression t 
 printExpression printer e =
   wrapType
     (case e of
+       RowExpression _ _r -> "TODO: Print row"
+       PropExpression _ _ _ -> "TODO: Print prop"
        LiteralExpression _ l -> printLiteral l
        VariableExpression _ i -> printIdentifier printer i
        ConstantExpression _ i -> printIdentifier printer i
@@ -375,7 +377,7 @@ printKind :: Kind -> [Char]
 printKind =
   \case
     StarKind -> "Type"
-    RecordKind -> "Record"
+    RowKind -> "Row"
     FunctionKind x' y -> printKind x' ++ " -> " ++ printKind y
 
 printTypeSansParens :: (Printable i) => Print i l ->  SpecialTypes i -> Type i -> [Char]
@@ -442,8 +444,8 @@ printTypeConstructor :: Printable j => Print i l -> TypeConstructor j -> String
 printTypeConstructor printer (TypeConstructor identifier kind) =
   case kind of
     StarKind -> printIdentifier printer identifier
-    RecordKind -> printIdentifier printer identifier
-                  -- TODO: print "printTypeConstructor: unexpected record kind for type constructor!"
+    RowKind -> printIdentifier printer identifier
+                  -- TODO: print "printTypeConstructor: unexpected row kind for type constructor!"
     FunctionKind {} -> printIdentifier printer identifier
         -- _ -> "(" ++ printIdentifier identifier ++ " :: " ++ printKind kind ++ ")"
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -53,6 +54,7 @@ module Duet.Infer
 import           Control.Arrow (first,second)
 import           Control.Monad.Catch
 import           Control.Monad.State
+import           Data.Function
 import           Data.Generics
 import           Data.Graph
 import           Data.List
@@ -305,12 +307,23 @@ unify t1 t2 = do
        (\s' -> s' {inferStateSubstitutions = u @@ inferStateSubstitutions s'}))
 
 newVariableType :: Monad m => Kind -> InferT m (Type Name)
-newVariableType k =
+newVariableType = fmap VariableType . newTypeVariable
+
+newTypeVariable :: Monad m => Kind -> InferT m (TypeVariable Name)
+newTypeVariable k =
   InferT
     (do inferState <- get
         put inferState {inferStateCounter = inferStateCounter inferState + 1}
         return
-          (VariableType (TypeVariable (enumId (inferStateCounter inferState)) k)))
+          (TypeVariable (enumId (inferStateCounter inferState)) k))
+
+newPolyRowType :: Monad m => [Field Name] -> InferT m (Type Name)
+newPolyRowType fs = do
+  typeVariable <- newTypeVariable RowKind
+  pure (RowType (polymorphicRow typeVariable fs))
+
+newMonoRowType :: Monad m => [Field Name] -> InferT m (Type Name)
+newMonoRowType fs = pure (RowType (monomorphicRow fs))
 
 inferExplicitlyTypedBindingType
   :: (MonadThrow m, Show l  )
@@ -517,7 +530,7 @@ getTypeVariablesOf f = nub . concatMap f
 
 -- | Get the kind of a type.
 typeKind :: Type Name -> Kind
-typeKind (RowType {}) = RecordKind
+typeKind (RowType {}) = RowKind
 typeKind (ConstructorType typeConstructor) = typeConstructorKind typeConstructor
 typeKind (VariableType typeVariable) = typeVariableKind typeVariable
 typeKind (ApplicationType typ _) =
@@ -571,7 +584,61 @@ unifyTypes (VariableType u) t = unifyTypeVariable u t
 unifyTypes t (VariableType u) = unifyTypeVariable u t
 unifyTypes (ConstructorType tc1) (ConstructorType tc2)
               | tc1 == tc2 = return nullSubst
+unifyTypes a b
+  | RowType row1 <- a
+  , RowType row2 <- b = unifyRows row1 row2
 unifyTypes a b = throwM (TypeMismatch a b)
+
+unifyRows ::
+     (MonadThrow m)
+  => Row Name
+  -> Row Name
+  -> m [Substitution Name]
+unifyRows row1@(Row v1 fs1) row2@(Row v2 fs2) = do
+  cs' <-
+    case (fs1, v1, fs2, v2) of
+      ([], Nothing, [], Nothing) -> pure []
+      -- Below: Just unify a row variable with no fields with any other row.
+      ([], Just u, sd, r) -> pure [Substitution u (RowType (Row r sd))]
+      (sd, r, [], Just u) -> pure [Substitution u (RowType (Row r sd))]
+      -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
+      -- forming { p: s, f: t }, provided the open row is a subset
+      -- of the closed row.
+      (sd1, Nothing, sd2, Just u2)
+        | sd2 `rowIsSubset` sd1 -> do
+          pure
+            [ (Substitution
+                 u2
+                 (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2)))))
+            ]
+       -- Below: Same as above, but flipped.
+      (sd1, Just u1, sd2, Nothing)
+        | sd1 `rowIsSubset` sd2 -> do
+          pure
+            [ (Substitution
+                 u1
+                 (RowType (Row Nothing (nubBy (on (==) fieldName) (sd1 <> sd2)))))
+            ]
+      -- Below: Two open records, their fields must unify and we
+      -- produce a union row type of both.
+      -- TODO: implement this check.
+      (_, Just {}, _, Just {}) -> do
+        pure []
+      _ -> throwM (RowMismatch row1 row2)
+  let common = intersect (map fieldName fs1) (map fieldName fs2)
+      zippedFields =
+        mapMaybe
+          (\name ->
+             (,) <$> (find ((== name) . fieldName) fs1) <*>
+             (find ((== name) . fieldName) fs2))
+          common
+  zippedFieldsCs <-
+    unifyTypeList
+      (map (fieldType . fst) zippedFields)
+      (map (fieldType . snd) zippedFields)
+  pure (zippedFieldsCs @@ cs')
+  where
+    rowIsSubset sub sup = all (`elem` map fieldName sup) (map fieldName sub)
 
 unifyTypeList :: MonadThrow m => [Type Name] -> [Type Name] -> m [Substitution Name]
 unifyTypeList (x:xs) (y:ys) = do
@@ -864,12 +931,43 @@ merge s1 s2 =
         (map substitutionTypeVariable s1 `intersect`
          map substitutionTypeVariable s2)
 
+typeSignatureType :: MonadThrow m => TypeSignature Type Name l -> m (Type Name)
+typeSignatureType sig =
+  case typeSignatureScheme sig of
+    Forall [] (Qualified [] ty) -> pure ty
+    scheme -> throwM (PolymorphicField scheme)
+
 inferExpressionType
-  :: (MonadThrow m, Show l)
+  :: forall l m. (MonadThrow m, Show l)
   => Map Name (Class Type Name l)
   -> [(TypeSignature Type Name Name)]
   -> (Expression Type Name l)
   -> InferT m ([Predicate Type Name], Type Name, Expression Type Name (TypeSignature Type Name l))
+inferExpressionType ce as (RowExpression l fields) = do
+  es' <-
+    mapM
+      (\(name, e) -> fmap (name, ) (inferExpressionType ce as e))
+      (M.toList fields)
+  let ps = fmap (\(_, (p, _, _)) -> p) es'
+      nameTypeMap ::
+           Map Identifier (Expression Type Name (TypeSignature Type Name l))
+      nameTypeMap = M.fromList (map (\(n, (_, _, t)) -> (n, t)) es')
+  rowType <-
+    mapM
+      (\(fieldName, expr) -> do
+         fieldType <- typeSignatureType (expressionLabel expr)
+         pure Field {fieldName, fieldType})
+      (M.toList nameTypeMap) >>=
+    newMonoRowType
+  let scheme = Forall [] (Qualified [] rowType)
+  pure (concat ps, rowType, RowExpression (TypeSignature l scheme) nameTypeMap)
+inferExpressionType ce as (PropExpression l e fieldName) = do
+  (ps, rowExprType, e') <- inferExpressionType ce as e
+  fieldType <- newVariableType StarKind
+  let fieldScheme = Forall [] (Qualified [] fieldType)
+  desiredRowType <- newPolyRowType [Field {fieldName, fieldType}]
+  unify rowExprType desiredRowType
+  pure (ps, fieldType, PropExpression (TypeSignature l fieldScheme) e' fieldName)
 inferExpressionType ce as (ArrayExpression l es) = do
   es' <- mapM (\element -> inferExpressionType ce as element) es
   let ps = fmap (\(p, _, _) -> p) es'
