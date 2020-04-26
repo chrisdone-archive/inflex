@@ -21,8 +21,8 @@ import Control.Monad.State
 import Data.Char
 import Data.Data (Data, Typeable)
 import Data.GenValidity
-import Data.GenValidity.Map
-import Data.GenValidity.Vector
+import Data.GenValidity.Map ()
+import Data.GenValidity.Vector ()
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
@@ -414,9 +414,37 @@ data Predicate t i =
 instance (NFData i) => NFData (Type i)
 instance (GenUnchecked i) => GenUnchecked (Type i)
 
+-- | A row type.
+data Row i = Row
+  { rowVariable :: !(Maybe (TypeVariable i))
+  , rowFields :: ![Field i]
+  } deriving (Show, Eq, Data, Generic, Typeable)
 
+-- | Make a polymorphic row type.
+polymorphicRow :: TypeVariable i -> [Field i] -> Row i
+polymorphicRow var fs = Row {rowVariable = Just var, rowFields = fs}
+
+-- | Make a monomorphic row type.
+monomorphicRow :: [Field i] -> Row i
+monomorphicRow fs = Row {rowVariable = Nothing, rowFields = fs}
+
+instance (NFData i) => NFData (Row i)
+instance (GenUnchecked i) => GenUnchecked (Row i)
+
+-- | A field is a name/type pair with additional metadata.
+data Field i = Field
+  { fieldName :: !Identifier
+  , fieldType :: !(Type i)
+  , fieldPII :: !Bool
+  } deriving (Show, Eq, Data, Generic, Typeable)
+
+instance (NFData i) => NFData (Field i)
+instance (GenUnchecked i) => GenUnchecked (Field i)
+
+-- | The root, big momma type for types.
 data Type i
   = VariableType (TypeVariable i)
+  | RowType (Row i)
   | ConstructorType (TypeConstructor i)
   | ApplicationType (Type i) (Type i)
   deriving (Eq, Show, Generic, Data, Typeable)

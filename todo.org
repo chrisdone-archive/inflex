@@ -39,9 +39,55 @@ Int32/Int16/Int8
 Use floating points but make partial results explicit too?
 
 *** TODO [#A] Add Rows
-- [ ] Write Duet->PS converter
-- [ ] Add test suite that checks compile(duet(x))==compile(ps(x))
-- [ ] Add row types to Duet
+    - Note taken on [2020-04-26 Sun 16:01] \\
+      Actually I think you need row poly anyway:
+
+      #+BEGIN_SRC haskell
+      x = { x: 1, y: "a" }
+      #+END_SRC
+
+      This can be inferred, because we already know the type of x.
+
+      #+BEGIN_SRC haskell
+      x.x
+      #+END_SRC
+
+      But we can't assign a type to this:
+
+      #+BEGIN_SRC haskell
+      f = \r -> r.x
+      or even:
+      count = \xs -> sum (filter .x xs)
+      #+END_SRC
+
+      What would its type be?
+
+      #+BEGIN_SRC haskell
+      f :: { x :: a | r } -> x   -- ?
+      f :: Has "x" a r => r -> x -- ?
+      #+END_SRC
+
+      Probably best to just implement the row polymorphism anyway.
+    - Note taken on [2020-04-25 Sat 17:33] \\
+      Realization: let's just implement record types to start with, without
+      the row polymorphism!
+
+      Then we add row polymorphism later *when needed*.
+
+      #+BEGIN_SRC haskell
+      { a: 1, b: "foo" } :: { a :: Int, b :: String }
+      #+END_SRC
+
+      Easy peasy!
+
+      Inference rules for this are less invasive than row poly. {} is of kind Type.
+
+      Then we can easily have:
+
+      #+BEGIN_SRC haskell
+      [ { a: 1, b: "foo" }, { a: 2, b: "bar" } ] :: Array { a :: Int, b :: String }
+      #+END_SRC
+- [ ] Add record types (not row poly) to Duet
 - [ ] Use test suite to test this
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
