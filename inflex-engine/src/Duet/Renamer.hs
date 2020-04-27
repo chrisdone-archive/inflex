@@ -605,6 +605,7 @@ renameExpression specials subs types = go
     go :: Expression t i Location -> m (Expression Type Name Location)
     go =
       \case
+        RowExpression l fields -> RowExpression l <$> traverse go fields
         ParensExpression l e -> ParensExpression l <$> go e
         ArrayExpression l es -> ArrayExpression l <$> mapM go es
         VariableExpression l i -> VariableExpression l <$> substituteVar subs i l

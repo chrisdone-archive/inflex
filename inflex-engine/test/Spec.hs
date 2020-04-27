@@ -37,6 +37,7 @@ main = hspec spec
 spec :: SpecWith ()
 spec = do
   describe "Parser" parserTests
+  describe "Inference" inferenceTests
   describe
     "Compilation"
     (do it
@@ -470,3 +471,17 @@ parserTests =
                      ]
                  }))
        ])
+
+inferenceTests =
+  it
+    "Basic compile and run constant"
+    (shouldBe
+       (first
+          (const ())
+          (runNoLoggingT
+             ((evalSupplyT
+                 (do decls <- parseText "test" "main = 2 * 3"
+                     (binds, ctx) <- createContext decls
+                     pure binds)
+                 [1 ..]))))
+       (Right []))
