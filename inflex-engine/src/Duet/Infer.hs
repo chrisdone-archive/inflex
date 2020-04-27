@@ -293,6 +293,7 @@ substituteType substitutions (ApplicationType type1 type2) =
     ApplicationType
       (substituteType substitutions type1)
       (substituteType substitutions type2)
+
 substituteType _ typ = typ
 
 --------------------------------------------------------------------------------
@@ -944,13 +945,15 @@ merge s1 s2 =
 typeSignatureType :: MonadThrow m => TypeSignature Type Name l -> m (Type Name)
 typeSignatureType sig =
   case typeSignatureScheme sig of
-    Forall [] (Qualified [] ty) -> pure ty
-    scheme -> throwM (PolymorphicField scheme)
+    Forall _ (Qualified _ ty) -> pure ty
+    -- TODO: Address this. Are we OK to discard constraints from this
+    -- type signature?  I'm thinking of e.g. the way that predicates
+    -- are bubbled up below in inferExplicitlyType. It seems like it's
+    -- not needed to keep hold of them within the row type.
 
--- | If the scheme's constraints are satisfied, we can use the type
--- unadorned (such as in a row field).
-asSchemeSatisfied :: Scheme Type Name Type -> Maybe (Type Name)
-asSchemeSatisfied (Forall _vars (Qualified predicates typ )) = undefined
+    -- But it might be needed. Hence, re-visit this and actually make
+    -- a test suite for it to see if anything "bad" happens.
+    s -> throwM (PolymorphicField s)
 
 inferExpressionType
   :: forall l m. (MonadThrow m, Show l)

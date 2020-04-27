@@ -39,6 +39,73 @@ Int32/Int16/Int8
 Use floating points but make partial results explicit too?
 
 *** TODO [#A] Add Rows
+    - Note taken on [2020-04-27 Mon 15:57] \\
+      Make sure that the real type Integer gets pushed up into the row
+      type's field, instead of the variable:
+
+      #+BEGIN_SRC haskell
+      , Field
+          { fieldName =
+              Identifier
+                { identifierString =
+                    "y"
+                }
+          , fieldType =
+              VariableType
+                (TypeVariable
+                   { typeVariableIdentifier =
+                       ForallName
+                         3
+                   , typeVariableKind =
+                       StarKind
+                   })
+          }
+      #+END_SRC
+
+      Oddly, it appears properly within the field (see below), so probably
+      some more unification has to take place.
+
+      #+BEGIN_SRC haskell
+      InfixExpression
+        (TypeSignature
+           { typeSignatureA =
+               Location
+                 { locationStartLine = 0
+                 , locationStartColumn = 0
+                 , locationEndLine = 0
+                 , locationEndColumn = 0
+                 }
+           , typeSignatureScheme =
+               Forall
+                 []
+                 (Qualified
+                    { qualifiedPredicates =
+                        [ IsIn
+                            (ClassName 13 "Num")
+                            [ ConstructorType
+                                (TypeConstructor
+                                   { typeConstructorIdentifier =
+                                       TypeName
+                                         5
+                                         "Integer"
+                                   , typeConstructorKind =
+                                       StarKind
+                                   })
+                            ]
+                        ]
+                    , qualifiedType =
+                        ConstructorType
+                          (TypeConstructor
+                             { typeConstructorIdentifier =
+                                 TypeName
+                                   5
+                                   "Integer"
+                             , typeConstructorKind =
+                                 StarKind
+                             })
+                    })
+           })
+      #+END_SRC
     - Note taken on [2020-04-26 Sun 16:01] \\
       Actually I think you need row poly anyway:
 

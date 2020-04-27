@@ -480,7 +480,7 @@ inferenceTests =
           show
           (runNoLoggingT
              ((evalSupplyT
-                 (do decls <- parseText "test" "x = {y: 2, z: 3}"
+                 (do decls <- parseText "test" "r = {x: 2, y: 3 * 6}"
                      (binds, ctx) <- createContext decls
                      pure (take 1 binds))
                  [1 ..]))))
