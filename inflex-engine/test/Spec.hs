@@ -35,63 +35,7 @@ spec :: SpecWith ()
 spec =
   describe
     "Compilation"
-    (do describe
-          "Property"
-          (do it
-                "Compiler terminates"
-                (forAllUnchecked
-                   (\decls ->
-                      shouldBe
-                        (either
-                           (const ())
-                           (const ())
-                           (runNoLoggingT
-                              (evalSupplyT
-                                 (do (_binds, _ctx) <- createContext decls
-                                     pure ())
-                                 [1 ..])))
-                        ()))
-              it
-                "PureScript"
-                (forAllUnchecked
-                   (\(decls :: [( Location
-                                , Binding UnkindedType Identifier Location)]) ->
-                      shouldBe
-                        (either
-                           (const ())
-                           (const ())
-                           (runNoLoggingT
-                              (evalSupplyT
-                                 (do (binds, ctx) <-
-                                       createContext
-                                         (fmap (uncurry BindDecl) decls)
-                                     let inputSource =
-                                           T.pack
-                                             ("module X where\n" <>
-                                              concatMap
-                                                (\b -> printBinding
-                                                         defaultPrint
-                                                         (contextSpecialTypes ctx) b <> "\n")
-                                                (concatMap
-                                                   (\(BindGroup explicit implicit) ->
-                                                      map
-                                                        ExplicitBinding
-                                                        explicit <>
-                                                      concatMap
-                                                        (map ImplicitBinding)
-                                                        implicit)
-                                                   binds))
-                                     trace
-                                       ("\n\n" ++ T.unpack inputSource) (pure ())
-                                     case CST.parseFromFile
-                                            "DuetGenerated"
-                                            inputSource of
-                                       Left e -> do
-                                         pure (Left ())
-                                       Right {} -> pure (Right ()))
-                                 [1 ..])))
-                        ())))
-        it
+    (do it
           "Basic compile and run constant"
           (shouldBe
              (first

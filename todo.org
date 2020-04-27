@@ -87,7 +87,11 @@ Use floating points but make partial results explicit too?
       #+BEGIN_SRC haskell
       [ { a: 1, b: "foo" }, { a: 2, b: "bar" } ] :: Array { a :: Int, b :: String }
       #+END_SRC
-- [ ] Add record types (not row poly) to Duet
+Notes:
+- [X] Row type inference
+- [ ] Row type parsing
+- [ ] Row type renaming
+- [ ] Row type stepping
 - [ ] Use test suite to test this
 - [ ] Add RowE display to Editor for row types
 - [ ] Add TableE (Vector (r :: Row)) display to Editor sum type
