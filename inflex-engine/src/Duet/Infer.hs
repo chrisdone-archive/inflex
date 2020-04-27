@@ -947,6 +947,11 @@ typeSignatureType sig =
     Forall [] (Qualified [] ty) -> pure ty
     scheme -> throwM (PolymorphicField scheme)
 
+-- | If the scheme's constraints are satisfied, we can use the type
+-- unadorned (such as in a row field).
+asSchemeSatisfied :: Scheme Type Name Type -> Maybe (Type Name)
+asSchemeSatisfied (Forall _vars (Qualified predicates typ )) = undefined
+
 inferExpressionType
   :: forall l m. (MonadThrow m, Show l)
   => Map Name (Class Type Name l)
