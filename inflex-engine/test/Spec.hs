@@ -477,11 +477,11 @@ inferenceTests =
     "Basic compile and run constant"
     (shouldBe
        (first
-          (const ())
+          show
           (runNoLoggingT
              ((evalSupplyT
-                 (do decls <- parseText "test" "main = 2 * 3"
+                 (do decls <- parseText "test" "x = {y: 2, z: 3}"
                      (binds, ctx) <- createContext decls
-                     pure binds)
+                     pure (take 1 binds))
                  [1 ..]))))
        (Right []))
