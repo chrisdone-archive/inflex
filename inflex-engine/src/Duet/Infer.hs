@@ -566,8 +566,17 @@ unifyTypeVariable :: MonadThrow m => TypeVariable Name -> Type Name -> m [Substi
 unifyTypeVariable typeVariable typ
   | typ == VariableType typeVariable = return nullSubst
   | typeVariable `elem` getTypeTypeVariables typ = throwM OccursCheckFails
-  | typeVariableKind typeVariable /= typeKind typ = throwM KindMismatch
+  | not (kindMatch typeVariable typ) = throwM KindMismatch
   | otherwise = return [Substitution typeVariable typ]
+
+
+kindMatch :: TypeVariable Name -> Type Name -> Bool
+kindMatch tyvar ty =
+  case (typeVariableKind tyvar, typeKind ty) of
+    (StarKind, StarKind) -> True
+    (StarKind, RowKind) -> True
+    (RowKind, RowKind) -> True
+    _ -> False
 
 unifyPredicates :: Predicate Type Name -> Predicate Type Name -> Maybe [Substitution Name]
 unifyPredicates = lift' unifyTypeList

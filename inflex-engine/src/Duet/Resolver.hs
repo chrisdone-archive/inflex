@@ -124,6 +124,7 @@ resolveExp classes _ dicts = go
     go =
       \case
         ParensExpression l e -> ParensExpression l <$> go e
+        RowExpression l fields -> RowExpression l <$> traverse go fields
         ArrayExpression l es -> ArrayExpression l <$> mapM go es
         VariableExpression l i -> do
           dictArgs <- fmap concat (mapM (lookupDictionary l) predicates)
