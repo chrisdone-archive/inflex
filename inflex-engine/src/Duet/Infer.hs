@@ -293,7 +293,31 @@ substituteType substitutions (ApplicationType type1 type2) =
     ApplicationType
       (substituteType substitutions type1)
       (substituteType substitutions type2)
+substituteType substitutions (RowType (Row { rowVariable = var
+                                           , rowFields = fields
+                                           })) =
+  RowType
+    (Row
+       { rowVariable = var -- FIXME: also do replacement here. (See EAQL Inferer.hs)
+       , rowFields =
+           map
+             (\field ->
+                field
+                  {fieldType = substituteType substitutions (fieldType field)})
+             fields
+       })
+{-
+EAQL sample:
 
+RowType Row {rowVariable = Just v, rowFields = xs}
+  | v == replaceThis ->
+    case withThis of
+      RowType Row {rowVariable = v2, rowFields = ys} ->
+        pure
+          (RowType
+             (Row {rowVariable = v2, rowFields = shadowFields ys xs}))
+      _ -> pure withThis
+-}
 substituteType _ typ = typ
 
 --------------------------------------------------------------------------------
