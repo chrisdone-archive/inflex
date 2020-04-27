@@ -15,15 +15,16 @@
 
 module Duet.Types where
 
-import           Control.Monad.Catch
-import           Control.Monad.State
-import           Data.Data (Data, Typeable)
-import           Data.Map.Strict (Map)
-import           Data.String
-import           Data.Text (Text)
-import           Data.Vector (Vector)
-import           GHC.Generics
-import           Text.Parsec (ParseError)
+import Control.Monad.Catch
+import Control.Monad.State
+import Data.Data (Data, Typeable)
+import Data.Function
+import Data.Map.Strict (Map)
+import Data.String
+import Data.Text (Text)
+import Data.Vector (Vector)
+import GHC.Generics
+import Text.Parsec (ParseError)
 
 -- | A declaration.
 
@@ -34,14 +35,14 @@ data Decl t i l
   | BindDecl l (Binding t i l)
   | ClassDecl l (Class t i l)
   | InstanceDecl l (Instance t i l)
-  deriving (Show, Generic, Data, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 
 
 data Binding t i l
   = ImplicitBinding (ImplicitlyTypedBinding t i l)
   | ExplicitBinding (ExplicitlyTypedBinding t i l)
-  deriving (Show, Generic, Data, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 bindingIdentifier :: Binding t i l -> i
 bindingIdentifier =
@@ -70,7 +71,7 @@ data DataType t i = DataType
   { dataTypeName :: i
   , dataTypeVariables :: [TypeVariable i]
   , dataTypeConstructors :: [DataTypeConstructor t i]
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 dataTypeConstructor :: DataType Type Name -> Type Name
 dataTypeConstructor (DataType name vs _) =
@@ -90,7 +91,7 @@ dataTypeToConstructor (DataType name vs _) =
 data DataTypeConstructor t i = DataTypeConstructor
   { dataTypeConstructorName :: i
   , dataTypeConstructorFields :: [t i]
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Type for a data typed parsed from user input.
 
@@ -99,7 +100,7 @@ data UnkindedType i
   = UnkindedTypeConstructor i
   | UnkindedTypeVariable i
   | UnkindedTypeApp (UnkindedType i) (UnkindedType i)
-  deriving (Show, Generic, Data, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Special built-in types you need for type-checking patterns and
 -- literals.
@@ -113,7 +114,7 @@ data SpecialTypes i = SpecialTypes
   , specialTypesInteger    :: TypeConstructor i
   , specialTypesRational   :: TypeConstructor i
   , specialTypesArray     :: TypeConstructor i
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Special built-in signatures.
 
@@ -125,7 +126,7 @@ data SpecialSigs i = SpecialSigs
   , specialSigsTimes :: i
   , specialSigsSubtract :: i
   , specialSigsDivide :: i
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Type inference monad.
 newtype InferT m a = InferT
@@ -168,12 +169,12 @@ data InferState = InferState
   { inferStateSubstitutions :: ![Substitution Name]
   , inferStateCounter :: !Int
   , inferStateSpecialTypes :: !(SpecialTypes Name)
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data ParseException
   = TokenizerError ParseError
   | ParserError ParseError
- deriving (Typeable, Show)
+ deriving (Typeable, Eq, Show)
 instance Exception ParseException
 
 data StepException
@@ -181,7 +182,7 @@ data StepException
   | CouldntFindNameByString !String
   | TypeAtValueScope !Name
   | CouldntFindMethodDict !Name
-  deriving (Typeable, Show)
+  deriving (Typeable, Eq, Show)
 instance Exception StepException
 
 
@@ -203,11 +204,12 @@ data RenamerException
   | MustBeStarKind (Type Name) Kind
   | BuiltinNotDefined !String
   | RenamerNameMismatch !Name
-  deriving (Show, Generic, Data, Typeable, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable, Typeable)
 instance Exception RenamerException
 
 data ContextException = ContextException (SpecialTypes Name) SomeException
   deriving (Show, Generic, Typeable)
+instance Eq ContextException where (==) = on (==) show
 instance Exception ContextException
 
 -- | An exception that may be thrown when reading in source code,
@@ -217,12 +219,12 @@ data ReadException
   | NoSuchClassForInstance
   | OverlappingInstance
   | UndefinedSuperclass
-  deriving (Show, Generic, Data, Typeable, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable, Typeable)
 instance Exception ReadException
 
 data ResolveException =
   NoInstanceFor (Predicate Type Name)
-  deriving (Show, Generic, Data, Typeable, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable, Typeable)
 instance Exception ResolveException
 
 -- | A type error.
@@ -243,7 +245,7 @@ data InferException
   | MissingMethod
   | MissingTypeVar (TypeVariable Name) [(TypeVariable Name, Type Name)]
 
-  deriving (Show, Generic, Data, Typeable, Typeable)
+  deriving (Eq, Show, Generic, Data, Typeable, Typeable)
 instance Exception InferException
 
 -- | Specify the type of @a@.
@@ -299,7 +301,7 @@ data ExplicitlyTypedBinding t i l = ExplicitlyTypedBinding
 data Ambiguity i = Ambiguity
   { ambiguityTypeVariable :: !(TypeVariable i)
   , ambiguityPredicates :: ![Predicate Type i]
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | An Alt specifies the left and right hand sides of a function
 -- definition. With a more complete syntax for Expr, values of type
@@ -320,7 +322,7 @@ data Alternative t i l = Alternative
 data Substitution i = Substitution
   { substitutionTypeVariable :: !(TypeVariable i)
   , substitutionType :: !(Type i)
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A type variable.
 
@@ -333,7 +335,7 @@ data TypeVariable i = TypeVariable
 -- | An identifier used for variables.
 newtype Identifier = Identifier
   { identifierString :: String
-  } deriving (Eq, IsString, Ord, Show , Generic, Data, Typeable)
+  } deriving (IsString, Ord, Eq, Show , Generic, Data, Typeable)
 
 -- | Haskell types can be qualified by adding a (possibly empty) list
 -- of predicates, or class constraints, to restrict the ways in which
@@ -389,7 +391,7 @@ data Kind
   = StarKind
   | FunctionKind Kind Kind
   | RowKind
-  deriving (Eq, Ord, Show, Generic, Data, Typeable)
+  deriving (Ord, Eq, Show, Generic, Data, Typeable)
 
 data Location = Location
   { locationStartLine :: !Int
@@ -478,7 +480,7 @@ data Class (t :: * -> *) i l = Class
   , classInstances :: ![Instance t i l]
   , className :: i
   , classMethods :: Map i (Scheme t i t)
-  } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor)
+  } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor, Eq)
 
 -- | Class instance.
 
@@ -486,7 +488,7 @@ data Class (t :: * -> *) i l = Class
 data Instance (t :: * -> *) i l = Instance
   { instancePredicate :: !(Scheme t i (Predicate t))
   , instanceDictionary :: !(Dictionary t i l)
-  } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor)
+  } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor, Eq)
 
 instanceClassName :: Instance t1 i t -> i
 instanceClassName (Instance (Forall _ (Qualified _ (IsIn x _))) _) = x
@@ -519,7 +521,7 @@ data Scheme t i typ =
 data Result a
   = OK a
   | Fail
-  deriving (Show, Generic, Data, Typeable, Functor)
+  deriving (Eq, Show, Generic, Data, Typeable, Functor)
 
 instance Semigroup a => Semigroup (Result a) where
   Fail <> _ = Fail
@@ -585,7 +587,7 @@ data Context t i l = Context
   , contextScope :: Map Identifier i
   , contextTypeClasses :: Map i (Class t i (TypeSignature t i l))
   , contextDataTypes :: [DataType t i]
-  } deriving (Show, Generic, Data, Typeable)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Builtin context.
 
@@ -594,7 +596,7 @@ data Builtins t i l = Builtins
   , builtinsSpecialTypes :: SpecialTypes i
   , builtinsSignatures :: [TypeSignature t i i]
   , builtinsTypeClasses :: Map i (Class t i l)
-  } deriving (Show, Generic, Data, Typeable, Traversable, Foldable, Functor)
+  } deriving (Eq, Show, Generic, Data, Typeable, Traversable, Foldable, Functor)
 
 data Token
   = If
@@ -614,8 +616,11 @@ data Token
   | CloseParen
   | OpenBracket
   | CloseBracket
+  | OpenCurly
+  | CloseCurly
   | Equals
   | Colons
+  | Colon
   | Variable !Text
   | Constructor !Text
   | Character !Char

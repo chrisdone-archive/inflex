@@ -684,11 +684,26 @@ altPat = bang <|> varp <|> intliteral <|> consParser <|> stringlit
 
 expParser :: TokenParser (Expression UnkindedType Identifier Location)
 expParser =
-  array <|> case' <|> lambda <|> ifParser <|> infix' <|> app <|> atomic
+  row <|> array <|> case' <|> lambda <|> ifParser <|> infix' <|> app <|> atomic
   where
+    row =
+      curlybrackets
+        (\loc ->
+           RowExpression loc <$>
+           fmap M.fromList (sepBy fieldParser (equalToken Comma))) <?>
+      "row expression"
+      where
+        fieldParser = do
+          -- TODO: probably will make use of this loc later.
+          (_loc, name) <- fieldNameParser
+          _ <- equalToken Colon
+          e <- expParser
+          pure (name, e)
     array = do
       brackets
-        (\loc -> (ArrayExpression loc . V.fromList) <$> sepBy expParser (equalToken Comma)) <?>
+        (\loc ->
+           (ArrayExpression loc . V.fromList) <$>
+           sepBy expParser (equalToken Comma)) <?>
         "array expression"
     app = do
       left <- funcOp <?> "function expression"
@@ -864,6 +879,26 @@ brackets p = go <?> "brackets e.g. [...]"
          e <- p loc <?> "expression inside brackets e.g. [example]"
          _ <- equalToken CloseBracket<?> "closing bracket ‘]’"
          pure e
+
+curlybrackets :: (Location  -> TokenParser a) -> TokenParser a
+curlybrackets p = go <?> "curly brackets e.g. {...}"
+  where go = do
+         loc <- equalToken OpenCurly <?> "open curly bracket ‘{’"
+         e <- p loc <?> "stuff inside curly brackets e.g. {employees: 30}"
+         _ <- equalToken CloseCurly<?> "closing curly bracket ‘}’"
+         pure e
+
+fieldNameParser :: TokenParser (Location, Identifier)
+fieldNameParser = go <?> "field name (e.g. ‘foo’, \"red dog\", etc.)"
+  where
+    go = do
+      (v, loc) <-
+        consumeToken
+          (\case
+             Variable i -> Just i
+             String i -> Just i
+             _ -> Nothing)
+      pure (loc, Identifier (T.unpack v))
 
 varParser :: TokenParser (Expression UnkindedType Identifier Location)
 varParser = go <?> "variable (e.g. ‘foo’, ‘id’, etc.)"

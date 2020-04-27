@@ -1,7 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,28 +10,33 @@
 
 -- |
 
-import "monad-logger" Control.Monad.Logger
-import "inflex-engine"         Control.Monad.Supply
-import                Control.Monad.Writer
-import                Data.Bifunctor
-import                Data.Maybe
-import                Data.Text (Text)
-import qualified      Data.Text as T
-import                Debug.Trace
-import                Duet.Infer
-import                Duet.Parser
-import                Duet.Printer
-import                Duet.Simple
-import                Duet.Types
-import qualified      Language.PureScript.CST as CST
-import                Test.Hspec
-import                Test.Validity (forAllUnchecked)
+import "monad-logger"  Control.Monad.Logger
+import "inflex-engine" Control.Monad.Supply
+import                 Control.Monad.Writer
+import                 Data.Bifunctor
+import                 Data.Map.Strict (Map)
+import qualified       Data.Map.Strict as M
+import                 Data.Maybe
+import                 Data.Text (Text)
+import qualified       Data.Text as T
+import                 Data.Vector (Vector)
+import qualified       Data.Vector as V
+import                 Debug.Trace
+import                 Duet.Infer
+import                 Duet.Parser
+import                 Duet.Printer
+import                 Duet.Simple
+import                 Duet.Types
+import qualified       Language.PureScript.CST as CST
+import                 Test.Hspec
+import                 Test.Validity (forAllUnchecked)
 
 main :: IO ()
 main = hspec spec
 
 spec :: SpecWith ()
-spec =
+spec = do
+  describe "Parser" parserTests
   describe
     "Compilation"
     (do it
@@ -315,7 +319,7 @@ spec =
                    (Right
                       [ ArrayExpression
                           ()
-                          [LiteralExpression () (IntegerLiteral 1)]
+                          (V.fromList [LiteralExpression () (IntegerLiteral 1)])
                       ]))
               it
                 "Evaluate array"
@@ -338,22 +342,131 @@ spec =
                    (Right
                       [ ArrayExpression
                           ()
-                          [ InfixExpression
-                              ()
-                              (LiteralExpression () (IntegerLiteral 2))
-                              ( "*"
-                              , ApplicationExpression
-                                  ()
-                                  (VariableExpression () (MethodName 12 "times"))
-                                  (VariableExpression
+                          (V.fromList
+                             [ InfixExpression
+                                 ()
+                                 (LiteralExpression () (IntegerLiteral 2))
+                                 ( "*"
+                                 , ApplicationExpression
                                      ()
-                                     (DictName 37 "$dictNum_Integer")))
-                              (LiteralExpression () (IntegerLiteral 3))
-                          , LiteralExpression () (IntegerLiteral 5)
-                          ]
+                                     (VariableExpression
+                                        ()
+                                        (MethodName 12 "times"))
+                                     (VariableExpression
+                                        ()
+                                        (DictName 37 "$dictNum_Integer")))
+                                 (LiteralExpression () (IntegerLiteral 3))
+                             , LiteralExpression () (IntegerLiteral 5)
+                             ])
                       , ArrayExpression
                           ()
-                          [ LiteralExpression () (IntegerLiteral 6)
-                          , LiteralExpression () (IntegerLiteral 5)
-                          ]
+                          (V.fromList
+                             [ LiteralExpression () (IntegerLiteral 6)
+                             , LiteralExpression () (IntegerLiteral 5)
+                             ])
                       ]))))
+
+parserTests =
+  it
+    "Records"
+    (shouldReturn
+       (parseText "" "x = {x: 1, y: 2 * 3, z: 4}")
+       [ BindDecl
+           (Location
+              { locationStartLine = 1
+              , locationStartColumn = 1
+              , locationEndLine = 1
+              , locationEndColumn = 2
+              })
+           (ImplicitBinding
+              (ImplicitlyTypedBinding
+                 { implicitlyTypedBindingLabel =
+                     Location
+                       { locationStartLine = 1
+                       , locationStartColumn = 1
+                       , locationEndLine = 1
+                       , locationEndColumn = 2
+                       }
+                 , implicitlyTypedBindingId =
+                     ( Identifier {identifierString = "x"}
+                     , Location
+                         { locationStartLine = 1
+                         , locationStartColumn = 1
+                         , locationEndLine = 1
+                         , locationEndColumn = 2
+                         })
+                 , implicitlyTypedBindingAlternatives =
+                     [ Alternative
+                         { alternativeLabel =
+                             Location
+                               { locationStartLine = 1
+                               , locationStartColumn = 1
+                               , locationEndLine = 1
+                               , locationEndColumn = 2
+                               }
+                         , alternativePatterns = []
+                         , alternativeExpression =
+                             RowExpression
+                               (Location
+                                  { locationStartLine = 1
+                                  , locationStartColumn = 5
+                                  , locationEndLine = 1
+                                  , locationEndColumn = 6
+                                  })
+                               (M.fromList
+                                  [ ( Identifier {identifierString = "x"}
+                                    , LiteralExpression
+                                        (Location
+                                           { locationStartLine = 1
+                                           , locationStartColumn = 9
+                                           , locationEndLine = 1
+                                           , locationEndColumn = 10
+                                           })
+                                        (IntegerLiteral 1))
+                                  , ( Identifier {identifierString = "y"}
+                                    , InfixExpression
+                                        (Location
+                                           { locationStartLine = 0
+                                           , locationStartColumn = 0
+                                           , locationEndLine = 0
+                                           , locationEndColumn = 0
+                                           })
+                                        (LiteralExpression
+                                           (Location
+                                              { locationStartLine = 1
+                                              , locationStartColumn = 15
+                                              , locationEndLine = 1
+                                              , locationEndColumn = 16
+                                              })
+                                           (IntegerLiteral 2))
+                                        ( "*"
+                                        , VariableExpression
+                                            (Location
+                                               { locationStartLine = 0
+                                               , locationStartColumn = 0
+                                               , locationEndLine = 0
+                                               , locationEndColumn = 0
+                                               })
+                                            (Identifier {identifierString = "*"}))
+                                        (LiteralExpression
+                                           (Location
+                                              { locationStartLine = 1
+                                              , locationStartColumn = 19
+                                              , locationEndLine = 1
+                                              , locationEndColumn = 20
+                                              })
+                                           (IntegerLiteral 3)))
+                                  , ( Identifier {identifierString = "z"}
+                                    , LiteralExpression
+                                        (Location
+                                           { locationStartLine = 1
+                                           , locationStartColumn = 25
+                                           , locationEndLine = 1
+                                           , locationEndColumn = 26
+                                           })
+                                        (IntegerLiteral 4))
+                                  ])
+                         }
+                     ]
+                 }))
+       ])

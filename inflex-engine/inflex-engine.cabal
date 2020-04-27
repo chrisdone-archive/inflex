@@ -76,3 +76,4 @@ test-suite duet-test
     syb,
     hspec,
     monad-logger
+    , vector
