@@ -55,6 +55,7 @@ import           Control.Arrow (first,second)
 import           Control.Monad.Catch
 import           Control.Monad.State
 import           Data.Function
+import           Data.Functor.Identity
 import           Data.Generics
 import           Data.Graph
 import           Data.List
@@ -263,7 +264,7 @@ classMethodScheme cls (Forall methodVars (Qualified methodPreds methodType)) = d
 
 infixr 4 @@
 (@@) :: [Substitution Name] -> [Substitution Name] -> [Substitution Name]
-s1 @@ s2 = [Substitution u (substituteType s1 t) | (Substitution u t) <- s2] ++ s1
+s1 @@ s2 = [Substitution u (runIdentity (substituteVarsInType s1 t)) | (Substitution u t) <- s2] ++ s1
 
 nullSubst :: [Substitution Name]
 nullSubst = []
@@ -272,7 +273,7 @@ substituteQualified :: [Substitution Name] -> Qualified Type Name (Type Name) ->
 substituteQualified substitutions (Qualified predicates t) =
   Qualified
     (map (substitutePredicate substitutions) predicates)
-    (substituteType substitutions t)
+    (runIdentity (substituteVarsInType substitutions t))
 
 substituteTypeSignature :: [Substitution Name] -> (TypeSignature Type Name l) -> (TypeSignature Type Name l)
 substituteTypeSignature substitutions (TypeSignature l scheme) =
@@ -282,43 +283,79 @@ substituteTypeSignature substitutions (TypeSignature l scheme) =
 
 substitutePredicate :: [Substitution Name] -> Predicate Type Name -> Predicate Type Name
 substitutePredicate substitutions (IsIn identifier types) =
-    IsIn identifier (map (substituteType substitutions) types)
+    IsIn identifier (map (runIdentity . substituteVarsInType substitutions) types)
 
-substituteType :: [Substitution Name] -> Type Name -> Type Name
-substituteType substitutions (VariableType typeVariable) =
-    case find ((== typeVariable) . substitutionTypeVariable) substitutions of
-      Just substitution -> substitutionType substitution
-      Nothing -> VariableType typeVariable
-substituteType substitutions (ApplicationType type1 type2) =
-    ApplicationType
-      (substituteType substitutions type1)
-      (substituteType substitutions type2)
-substituteType substitutions (RowType (Row { rowVariable = var
-                                           , rowFields = fields
-                                           })) =
-  RowType
-    (Row
-       { rowVariable = var -- FIXME: also do replacement here. (See EAQL Inferer.hs)
-       , rowFields =
-           map
-             (\field ->
-                field
-                  {fieldType = substituteType substitutions (fieldType field)})
-             fields
-       })
-{-
-EAQL sample:
 
-RowType Row {rowVariable = Just v, rowFields = xs}
-  | v == replaceThis ->
-    case withThis of
-      RowType Row {rowVariable = v2, rowFields = ys} ->
-        pure
-          (RowType
-             (Row {rowVariable = v2, rowFields = shadowFields ys xs}))
-      _ -> pure withThis
--}
-substituteType _ typ = typ
+--------------------------------------------------------------------------------
+-- More beautiful algorithm
+
+-- | Apply a set of substitutions to a type. Repeats application until
+-- no more substitutions are performed.
+--
+-- Substituting a row variable only extends that row, a la
+-- subsumption; it doesn't lose any information. Hence 'shadowFields'.
+substituteVarsInType ::
+     Monad m
+  => [Substitution Name]
+  -> Type Name
+  -> m (Type Name)
+substituteVarsInType substitutions inThisType =
+  foldM
+    (\inThis (Substitution replaceThis withThis) ->
+       substituteInType replaceThis withThis inThis)
+    inThisType
+    substitutions
+
+substituteInType :: Monad f => TypeVariable Name -> Type Name -> Type Name -> f (Type Name)
+substituteInType replaceThis withThis inThis =
+  case inThis of
+    VariableType thisVar
+      | thisVar == replaceThis -> pure withThis
+      | otherwise -> pure inThis
+    RowType Row {rowVariable = Just v, rowFields = xs}
+      | v == replaceThis ->
+        case withThis of
+          RowType Row {rowVariable = v2, rowFields = ys} ->
+            pure
+              (RowType (Row {rowVariable = v2, rowFields = shadowFields ys xs}))
+          _ -> pure withThis
+    RowType row -> RowType <$> substituteInRow replaceThis withThis row
+    ApplicationType type1 type2 ->
+      ApplicationType <$> (substituteInType replaceThis withThis type1) <*>
+      (substituteInType replaceThis withThis type2)
+    typ -> pure typ
+
+-- | Extend a record, shadowing existing fields.
+shadowFields :: [Field Name] -- ^ New fields
+  -> [Field Name]  -- ^ Old fields
+  -> [Field Name] -- ^ Union of the two rows
+shadowFields = unionBy (on (==) fieldName)
+
+-- | Substitute the given type for all the fields in a row type.
+substituteInRow :: Monad f => TypeVariable Name -> Type Name -> Row Name -> f (Row Name)
+substituteInRow replaceThis withThis inThis =
+  Row (rowVariable inThis) <$>
+  mapM (substituteInField replaceThis withThis) (rowFields inThis)
+
+-- | Replace the type variable in the field's type with the given type.
+substituteInField ::
+     Monad f
+  => (TypeVariable Name)
+  -> (Type Name)
+  -> (Field Name)
+  -> f (Field Name)
+substituteInField replaceThis withThisFieldType inThisField = do
+  fieldType' <-
+    substituteInType replaceThis withThisFieldType (fieldType inThisField)
+  pure inThisField {fieldType = fieldType'}
+
+-- -- | Re-run the function successively until it produces the same result.
+-- fixedPoint :: (Eq a, Monad m) => a -> (a -> m a) -> m a
+-- fixedPoint a f = do
+--   a' <- f a
+--   if a == a'
+--     then pure a'
+--     else fixedPoint a' f
 
 --------------------------------------------------------------------------------
 -- Type inference
@@ -326,7 +363,10 @@ substituteType _ typ = typ
 unify :: MonadThrow m => Type Name -> Type Name -> InferT m ()
 unify t1 t2 = do
   s <- InferT (gets inferStateSubstitutions)
-  u <- unifyTypes (substituteType s t1) (substituteType s t2)
+  u <-
+    unifyTypes
+      (runIdentity (substituteVarsInType s t1))
+      (runIdentity (substituteVarsInType s t2))
   InferT
     (modify
        (\s' -> s' {inferStateSubstitutions = u @@ inferStateSubstitutions s'}))
@@ -361,7 +401,7 @@ inferExplicitlyTypedBindingType ce as (ExplicitlyTypedBinding l (identifier, l')
   (ps, alts') <- inferAltTypes ce as alts t
   s <- InferT (gets inferStateSubstitutions)
   let qs' = map (substitutePredicate s) qs
-      t' = substituteType s t
+      t' = runIdentity (substituteVarsInType s t)
       fs =
         getTypeVariablesOf
           getTypeSignatureTypeVariables
@@ -429,7 +469,7 @@ inferImplicitlyTypedBindingsTypes ce as bs = do
       binds' = map snd pss0
   s <- InferT (gets inferStateSubstitutions)
   let ps' = map (substitutePredicate s) (concat pss)
-      ts' = map (substituteType s) ts
+      ts' = map (runIdentity . substituteVarsInType s) ts
       fs =
         getTypeVariablesOf
           getTypeSignatureTypeVariables
@@ -611,9 +651,12 @@ oneWayMatchPredicate = lift' oneWayMatchLists
 
 unifyTypes :: MonadThrow m => Type Name -> Type Name -> m [Substitution Name]
 unifyTypes (ApplicationType l r) (ApplicationType l' r') = do
-              s1 <- unifyTypes l l'
-              s2 <- unifyTypes (substituteType s1 r) (substituteType s1 r')
-              return (s2 @@ s1)
+  s1 <- unifyTypes l l'
+  s2 <-
+    unifyTypes
+      (runIdentity (substituteVarsInType s1 r))
+      (runIdentity (substituteVarsInType s1 r'))
+  return (s2 @@ s1)
 unifyTypes (VariableType u) t = unifyTypeVariable u t
 unifyTypes t (VariableType u) = unifyTypeVariable u t
 unifyTypes (ConstructorType tc1) (ConstructorType tc2)
@@ -677,9 +720,12 @@ unifyRows row1@(Row v1 fs1) row2@(Row v2 fs2) = do
 
 unifyTypeList :: MonadThrow m => [Type Name] -> [Type Name] -> m [Substitution Name]
 unifyTypeList (x:xs) (y:ys) = do
-    s1 <- unifyTypes x y
-    s2 <- unifyTypeList (map (substituteType s1) xs) (map (substituteType s1) ys)
-    return (s2 @@ s1)
+  s1 <- unifyTypes x y
+  s2 <-
+    unifyTypeList
+      (map (runIdentity . (substituteVarsInType s1)) xs)
+      (map (runIdentity . substituteVarsInType s1) ys)
+  return (s2 @@ s1)
 unifyTypeList [] [] = return nullSubst
 unifyTypeList _ _ = throwM ListsDoNotUnify
 
@@ -962,22 +1008,22 @@ merge s1 s2 =
   where
     agree =
       all
-        (\v -> substituteType s1 (VariableType v) == substituteType s2 (VariableType v))
+        (\v ->
+           runIdentity (substituteVarsInType s1 (VariableType v)) ==
+           runIdentity (substituteVarsInType s2 (VariableType v)))
         (map substitutionTypeVariable s1 `intersect`
          map substitutionTypeVariable s2)
 
 typeSignatureType :: MonadThrow m => TypeSignature Type Name l -> m (Type Name)
 typeSignatureType sig =
   case typeSignatureScheme sig of
+        -- TODO: Address this. Are we OK to discard constraints from this
+        -- type signature?  I'm thinking of e.g. the way that predicates
+        -- are bubbled up below in inferExplicitlyType. It seems like it's
+        -- not needed to keep hold of them within the row type.
+        -- But it might be needed. Hence, re-visit this and actually make
+        -- a test suite for it to see if anything "bad" happens.
     Forall _ (Qualified _ ty) -> pure ty
-    -- TODO: Address this. Are we OK to discard constraints from this
-    -- type signature?  I'm thinking of e.g. the way that predicates
-    -- are bubbled up below in inferExplicitlyType. It seems like it's
-    -- not needed to keep hold of them within the row type.
-
-    -- But it might be needed. Hence, re-visit this and actually make
-    -- a test suite for it to see if anything "bad" happens.
-    s -> throwM (PolymorphicField s)
 
 inferExpressionType
   :: forall l m. (MonadThrow m, Show l)
