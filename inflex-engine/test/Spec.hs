@@ -14,6 +14,7 @@ import "monad-logger"  Control.Monad.Logger
 import "inflex-engine" Control.Monad.Supply
 import                 Control.Monad.Writer
 import                 Data.Bifunctor
+import                 Data.Foldable
 import                 Data.Map.Strict (Map)
 import qualified       Data.Map.Strict as M
 import                 Data.Maybe
@@ -472,7 +473,7 @@ parserTests =
                  }))
        ])
 
-inferenceTests =
+inferenceTests = do
   it
     "Basic compile and run constant"
     (shouldBe
@@ -482,647 +483,377 @@ inferenceTests =
              ((evalSupplyT
                  (do decls <- parseText "test" "r = {x: 2, y: 3 * 6}"
                      (binds, ctx) <- createContext decls
-                     pure (take 1 binds))
+                     pure
+                       (map (map typeSignatureScheme . toList) (take 1 binds)))
                  [1 ..]))))
        (Right
-          [ BindGroup
-              { bindGroupExplicitlyTypedBindings = []
-              , bindGroupImplicitlyTypedBindings =
-                  [ [ ImplicitlyTypedBinding
-                        { implicitlyTypedBindingLabel =
-                            TypeSignature
-                              { typeSignatureA =
-                                  Location
-                                    { locationStartLine = 1
-                                    , locationStartColumn = 1
-                                    , locationEndLine = 1
-                                    , locationEndColumn = 2
+          [ [ Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       RowType
+                         (Row
+                            { rowVariable = Nothing
+                            , rowFields =
+                                [ Field
+                                    { fieldName =
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
                                     }
-                              , typeSignatureScheme =
-                                  Forall
-                                    []
-                                    (Qualified
-                                       { qualifiedPredicates = []
-                                       , qualifiedType =
-                                           RowType
-                                             (Row
-                                                { rowVariable = Nothing
-                                                , rowFields =
-                                                    [ Field
-                                                        { fieldName =
-                                                            Identifier
-                                                              {identifierString = "x"}
-                                                        , fieldType =
-                                                            ConstructorType
-                                                              (TypeConstructor
-                                                                 { typeConstructorIdentifier =
-                                                                     TypeName
-                                                                       5
-                                                                       "Integer"
-                                                                 , typeConstructorKind =
-                                                                     StarKind
-                                                                 })
-                                                        }
-                                                    , Field
-                                                        { fieldName =
-                                                            Identifier
-                                                              {identifierString = "y"}
-                                                        , fieldType =
-                                                            ConstructorType
-                                                              (TypeConstructor
-                                                                 { typeConstructorIdentifier =
-                                                                     TypeName
-                                                                       5
-                                                                       "Integer"
-                                                                 , typeConstructorKind =
-                                                                     StarKind
-                                                                 })
-                                                        }
-                                                    ]
-                                                })
-                                       })
-                              }
-                        , implicitlyTypedBindingId =
-                            ( ValueName 49 "r"
-                            , TypeSignature
-                                { typeSignatureA =
-                                    Location
-                                      { locationStartLine = 1
-                                      , locationStartColumn = 1
-                                      , locationEndLine = 1
-                                      , locationEndColumn = 2
-                                      }
-                                , typeSignatureScheme =
-                                    Forall
-                                      []
-                                      (Qualified
-                                         { qualifiedPredicates = []
-                                         , qualifiedType =
-                                             RowType
-                                               (Row
-                                                  { rowVariable = Nothing
-                                                  , rowFields =
-                                                      [ Field
-                                                          { fieldName =
-                                                              Identifier
-                                                                {identifierString = "x"}
-                                                          , fieldType =
-                                                              ConstructorType
-                                                                (TypeConstructor
-                                                                   { typeConstructorIdentifier =
-                                                                       TypeName
-                                                                         5
-                                                                         "Integer"
-                                                                   , typeConstructorKind =
-                                                                       StarKind
-                                                                   })
-                                                          }
-                                                      , Field
-                                                          { fieldName =
-                                                              Identifier
-                                                                {identifierString = "y"}
-                                                          , fieldType =
-                                                              ConstructorType
-                                                                (TypeConstructor
-                                                                   { typeConstructorIdentifier =
-                                                                       TypeName
-                                                                         5
-                                                                         "Integer"
-                                                                   , typeConstructorKind =
-                                                                       StarKind
-                                                                   })
-                                                          }
-                                                      ]
-                                                  })
-                                         })
-                                })
-                        , implicitlyTypedBindingAlternatives =
-                            [ Alternative
-                                { alternativeLabel =
-                                    TypeSignature
-                                      { typeSignatureA =
-                                          Location
-                                            { locationStartLine = 1
-                                            , locationStartColumn = 1
-                                            , locationEndLine = 1
-                                            , locationEndColumn = 2
-                                            }
-                                      , typeSignatureScheme =
-                                          Forall
-                                            []
-                                            (Qualified
-                                               { qualifiedPredicates =
-                                                   [ IsIn
-                                                       (ClassName 13 "Num")
-                                                       [ ConstructorType
-                                                           (TypeConstructor
-                                                              { typeConstructorIdentifier =
-                                                                  TypeName 5 "Integer"
-                                                              , typeConstructorKind =
-                                                                  StarKind
-                                                              })
-                                                       ]
-                                                   ]
-                                               , qualifiedType =
-                                                   RowType
-                                                     (Row
-                                                        { rowVariable = Nothing
-                                                        , rowFields =
-                                                            [ Field
-                                                                { fieldName =
-                                                                    Identifier
-                                                                      { identifierString =
-                                                                          "x"
-                                                                      }
-                                                                , fieldType =
-                                                                    ConstructorType
-                                                                      (TypeConstructor
-                                                                         { typeConstructorIdentifier =
-                                                                             TypeName
-                                                                               5
-                                                                               "Integer"
-                                                                         , typeConstructorKind =
-                                                                             StarKind
-                                                                         })
-                                                                }
-                                                            , Field
-                                                                { fieldName =
-                                                                    Identifier
-                                                                      { identifierString =
-                                                                          "y"
-                                                                      }
-                                                                , fieldType =
-                                                                    ConstructorType
-                                                                      (TypeConstructor
-                                                                         { typeConstructorIdentifier =
-                                                                             TypeName
-                                                                               5
-                                                                               "Integer"
-                                                                         , typeConstructorKind =
-                                                                             StarKind
-                                                                         })
-                                                                }
-                                                            ]
-                                                        })
-                                               })
-                                      }
-                                , alternativePatterns = []
-                                , alternativeExpression =
-                                    RowExpression
-                                      (TypeSignature
-                                         { typeSignatureA =
-                                             Location
-                                               { locationStartLine = 1
-                                               , locationStartColumn = 5
-                                               , locationEndLine = 1
-                                               , locationEndColumn = 6
-                                               }
-                                         , typeSignatureScheme =
-                                             Forall
-                                               []
-                                               (Qualified
-                                                  { qualifiedPredicates = []
-                                                  , qualifiedType =
-                                                      RowType
-                                                        (Row
-                                                           { rowVariable = Nothing
-                                                           , rowFields =
-                                                               [ Field
-                                                                   { fieldName =
-                                                                       Identifier
-                                                                         { identifierString =
-                                                                             "x"
-                                                                         }
-                                                                   , fieldType =
-                                                                       ConstructorType
-                                                                         (TypeConstructor
-                                                                            { typeConstructorIdentifier =
-                                                                                TypeName
-                                                                                  5
-                                                                                  "Integer"
-                                                                            , typeConstructorKind =
-                                                                                StarKind
-                                                                            })
-                                                                   }
-                                                               , Field
-                                                                   { fieldName =
-                                                                       Identifier
-                                                                         { identifierString =
-                                                                             "y"
-                                                                         }
-                                                                   , fieldType =
-                                                                       ConstructorType
-                                                                         (TypeConstructor
-                                                                            { typeConstructorIdentifier =
-                                                                                TypeName
-                                                                                  5
-                                                                                  "Integer"
-                                                                            , typeConstructorKind =
-                                                                                StarKind
-                                                                            })
-                                                                   }
-                                                               ]
-                                                           })
-                                                  })
-                                         })
-                                      (M.fromList
-                                         [ ( Identifier {identifierString = "x"}
-                                           , LiteralExpression
-                                               (TypeSignature
-                                                  { typeSignatureA =
-                                                      Location
-                                                        { locationStartLine = 1
-                                                        , locationStartColumn = 9
-                                                        , locationEndLine = 1
-                                                        , locationEndColumn = 10
-                                                        }
-                                                  , typeSignatureScheme =
-                                                      Forall
-                                                        []
-                                                        (Qualified
-                                                           { qualifiedPredicates = []
-                                                           , qualifiedType =
-                                                               ConstructorType
-                                                                 (TypeConstructor
-                                                                    { typeConstructorIdentifier =
-                                                                        TypeName
-                                                                          5
-                                                                          "Integer"
-                                                                    , typeConstructorKind =
-                                                                        StarKind
-                                                                    })
-                                                           })
-                                                  })
-                                               (IntegerLiteral 2))
-                                         , ( Identifier {identifierString = "y"}
-                                           , InfixExpression
-                                               (TypeSignature
-                                                  { typeSignatureA =
-                                                      Location
-                                                        { locationStartLine = 0
-                                                        , locationStartColumn = 0
-                                                        , locationEndLine = 0
-                                                        , locationEndColumn = 0
-                                                        }
-                                                  , typeSignatureScheme =
-                                                      Forall
-                                                        []
-                                                        (Qualified
-                                                           { qualifiedPredicates =
-                                                               [ IsIn
-                                                                   (ClassName 13 "Num")
-                                                                   [ ConstructorType
-                                                                       (TypeConstructor
-                                                                          { typeConstructorIdentifier =
-                                                                              TypeName
-                                                                                5
-                                                                                "Integer"
-                                                                          , typeConstructorKind =
-                                                                              StarKind
-                                                                          })
-                                                                   ]
-                                                               ]
-                                                           , qualifiedType =
-                                                               ConstructorType
-                                                                 (TypeConstructor
-                                                                    { typeConstructorIdentifier =
-                                                                        TypeName
-                                                                          5
-                                                                          "Integer"
-                                                                    , typeConstructorKind =
-                                                                        StarKind
-                                                                    })
-                                                           })
-                                                  })
-                                               (LiteralExpression
-                                                  (TypeSignature
-                                                     { typeSignatureA =
-                                                         Location
-                                                           { locationStartLine = 1
-                                                           , locationStartColumn = 15
-                                                           , locationEndLine = 1
-                                                           , locationEndColumn = 16
-                                                           }
-                                                     , typeSignatureScheme =
-                                                         Forall
-                                                           []
-                                                           (Qualified
-                                                              { qualifiedPredicates = []
-                                                              , qualifiedType =
-                                                                  ConstructorType
-                                                                    (TypeConstructor
-                                                                       { typeConstructorIdentifier =
-                                                                           TypeName
-                                                                             5
-                                                                             "Integer"
-                                                                       , typeConstructorKind =
-                                                                           StarKind
-                                                                       })
-                                                              })
-                                                     })
-                                                  (IntegerLiteral 3))
-                                               ( "*"
-                                               , ApplicationExpression
-                                                   (TypeSignature
-                                                      { typeSignatureA =
-                                                          Location
-                                                            { locationStartLine = 0
-                                                            , locationStartColumn = 0
-                                                            , locationEndLine = 0
-                                                            , locationEndColumn = 0
-                                                            }
-                                                      , typeSignatureScheme =
-                                                          Forall
-                                                            []
-                                                            (Qualified
-                                                               { qualifiedPredicates =
-                                                                   [ IsIn
-                                                                       (ClassName
-                                                                          13
-                                                                          "Num")
-                                                                       [ ConstructorType
-                                                                           (TypeConstructor
-                                                                              { typeConstructorIdentifier =
-                                                                                  TypeName
-                                                                                    5
-                                                                                    "Integer"
-                                                                              , typeConstructorKind =
-                                                                                  StarKind
-                                                                              })
-                                                                       ]
-                                                                   ]
-                                                               , qualifiedType =
-                                                                   ApplicationType
-                                                                     (ApplicationType
-                                                                        (ConstructorType
-                                                                           (TypeConstructor
-                                                                              { typeConstructorIdentifier =
-                                                                                  TypeName
-                                                                                    2
-                                                                                    "(->)"
-                                                                              , typeConstructorKind =
-                                                                                  FunctionKind
-                                                                                    StarKind
-                                                                                    (FunctionKind
-                                                                                       StarKind
-                                                                                       StarKind)
-                                                                              }))
-                                                                        (ConstructorType
-                                                                           (TypeConstructor
-                                                                              { typeConstructorIdentifier =
-                                                                                  TypeName
-                                                                                    5
-                                                                                    "Integer"
-                                                                              , typeConstructorKind =
-                                                                                  StarKind
-                                                                              })))
-                                                                     (ApplicationType
-                                                                        (ApplicationType
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       2
-                                                                                       "(->)"
-                                                                                 , typeConstructorKind =
-                                                                                     FunctionKind
-                                                                                       StarKind
-                                                                                       (FunctionKind
-                                                                                          StarKind
-                                                                                          StarKind)
-                                                                                 }))
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })))
-                                                                        (ConstructorType
-                                                                           (TypeConstructor
-                                                                              { typeConstructorIdentifier =
-                                                                                  TypeName
-                                                                                    5
-                                                                                    "Integer"
-                                                                              , typeConstructorKind =
-                                                                                  StarKind
-                                                                              })))
-                                                               })
-                                                      })
-                                                   (VariableExpression
-                                                      (TypeSignature
-                                                         { typeSignatureA =
-                                                             Location
-                                                               { locationStartLine = 0
-                                                               , locationStartColumn = 0
-                                                               , locationEndLine = 0
-                                                               , locationEndColumn = 0
-                                                               }
-                                                         , typeSignatureScheme =
-                                                             Forall
-                                                               []
-                                                               (Qualified
-                                                                  { qualifiedPredicates =
-                                                                      [ IsIn
-                                                                          (ClassName
-                                                                             13
-                                                                             "Num")
-                                                                          [ ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })
-                                                                          ]
-                                                                      ]
-                                                                  , qualifiedType =
-                                                                      ApplicationType
-                                                                        (ApplicationType
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       2
-                                                                                       "(->)"
-                                                                                 , typeConstructorKind =
-                                                                                     FunctionKind
-                                                                                       StarKind
-                                                                                       (FunctionKind
-                                                                                          StarKind
-                                                                                          StarKind)
-                                                                                 }))
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })))
-                                                                        (ApplicationType
-                                                                           (ApplicationType
-                                                                              (ConstructorType
-                                                                                 (TypeConstructor
-                                                                                    { typeConstructorIdentifier =
-                                                                                        TypeName
-                                                                                          2
-                                                                                          "(->)"
-                                                                                    , typeConstructorKind =
-                                                                                        FunctionKind
-                                                                                          StarKind
-                                                                                          (FunctionKind
-                                                                                             StarKind
-                                                                                             StarKind)
-                                                                                    }))
-                                                                              (ConstructorType
-                                                                                 (TypeConstructor
-                                                                                    { typeConstructorIdentifier =
-                                                                                        TypeName
-                                                                                          5
-                                                                                          "Integer"
-                                                                                    , typeConstructorKind =
-                                                                                        StarKind
-                                                                                    })))
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })))
-                                                                  })
-                                                         })
-                                                      (MethodName 12 "times"))
-                                                   (VariableExpression
-                                                      (TypeSignature
-                                                         { typeSignatureA =
-                                                             Location
-                                                               { locationStartLine = 0
-                                                               , locationStartColumn = 0
-                                                               , locationEndLine = 0
-                                                               , locationEndColumn = 0
-                                                               }
-                                                         , typeSignatureScheme =
-                                                             Forall
-                                                               []
-                                                               (Qualified
-                                                                  { qualifiedPredicates =
-                                                                      [ IsIn
-                                                                          (ClassName
-                                                                             13
-                                                                             "Num")
-                                                                          [ ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })
-                                                                          ]
-                                                                      ]
-                                                                  , qualifiedType =
-                                                                      ApplicationType
-                                                                        (ApplicationType
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       2
-                                                                                       "(->)"
-                                                                                 , typeConstructorKind =
-                                                                                     FunctionKind
-                                                                                       StarKind
-                                                                                       (FunctionKind
-                                                                                          StarKind
-                                                                                          StarKind)
-                                                                                 }))
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })))
-                                                                        (ApplicationType
-                                                                           (ApplicationType
-                                                                              (ConstructorType
-                                                                                 (TypeConstructor
-                                                                                    { typeConstructorIdentifier =
-                                                                                        TypeName
-                                                                                          2
-                                                                                          "(->)"
-                                                                                    , typeConstructorKind =
-                                                                                        FunctionKind
-                                                                                          StarKind
-                                                                                          (FunctionKind
-                                                                                             StarKind
-                                                                                             StarKind)
-                                                                                    }))
-                                                                              (ConstructorType
-                                                                                 (TypeConstructor
-                                                                                    { typeConstructorIdentifier =
-                                                                                        TypeName
-                                                                                          5
-                                                                                          "Integer"
-                                                                                    , typeConstructorKind =
-                                                                                        StarKind
-                                                                                    })))
-                                                                           (ConstructorType
-                                                                              (TypeConstructor
-                                                                                 { typeConstructorIdentifier =
-                                                                                     TypeName
-                                                                                       5
-                                                                                       "Integer"
-                                                                                 , typeConstructorKind =
-                                                                                     StarKind
-                                                                                 })))
-                                                                  })
-                                                         })
-                                                      (DictName 37 "$dictNum_Integer")))
-                                               (LiteralExpression
-                                                  (TypeSignature
-                                                     { typeSignatureA =
-                                                         Location
-                                                           { locationStartLine = 1
-                                                           , locationStartColumn = 19
-                                                           , locationEndLine = 1
-                                                           , locationEndColumn = 20
-                                                           }
-                                                     , typeSignatureScheme =
-                                                         Forall
-                                                           []
-                                                           (Qualified
-                                                              { qualifiedPredicates = []
-                                                              , qualifiedType =
-                                                                  ConstructorType
-                                                                    (TypeConstructor
-                                                                       { typeConstructorIdentifier =
-                                                                           TypeName
-                                                                             5
-                                                                             "Integer"
-                                                                       , typeConstructorKind =
-                                                                           StarKind
-                                                                       })
-                                                              })
-                                                     })
-                                                  (IntegerLiteral 6)))
-                                         ])
-                                }
-                            ]
-                        }
-                    ]
-                  ]
-              }
+                                , Field
+                                    { fieldName =
+                                        Identifier {identifierString = "y"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                ]
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       RowType
+                         (Row
+                            { rowVariable = Nothing
+                            , rowFields =
+                                [ Field
+                                    { fieldName =
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                , Field
+                                    { fieldName =
+                                        Identifier {identifierString = "y"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                ]
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       RowType
+                         (Row
+                            { rowVariable = Nothing
+                            , rowFields =
+                                [ Field
+                                    { fieldName =
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                , Field
+                                    { fieldName =
+                                        Identifier {identifierString = "y"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                ]
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       RowType
+                         (Row
+                            { rowVariable = Nothing
+                            , rowFields =
+                                [ Field
+                                    { fieldName =
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                , Field
+                                    { fieldName =
+                                        Identifier {identifierString = "y"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                ]
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       ConstructorType
+                         (TypeConstructor
+                            { typeConstructorIdentifier = TypeName 5 "Integer"
+                            , typeConstructorKind = StarKind
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       ConstructorType
+                         (TypeConstructor
+                            { typeConstructorIdentifier = TypeName 5 "Integer"
+                            , typeConstructorKind = StarKind
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       ConstructorType
+                         (TypeConstructor
+                            { typeConstructorIdentifier = TypeName 5 "Integer"
+                            , typeConstructorKind = StarKind
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       ApplicationType
+                         (ApplicationType
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 2 "(->)"
+                                  , typeConstructorKind =
+                                      FunctionKind
+                                        StarKind
+                                        (FunctionKind StarKind StarKind)
+                                  }))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                         (ApplicationType
+                            (ApplicationType
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 2 "(->)"
+                                     , typeConstructorKind =
+                                         FunctionKind
+                                           StarKind
+                                           (FunctionKind StarKind StarKind)
+                                     }))
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 5 "Integer"
+                                     , typeConstructorKind = StarKind
+                                     })))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       ApplicationType
+                         (ApplicationType
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 2 "(->)"
+                                  , typeConstructorKind =
+                                      FunctionKind
+                                        StarKind
+                                        (FunctionKind StarKind StarKind)
+                                  }))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                         (ApplicationType
+                            (ApplicationType
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 2 "(->)"
+                                     , typeConstructorKind =
+                                         FunctionKind
+                                           StarKind
+                                           (FunctionKind StarKind StarKind)
+                                     }))
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 5 "Integer"
+                                     , typeConstructorKind = StarKind
+                                     })))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       ApplicationType
+                         (ApplicationType
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 2 "(->)"
+                                  , typeConstructorKind =
+                                      FunctionKind
+                                        StarKind
+                                        (FunctionKind StarKind StarKind)
+                                  }))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                         (ApplicationType
+                            (ApplicationType
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 2 "(->)"
+                                     , typeConstructorKind =
+                                         FunctionKind
+                                           StarKind
+                                           (FunctionKind StarKind StarKind)
+                                     }))
+                               (ConstructorType
+                                  (TypeConstructor
+                                     { typeConstructorIdentifier =
+                                         TypeName 5 "Integer"
+                                     , typeConstructorKind = StarKind
+                                     })))
+                            (ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })))
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       ConstructorType
+                         (TypeConstructor
+                            { typeConstructorIdentifier = TypeName 5 "Integer"
+                            , typeConstructorKind = StarKind
+                            })
+                   })
+            ]
           ]))
