@@ -714,6 +714,8 @@ unifyRows row1@(Row v1 fs1) row2@(Row v2 fs2) = do
       -- produce a union row type of both.
       (_, Just {}, _, Just {}) -> do
         pure []
+      (sd1, Nothing, sd2, Nothing)
+        | rowIsSubset sd1 sd2 && rowIsSubset sd2 sd1 -> pure []
       _ -> throwM (RowMismatch row1 row2)
   let common = intersect (map fieldName fs1) (map fieldName fs2)
       fieldsToUnify =
