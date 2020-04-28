@@ -380,7 +380,7 @@ newTypeVariable k =
     (do inferState <- get
         put inferState {inferStateCounter = inferStateCounter inferState + 1}
         return
-          (TypeVariable (enumId (inferStateCounter inferState)) k))
+          (TypeVariable (ForallName (inferStateCounter inferState)) k))
 
 newPolyRowType :: Monad m => [Field Name] -> InferT m (Type Name)
 newPolyRowType fs = do
@@ -477,7 +477,7 @@ inferImplicitlyTypedBindingsTypes ce as bs = do
       vss = map getTypeTypeVariables ts'
       gs = foldr1' union vss \\ fs
   (ds, rs) <- split ce fs (foldr1' intersect vss) ps'
-  if restrictImplicitlyTypedBindings bs
+  if False -- (restrictImplicitlyTypedBindings bs)
     then let gs' = gs \\ getTypeVariablesOf getPredicateTypeVariables rs
              scs' = map (quantify gs' . (Qualified [])) ts'
          in return
@@ -606,15 +606,15 @@ typeKind (ApplicationType typ _) =
 --------------------------------------------------------------------------------
 -- GOOD NAMING CONVENInferON, UNSORTED
 
--- | The monomorphism restriction is invoked when one or more of the
--- entries in a list of implicitly typed bindings is simple, meaning
--- that it has an alternative with no left-hand side patterns. The
--- following function provides a way to test for this:
-restrictImplicitlyTypedBindings :: [(ImplicitlyTypedBinding t Name l)] -> Bool
-restrictImplicitlyTypedBindings = any simple
-  where
-    simple =
-      any (null . alternativePatterns) . implicitlyTypedBindingAlternatives
+-- -- | The monomorphism restriction is invoked when one or more of the
+-- -- entries in a list of implicitly typed bindings is simple, meaning
+-- -- that it has an alternative with no left-hand side patterns. The
+-- -- following function provides a way to test for this:
+-- restrictImplicitlyTypedBindings :: [(ImplicitlyTypedBinding t Name l)] -> Bool
+-- restrictImplicitlyTypedBindings = any simple
+--   where
+--     simple =
+--       any (null . alternativePatterns) . implicitlyTypedBindingAlternatives
 
 -- | The following function calculates the list of ambiguous variables
 -- and pairs each one with the list of predicates that must be
@@ -757,9 +757,6 @@ lookupName name cands = go name cands where
     if i == i'
       then return sc
       else go i as
-
-enumId :: Int -> Name
-enumId n = ForallName n
 
 inferLiteralType
   :: Monad m
