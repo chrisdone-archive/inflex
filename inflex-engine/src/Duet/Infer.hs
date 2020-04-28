@@ -299,12 +299,15 @@ substituteVarsInType ::
   => [Substitution Name]
   -> Type Name
   -> m (Type Name)
-substituteVarsInType substitutions inThisType =
-  foldM
-    (\inThis (Substitution replaceThis withThis) ->
-       substituteInType replaceThis withThis inThis)
-    inThisType
-    substitutions
+substituteVarsInType substitutions inThisType0 =
+  fixedPoint
+    inThisType0
+    (\inThisType ->
+       foldM
+         (\inThis (Substitution replaceThis withThis) ->
+            substituteInType replaceThis withThis inThis)
+         inThisType
+         substitutions)
 
 substituteInType :: Monad f => TypeVariable Name -> Type Name -> Type Name -> f (Type Name)
 substituteInType replaceThis withThis inThis =
@@ -349,13 +352,13 @@ substituteInField replaceThis withThisFieldType inThisField = do
     substituteInType replaceThis withThisFieldType (fieldType inThisField)
   pure inThisField {fieldType = fieldType'}
 
--- -- | Re-run the function successively until it produces the same result.
--- fixedPoint :: (Eq a, Monad m) => a -> (a -> m a) -> m a
--- fixedPoint a f = do
---   a' <- f a
---   if a == a'
---     then pure a'
---     else fixedPoint a' f
+-- | Re-run the function successively until it produces the same result.
+fixedPoint :: (Eq a, Monad m) => a -> (a -> m a) -> m a
+fixedPoint a f = do
+  a' <- f a
+  if a == a'
+    then pure a'
+    else fixedPoint a' f
 
 --------------------------------------------------------------------------------
 -- Type inference
@@ -387,8 +390,19 @@ newPolyRowType fs = do
   typeVariable <- newTypeVariable RowKind
   pure (RowType (polymorphicRow typeVariable fs))
 
-newMonoRowType :: Monad m => [Field Name] -> InferT m (Type Name)
-newMonoRowType fs = pure (RowType (monomorphicRow fs))
+newMonoRowScheme ::
+     Monad m
+  => Map Identifier (Scheme Type Name Type)
+  -> InferT m (Scheme Type Name Type)
+newMonoRowScheme fields = do
+  pure (Forall tyvars (Qualified ps (RowType (monomorphicRow fs))))
+  where
+    fs =
+      map
+        (\(ident, Forall _ (Qualified _ t)) -> Field ident t)
+        (M.toList fields)
+    tyvars = concatMap (\(Forall vs (Qualified _ _)) -> vs) (M.elems fields)
+    ps = concatMap (\(Forall _ (Qualified p _)) -> p) (M.elems fields)
 
 inferExplicitlyTypedBindingType
   :: (MonadThrow m, Show l  )
@@ -1011,17 +1025,6 @@ merge s1 s2 =
         (map substitutionTypeVariable s1 `intersect`
          map substitutionTypeVariable s2)
 
-typeSignatureType :: MonadThrow m => TypeSignature Type Name l -> m (Type Name)
-typeSignatureType sig =
-  case typeSignatureScheme sig of
-        -- TODO: Address this. Are we OK to discard constraints from this
-        -- type signature?  I'm thinking of e.g. the way that predicates
-        -- are bubbled up below in inferExplicitlyType. It seems like it's
-        -- not needed to keep hold of them within the row type.
-        -- But it might be needed. Hence, re-visit this and actually make
-        -- a test suite for it to see if anything "bad" happens.
-    Forall _ (Qualified _ ty) -> pure ty
-
 inferExpressionType
   :: forall l m. (MonadThrow m, Show l)
   => Map Name (Class Type Name l)
@@ -1037,15 +1040,10 @@ inferExpressionType ce as (RowExpression l fields) = do
       nameTypeMap ::
            Map Identifier (Expression Type Name (TypeSignature Type Name l))
       nameTypeMap = M.fromList (map (\(n, (_, _, t)) -> (n, t)) es')
-  rowType <-
-    mapM
-      (\(fieldName, expr) -> do
-         fieldType <- typeSignatureType (expressionLabel expr)
-         pure Field {fieldName, fieldType})
-      (M.toList nameTypeMap) >>=
-    newMonoRowType
-  let scheme = Forall [] (Qualified [] rowType)
-  pure (concat ps, rowType, RowExpression (TypeSignature l scheme) nameTypeMap)
+  scheme@(Forall _ (Qualified ps' rowType)) <-
+    newMonoRowScheme
+      (fmap (\expr -> typeSignatureScheme (expressionLabel expr)) nameTypeMap)
+  pure (concat ps <> ps', rowType, RowExpression (TypeSignature l scheme) nameTypeMap)
 inferExpressionType ce as (PropExpression l e fieldName) = do
   (ps, rowExprType, e') <- inferExpressionType ce as e
   fieldType <- newVariableType StarKind

@@ -481,7 +481,7 @@ inferenceTests = do
           show
           (runNoLoggingT
              ((evalSupplyT
-                 (do decls <- parseText "test" "r = {x: 2, y: 3 * 6}"
+                 (do decls <- parseText "test" "r = {f: 2 * 3, x: \"hi\"}"
                      (binds, ctx) <- createContext decls
                      pure
                        (map (map typeSignatureScheme . toList) (take 1 binds)))
@@ -498,7 +498,7 @@ inferenceTests = do
                             , rowFields =
                                 [ Field
                                     { fieldName =
-                                        Identifier {identifierString = "x"}
+                                        Identifier {identifierString = "f"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
@@ -509,12 +509,12 @@ inferenceTests = do
                                     }
                                 , Field
                                     { fieldName =
-                                        Identifier {identifierString = "y"}
+                                        Identifier {identifierString = "x"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
                                              { typeConstructorIdentifier =
-                                                 TypeName 5 "Integer"
+                                                 TypeName 4 "String"
                                              , typeConstructorKind = StarKind
                                              })
                                     }
@@ -532,7 +532,7 @@ inferenceTests = do
                             , rowFields =
                                 [ Field
                                     { fieldName =
-                                        Identifier {identifierString = "x"}
+                                        Identifier {identifierString = "f"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
@@ -543,12 +543,65 @@ inferenceTests = do
                                     }
                                 , Field
                                     { fieldName =
-                                        Identifier {identifierString = "y"}
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 4 "String"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                ]
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates =
+                       [ IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       , IsIn
+                           (ClassName 13 "Num")
+                           [ ConstructorType
+                               (TypeConstructor
+                                  { typeConstructorIdentifier =
+                                      TypeName 5 "Integer"
+                                  , typeConstructorKind = StarKind
+                                  })
+                           ]
+                       ]
+                   , qualifiedType =
+                       RowType
+                         (Row
+                            { rowVariable = Nothing
+                            , rowFields =
+                                [ Field
+                                    { fieldName =
+                                        Identifier {identifierString = "f"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
                                              { typeConstructorIdentifier =
                                                  TypeName 5 "Integer"
+                                             , typeConstructorKind = StarKind
+                                             })
+                                    }
+                                , Field
+                                    { fieldName =
+                                        Identifier {identifierString = "x"}
+                                    , fieldType =
+                                        ConstructorType
+                                          (TypeConstructor
+                                             { typeConstructorIdentifier =
+                                                 TypeName 4 "String"
                                              , typeConstructorKind = StarKind
                                              })
                                     }
@@ -576,7 +629,7 @@ inferenceTests = do
                             , rowFields =
                                 [ Field
                                     { fieldName =
-                                        Identifier {identifierString = "x"}
+                                        Identifier {identifierString = "f"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
@@ -587,61 +640,16 @@ inferenceTests = do
                                     }
                                 , Field
                                     { fieldName =
-                                        Identifier {identifierString = "y"}
-                                    , fieldType =
-                                        ConstructorType
-                                          (TypeConstructor
-                                             { typeConstructorIdentifier =
-                                                 TypeName 5 "Integer"
-                                             , typeConstructorKind = StarKind
-                                             })
-                                    }
-                                ]
-                            })
-                   })
-            , Forall
-                []
-                (Qualified
-                   { qualifiedPredicates = []
-                   , qualifiedType =
-                       RowType
-                         (Row
-                            { rowVariable = Nothing
-                            , rowFields =
-                                [ Field
-                                    { fieldName =
                                         Identifier {identifierString = "x"}
                                     , fieldType =
                                         ConstructorType
                                           (TypeConstructor
                                              { typeConstructorIdentifier =
-                                                 TypeName 5 "Integer"
-                                             , typeConstructorKind = StarKind
-                                             })
-                                    }
-                                , Field
-                                    { fieldName =
-                                        Identifier {identifierString = "y"}
-                                    , fieldType =
-                                        ConstructorType
-                                          (TypeConstructor
-                                             { typeConstructorIdentifier =
-                                                 TypeName 5 "Integer"
+                                                 TypeName 4 "String"
                                              , typeConstructorKind = StarKind
                                              })
                                     }
                                 ]
-                            })
-                   })
-            , Forall
-                []
-                (Qualified
-                   { qualifiedPredicates = []
-                   , qualifiedType =
-                       ConstructorType
-                         (TypeConstructor
-                            { typeConstructorIdentifier = TypeName 5 "Integer"
-                            , typeConstructorKind = StarKind
                             })
                    })
             , Forall
@@ -852,6 +860,17 @@ inferenceTests = do
                        ConstructorType
                          (TypeConstructor
                             { typeConstructorIdentifier = TypeName 5 "Integer"
+                            , typeConstructorKind = StarKind
+                            })
+                   })
+            , Forall
+                []
+                (Qualified
+                   { qualifiedPredicates = []
+                   , qualifiedType =
+                       ConstructorType
+                         (TypeConstructor
+                            { typeConstructorIdentifier = TypeName 4 "String"
                             , typeConstructorKind = StarKind
                             })
                    })
