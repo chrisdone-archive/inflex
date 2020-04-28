@@ -6,25 +6,28 @@ module Inflex.Editor
   , component
   ) where
 
-import Data.String
 import Data.Foldable (for_)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..))
+import Data.String (joinWith)
 import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Core as Core
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Halogen.HTML.Core as Core
-import Web.HTML.HTMLElement (focus, fromElement)
+import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
+import Web.HTML.HTMLElement (focus, fromElement)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
@@ -58,6 +61,7 @@ data Command
 data Editor
   = IntegerE String
   | ArrayE (Array Editor)
+  | RowE (Map String Editor)
   | MiscE String
 
 editorCode :: Editor -> String
@@ -66,6 +70,14 @@ editorCode =
     IntegerE s -> s
     MiscE s -> s
     ArrayE xs -> "[" <> joinWith ", " (map editorCode xs) <> "]"
+    RowE map' ->
+      "{" <>
+      joinWith
+        ", "
+        (map
+           (\(Tuple key value) -> key <> ": " <> editorCode value)
+           (M.toUnfoldable map')) <>
+      "}"
 
 data Display
   = DisplayEditor
@@ -164,8 +176,7 @@ render (State {display, code, editor}) =
         ]
     DisplayEditor ->
       HH.div
-        [ HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))
-        ]
+        [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
         [ let renderEditor =
                 case _ of
                   IntegerE i -> HH.text i
@@ -182,8 +193,7 @@ render (State {display, code, editor}) =
                                   component
                                   (EditorAndCode
                                      { editor: subEditor
-                                     , code:
-                                         editorCode subEditor
+                                     , code: editorCode subEditor
                                      })
                                   (\rhs ->
                                      Just
@@ -193,6 +203,29 @@ render (State {display, code, editor}) =
                                                 (editArray i (MiscE rhs) es)))))
                               ])
                          es)
+                  RowE es ->
+                    HH.table
+                      [HP.class_ (HH.ClassName "table")]
+                      (mapWithIndex
+                         (\i (Tuple key subEditor) ->
+                            HH.tr
+                              []
+                              [ HH.th [] [HH.text key]
+                              , HH.td
+                                  []
+                                  [ HH.slot
+                                      (SProxy :: SProxy "editor")
+                                      i
+                                      component
+                                      (EditorAndCode
+                                         { editor: subEditor
+                                         , code:
+                                             editorCode subEditor
+                                         })
+                                      (\rhs -> Nothing) {-TODO-}
+                                  ]
+                              ])
+                         (M.toUnfoldable es))
                   MiscE t -> HH.text t
            in renderEditor editor
         ]

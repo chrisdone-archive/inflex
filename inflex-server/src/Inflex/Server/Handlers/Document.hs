@@ -34,9 +34,11 @@ import                 Control.Monad.Reader
 import "inflex-engine" Control.Monad.Supply
 import                 Control.Monad.Writer
 import                 Data.Aeson
+import                 Data.Bifunctor
 import                 Data.Foldable
 import                 Data.HashMap.Strict (HashMap)
 import qualified       Data.HashMap.Strict as HM
+import qualified       Data.Map.Strict as M
 import                 Data.Semigroup ((<>))
 import                 Data.Text (Text)
 import qualified       Data.Text as T
@@ -52,7 +54,6 @@ import                 Duet.Types
 import                 Inflex.Server.App
 import                 Inflex.Server.Session
 import                 Inflex.Server.Types
-import                 Inflex.Server.View.Shop
 import                 Inflex.Server.View.App
 import                 Lucid
 import                 Sendfile
@@ -66,7 +67,13 @@ expressionToEditor =
   \case
     LiteralExpression unkindedType (IntegerLiteral integer) -> IntegerE integer
     ArrayExpression unkindedType es -> ArrayE (fmap expressionToEditor es)
-    e  -> MiscE (T.pack (printExpression defaultPrint e))
+    RowExpression unkindedType es ->
+      RowE
+        (M.fromList
+           (map
+              (first (\(Identifier i) -> T.pack i))
+              (M.toList (fmap expressionToEditor es))))
+    e -> MiscE (T.pack (printExpression defaultPrint e))
 
 maxSteps :: Int
 maxSteps = 100

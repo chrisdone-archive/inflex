@@ -23,6 +23,7 @@ module Inflex.Server.Types where
 import           Control.Monad
 import           Data.Char
 import           Data.Int
+import           Data.Map.Strict (Map)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
@@ -167,6 +168,7 @@ instance ToJSON RegistrationState
 data Editor
   = IntegerE Integer
   | ArrayE (Vector Editor)
+  | RowE (Map Text Editor)
   -- | RationalE Rational
   -- | TextE Text
   -- | RecordE (HashMap Text Editor)
@@ -179,6 +181,7 @@ instance ToJSON Editor where
       IntegerE integer ->
         object ["type" .= "integer", "integer" .= T.pack (show integer)]
       ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
+      RowE es -> object ["type" .= "row", "row" .= toJSON es]
       MiscE t -> object ["type" .= "misc", "misc" .= t]
 
 data DecOut = DecOut

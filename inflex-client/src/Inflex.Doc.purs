@@ -198,7 +198,12 @@ decOutsParser =
                            (J.caseJsonString (Left "not a string") Right)
                            (Foreign.lookup "error" dec)
                        pure
-                         (Dec.Dec {name, rhs, result: Left error, new: false})
+                         (Dec.Dec
+                            { name
+                            , rhs
+                            , result: Left error
+                            , new: false
+                            })
                      "success" -> do
                        editor <-
                          maybe
@@ -235,6 +240,20 @@ decOutsParser =
                                            map
                                              Editor.ArrayE
                                              (traverse editorParser es)
+                                         "row" -> do
+                                           es <-
+                                             maybe
+                                               (Left "need row")
+                                               (J.caseJsonObject
+                                                  (Left "not a row")
+                                                  (\fobj ->
+                                                     map
+                                                       foreignObjToMap
+                                                       (traverse
+                                                          editorParser
+                                                          fobj)))
+                                               (Foreign.lookup "row" obj')
+                                           pure (Editor.RowE es)
                                          _ -> do
                                            i <-
                                              maybe
@@ -248,9 +267,16 @@ decOutsParser =
                            (Foreign.lookup "editor" dec)
                        pure
                          (Dec.Dec
-                            {name, rhs, result: Right editor, new: false})
+                            { name
+                            , rhs
+                            , result: Right editor
+                            , new: false
+                            })
                      _ -> Left "invalid result"))
              mp)
+
+foreignObjToMap :: forall a. Foreign.Object a -> Map String a
+foreignObjToMap fobj = M.fromFoldable (Foreign.toAscUnfoldable fobj :: Array (Tuple String a))
 
 --------------------------------------------------------------------------------
 -- Render
