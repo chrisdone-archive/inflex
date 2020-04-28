@@ -44,9 +44,14 @@ expandSeq1 (Context { contextTypeClasses = typeClassEnv
           | (ce@(ConstructorExpression l _), args) <- fargs e0 -> do
             args' <- mapM go args
             pure (foldl (ApplicationExpression l) ce args')
+          -- Arrays are boxed.
           | ArrayExpression l es <- e0 -> do
             es' <- mapM go es
             pure (ArrayExpression l es')
+          -- Rows are boxed.
+          | RowExpression l es <- e0 -> do
+            es' <- mapM go es
+            pure (RowExpression l es')
           -- If we're looking at a constant (hole), then force the args.
           | (ce@(ConstantExpression l _), args) <- fargs e0 -> do
             args' <- mapM go args
@@ -80,6 +85,7 @@ expandWhnf typeClassEnv specialSigs signatures e b = go e
     go x =
       case x of
         ArrayExpression{} -> pure x
+        RowExpression {} -> pure x
         -- Parens aren't an expansion step, just a grouping.
         ParensExpression _ e -> go e
         VariableExpression _ i -> do
@@ -290,6 +296,7 @@ isWhnf :: Expression Type i l -> Bool
 isWhnf =
   \case
     ArrayExpression {} -> True
+    RowExpression {} -> True
     VariableExpression {} -> False
     ConstructorExpression {} -> True
     ConstantExpression {} -> True
@@ -321,6 +328,7 @@ substitute i arg = go
     go =
       \case
         ArrayExpression l xs -> ArrayExpression l (fmap (substitute i arg) xs)
+        RowExpression l xs -> RowExpression l (fmap (substitute i arg) xs)
         VariableExpression l i'
           | i == i' -> arg
           | otherwise -> VariableExpression l i'

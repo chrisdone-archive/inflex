@@ -155,7 +155,17 @@ printExpression :: (Printable i, PrintableType t) => Print i l -> (Expression t 
 printExpression printer e =
   wrapType
     (case e of
-       RowExpression _ _r -> "TODO: Print row"
+       RowExpression _ fields ->
+         "{" <>
+         mconcat
+           (intersperse
+              ", "
+              (map
+                 (\(name, val) ->
+                    printIdentifier printer name <> ": " <>
+                    printExpression printer val)
+                 (M.toList fields))) <>
+         "}"
        PropExpression _ _ _ -> "TODO: Print prop"
        LiteralExpression _ l -> printLiteral l
        VariableExpression _ i -> printIdentifier printer i
@@ -207,7 +217,8 @@ printExpression printer e =
             else o) ++
          " " ++ printExpressionAppArg printer x
        ArrayExpression _ es ->
-         "[" <> intercalate ", " (map (printExpression printer) (toList es)) <> "]"
+         "[" <> intercalate ", " (map (printExpression printer) (toList es)) <>
+         "]"
        LetExpression {} -> "<TODO>")
   where
     wrapType x =
