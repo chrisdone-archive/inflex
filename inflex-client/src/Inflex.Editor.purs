@@ -222,7 +222,12 @@ render (State {display, code, editor}) =
                                          , code:
                                              editorCode subEditor
                                          })
-                                      (\rhs -> Nothing) {-TODO-}
+                                      (\rhs ->
+                                         Just
+                                           (FinishEditing
+                                              (editorCode
+                                                 (RowE
+                                                    (M.insert key (MiscE rhs) es)))))
                                   ]
                               ])
                          (M.toUnfoldable es))
