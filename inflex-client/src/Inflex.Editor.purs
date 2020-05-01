@@ -6,11 +6,14 @@ module Inflex.Editor
   , component
   ) where
 
+import Data.Array as A
 import Data.Foldable (for_)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String (joinWith)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
@@ -63,6 +66,7 @@ data Editor
   | ArrayE (Array Editor)
   | RowE (Map String Editor)
   | MiscE String
+  | InternalFlatRowE (Map String Editor)
 
 editorCode :: Editor -> String
 editorCode =
@@ -78,6 +82,7 @@ editorCode =
            (\(Tuple key value) -> key <> ": " <> editorCode value)
            (M.toUnfoldable map')) <>
       "}"
+    InternalFlatRowE map' -> editorCode (RowE map')
 
 data Display
   = DisplayEditor
@@ -159,8 +164,7 @@ render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML
 render (State {display, code, editor}) =
   case display of
     DisplayCode ->
-      HH.div
-        []
+      wrapper
         [ HH.input
             [ HP.value code
             , HP.class_ (HH.ClassName "form-control")
@@ -174,66 +178,141 @@ render (State {display, code, editor}) =
             , HE.onClick (\e -> pure (PreventDefault (toEvent e) NoOp))
             ]
         ]
-    DisplayEditor ->
-      HH.div
-        [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
-        [ let renderEditor =
-                case _ of
-                  IntegerE i -> HH.text i
-                  ArrayE es ->
-                    HH.div
-                      [HP.class_ (HH.ClassName "list-group list-group-flus")]
-                      (mapWithIndex
-                         (\i subEditor ->
-                            HH.div
-                              [HP.class_ (HH.ClassName "list-group-item")]
-                              [ HH.slot
-                                  (SProxy :: SProxy "editor")
-                                  i
-                                  component
-                                  (EditorAndCode
-                                     { editor: subEditor
-                                     , code: editorCode subEditor
-                                     })
-                                  (\rhs ->
-                                     Just
-                                       (FinishEditing
-                                          (editorCode
-                                             (ArrayE
-                                                (editArray i (MiscE rhs) es)))))
-                              ])
-                         es)
-                  RowE es ->
-                    HH.table
-                      [HP.class_ (HH.ClassName "table")]
-                      (mapWithIndex
-                         (\i (Tuple key subEditor) ->
-                            HH.tr
-                              []
-                              [ HH.th [] [HH.text key]
-                              , HH.td
-                                  []
-                                  [ HH.slot
-                                      (SProxy :: SProxy "editor")
-                                      i
-                                      component
-                                      (EditorAndCode
-                                         { editor: subEditor
-                                         , code:
-                                             editorCode subEditor
-                                         })
-                                      (\rhs ->
-                                         Just
-                                           (FinishEditing
-                                              (editorCode
-                                                 (RowE
-                                                    (M.insert key (MiscE rhs) es)))))
-                                  ]
-                              ])
-                         (M.toUnfoldable es))
-                  MiscE t -> HH.text t
-           in renderEditor editor
-        ]
+    DisplayEditor -> wrapper (renderEditor editor)
+  where
+    wrapper inner =
+      case editor of
+        InternalFlatRowE _ -> HH.tr [] inner
+        _ ->
+          case display of
+            DisplayCode -> HH.div [] inner
+            DisplayEditor ->
+              HH.div
+                [ HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e) StartEditor))
+                ]
+                inner
+
+renderEditor ::
+     forall i a. MonadEffect a
+  => Editor
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
+renderEditor editor =
+  case editor of
+    IntegerE i -> [HH.text i]
+    ArrayE es ->
+      case asTable editor of
+        Nothing ->
+          [HH.div
+             [ HP.class_
+                 (HH.ClassName "list-group list-group-flus")
+             ]
+             (mapWithIndex
+                (\i subEditor ->
+                   HH.div
+                     [HP.class_ (HH.ClassName "list-group-item")]
+                     [ HH.slot
+                         (SProxy :: SProxy "editor")
+                         i
+                         component
+                         (EditorAndCode
+                            { editor: subEditor
+                            , code:
+                                editorCode subEditor
+                            })
+                         (\rhs ->
+                            Just
+                              (FinishEditing
+                                 (editorCode
+                                    (ArrayE
+                                       (editArray i (MiscE rhs) es)))))
+                     ])
+                es)]
+        Just (Tuple columns rows) ->
+          [HH.table
+             [HP.class_ (HH.ClassName "table")]
+             [ HH.thead
+                 []
+                 (map
+                    (\key -> HH.th [] [HH.text key])
+                    (Set.toUnfoldable columns))
+             , HH.tbody
+                 []
+                 (mapWithIndex
+                    (\i subEditor ->
+                       let subEditor' =
+                             case subEditor of
+                               RowE xs -> InternalFlatRowE xs
+                               s -> s
+                        in HH.slot
+                             (SProxy :: SProxy "editor")
+                             i
+                             component
+                             (EditorAndCode
+                                { editor: subEditor'
+                                , code:
+                                    editorCode subEditor'
+                                })
+                             (\rhs ->
+                                Just
+                                  (FinishEditing
+                                     (editorCode
+                                        (ArrayE
+                                           (editArray
+                                              i
+                                              (MiscE rhs)
+                                              es))))))
+                    es)
+             ]]
+    RowE es ->
+      [HH.table
+         [HP.class_ (HH.ClassName "table")]
+         (mapWithIndex
+            (\i (Tuple key subEditor) ->
+               HH.tr
+                 []
+                 [ HH.th [] [HH.text key]
+                 , HH.td
+                     []
+                     [ HH.slot
+                         (SProxy :: SProxy "editor")
+                         i
+                         component
+                         (EditorAndCode
+                            { editor: subEditor
+                            , code:
+                                editorCode subEditor
+                            })
+                         (\rhs ->
+                            Just
+                              (FinishEditing
+                                 (editorCode
+                                    (RowE
+                                       (M.insert key (MiscE rhs) es)))))
+                     ]
+                 ])
+            (M.toUnfoldable es))]
+    InternalFlatRowE es ->
+      mapWithIndex
+        (\i (Tuple key subEditor) ->
+           HH.td
+             []
+             [ HH.slot
+                 (SProxy :: SProxy "editor")
+                 i
+                 component
+                 (EditorAndCode
+                    { editor: subEditor
+                    , code: editorCode subEditor
+                    })
+                 (\rhs ->
+                    Just
+                      (FinishEditing
+                         (editorCode
+                            (RowE (M.insert key (MiscE rhs) es)))))
+             ])
+        (M.toUnfoldable es)
+    MiscE t -> [HH.text t]
 
 editArray :: forall i. Int -> i -> Array i -> Array i
 editArray idx i =
@@ -242,3 +321,12 @@ editArray idx i =
        if idx == idx'
          then i
          else oldi)
+
+asTable :: Editor -> Maybe (Tuple (Set String) (Array Editor))
+asTable editor =
+  case editor of
+    ArrayE rows ->
+      case A.head rows of
+        Just (RowE fields) -> pure (Tuple (M.keys fields) rows)
+        _ -> Nothing
+    _ -> Nothing
