@@ -82,7 +82,7 @@ render :: forall keys q m. MonadEffect m =>
                   Command
 render (State {dec: Dec {name, rhs, result}, display}) =
   HH.div
-    [HP.class_ (HH.ClassName "card mt-3 declaration ml-3 mr-3 mb-3")]
+    [HP.class_ (HH.ClassName "card mt-3 declaration ml-3 mb-3")]
     [ HH.div
         [HP.class_ (HH.ClassName "card-header")]
         [ HH.slot
