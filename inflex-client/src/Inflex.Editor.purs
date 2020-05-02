@@ -18,6 +18,7 @@ import Data.String (joinWith)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Effect.Class (class MonadEffect)
+import Effect (Effect)
 import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -30,7 +31,7 @@ import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.HTMLElement (focus, fromElement)
+import Web.HTML.HTMLElement (focus, fromElement, HTMLElement)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
@@ -57,6 +58,7 @@ data Command
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef Element)
+  | CanvasElementChanged Editor (ElemRef Element)
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -65,12 +67,14 @@ data Editor
   = IntegerE String
   | ArrayE (Array Editor)
   | RowE (Map String Editor)
+  | ConsE String Editor
   | MiscE String
   | InternalFlatRowE (Map String Editor)
 
 editorCode :: Editor -> String
 editorCode =
   case _ of
+    ConsE name e -> name <> " " <> editorCode e
     IntegerE s -> s
     MiscE s -> s
     ArrayE xs -> "[" <> joinWith ", " (map editorCode xs) <> "]"
@@ -122,12 +126,22 @@ component =
 --------------------------------------------------------------------------------
 -- Eval
 
+foreign import drawBarChart :: HTMLElement -> Effect Unit
+
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
 eval =
   case _ of
     SetInput i -> do
       H.liftEffect (log "Inflex.Editor: eval(SetInput)")
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
+    CanvasElementChanged editor elemRef ->
+      case elemRef of
+        Created element ->
+          case fromElement element of
+            Just htmlelement ->
+              H.liftEffect (drawBarChart htmlelement) -- TODO: Fill in the data properly.
+            Nothing -> pure unit
+        Removed _ -> pure unit
     InputElementChanged elemRef ->
       case elemRef of
         Created element ->
@@ -142,7 +156,6 @@ eval =
       State {display, editor} <- H.get
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
-
     SetEditor (EditorAndCode {editor, code}) ->
       H.put (State {editor, code, display: DisplayEditor})
     Autoresize -> do
@@ -199,6 +212,8 @@ renderEditor ::
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderEditor editor =
   case editor of
+    ConsE "BarChart" editor' -> [HH.canvas [manage (CanvasElementChanged editor')]]
+    ConsE name editor' -> [HH.text name, HH.text "TODO: slot"]
     IntegerE i -> [HH.text i]
     ArrayE es ->
       case asTable editor of

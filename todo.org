@@ -15,12 +15,24 @@
 ** TODO Delete document
 ** TODO Rename
 ** UI
+*** TODO [#B] Delete button
+*** TODO [#B] Rename
+*** TODO [#B] Move arbitrarily
 *** TODO [#A] Re-use code instead of result for other array items
 Repro:
 [1, x] where x = 2 * 3
 Changing 1 => 3 should not replace x with 6.
-*** TODO [#B] Ability to edit names of decls
-*** TODO [#B] "New" button
+*** DONE [#B] "New" button
+    CLOSED: [2020-05-02 Sat 12:06]
+    - State "DONE"       from "TODO"       [2020-05-02 Sat 12:06]
+*** TODO Canvas/rendering?
+    - Note taken on [2020-05-02 Sat 12:05] \\
+      Mandelbrot in Excel https://slicker.me/fractals/excel.htm
+
+      Make an equivalent in Inflex to show its speed/power?
+*** TODO Code mirror?
+    - Note taken on [2020-05-02 Sat 12:05] \\
+      https://github.com/chrisdone/codeparty/blob/master/src/Halogen/CodeMirror.purs
 ** Engine
 *** TODO Question-mark for results/optionals?
 *** TODO Consider partial arithmetic similar to x * y :: Result Error Int

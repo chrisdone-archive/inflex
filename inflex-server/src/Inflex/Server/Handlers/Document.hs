@@ -39,6 +39,7 @@ import                 Data.Foldable
 import                 Data.HashMap.Strict (HashMap)
 import qualified       Data.HashMap.Strict as HM
 import qualified       Data.Map.Strict as M
+import                 Data.Maybe
 import                 Data.Semigroup ((<>))
 import                 Data.Text (Text)
 import qualified       Data.Text as T
@@ -73,6 +74,8 @@ expressionToEditor =
            (map
               (first (\(Identifier i) -> T.pack i))
               (M.toList (fmap expressionToEditor es))))
+    ApplicationExpression unkindedType (ConstructorExpression unk (ConstructorName _ name)) inner ->
+      ConsE (T.pack name) (expressionToEditor inner)
     e -> MiscE (T.pack (printExpression defaultPrint e))
 
 maxSteps :: Int
@@ -95,7 +98,9 @@ getAppEditorR slug =
                    [])
             case mdoc of
               Nothing -> notFound
-              Just (Entity documentId Document {documentContent = DocumentDecs decs, ..}) ->
+              Just (Entity documentId Document { documentContent = DocumentDecs decs
+                                               , ..
+                                               }) ->
                 liftIO
                   (do decs' <-
                         fmap
@@ -122,6 +127,14 @@ getAppEditorR slug =
                               ])
                       body_
                         (do script_
+                              [ src_
+                                  "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"
+                              , integrity_
+                                  "sha256-R4pqcOYV8lt7snxMQO/HSbVCFRPMdrhAFMH+vr9giYI="
+                              , crossorigin_ "anonymous"
+                              ]
+                              ""
+                            script_
                               [type_ "text/javascript"]
                               (do toHtmlRaw "window['inflexDocument'] = "
                                   toHtmlRaw (encode initialDecs')
@@ -225,7 +238,8 @@ runProgram decls = map toDecOut final
         (evalSupplyT
            (do (binds, ctx) <-
                  createContext
-                   (map
+                   (predefinedTypes <>
+                    map
                       (\(i, e) ->
                          let loc = expressionLabel e
                           in BindDecl
@@ -254,6 +268,12 @@ runProgram decls = map toDecOut final
                               [idx ..])))
                     decls))
            [1 ..])
+
+predefinedTypes :: [Decl UnkindedType Identifier Location]
+predefinedTypes =
+  case parseText "" "data BarChart a = BarChart a" of
+    Left e -> []
+    Right x -> x
 
 --------------------------------------------------------------------------------
 -- Parsing step

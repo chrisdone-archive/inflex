@@ -254,6 +254,19 @@ decOutsParser =
                                                           fobj)))
                                                (Foreign.lookup "row" obj')
                                            pure (Editor.RowE es)
+                                         "cons" -> do
+                                           name' <-
+                                             maybe
+                                               (Left "need name")
+                                               (J.caseJsonString
+                                                  (Left "name not a string")
+                                                  Right)
+                                               (Foreign.lookup "name" obj')
+                                           slot <- maybe
+                                                     (Left "need slot")
+                                                     editorParser
+                                                     (Foreign.lookup "slot" obj')
+                                           pure (Editor.ConsE name' slot)
                                          _ -> do
                                            i <-
                                              maybe

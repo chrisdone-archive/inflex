@@ -169,6 +169,7 @@ data Editor
   = IntegerE Integer
   | ArrayE (Vector Editor)
   | RowE (Map Text Editor)
+  | ConsE Text Editor
   -- | RationalE Rational
   -- | TextE Text
   -- | RecordE (HashMap Text Editor)
@@ -183,6 +184,7 @@ instance ToJSON Editor where
       ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
       RowE es -> object ["type" .= "row", "row" .= toJSON es]
       MiscE t -> object ["type" .= "misc", "misc" .= t]
+      ConsE name t -> object ["type" .= "cons", "slot" .= t, "name" .= name]
 
 data DecOut = DecOut
   { name :: Text
