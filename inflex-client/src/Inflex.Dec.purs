@@ -3,6 +3,7 @@
 module Inflex.Dec
   ( component
   , Dec(..)
+  , Output(..)
   ) where
 
 import Data.Either (Either, either)
@@ -10,20 +11,21 @@ import Data.Map (Map)
 import Data.Set (Set)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
+import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Dec.Name as Dec.Name
 import Inflex.Editor as Editor
 import Prelude
-import Effect.Console (log)
 
 --------------------------------------------------------------------------------
 -- Component types
 
 type Input = Dec
 
-type Output = Dec
+data Output = DeclUpdate Dec | DeleteDecl
 
 data State = State
   { dec :: Dec
@@ -33,6 +35,7 @@ data State = State
 data Command
   = SetDec Dec
   | CodeUpdate Dec
+  | DeleteDeclaration
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -70,8 +73,9 @@ eval =
   case _ of
     CodeUpdate dec -> do
       H.liftEffect (log "Inflex.Dec:CodeUpdate, raising ...")
-      H.raise dec
+      H.raise (DeclUpdate dec)
     SetDec dec -> H.put (State {dec, display: DisplayResult})
+    DeleteDeclaration -> H.raise DeleteDecl
 
 --------------------------------------------------------------------------------
 -- Render
@@ -91,7 +95,19 @@ render (State {dec: Dec {name, rhs, result}, display}) =
             Dec.Name.component
             name
             (\name' ->
-               pure (CodeUpdate (Dec {name: name', result, rhs, new: false})))
+               pure
+                 (CodeUpdate
+                    (Dec
+                       { name: name'
+                       , result
+                       , rhs
+                       , new: false
+                       })))
+        , HH.button
+            [ HP.class_ (HH.ClassName "btn btn-danger")
+            , HE.onClick (\_ -> pure DeleteDeclaration)
+            ]
+            [HH.text "X"]
         ]
     , HH.div
         [HP.class_ (HH.ClassName "card-body")]
@@ -104,6 +120,13 @@ render (State {dec: Dec {name, rhs, result}, display}) =
                , code: rhs
                })
             (\rhs' ->
-               pure (CodeUpdate (Dec {name, result, rhs: rhs', new: false})))
+               pure
+                 (CodeUpdate
+                    (Dec
+                       { name
+                       , result
+                       , rhs: rhs'
+                       , new: false
+                       })))
         ]
     ]

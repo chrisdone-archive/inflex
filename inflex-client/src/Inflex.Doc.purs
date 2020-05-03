@@ -33,7 +33,12 @@ import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show)
 --------------------------------------------------------------------------------
 -- Component types
 
-data Command = Initialize | UpdateDec UUID Dec.Dec | NewDec
+data Command
+  = Initialize
+  | UpdateDec UUID
+              Dec.Dec
+  | NewDec
+  | DeleteDecl UUID
 
 type State = {
   decs :: Map UUID Dec.Dec
@@ -126,6 +131,44 @@ eval =
       H.liftEffect (log "Asking server for an update...")
       s <- H.get
       let decs' = M.insert uuid dec (s . decs)
+      documentId <- H.liftEffect getDocumentId
+      result2 <-
+        H.liftAff
+          (AX.post
+             ResponseFormat.json
+             ("/app/api/refresh/" <> show documentId)
+             (Just
+                (RequestBody.json
+                   (J.fromObject
+                      (Foreign.fromFoldable
+                         (map
+                            (\(Tuple uuid' (Dec.Dec dec')) ->
+                               Tuple
+                                 (uuidToString uuid')
+                                 (J.fromObject
+                                    (Foreign.fromHomogeneous
+                                       { name:
+                                           J.fromString (dec' . name)
+                                       , rhs:
+                                           J.fromString (dec' . rhs)
+                                       })))
+                            (M.toUnfoldable decs') :: Array (Tuple String J.Json)))))))
+      case result2 of
+        Left err ->
+          log $
+          "POST /api response failed to decode:" <>
+          AX.printError err
+        Right response -> do
+          log $
+            "POST /api response:" <>
+            J.stringify (response . body)
+          case decOutsParser (response . body) of
+            Left err -> log ("error parsing JSON:" <> err)
+            Right decs'' -> H.modify_ (\s' -> s' {decs = decs''})
+    DeleteDecl uuid -> do
+      H.liftEffect (log "Asking server for an update...")
+      s <- H.get
+      let decs' = M.delete uuid (s . decs)
       documentId <- H.liftEffect getDocumentId
       result2 <-
         H.liftAff
@@ -296,7 +339,7 @@ foreignObjToMap fobj = M.fromFoldable (Foreign.toAscUnfoldable fobj :: Array (Tu
 
 render :: forall q state keys m. MonadEffect m =>
    { decs :: Map UUID Dec.Dec | state }
-   -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Dec String | keys) m Command) Command
+   -> HH.HTML (H.ComponentSlot HH.HTML ( "Dec" :: H.Slot q Dec.Output String | keys) m Command) Command
 render state =
   HH.div
     [HP.class_ (HH.ClassName "container-fluid")]
@@ -317,6 +360,8 @@ render state =
                 (uuidToString uuid)
                 Dec.component
                 dec
-                (\dec' -> pure (UpdateDec uuid dec')))
+                (\dec' -> pure (case dec' of
+                                  Dec.DeclUpdate d -> UpdateDec uuid d
+                                  Dec.DeleteDecl -> DeleteDecl uuid)))
            (M.toUnfoldable (state . decs)))
     ]
