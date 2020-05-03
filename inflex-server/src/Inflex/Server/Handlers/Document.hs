@@ -28,6 +28,7 @@ module Inflex.Server.Handlers.Document
   , getViewDocumentR
   ) where
 
+import                 Control.Exception (SomeException(..))
 import                 Control.Monad.Catch (SomeException)
 import "monad-logger"  Control.Monad.Logger
 import                 Control.Monad.Reader
@@ -43,9 +44,11 @@ import                 Data.Maybe
 import                 Data.Semigroup ((<>))
 import                 Data.Text (Text)
 import qualified       Data.Text as T
+import                 Data.Typeable
 import qualified       Data.UUID as UUID
 import qualified       Data.UUID.V4 as V4
 import qualified       Data.Vector as V
+import                 Duet.Errors
 import                 Duet.Infer
 import                 Duet.Parser
 import                 Duet.Printer
@@ -114,37 +117,26 @@ getAppEditorR slug =
        htmlWithUrl
          (appTemplate
             (Registered state)
-            (do doctype_
-                url <- ask
-                html_
-                  (do head_
-                        (do link_ [rel_ "shortcut icon", href_ "#"]
-                            title_ "InflexApp"
-                            link_
-                              [ rel_ "stylesheet"
-                              , type_ "text/css"
-                              , href_ (url AppCssR)
-                              ])
-                      body_
-                        (do script_
-                              [ src_
-                                  "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"
-                              , integrity_
-                                  "sha256-R4pqcOYV8lt7snxMQO/HSbVCFRPMdrhAFMH+vr9giYI="
-                              , crossorigin_ "anonymous"
-                              ]
-                              ""
-                            script_
-                              [type_ "text/javascript"]
-                              (do toHtmlRaw "window['inflexDocument'] = "
-                                  toHtmlRaw (encode initialDecs')
-                                  ";"
-                                  toHtmlRaw "window['inflexDocumentId'] = "
-                                  toHtmlRaw (encode documentId)
-                                  ";")
-                            script_
-                              [type_ "text/javascript", src_ (url AppJsR)]
-                              "")))))
+            ((do url <- ask
+                 script_
+                   [ src_
+                       "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"
+                   , integrity_
+                       "sha256-R4pqcOYV8lt7snxMQO/HSbVCFRPMdrhAFMH+vr9giYI="
+                   , crossorigin_ "anonymous"
+                   ]
+                   ""
+                 script_
+                   [type_ "text/javascript"]
+                   (do toHtmlRaw "window['inflexDocument'] = "
+                       toHtmlRaw (encode initialDecs')
+                       ";"
+                       toHtmlRaw "window['inflexDocumentId'] = "
+                       toHtmlRaw (encode documentId)
+                       ";")
+                 script_
+                   [type_ "text/javascript", src_ (url AppJsR)]
+                   ""))))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
@@ -219,7 +211,10 @@ runProgram decls = map toDecOut final
           , rhs
           , result =
               case result of
-                Left ex -> Left (T.pack (show ex))
+                Left (SomeException ex) ->
+                  case cast ex of
+                    Just ce -> Left (T.pack (displayContextException ce))
+                    Nothing -> Left (T.pack (show ex))
                 Right results ->
                   case results of
                     [] -> Left "No result (didn't start!)" -- TODO: Handle properly.

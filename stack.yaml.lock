@@ -45,16 +45,16 @@ packages:
   original:
     url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
 - completed:
-    size: 2598
-    url: https://github.com/chrisdone/yesod-lucid/archive/cde88d0736a44163be70044a109798f578151db3.tar.gz
+    size: 2615
+    url: https://github.com/chrisdone/yesod-lucid/archive/277d644297f36850f304dd5efa99c9eded09a633.tar.gz
     name: yesod-lucid
     version: '0.1'
-    sha256: 95815bb9557c1a9b4d3fc6dcf40d5975755cb793a87c2319d1f94916d1ae8210
+    sha256: 367c4242828af243006f134d6dee84ef199aa28630f4814de360153e22b8f71a
     pantry-tree:
       size: 361
-      sha256: ac78649b71c7b3f37070f62658794342f4d1ef9fdbc5a3764e43e931f5a7a86c
+      sha256: 0534e78324b28a57110f31e595617b29af5abaa87a8a91f45d0ee7751749a676
   original:
-    url: https://github.com/chrisdone/yesod-lucid/archive/cde88d0736a44163be70044a109798f578151db3.tar.gz
+    url: https://github.com/chrisdone/yesod-lucid/archive/277d644297f36850f304dd5efa99c9eded09a633.tar.gz
 - completed:
     size: 12380
     url: https://github.com/chrisdone/forge/archive/1bea561eec4e52687ad3b87afe7fc69785c70751.tar.gz

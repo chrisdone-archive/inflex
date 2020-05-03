@@ -18,7 +18,7 @@ extra-deps:
 - github: chrisdone/purescript-bundle-fast
   commit: c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e
 - github: chrisdone/yesod-lucid
-  commit: cde88d0736a44163be70044a109798f578151db3
+  commit: 277d644297f36850f304dd5efa99c9eded09a633
 - github: chrisdone/forge
   commit: 1bea561eec4e52687ad3b87afe7fc69785c70751
 - optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
