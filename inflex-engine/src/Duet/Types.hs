@@ -162,6 +162,7 @@ data Primop
   | PrimopStringAppend
   | PrimopStringDrop
   | PrimopStringTake
+  | PrimopArrayAppend
   deriving (Show, Generic, Data, Typeable, Eq, Ord, Enum, Bounded)
 
 -- | State of inferring.

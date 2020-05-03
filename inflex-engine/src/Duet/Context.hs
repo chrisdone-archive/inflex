@@ -22,7 +22,17 @@ makeInst
   -> Predicate Type Name
   -> [(String, (l, Alternative Type Name l))]
   -> m (Instance Type Name l)
-makeInst specials pred' methods = do
+makeInst specials pred' methods =
+  makeInstEx specials (Forall [] (Qualified [] pred')) methods
+
+-- | Make an instance.
+makeInstEx
+  :: MonadSupply Int m
+  => Specials Name
+  -> Scheme Type Name (Predicate Type)
+  -> [(String, (l, Alternative Type Name l))]
+  -> m (Instance Type Name l)
+makeInstEx specials scheme@(Forall _ (Qualified _ pred')) methods = do
   name <- supplyDictName (predicateToDict specials pred')
   methods' <-
     mapM
@@ -30,7 +40,7 @@ makeInst specials pred' methods = do
          key' <- supplyMethodName (Identifier key)
          pure (key', alt))
       methods
-  pure (Instance (Forall [] (Qualified [] pred')) (Dictionary name (M.fromList methods')))
+  pure (Instance scheme (Dictionary name (M.fromList methods')))
 
 -- | Make a class.
 makeClass

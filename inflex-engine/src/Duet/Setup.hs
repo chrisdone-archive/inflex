@@ -57,12 +57,13 @@ setupEnv env typeMakers = do
            , specialTypesFunction = function
            , specialTypesInteger = TypeConstructor theInteger StarKind
            , specialTypesRational = TypeConstructor theRational StarKind
-           , specialTypesArray = TypeConstructor theArray (FunctionKind StarKind StarKind)
+           , specialTypesArray =
+               TypeConstructor theArray (FunctionKind StarKind StarKind)
            })
   (numClass, plus, times) <- makeNumClass function
   (negClass, subtract') <- makeNegClass function
   (fracClass, divide) <- makeFracClass function
-  (monoidClass) <- makeMonoidClass function
+  (monoidClass) <- makeAppendableClass function
   (sliceClass) <- makeSliceClass (specialTypesInteger specialTypes) function
   boolSigs <- dataTypeSignatures specialTypes boolDataType
   typesSigs <-
@@ -73,7 +74,9 @@ setupEnv env typeMakers = do
   classSigs <-
     fmap
       concat
-      (mapM classSignatures [numClass, negClass, fracClass, monoidClass, sliceClass])
+      (mapM
+         classSignatures
+         [numClass, negClass, fracClass, monoidClass, sliceClass])
   primopSigs <- makePrimOps specialTypes
   let signatures = boolSigs <> classSigs <> primopSigs <> typesSigs
       specialSigs =
@@ -120,6 +123,28 @@ setupEnv env typeMakers = do
       , ( "empty"
         , ((), Alternative () [] (LiteralExpression () (StringLiteral ""))))
       ]
+  arrayMonoid <-
+    do a <- fmap (\n -> TypeVariable n StarKind) (supplyTypeName "a")
+       makeInstEx
+         specials
+         (Forall
+            [a]
+            (Qualified
+               []
+               (IsIn
+                  (className monoidClass)
+                  [ ApplicationType
+                      (ConstructorType (specialTypesArray specialTypes))
+                      (VariableType a)
+                  ])))
+         [ ( "append"
+           , ( ()
+             , Alternative
+                 ()
+                 []
+                 (VariableExpression () (PrimopName PrimopArrayAppend))))
+         , ("empty", ((), Alternative () [] (ArrayExpression () mempty)))
+         ]
   numInt <-
     makeInst
       specials
@@ -207,6 +232,7 @@ setupEnv env typeMakers = do
           addInstance numInt >=>
           addInstance negInt >=>
           addInstance stringMonoid >=>
+          addInstance arrayMonoid >=>
           addInstance stringSlice >=>
           addInstance fracRational >=>
           addInstance negRational >=> addInstance numRational
@@ -226,6 +252,7 @@ makePrimOps
   :: (MonadSupply Int m)
   => SpecialTypes Name -> m [TypeSignature Type Name Name]
 makePrimOps SpecialTypes {..} = do
+  arrayA <- fmap (\n -> TypeVariable n StarKind) (supplyTypeName "a")
   let sigs =
         map
           ((\case
@@ -261,6 +288,14 @@ makePrimOps SpecialTypes {..} = do
                 TypeSignature
                   (PrimopName PrimopStringAppend)
                   (toScheme (string --> string --> string))
+              PrimopArrayAppend ->
+                TypeSignature
+                  (PrimopName PrimopArrayAppend)
+                  (Forall
+                     [arrayA]
+                     (Qualified
+                        []
+                        (array arrayA --> array arrayA --> array arrayA)))
               PrimopStringTake ->
                 TypeSignature
                   (PrimopName PrimopStringTake)
@@ -275,6 +310,8 @@ makePrimOps SpecialTypes {..} = do
     integer = ConstructorType specialTypesInteger
     rational = ConstructorType specialTypesRational
     string = ConstructorType specialTypesString
+    array var =
+      ApplicationType (ConstructorType specialTypesArray) (VariableType var)
     infixr 1 -->
     (-->) :: Type Name -> Type Name -> Type Name
     a --> b =
@@ -341,15 +378,15 @@ makeFracClass function = do
     (-->) :: Type Name -> Type Name -> Type Name
     a --> b = ApplicationType (ApplicationType (ConstructorType function) a) b
 
-makeMonoidClass :: MonadSupply Int m => TypeConstructor Name -> m (Class Type Name l)
-makeMonoidClass function = do
+makeAppendableClass :: MonadSupply Int m => TypeConstructor Name -> m (Class Type Name l)
+makeAppendableClass function = do
   a <- fmap (\n -> TypeVariable n StarKind) (supplyTypeName "a")
   let a' = VariableType a
   append <- supplyMethodName "append"
   empty <- supplyMethodName "empty"
   cls <-
     makeClass
-      "Monoid"
+      "Appendable"
       [a]
       [ (append, Forall [a] (Qualified [] (a' --> a' --> a')))
       , (empty, Forall [a] (Qualified [] (a')))

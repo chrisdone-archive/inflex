@@ -99,6 +99,17 @@ expandWhnf typeClassEnv specialSigs signatures e b = go e
         ConstantExpression {} -> return x
         ApplicationExpression l (ApplicationExpression l1 op@(VariableExpression _ (PrimopName primop)) x) y ->
           case x of
+            ArrayExpression _ sx ->
+              case y of
+                ArrayExpression _ sy ->
+                  case primop of
+                    PrimopArrayAppend ->
+                      pure (ArrayExpression l (sx <> sy))
+                    _ -> error "Runtime type error that should not occurr"
+                _ -> do
+                  y' <- go y
+                  pure
+                    (ApplicationExpression l (ApplicationExpression l1 op x) y')
             LiteralExpression _ (StringLiteral sx) ->
               case y of
                 LiteralExpression _ (StringLiteral sy) ->
