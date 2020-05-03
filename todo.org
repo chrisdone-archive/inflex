@@ -1,8 +1,12 @@
 * Feature
 ** Shop
 *** TODO Homepage
-*** TODO Register page
-*** TODO Login/logout page
+*** DONE Register page
+    CLOSED: [2020-05-03 Sun 12:24]
+    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
+*** DONE Login/logout page
+    CLOSED: [2020-05-03 Sun 12:24]
+    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
 *** TODO Yesod tests
 ** Database
 *** DONE Create
