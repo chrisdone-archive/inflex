@@ -5,10 +5,12 @@ ghc-options:
   psc-package: '-j4 -O2'
   inflex-server: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
   inflex-engine: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
+  inflex-lang: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
 packages:
 - inflex-client
 - inflex-server
 - inflex-engine
+- inflex-lang
 extra-deps:
 - happy-1.19.9
 - github: purescript/purescript

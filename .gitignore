@@ -5,3 +5,4 @@ inflex-server/client_session_key.aes
 app.js
 output
 client_session_key.aes
+inflex-lang/*.cabal
