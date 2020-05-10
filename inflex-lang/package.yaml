@@ -13,6 +13,9 @@ dependencies:
 - text
 - megaparsec
 - containers
+- optics
+- optics-core
+- template-haskell
 
 ghc-options: -Wall
 

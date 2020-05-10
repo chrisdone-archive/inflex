@@ -12,6 +12,13 @@ packages:
   original:
     hackage: happy-1.19.9
 - completed:
+    hackage: megaparsec-6.4.1@sha256:4cd582a3edb30a975c8ffced6d8082dccaeaa3849b87056d402c7da45cff4517,5616
+    pantry-tree:
+      size: 2280
+      sha256: 8c2e5ac7e8df59f76845649d64e4b7e2ee6ea3779e23e0c52bd47e4b757b4137
+  original:
+    hackage: megaparsec-6.4.1
+- completed:
     size: 533412
     url: https://github.com/purescript/purescript/archive/ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9.tar.gz
     name: purescript
