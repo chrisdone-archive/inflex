@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -8,14 +9,12 @@ module Inflex.Parser where
 
 import           Data.Bifunctor
 import           Data.Functor.Identity
+import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Sequence (Seq)
-import qualified Data.Sequence as Seq
 import           Data.Text (Text)
-import           Data.Void
 import           Inflex.Lexer
-import           Optics
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -33,31 +32,36 @@ data Integery = Integery
   , integer :: Integer
   } deriving (Show, Eq, Ord)
 
+newtype ParseErrors =
+  ParseErrors (NonEmpty ParseError)
+  deriving (Eq, Show, Semigroup)
+
 data ParseError
   = LexerError LexError
   | NoMoreInput
   | ExpectedInteger
   deriving (Eq, Show)
 
-instance Reparsec.NoMoreInput ParseError where
-  noMoreInputError = NoMoreInput
+instance Reparsec.NoMoreInput ParseErrors where
+  noMoreInputError = ParseErrors (pure NoMoreInput)
 
-type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseError Identity a
+type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 
 --------------------------------------------------------------------------------
 -- Top-level accessor
 
 -- | Parse a given block of text.
-parseText :: FilePath -> Text -> Either ParseError Expression
+parseText :: FilePath -> Text -> Either ParseErrors Expression
 parseText fp bs = do
-  tokens <- first LexerError (lexText fp bs)
+  tokens <- first (ParseErrors . pure . LexerError) (lexText fp bs)
   runIdentity (Reparsec.parseOnlyT expressionParser tokens)
 
 --------------------------------------------------------------------------------
 -- Parsers
 
 expressionParser :: Parser Expression
-expressionParser = LiteralExpression <$> literalParser
+expressionParser =
+  (LiteralExpression <$> literalParser) <> (LiteralExpression <$> literalParser)
 
 literalParser :: Parser Literal
 literalParser = do
@@ -65,5 +69,5 @@ literalParser = do
     Reparsec.satisfy
       (\case
          l@Located {thing = IntegerToken i} -> pure (fmap (const i) l)
-         _ -> Left ExpectedInteger)
+         _ -> Left (ParseErrors (pure ExpectedInteger)))
   pure (IntegerLiteral (Integery {integer, location}))

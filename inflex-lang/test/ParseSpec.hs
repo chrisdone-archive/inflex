@@ -10,7 +10,7 @@ import Inflex.Parser
 import Test.Hspec
 
 spec :: Spec
-spec =
+spec = do
   it
     "Integer literal"
     (shouldBe
