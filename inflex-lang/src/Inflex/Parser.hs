@@ -32,6 +32,9 @@ data Integery = Integery
   , integer :: Integer
   } deriving (Show, Eq, Ord)
 
+--------------------------------------------------------------------------------
+-- Parser types
+
 newtype ParseErrors =
   ParseErrors (NonEmpty ParseError)
   deriving (Eq, Show, Semigroup)
