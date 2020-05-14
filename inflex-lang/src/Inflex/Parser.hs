@@ -35,6 +35,11 @@ data Integery = Integery
 --------------------------------------------------------------------------------
 -- Parser types
 
+data RenameParseError
+  = LexerError LexError
+  | ParseError ParseErrors
+  deriving (Eq, Show)
+
 newtype ParseErrors =
   ParseErrors (NonEmpty ParseError)
   deriving (Eq, Show, Semigroup)
@@ -43,8 +48,7 @@ liftError :: ParseError -> ParseErrors
 liftError = ParseErrors . pure
 
 data ParseError
-  = LexerError LexError
-  | NoMoreInput
+  = NoMoreInput
   | ExpectedInteger
   deriving (Eq, Show)
 
@@ -57,17 +61,17 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 -- Top-level accessor
 
 -- | Parse a given block of text.
-parseText :: FilePath -> Text -> Either ParseErrors Expression
+parseText :: FilePath -> Text -> Either RenameParseError Expression
 parseText fp bs = do
-  tokens <- first (liftError . LexerError) (lexText fp bs)
-  runIdentity (Reparsec.parseOnlyT expressionParser tokens)
+  tokens <- first LexerError (lexText fp bs)
+  first ParseError (runIdentity (Reparsec.parseOnlyT expressionParser tokens))
 
 --------------------------------------------------------------------------------
 -- Parsers
 
 expressionParser :: Parser Expression
 expressionParser =
-  (LiteralExpression <$> literalParser) <> (LiteralExpression <$> literalParser)
+  LiteralExpression <$> literalParser
 
 literalParser :: Parser Literal
 literalParser = do
