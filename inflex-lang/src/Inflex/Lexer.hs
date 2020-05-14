@@ -20,23 +20,13 @@ module Inflex.Lexer
   , SourcePos(..)
   , Location(..)
   , lexText
-  , satisfy
-  , satisfy_
-  , token
-  , token_
-  , Parser
   , LexError
   , _IntegerToken
   ) where
 
 import           Data.Bifunctor
 import           Data.Char
-import           Data.Foldable
-import           Data.Functor
-import qualified Data.List.NonEmpty as NE
-import           Data.Proxy
 import           Data.Sequence (Seq)
-import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Data.Void
 import           GHC.Generics
@@ -51,9 +41,6 @@ import           Text.Megaparsec.Error
 
 -- | Lex text into a series of Tokens.
 type Lexer = Mega.Parsec Void Text
-
--- | Parser of said tokens.
-type Parser = Mega.Parsec Void (Seq (Located Token))
 
 -- | Lexical tokens for the Inflex language.
 data Token
@@ -84,36 +71,8 @@ data SourcePos = SourcePos
   , name :: FilePath
   } deriving (Show, Eq, Ord, Generic)
 
--- | This instance gives support to parse LTokens with megaparsec.
-instance Mega.Stream (Seq (Located Token)) where
-  type Token (Seq (Located Token)) = Located Token
-  type Tokens (Seq (Located Token)) = Seq (Located Token)
-  tokenToChunk Proxy = pure
-  tokensToChunk Proxy = Seq.fromList
-  chunkToTokens Proxy = toList
-  chunkLength Proxy = length
-  chunkEmpty Proxy = null
-  positionAt1 Proxy _ (Located (Location start _) _) = toSourcePos start
-  positionAtN Proxy pos Seq.Empty = pos
-  positionAtN Proxy _ (Located (Location start _) _ Seq.:<| _) = toSourcePos start
-  advance1 Proxy _ _ (Located (Location _ end) _) = toSourcePos end
-  advanceN Proxy _ pos Seq.Empty = pos
-  advanceN Proxy _ _ ts =
-    let Located (Location _ end) _ = last (toList ts)
-     in toSourcePos end
-  take1_ Seq.Empty = Nothing
-  take1_ (t Seq.:<| ts) = Just (t, ts)
-  takeN_ n s
-    | n <= 0 = Just (mempty, s)
-    | null s = Nothing
-    | otherwise = Just (Seq.splitAt n s)
-  takeWhile_ = Seq.spanl
-
-instance Mega.ShowToken (Located Token) where
-  showTokens = unwords . map show . toList
-
 data LexError =
-  LexError (ParseError (Mega.Token Text) Void)
+  LexError (ParseErrorBundle Text Void)
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -154,9 +113,9 @@ tokensLexer =
 -- | Retain location information for a token.
 located :: Mega.MonadParsec e s m => m Token -> m (Located Token)
 located m = do
-  start <- Mega.getPosition
+  start <- Mega.getSourcePos
   thing <- m
-  end <- Mega.getPosition
+  end <- Mega.getSourcePos
   pure
     (Located
        { location =
@@ -176,47 +135,5 @@ located m = do
              }
        , thing
        })
-
-toSourcePos :: SourcePos -> Mega.SourcePos
-toSourcePos SourcePos {line, column, name} =
-  Mega.SourcePos
-    { Mega.sourceName = name
-    , Mega.sourceLine = Mega.mkPos line
-    , Mega.sourceColumn = Mega.mkPos column
-    }
-
---------------------------------------------------------------------------------
--- Parseable tokens support
-
-satisfy :: (Token -> Maybe a) -> Parser (Located a)
-satisfy f =
-  Mega.token
-    (\case
-       l@(Located {thing = tok})
-         | Just tok' <- f tok -> Right (fmap (const tok') l)
-       l -> Left (Just (Mega.Tokens (NE.fromList [l])), mempty))
-    Nothing
-
-token :: Token -> Parser (Located Token)
-token f = do
-  lf <- located (pure f)
-  Mega.token
-    (\case
-       l@(Located {thing = tok})
-         | f == tok -> Right (fmap (const tok) l)
-       l -> Left (Just (Mega.Tokens (NE.fromList [l])), mempty))
-    (Just lf)
-
-token_ :: Token -> Parser ()
-token_ = void . token
-
-satisfy_ :: (Token -> Bool) -> Parser ()
-satisfy_ p =
-  void
-    (satisfy
-       (\x ->
-          if p x
-            then pure ()
-            else Nothing))
 
 $(makePrisms ''Token)

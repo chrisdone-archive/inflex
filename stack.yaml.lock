@@ -12,12 +12,25 @@ packages:
   original:
     hackage: happy-1.19.9
 - completed:
-    hackage: megaparsec-6.4.1@sha256:4cd582a3edb30a975c8ffced6d8082dccaeaa3849b87056d402c7da45cff4517,5616
+    hackage: megaparsec-8.0.0@sha256:362f85e243ecbcb550e1de6e5c74ba5a50c09edaa1208c99bc5b9fd242227fc6,3808
     pantry-tree:
-      size: 2280
-      sha256: 8c2e5ac7e8df59f76845649d64e4b7e2ee6ea3779e23e0c52bd47e4b757b4137
+      size: 1446
+      sha256: 955117c00a86970f2d0c215f33cf5293b16589c04678a0a790c03368ab6fd0aa
   original:
-    hackage: megaparsec-6.4.1
+    hackage: megaparsec-8.0.0
+- completed:
+    size: 92233
+    subdir: reparsec
+    url: https://github.com/chrisdone/streaming-parsers/archive/8322c0752765c3d42f9e79f3f07a328703f22866.tar.gz
+    name: reparsec
+    version: 0.0.0
+    sha256: 8b767774440388564178c9471d7820bf4abe6f4bc20b525e7b0a98e943b2b16d
+    pantry-tree:
+      size: 474
+      sha256: f3ccd22f7cfb888363b966e7a5677fbdf09f4adb9e8e5cce4ce8dad13696e3a4
+  original:
+    subdir: reparsec
+    url: https://github.com/chrisdone/streaming-parsers/archive/8322c0752765c3d42f9e79f3f07a328703f22866.tar.gz
 - completed:
     size: 533412
     url: https://github.com/purescript/purescript/archive/ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9.tar.gz

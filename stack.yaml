@@ -13,7 +13,11 @@ packages:
 - inflex-lang
 extra-deps:
 - happy-1.19.9
-- megaparsec-6.4.1
+- megaparsec-8.0.0
+- github: chrisdone/streaming-parsers
+  commit: 8322c0752765c3d42f9e79f3f07a328703f22866
+  subdirs:
+    - reparsec
 - github: purescript/purescript
   commit: ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9
 - github: purescript/psc-package

@@ -12,6 +12,7 @@ dependencies:
 - genvalidity-hspec
 - text
 - megaparsec
+- reparsec
 - containers
 - optics
 - optics-core

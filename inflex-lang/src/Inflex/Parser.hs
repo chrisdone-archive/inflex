@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -6,11 +7,15 @@
 module Inflex.Parser where
 
 import           Data.Bifunctor
+import           Data.Functor.Identity
+import qualified Data.Reparsec as Reparsec
+import qualified Data.Reparsec.Sequence as Reparsec
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Data.Void
 import           Inflex.Lexer
 import           Optics
-import qualified Text.Megaparsec as Mega
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -26,8 +31,14 @@ data Integery = Integery
 
 data ParseError
   = LexerError LexError
-  | ParseError (Mega.ParseError (Located Token) Void)
+  | NoMoreInput
+  | ExpectedInteger
   deriving (Eq, Show)
+
+instance Reparsec.NoMoreInput ParseError where
+  noMoreInputError = NoMoreInput
+
+type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseError Identity a
 
 --------------------------------------------------------------------------------
 -- Top-level accessor
@@ -36,12 +47,16 @@ data ParseError
 parseText :: FilePath -> Text -> Either ParseError Literal
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
-  first ParseError (Mega.runParser (literalParser <* Mega.eof) fp tokens)
+  runIdentity (Reparsec.parseOnlyT literalParser tokens)
 
 --------------------------------------------------------------------------------
 -- Parsers
 
 literalParser :: Parser Literal
 literalParser = do
-  Located {thing = integer, location} <- satisfy (preview _IntegerToken)
+  Located {thing = integer, location} <-
+    Reparsec.satisfy
+      (\case
+         l@Located {thing = IntegerToken i} -> pure (fmap (const i) l)
+         _ -> Left ExpectedInteger)
   pure (IntegerLiteral (Integery {integer, location}))
