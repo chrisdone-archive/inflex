@@ -36,6 +36,9 @@ newtype ParseErrors =
   ParseErrors (NonEmpty ParseError)
   deriving (Eq, Show, Semigroup)
 
+liftError :: ParseError -> ParseErrors
+liftError = ParseErrors . pure
+
 data ParseError
   = LexerError LexError
   | NoMoreInput
@@ -43,7 +46,7 @@ data ParseError
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
-  noMoreInputError = ParseErrors (pure NoMoreInput)
+  noMoreInputError = liftError NoMoreInput
 
 type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 
@@ -53,7 +56,7 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 -- | Parse a given block of text.
 parseText :: FilePath -> Text -> Either ParseErrors Expression
 parseText fp bs = do
-  tokens <- first (ParseErrors . pure . LexerError) (lexText fp bs)
+  tokens <- first (liftError . LexerError) (lexText fp bs)
   runIdentity (Reparsec.parseOnlyT expressionParser tokens)
 
 --------------------------------------------------------------------------------
@@ -69,5 +72,5 @@ literalParser = do
     Reparsec.satisfy
       (\case
          l@Located {thing = IntegerToken i} -> pure (fmap (const i) l)
-         _ -> Left (ParseErrors (pure ExpectedInteger)))
+         _ -> Left (liftError ExpectedInteger))
   pure (IntegerLiteral (Integery {integer, location}))
