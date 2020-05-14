@@ -1,6 +1,6 @@
 stages:
-  - build
-  - release
+  # - build
+  # - release
 
 build:
   image: registry.gitlab.com/sky-above/inflex/build@sha256:9fcd97c1deb8274e1dd829934e532de06e7555aa90760ca05a9c7f43cc40dfd9
