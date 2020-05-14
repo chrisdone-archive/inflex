@@ -20,6 +20,10 @@ import           Optics
 --------------------------------------------------------------------------------
 -- AST types
 
+data Expression =
+  LiteralExpression Literal
+  deriving (Show, Eq, Ord)
+
 data Literal =
   IntegerLiteral Integery
   deriving (Show, Eq, Ord)
@@ -44,13 +48,16 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseError Identity a
 -- Top-level accessor
 
 -- | Parse a given block of text.
-parseText :: FilePath -> Text -> Either ParseError Literal
+parseText :: FilePath -> Text -> Either ParseError Expression
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
-  runIdentity (Reparsec.parseOnlyT literalParser tokens)
+  runIdentity (Reparsec.parseOnlyT expressionParser tokens)
 
 --------------------------------------------------------------------------------
 -- Parsers
+
+expressionParser :: Parser Expression
+expressionParser = LiteralExpression <$> literalParser
 
 literalParser :: Parser Literal
 literalParser = do

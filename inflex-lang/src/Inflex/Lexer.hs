@@ -91,7 +91,7 @@ tokensLexer :: Lexer (Seq (Located Token))
 tokensLexer =
   fmap
     mconcat
-    (Mega.some
+    (Mega.many
        (Mega.choice [fmap pure symbol, fmap pure integer, fmap pure lowerWord] <*
         Mega.space))
   where
@@ -123,13 +123,13 @@ located m = do
              { end =
                  SourcePos
                    { line = Mega.unPos (Mega.sourceLine end)
-                   , column = Mega.unPos (Mega.sourceLine end)
+                   , column = Mega.unPos (Mega.sourceColumn end)
                    , name = Mega.sourceName end
                    }
              , start =
                  SourcePos
                    { line = Mega.unPos (Mega.sourceLine start)
-                   , column = Mega.unPos (Mega.sourceLine start)
+                   , column = Mega.unPos (Mega.sourceColumn start)
                    , name = Mega.sourceName start
                    }
              }

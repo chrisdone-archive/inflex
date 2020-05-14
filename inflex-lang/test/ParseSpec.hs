@@ -16,12 +16,13 @@ spec =
     (shouldBe
        (parseText "" "123")
        (Right
-          (IntegerLiteral
-             Integery
-               { location =
-                   Location
-                     { start = SourcePos {name = "", line = 1, column = 1}
-                     , end = SourcePos {name = "", line = 1, column = 1}
-                     }
-               , integer = 123
-               })))
+          (LiteralExpression
+             (IntegerLiteral
+                Integery
+                  { location =
+                      Location
+                        { start = SourcePos {name = "", line = 1, column = 1}
+                        , end = SourcePos {name = "", line = 1, column = 4}
+                        }
+                  , integer = 123
+                  }))))
