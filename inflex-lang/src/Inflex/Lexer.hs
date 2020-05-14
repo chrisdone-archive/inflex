@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,12 +18,21 @@ module Inflex.Lexer
   ( Located(..)
   , Token(..)
   , SourcePos(..)
+  , Location(..)
   , lexText
   , satisfy
+  , satisfy_
+  , token
+  , token_
+  , Parser
+  , LexError
+  , _IntegerToken
   ) where
 
+import           Data.Bifunctor
 import           Data.Char
 import           Data.Foldable
+import           Data.Functor
 import qualified Data.List.NonEmpty as NE
 import           Data.Proxy
 import           Data.Sequence (Seq)
@@ -30,6 +40,7 @@ import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Data.Void
 import           GHC.Generics
+import           Optics
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as Mega
 import qualified Text.Megaparsec.Char.Lexer as Lexer
@@ -54,10 +65,15 @@ data Token
   | IntegerToken !Integer
   deriving (Show, Eq, Ord, Generic)
 
--- | A located token.
-data Located l = Located
+-- | A location of a thing.
+data Location = Location
   { start :: !SourcePos
   , end :: !SourcePos
+  } deriving (Show, Eq, Ord)
+
+-- | A located token.
+data Located l = Located
+  { location :: Location
   , thing :: !l
   } deriving (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
 
@@ -77,13 +93,13 @@ instance Mega.Stream (Seq (Located Token)) where
   chunkToTokens Proxy = toList
   chunkLength Proxy = length
   chunkEmpty Proxy = null
-  positionAt1 Proxy _ (Located start _ _) = toSourcePos start
+  positionAt1 Proxy _ (Located (Location start _) _) = toSourcePos start
   positionAtN Proxy pos Seq.Empty = pos
-  positionAtN Proxy _ (Located start _ _ Seq.:<| _) = toSourcePos start
-  advance1 Proxy _ _ (Located _ end _) = toSourcePos end
+  positionAtN Proxy _ (Located (Location start _) _ Seq.:<| _) = toSourcePos start
+  advance1 Proxy _ _ (Located (Location _ end) _) = toSourcePos end
   advanceN Proxy _ pos Seq.Empty = pos
   advanceN Proxy _ _ ts =
-    let Located _ end _ = last (toList ts)
+    let Located (Location _ end) _ = last (toList ts)
      in toSourcePos end
   take1_ Seq.Empty = Nothing
   take1_ (t Seq.:<| ts) = Just (t, ts)
@@ -96,13 +112,17 @@ instance Mega.Stream (Seq (Located Token)) where
 instance Mega.ShowToken (Located Token) where
   showTokens = unwords . map show . toList
 
+data LexError =
+  LexError (ParseError (Mega.Token Text) Void)
+  deriving (Show, Eq)
+
 --------------------------------------------------------------------------------
 -- Entry points
 
 -- | Lex a given block of text.
-lexText :: FilePath -> Text -> Either (ParseError (Mega.Token Text) Void) (Seq (Located Token))
+lexText :: FilePath -> Text -> Either LexError (Seq (Located Token))
 lexText fp bs =
-  Mega.runParser (Mega.space *> tokensLexer <* Mega.eof) fp bs
+  first LexError (Mega.runParser (Mega.space *> tokensLexer <* Mega.eof) fp bs)
 
 --------------------------------------------------------------------------------
 -- Lexer
@@ -139,17 +159,20 @@ located m = do
   end <- Mega.getPosition
   pure
     (Located
-       { end =
-           SourcePos
-             { line = Mega.unPos (Mega.sourceLine end)
-             , column = Mega.unPos (Mega.sourceLine end)
-             , name = Mega.sourceName end
-             }
-       , start =
-           SourcePos
-             { line = Mega.unPos (Mega.sourceLine start)
-             , column = Mega.unPos (Mega.sourceLine start)
-             , name = Mega.sourceName start
+       { location =
+           Location
+             { end =
+                 SourcePos
+                   { line = Mega.unPos (Mega.sourceLine end)
+                   , column = Mega.unPos (Mega.sourceLine end)
+                   , name = Mega.sourceName end
+                   }
+             , start =
+                 SourcePos
+                   { line = Mega.unPos (Mega.sourceLine start)
+                   , column = Mega.unPos (Mega.sourceLine start)
+                   , name = Mega.sourceName start
+                   }
              }
        , thing
        })
@@ -170,6 +193,30 @@ satisfy f =
   Mega.token
     (\case
        l@(Located {thing = tok})
-         | Just token <- f tok -> Right (fmap (const token) l)
+         | Just tok' <- f tok -> Right (fmap (const tok') l)
        l -> Left (Just (Mega.Tokens (NE.fromList [l])), mempty))
     Nothing
+
+token :: Token -> Parser (Located Token)
+token f = do
+  lf <- located (pure f)
+  Mega.token
+    (\case
+       l@(Located {thing = tok})
+         | f == tok -> Right (fmap (const tok) l)
+       l -> Left (Just (Mega.Tokens (NE.fromList [l])), mempty))
+    (Just lf)
+
+token_ :: Token -> Parser ()
+token_ = void . token
+
+satisfy_ :: (Token -> Bool) -> Parser ()
+satisfy_ p =
+  void
+    (satisfy
+       (\x ->
+          if p x
+            then pure ()
+            else Nothing))
+
+$(makePrisms ''Token)

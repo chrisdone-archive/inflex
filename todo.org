@@ -361,6 +361,12 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
     - Note taken on [2020-03-04 Wed 10:31] \\
       https://github.com/myfreeweb/hs-duktape/commit/68b2ea59fb9c708362007acdc5cb35aca2b0d365
 * Competition
+** Lobstrs discussion
+   - Note taken on [2020-05-12 Tue 17:59] \\
+     https://lobste.rs/s/7catij/how_do_you_take_notes_organize_your#c_kxntgo
+** TreeSheets
+   - Note taken on [2020-05-12 Tue 17:30] \\
+     http://strlen.com/treesheets/
 ** Notebooks
    - Note taken on [2020-03-07 Sat 16:51] \\
      What’s Wrong with Computational Notebooks?

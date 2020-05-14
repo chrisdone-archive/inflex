@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 -- | Test the lexer.
 
@@ -17,33 +18,51 @@ spec =
        (Right
           (Seq.fromList
              [ Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = LowerWordToken "a"
                  }
              , Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = IntegerToken 123
                  }
              , Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = OpenRoundToken
                  }
              , Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = CloseRoundToken
                  }
              , Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = OpenSquareToken
                  }
              , Located
-                 { start = SourcePos {name = "", line = 1, column = 1}
-                 , end = SourcePos {name = "", line = 1, column = 1}
+                 { location =
+                     Location
+                       { start = SourcePos {name = "", line = 1, column = 1}
+                       , end = SourcePos {name = "", line = 1, column = 1}
+                       }
                  , thing = CloseSquareToken
                  }
              ])))
