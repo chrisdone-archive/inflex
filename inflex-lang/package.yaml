@@ -13,6 +13,7 @@ dependencies:
 - text
 - megaparsec
 - reparsec
+- validation
 - containers
 - optics
 - optics-core

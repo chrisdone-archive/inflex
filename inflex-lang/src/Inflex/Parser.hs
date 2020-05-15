@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -15,22 +18,40 @@ import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Lexer
+import           Inflex.Stages
 
 --------------------------------------------------------------------------------
 -- AST types
 
-data Expression =
-  LiteralExpression Literal
-  deriving (Show, Eq, Ord)
+data Expression s =
+  LiteralExpression (Literal s)
 
-data Literal =
-  IntegerLiteral Integery
-  deriving (Show, Eq, Ord)
+data Literal s =
+  IntegerLiteral (Integery s)
 
-data Integery = Integery
-  { location :: Location
+data Integery s = Integery
+  { location :: StagedLocation s
   , integer :: Integer
-  } deriving (Show, Eq, Ord)
+  }
+
+deriving instance Show (Expression Parsed)
+deriving instance Eq (Expression Parsed)
+deriving instance Ord (Expression Parsed)
+deriving instance Show (Expression Renamed)
+deriving instance Eq (Expression Renamed)
+deriving instance Ord (Expression Renamed)
+deriving instance Show (Literal Parsed)
+deriving instance Eq (Literal Parsed)
+deriving instance Ord (Literal Parsed)
+deriving instance Show (Literal Renamed)
+deriving instance Eq (Literal Renamed)
+deriving instance Ord (Literal Renamed)
+deriving instance Show (Integery Parsed)
+deriving instance Eq (Integery Parsed)
+deriving instance Ord (Integery Parsed)
+deriving instance Show (Integery Renamed)
+deriving instance Eq (Integery Renamed)
+deriving instance Ord (Integery Renamed)
 
 --------------------------------------------------------------------------------
 -- Parser types
@@ -61,7 +82,7 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 -- Top-level accessor
 
 -- | Parse a given block of text.
-parseText :: FilePath -> Text -> Either RenameParseError Expression
+parseText :: FilePath -> Text -> Either RenameParseError (Expression Parsed)
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first ParseError (runIdentity (Reparsec.parseOnlyT expressionParser tokens))
@@ -69,11 +90,11 @@ parseText fp bs = do
 --------------------------------------------------------------------------------
 -- Parsers
 
-expressionParser :: Parser Expression
+expressionParser :: Parser (Expression Parsed)
 expressionParser =
   LiteralExpression <$> literalParser
 
-literalParser :: Parser Literal
+literalParser :: Parser (Literal Parsed)
 literalParser = do
   Located {thing = integer, location} <-
     Reparsec.satisfy
