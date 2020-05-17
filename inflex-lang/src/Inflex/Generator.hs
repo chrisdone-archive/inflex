@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -15,19 +16,27 @@ module Inflex.Generator
 import Control.Monad.State
 import Data.Bifunctor
 import Data.Text (Text)
+import Inflex.Optics
 import Inflex.Renamer
 import Inflex.Types
+import Optics
 
 --------------------------------------------------------------------------------
 -- Types
 
+data GenerateState = GenerateState
+  { counter :: !Integer
+  } deriving (Show)
+
 newtype Generate a = Generate
-  { runGenerator :: State Integer a
-  } deriving (Functor, Applicative, MonadState Integer, Monad)
+  { runGenerator :: State GenerateState a
+  } deriving (Functor, Applicative, Monad)
 
 data RenameGenerateError
   = RenameGenerateError ParseRenameError
   deriving (Show, Eq)
+
+$(makeLensesWith (inflexRules ['counter]) ''GenerateState)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -35,7 +44,10 @@ data RenameGenerateError
 generateText :: FilePath -> Text -> Either RenameGenerateError (Expression Generated)
 generateText fp text = do
   expression <- first RenameGenerateError (renameText fp text)
-  pure (evalState (runGenerator (expressionGenerator expression)) 0)
+  pure
+    (evalState
+       (runGenerator (expressionGenerator expression))
+       GenerateState {counter = 0})
 
 --------------------------------------------------------------------------------
 -- Generators
@@ -60,7 +72,8 @@ integeryGenerator Integery {typ = _, ..} = do
 -- Type system helpers
 
 generateTypeVariable :: TypeVariablePrefix -> Generate GeneratedType
-generateTypeVariable prefix = do
-  i <- get
-  modify' succ
-  pure (VariableGeneratedType prefix i)
+generateTypeVariable prefix =
+  Generate
+    (do i <- gets (view generateStateCounterL)
+        modify' (over generateStateCounterL succ)
+        pure (VariableGeneratedType prefix i))
