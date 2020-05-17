@@ -11,21 +11,26 @@
 module Inflex.Generator
   ( generateText
   , RenameGenerateError(..)
+  , HasConstraints(..)
   ) where
 
-import Control.Monad.State
-import Data.Bifunctor
-import Data.Text (Text)
-import Inflex.Optics
-import Inflex.Renamer
-import Inflex.Types
-import Optics
+import           Control.Monad.State
+import           Data.Bifunctor
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
+import           Data.Text (Text)
+import           Inflex.Instances ()
+import           Inflex.Optics
+import           Inflex.Renamer
+import           Inflex.Types
+import           Optics
 
 --------------------------------------------------------------------------------
 -- Types
 
 data GenerateState = GenerateState
   { counter :: !Integer
+  , classConstraints :: !(Seq GeneratedClassConstraint)
   } deriving (Show)
 
 newtype Generate a = Generate
@@ -36,18 +41,25 @@ data RenameGenerateError
   = RenameGenerateError ParseRenameError
   deriving (Show, Eq)
 
-$(makeLensesWith (inflexRules ['counter]) ''GenerateState)
+data HasConstraints a = HasConstraints
+  { classes :: !(Seq GeneratedClassConstraint)
+  , thing :: a
+  } deriving (Show, Functor, Eq, Ord)
+
+$(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
 
 --------------------------------------------------------------------------------
 -- Top-level
 
-generateText :: FilePath -> Text -> Either RenameGenerateError (Expression Generated)
+generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText fp text = do
   expression <- first RenameGenerateError (renameText fp text)
   pure
-    (evalState
-       (runGenerator (expressionGenerator expression))
-       GenerateState {counter = 0})
+    (let (expression', GenerateState {classConstraints = classes}) =
+           runState
+             (runGenerator (expressionGenerator expression))
+             GenerateState {classConstraints = mempty, counter = 0}
+      in HasConstraints {classes, thing = expression'})
 
 --------------------------------------------------------------------------------
 -- Generators
@@ -66,6 +78,8 @@ literalGenerator =
 integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
   typ <- generateTypeVariable IntegeryPrefix
+  addClassConstraint
+    (GeneratedClassConstraint {className = FromInteger, types = pure typ})
   pure Integery {typ, ..}
 
 --------------------------------------------------------------------------------
@@ -77,3 +91,7 @@ generateTypeVariable prefix =
     (do i <- gets (view generateStateCounterL)
         modify' (over generateStateCounterL succ)
         pure (VariableGeneratedType prefix i))
+
+addClassConstraint :: GeneratedClassConstraint -> Generate ()
+addClassConstraint constraint =
+  Generate (modify' (over generateStateClassConstraintsL (Seq.|> constraint)))

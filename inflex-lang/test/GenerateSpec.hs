@@ -7,11 +7,13 @@
 
 module GenerateSpec where
 
-import Inflex.Generator
-import Inflex.Instances ()
-import Inflex.Lexer
-import Inflex.Types
-import Test.Hspec
+import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.Sequence as Seq
+import           Inflex.Generator
+import           Inflex.Instances ()
+import           Inflex.Lexer
+import           Inflex.Types
+import           Test.Hspec
 
 spec :: Spec
 spec =
@@ -20,14 +22,26 @@ spec =
     (shouldBe
        (generateText "" "123")
        (Right
-          (LiteralExpression
-             (IntegerLiteral
-                Integery
-                  { location =
-                      Location
-                        { start = SourcePos {name = "", line = 1, column = 1}
-                        , end = SourcePos {name = "", line = 1, column = 4}
-                        }
-                  , integer = 123
-                  , typ = VariableGeneratedType IntegeryPrefix 0
-                  }))))
+          (HasConstraints
+             { classes =
+                 Seq.fromList
+                   [ GeneratedClassConstraint
+                       { className = FromInteger
+                       , types = VariableGeneratedType IntegeryPrefix 0 :| []
+                       }
+                   ]
+             , thing =
+                 LiteralExpression
+                   (IntegerLiteral
+                      (Integery
+                         { location =
+                             Location
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 4, name = ""}
+                               }
+                         , integer = 123
+                         , typ = VariableGeneratedType IntegeryPrefix 0
+                         }))
+             })))

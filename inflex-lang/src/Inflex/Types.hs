@@ -6,7 +6,8 @@
 
 module Inflex.Types where
 
-import GHC.Generics
+import           Data.List.NonEmpty (NonEmpty(..))
+import           GHC.Generics
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -24,14 +25,24 @@ data Integery s = Integery
   }
 
 --------------------------------------------------------------------------------
--- Type system types
+-- Type constraint generation types
 
 data GeneratedType =
-  VariableGeneratedType !TypeVariablePrefix !Integer
+  VariableGeneratedType !TypeVariablePrefix
+                        !Integer
   deriving (Show, Eq, Ord)
 
 data TypeVariablePrefix =
   IntegeryPrefix
+  deriving (Show, Eq, Ord)
+
+data GeneratedClassConstraint = GeneratedClassConstraint
+  { className :: !ClassName
+  , types :: !(NonEmpty GeneratedType)
+  } deriving (Show, Eq, Ord)
+
+data ClassName =
+  FromInteger
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
