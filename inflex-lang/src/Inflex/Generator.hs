@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -10,8 +12,8 @@ module Inflex.Generator
   , RenameGenerateError(..)
   ) where
 
+import Control.Monad.State
 import Data.Bifunctor
-import Data.Functor.Identity
 import Data.Text (Text)
 import Inflex.Renamer
 import Inflex.Types
@@ -19,8 +21,9 @@ import Inflex.Types
 --------------------------------------------------------------------------------
 -- Types
 
-newtype Generate a = Generate { runGenerator :: Identity a}
-  deriving (Functor, Applicative)
+newtype Generate a = Generate
+  { runGenerator :: State Integer a
+  } deriving (Functor, Applicative, MonadState Integer, Monad)
 
 data RenameGenerateError
   = RenameGenerateError ParseRenameError
@@ -32,7 +35,7 @@ data RenameGenerateError
 generateText :: FilePath -> Text -> Either RenameGenerateError (Expression Generated)
 generateText fp text = do
   expression <- first RenameGenerateError (renameText fp text)
-  pure (runIdentity (runGenerator (expressionGenerator expression)))
+  pure (evalState (runGenerator (expressionGenerator expression)) 0)
 
 --------------------------------------------------------------------------------
 -- Generators
@@ -49,4 +52,15 @@ literalGenerator =
     IntegerLiteral integery -> fmap IntegerLiteral (integeryGenerator integery)
 
 integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
-integeryGenerator Integery {..} = pure Integery {..}
+integeryGenerator Integery {typ = _, ..} = do
+  typ <- generateTypeVariable IntegeryPrefix
+  pure Integery {typ, ..}
+
+--------------------------------------------------------------------------------
+-- Type system helpers
+
+generateTypeVariable :: TypeVariablePrefix -> Generate GeneratedType
+generateTypeVariable prefix = do
+  i <- get
+  modify' succ
+  pure (VariableGeneratedType prefix i)

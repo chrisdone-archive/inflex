@@ -68,4 +68,4 @@ literalParser = do
       (\case
          l@Located {thing = IntegerToken i} -> pure (fmap (const i) l)
          _ -> Left (liftError ExpectedInteger))
-  pure (IntegerLiteral (Integery {integer, location}))
+  pure (IntegerLiteral (Integery {integer, location, typ = ()}))

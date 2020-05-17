@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}

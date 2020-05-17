@@ -29,4 +29,5 @@ spec =
                         , end = SourcePos {name = "", line = 1, column = 4}
                         }
                   , integer = 123
+                  , typ = VariableGeneratedType IntegeryPrefix 0
                   }))))

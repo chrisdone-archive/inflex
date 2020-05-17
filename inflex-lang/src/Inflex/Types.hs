@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -17,9 +18,21 @@ data Literal s =
   IntegerLiteral (Integery s)
 
 data Integery s = Integery
-  { location :: StagedLocation s
-  , integer :: Integer
+  { location :: !(StagedLocation s)
+  , integer :: !Integer
+  , typ :: !(StagedType s)
   }
+
+--------------------------------------------------------------------------------
+-- Type system types
+
+data GeneratedType =
+  VariableGeneratedType !TypeVariablePrefix !Integer
+  deriving (Show, Eq, Ord)
+
+data TypeVariablePrefix =
+  IntegeryPrefix
+  deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Location information
@@ -32,9 +45,9 @@ data Location = Location
 
 -- | Position in source.
 data SourcePos = SourcePos
-  { line :: Int
-  , column :: Int
-  , name :: FilePath
+  { line :: !Int
+  , column :: !Int
+  , name :: !FilePath
   } deriving (Show, Eq, Ord, Generic)
 
 --------------------------------------------------------------------------------
@@ -51,3 +64,8 @@ type family StagedLocation s where
   StagedLocation Parsed = Location
   StagedLocation Renamed = Location
   StagedLocation Generated = Location
+
+type family StagedType s where
+  StagedType Parsed = ()
+  StagedType Renamed = ()
+  StagedType Generated = GeneratedType
