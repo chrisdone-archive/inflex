@@ -30,6 +30,7 @@ import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Data.Void
 import           GHC.Generics
+import           Inflex.Types
 import           Optics
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as Mega
@@ -52,24 +53,11 @@ data Token
   | IntegerToken !Integer
   deriving (Show, Eq, Ord, Generic)
 
--- | A location of a thing.
-data Location = Location
-  { start :: !SourcePos
-  , end :: !SourcePos
-  } deriving (Show, Eq, Ord)
-
 -- | A located token.
 data Located l = Located
   { location :: Location
   , thing :: !l
   } deriving (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
-
--- | Position in source.
-data SourcePos = SourcePos
-  { line :: Int
-  , column :: Int
-  , name :: FilePath
-  } deriving (Show, Eq, Ord, Generic)
 
 data LexError =
   LexError (ParseErrorBundle Text Void)

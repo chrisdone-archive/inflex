@@ -6,14 +6,18 @@
 
 -- | Renamer for Inflex language.
 
-module Inflex.Renamer where
+module Inflex.Renamer
+  ( renameText
+  , RenameError(..)
+  , ParseRenameError(..)
+  ) where
 
-import           Data.Bifunctor
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Text (Text)
-import           Data.Validation
-import           Inflex.Parser
-import           Inflex.Stages
+import Data.Bifunctor
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Text (Text)
+import Data.Validation
+import Inflex.Parser
+import Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Renamer types

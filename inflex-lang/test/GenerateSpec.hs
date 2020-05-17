@@ -2,22 +2,23 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
--- |
 
-module RenameSpec where
+-- | Tests for generation of type constraints.
 
+module GenerateSpec where
+
+import Inflex.Generator
 import Inflex.Instances ()
 import Inflex.Lexer
-import Inflex.Renamer
 import Inflex.Types
 import Test.Hspec
 
 spec :: Spec
 spec =
   it
-    "Rename literal"
+    "Generate literal"
     (shouldBe
-       (renameText "" "123")
+       (generateText "" "123")
        (Right
           (LiteralExpression
              (IntegerLiteral

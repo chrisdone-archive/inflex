@@ -5,8 +5,10 @@
 
 module ParseSpec where
 
+import Inflex.Instances ()
 import Inflex.Lexer
 import Inflex.Parser
+import Inflex.Types
 import Test.Hspec
 
 spec :: Spec

@@ -18,40 +18,7 @@ import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Lexer
-import           Inflex.Stages
-
---------------------------------------------------------------------------------
--- AST types
-
-data Expression s =
-  LiteralExpression (Literal s)
-
-data Literal s =
-  IntegerLiteral (Integery s)
-
-data Integery s = Integery
-  { location :: StagedLocation s
-  , integer :: Integer
-  }
-
-deriving instance Show (Expression Parsed)
-deriving instance Eq (Expression Parsed)
-deriving instance Ord (Expression Parsed)
-deriving instance Show (Expression Renamed)
-deriving instance Eq (Expression Renamed)
-deriving instance Ord (Expression Renamed)
-deriving instance Show (Literal Parsed)
-deriving instance Eq (Literal Parsed)
-deriving instance Ord (Literal Parsed)
-deriving instance Show (Literal Renamed)
-deriving instance Eq (Literal Renamed)
-deriving instance Ord (Literal Renamed)
-deriving instance Show (Integery Parsed)
-deriving instance Eq (Integery Parsed)
-deriving instance Ord (Integery Parsed)
-deriving instance Show (Integery Renamed)
-deriving instance Eq (Integery Renamed)
-deriving instance Ord (Integery Renamed)
+import           Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Parser types
