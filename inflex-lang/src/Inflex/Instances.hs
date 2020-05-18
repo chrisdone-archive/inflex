@@ -10,6 +10,9 @@ module Inflex.Instances where
 
 import Inflex.Types
 
+--------------------------------------------------------------------------------
+-- AST types
+
 deriving instance Show (Expression Parsed)
 deriving instance Eq (Expression Parsed)
 deriving instance Ord (Expression Parsed)
@@ -39,3 +42,14 @@ deriving instance Ord (Integery Renamed)
 deriving instance Eq (Integery Generated)
 deriving instance Ord (Integery Generated)
 deriving instance Show (Integery Generated)
+
+-------------------------------------------------------------------------------
+-- Type system types
+
+deriving instance Eq (Type Generated)
+deriving instance Ord (Type Generated)
+deriving instance Show (Type Generated)
+
+deriving instance Eq (ClassConstraint Generated)
+deriving instance Ord (ClassConstraint Generated)
+deriving instance Show (ClassConstraint Generated)

@@ -25,9 +25,9 @@ spec =
           (HasConstraints
              { classes =
                  Seq.fromList
-                   [ GeneratedClassConstraint
+                   [ ClassConstraint
                        { className = FromInteger
-                       , types = VariableGeneratedType IntegeryPrefix 0 :| []
+                       , types = VariableType IntegeryPrefix 0 :| []
                        }
                    ]
              , thing =
@@ -42,6 +42,6 @@ spec =
                                    SourcePos {line = 1, column = 4, name = ""}
                                }
                          , integer = 123
-                         , typ = VariableGeneratedType IntegeryPrefix 0
+                         , typ = VariableType IntegeryPrefix 0
                          }))
              })))

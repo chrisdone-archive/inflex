@@ -30,7 +30,7 @@ import           Optics
 
 data GenerateState = GenerateState
   { counter :: !Integer
-  , classConstraints :: !(Seq GeneratedClassConstraint)
+  , classConstraints :: !(Seq (ClassConstraint Generated))
   } deriving (Show)
 
 newtype Generate a = Generate
@@ -42,7 +42,7 @@ data RenameGenerateError
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints
-  { classes :: !(Seq GeneratedClassConstraint)
+  { classes :: !(Seq (ClassConstraint Generated))
   , thing :: a
   } deriving (Show, Functor, Eq, Ord)
 
@@ -79,19 +79,19 @@ integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
   typ <- generateTypeVariable IntegeryPrefix
   addClassConstraint
-    (GeneratedClassConstraint {className = FromInteger, types = pure typ})
+    (ClassConstraint {className = FromInteger, types = pure typ})
   pure Integery {typ, ..}
 
 --------------------------------------------------------------------------------
 -- Type system helpers
 
-generateTypeVariable :: TypeVariablePrefix -> Generate GeneratedType
+generateTypeVariable :: TypeVariablePrefix -> Generate (Type Generated)
 generateTypeVariable prefix =
   Generate
     (do i <- gets (view generateStateCounterL)
         modify' (over generateStateCounterL succ)
-        pure (VariableGeneratedType prefix i))
+        pure (VariableType prefix i))
 
-addClassConstraint :: GeneratedClassConstraint -> Generate ()
+addClassConstraint :: ClassConstraint Generated -> Generate ()
 addClassConstraint constraint =
   Generate (modify' (over generateStateClassConstraintsL (Seq.|> constraint)))

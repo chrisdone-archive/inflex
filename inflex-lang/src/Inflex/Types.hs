@@ -25,21 +25,19 @@ data Integery s = Integery
   }
 
 --------------------------------------------------------------------------------
--- Type constraint generation types
+-- Type system types
 
-data GeneratedType =
-  VariableGeneratedType !TypeVariablePrefix
-                        !Integer
-  deriving (Show, Eq, Ord)
+data Type s where
+  VariableType :: TypeVariablePrefix -> Integer -> Type Generated
 
 data TypeVariablePrefix =
   IntegeryPrefix
   deriving (Show, Eq, Ord)
 
-data GeneratedClassConstraint = GeneratedClassConstraint
+data ClassConstraint s = ClassConstraint
   { className :: !ClassName
-  , types :: !(NonEmpty GeneratedType)
-  } deriving (Show, Eq, Ord)
+  , types :: !(NonEmpty (Type s))
+  }
 
 data ClassName =
   FromInteger
@@ -79,4 +77,4 @@ type family StagedLocation s where
 type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
-  StagedType Generated = GeneratedType
+  StagedType Generated = Type Generated
