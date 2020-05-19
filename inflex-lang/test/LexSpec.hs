@@ -12,7 +12,7 @@ import           Test.Hspec
 spec :: Spec
 spec =
   it
-    "Integer literal"
+    "Tokens"
     (shouldBe
        (lexText "" "a 123 ( )[]")
        (Right

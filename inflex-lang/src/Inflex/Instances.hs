@@ -43,6 +43,16 @@ deriving instance Eq (Integery Generated)
 deriving instance Ord (Integery Generated)
 deriving instance Show (Integery Generated)
 
+deriving instance Show (Lambda Parsed)
+deriving instance Eq (Lambda Parsed)
+deriving instance Ord (Lambda Parsed)
+deriving instance Show (Lambda Renamed)
+deriving instance Eq (Lambda Renamed)
+deriving instance Ord (Lambda Renamed)
+deriving instance Eq (Lambda Generated)
+deriving instance Ord (Lambda Generated)
+deriving instance Show (Lambda Generated)
+
 -------------------------------------------------------------------------------
 -- Type system types
 

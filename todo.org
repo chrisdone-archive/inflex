@@ -373,6 +373,9 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
 * Research
+  - Note taken on [2020-05-19 Tue 09:32] \\
+    PureScript got field names right, Haskell got them wrong
+    https://tek.brick.do/ff3d4f73-3748-4953-b9dc-4ba8b5237315
   - Note taken on [2020-03-26 Thu 09:33] \\
     https://www.unisonweb.org/
   - Note taken on [2020-03-26 Thu 09:33] \\

@@ -16,6 +16,7 @@ dependencies:
 - validation
 - mtl
 - transformers
+- semigroupoids
 - containers
 - optics
 - optics-core

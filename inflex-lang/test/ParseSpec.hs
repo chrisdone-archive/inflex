@@ -14,7 +14,7 @@ import Test.Hspec
 spec :: Spec
 spec = do
   it
-    "Integer literal"
+    "Literal"
     (shouldBe
        (parseText "" "123")
        (Right
@@ -29,3 +29,33 @@ spec = do
                   , integer = 123
                   , typ = ()
                   }))))
+  it
+    "Lambda"
+    (shouldBe
+       (parseText "" "\\->123")
+       (Right
+          (LambdaExpression
+             (Lambda
+                { typ = ()
+                , location =
+                    Location
+                      { start = SourcePos {line = 1, column = 1, name = ""}
+                      , end = SourcePos {line = 1, column = 7, name = ""}
+                      }
+                , body =
+                    LiteralExpression
+                      (IntegerLiteral
+                         (Integery
+                            { location =
+                                Location
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 4, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 7, name = ""}
+                                  }
+                            , integer = 123
+                            , typ = ()
+                            }))
+                }))))

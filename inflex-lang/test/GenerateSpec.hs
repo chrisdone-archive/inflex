@@ -16,9 +16,9 @@ import           Inflex.Types
 import           Test.Hspec
 
 spec :: Spec
-spec =
+spec = do
   it
-    "Generate literal"
+    "Literal"
     (shouldBe
        (generateText "" "123")
        (Right
@@ -26,7 +26,7 @@ spec =
              { classes =
                  Seq.fromList
                    [ ClassConstraint
-                       { className = FromInteger
+                       { className = FromIntegerClassName
                        , types = VariableType IntegeryPrefix 0 :| []
                        }
                    ]
@@ -44,4 +44,50 @@ spec =
                          , integer = 123
                          , typ = VariableType IntegeryPrefix 0
                          }))
+             })))
+  it
+    "Lambda"
+    (shouldBe
+       (generateText "" "\\->123")
+       (Right
+          (HasConstraints
+             { classes =
+                 Seq.fromList
+                   [ ClassConstraint
+                       { className = FromIntegerClassName
+                       , types = VariableType IntegeryPrefix 1 :| []
+                       }
+                   ]
+             , thing =
+                 LambdaExpression
+                   (Lambda
+                      { location =
+                          Location
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 7, name = ""}
+                            }
+                      , body =
+                          LiteralExpression
+                            (IntegerLiteral
+                               (Integery
+                                  { location =
+                                      Location
+                                        { start =
+                                            SourcePos
+                                              {line = 1, column = 4, name = ""}
+                                        , end =
+                                            SourcePos
+                                              {line = 1, column = 7, name = ""}
+                                        }
+                                  , integer = 123
+                                  , typ = VariableType IntegeryPrefix 1
+                                  }))
+                      , typ =
+                          ApplyType
+                            (ApplyType
+                               (ConstantType FunctionTypeName)
+                               (VariableType LambdaParameterPrefix 0))
+                            (VariableType IntegeryPrefix 1)
+                      })
              })))

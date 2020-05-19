@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -49,6 +50,7 @@ renameExpression :: Expression Parsed -> Renamer (Expression Renamed)
 renameExpression =
   \case
     LiteralExpression literal -> fmap LiteralExpression (renameLiteral literal)
+    LambdaExpression lambda -> fmap LambdaExpression (renameLambda lambda)
 
 renameLiteral :: Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral =
@@ -57,3 +59,8 @@ renameLiteral =
 
 renameIntegery :: Integery Parsed -> Renamer (Integery Renamed)
 renameIntegery Integery {..} = pure Integery {..}
+
+renameLambda :: Lambda Parsed -> Renamer (Lambda Renamed)
+renameLambda Lambda {..} = do
+  body' <- renameExpression body
+  pure Lambda {body = body', ..}

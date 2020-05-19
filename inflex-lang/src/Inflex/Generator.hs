@@ -22,6 +22,7 @@ import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Optics
 import           Inflex.Renamer
+import           Inflex.Type
 import           Inflex.Types
 import           Optics
 
@@ -69,6 +70,8 @@ expressionGenerator =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (literalGenerator literal)
+    LambdaExpression lambda ->
+      fmap LambdaExpression (lambdaGenerator lambda)
 
 literalGenerator :: Literal Renamed -> Generate (Literal Generated)
 literalGenerator =
@@ -79,8 +82,23 @@ integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
   typ <- generateTypeVariable IntegeryPrefix
   addClassConstraint
-    (ClassConstraint {className = FromInteger, types = pure typ})
+    (ClassConstraint {className = FromIntegerClassName, types = pure typ})
   pure Integery {typ, ..}
+
+lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
+lambdaGenerator Lambda {typ = _, ..} = do
+  inputType <- generateTypeVariable LambdaParameterPrefix
+  body' <- expressionGenerator body
+  let outputType = expressionType body'
+  pure
+    Lambda
+      { typ =
+          ApplyType
+            (ApplyType (ConstantType FunctionTypeName) inputType)
+            outputType
+      , body = body'
+      , ..
+      }
 
 --------------------------------------------------------------------------------
 -- Type system helpers

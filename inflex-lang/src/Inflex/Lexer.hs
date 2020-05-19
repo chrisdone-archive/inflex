@@ -22,6 +22,8 @@ module Inflex.Lexer
   , lexText
   , LexError
   , _IntegerToken
+  , _BackslashToken
+  , _RightArrowToken
   ) where
 
 import           Data.Bifunctor
@@ -51,6 +53,8 @@ data Token
   | OpenRoundToken
   | CloseRoundToken
   | IntegerToken !Integer
+  | BackslashToken
+  | RightArrowToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -96,6 +100,8 @@ tokensLexer =
            , CloseSquareToken <$ Mega.char ']'
            , OpenRoundToken <$ Mega.char '('
            , CloseRoundToken <$ Mega.char ')'
+           , RightArrowToken <$ Mega.try (Mega.string "->")
+           , BackslashToken <$ Mega.char '\\'
            ])
 
 -- | Retain location information for a token.

@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -13,7 +14,14 @@ import           GHC.Generics
 -- AST types
 
 data Expression s =
-  LiteralExpression (Literal s)
+    LiteralExpression (Literal s)
+  | LambdaExpression (Lambda s)
+
+data Lambda s = Lambda
+  { location :: !(StagedLocation s)
+  , body :: Expression s
+  , typ :: !(StagedType s)
+  }
 
 data Literal s =
   IntegerLiteral (Integery s)
@@ -29,9 +37,12 @@ data Integery s = Integery
 
 data Type s where
   VariableType :: TypeVariablePrefix -> Integer -> Type Generated
+  ApplyType :: Type s -> Type s -> Type s
+  ConstantType :: TypeName -> Type s
 
-data TypeVariablePrefix =
-  IntegeryPrefix
+data TypeVariablePrefix
+  = IntegeryPrefix
+  | LambdaParameterPrefix
   deriving (Show, Eq, Ord)
 
 data ClassConstraint s = ClassConstraint
@@ -39,8 +50,12 @@ data ClassConstraint s = ClassConstraint
   , types :: !(NonEmpty (Type s))
   }
 
+data TypeName =
+  FunctionTypeName
+  deriving (Show, Eq, Ord)
+
 data ClassName =
-  FromInteger
+  FromIntegerClassName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
