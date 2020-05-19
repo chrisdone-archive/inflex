@@ -80,22 +80,37 @@ literalGenerator =
 
 integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
-  typ <- generateTypeVariable IntegeryPrefix
+  typ <- generateTypeVariable location IntegeryPrefix
   addClassConstraint
-    (ClassConstraint {className = FromIntegerClassName, types = pure typ})
+    (ClassConstraint
+       {className = FromIntegerClassName, types = pure typ, location})
   pure Integery {typ, ..}
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
-  inputType <- generateTypeVariable LambdaParameterPrefix
+  inputType <-
+    generateTypeVariable
+      location -- TODO: change to lambda's parameter.
+      LambdaParameterPrefix
   body' <- expressionGenerator body
   let outputType = expressionType body'
   pure
     Lambda
       { typ =
           ApplyType
-            (ApplyType (ConstantType FunctionTypeName) inputType)
-            outputType
+            TypeApplication
+              { function =
+                  ApplyType
+                    TypeApplication
+                      { function =
+                          ConstantType
+                            (TypeConstant {name = FunctionTypeName, location})
+                      , argument = inputType
+                      , location
+                      }
+              , argument = outputType
+              , location
+              }
       , body = body'
       , ..
       }
@@ -103,12 +118,12 @@ lambdaGenerator Lambda {typ = _, ..} = do
 --------------------------------------------------------------------------------
 -- Type system helpers
 
-generateTypeVariable :: TypeVariablePrefix -> Generate (Type Generated)
-generateTypeVariable prefix =
+generateTypeVariable :: Location -> TypeVariablePrefix -> Generate (Type Generated)
+generateTypeVariable location prefix =
   Generate
-    (do i <- gets (view generateStateCounterL)
+    (do index <- gets (view generateStateCounterL)
         modify' (over generateStateCounterL succ)
-        pure (VariableType prefix i))
+        pure (VariableType TypeVariable {prefix, index, location}))
 
 addClassConstraint :: ClassConstraint Generated -> Generate ()
 addClassConstraint constraint =

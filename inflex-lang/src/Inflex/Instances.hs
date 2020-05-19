@@ -60,6 +60,14 @@ deriving instance Eq (Type Generated)
 deriving instance Ord (Type Generated)
 deriving instance Show (Type Generated)
 
+deriving instance Eq (TypeApplication Generated)
+deriving instance Ord (TypeApplication Generated)
+deriving instance Show (TypeApplication Generated)
+
+deriving instance Eq (TypeConstant Generated)
+deriving instance Ord (TypeConstant Generated)
+deriving instance Show (TypeConstant Generated)
+
 deriving instance Eq (ClassConstraint Generated)
 deriving instance Ord (ClassConstraint Generated)
 deriving instance Show (ClassConstraint Generated)

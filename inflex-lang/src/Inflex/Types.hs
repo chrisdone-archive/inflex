@@ -36,9 +36,26 @@ data Integery s = Integery
 -- Type system types
 
 data Type s where
-  VariableType :: TypeVariablePrefix -> Integer -> Type Generated
-  ApplyType :: Type s -> Type s -> Type s
-  ConstantType :: TypeName -> Type s
+  VariableType :: TypeVariable -> Type Generated
+  ApplyType :: TypeApplication s -> Type s
+  ConstantType :: TypeConstant s -> Type s
+
+data TypeConstant s = TypeConstant
+  { location :: !(StagedLocation s)
+  , name :: !TypeName
+  }
+
+data TypeApplication s = TypeApplication
+  { function :: !(Type s)
+  , argument :: !(Type s)
+  , location :: !(StagedLocation s)
+  }
+
+data TypeVariable = TypeVariable
+  { location :: !Location
+  , prefix :: !TypeVariablePrefix
+  , index :: !Integer
+  } deriving (Show, Eq, Ord)
 
 data TypeVariablePrefix
   = IntegeryPrefix
@@ -48,6 +65,7 @@ data TypeVariablePrefix
 data ClassConstraint s = ClassConstraint
   { className :: !ClassName
   , types :: !(NonEmpty (Type s))
+  , location :: !(StagedLocation s)
   }
 
 data TypeName =

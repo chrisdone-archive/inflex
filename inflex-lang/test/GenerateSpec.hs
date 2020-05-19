@@ -27,7 +27,28 @@ spec = do
                  Seq.fromList
                    [ ClassConstraint
                        { className = FromIntegerClassName
-                       , types = VariableType IntegeryPrefix 0 :| []
+                       , types =
+                           VariableType
+                             TypeVariable
+                               { prefix = IntegeryPrefix
+                               , index = 0
+                               , location =
+                                   Location
+                                     { start =
+                                         SourcePos
+                                           {line = 1, column = 1, name = ""}
+                                     , end =
+                                         SourcePos
+                                           {line = 1, column = 4, name = ""}
+                                     }
+                               } :|
+                           []
+                       , location =
+                           Location
+                             { start =
+                                 SourcePos {line = 1, column = 1, name = ""}
+                             , end = SourcePos {line = 1, column = 4, name = ""}
+                             }
                        }
                    ]
              , thing =
@@ -42,7 +63,21 @@ spec = do
                                    SourcePos {line = 1, column = 4, name = ""}
                                }
                          , integer = 123
-                         , typ = VariableType IntegeryPrefix 0
+                         , typ =
+                             VariableType
+                               TypeVariable
+                                 { prefix = IntegeryPrefix
+                                 , index = 0
+                                 , location =
+                                     Location
+                                       { start =
+                                           SourcePos
+                                             {line = 1, column = 1, name = ""}
+                                       , end =
+                                           SourcePos
+                                             {line = 1, column = 4, name = ""}
+                                       }
+                                 }
                          }))
              })))
   it
@@ -55,7 +90,28 @@ spec = do
                  Seq.fromList
                    [ ClassConstraint
                        { className = FromIntegerClassName
-                       , types = VariableType IntegeryPrefix 1 :| []
+                       , types =
+                           VariableType
+                             (TypeVariable
+                                { location =
+                                    Location
+                                      { start =
+                                          SourcePos
+                                            {line = 1, column = 4, name = ""}
+                                      , end =
+                                          SourcePos
+                                            {line = 1, column = 7, name = ""}
+                                      }
+                                , prefix = IntegeryPrefix
+                                , index = 1
+                                }) :|
+                           []
+                       , location =
+                           Location
+                             { start =
+                                 SourcePos {line = 1, column = 4, name = ""}
+                             , end = SourcePos {line = 1, column = 7, name = ""}
+                             }
                        }
                    ]
              , thing =
@@ -81,13 +137,122 @@ spec = do
                                               {line = 1, column = 7, name = ""}
                                         }
                                   , integer = 123
-                                  , typ = VariableType IntegeryPrefix 1
+                                  , typ =
+                                      VariableType
+                                        (TypeVariable
+                                           { location =
+                                               Location
+                                                 { start =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 4
+                                                       , name = ""
+                                                       }
+                                                 , end =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 7
+                                                       , name = ""
+                                                       }
+                                                 }
+                                           , prefix = IntegeryPrefix
+                                           , index = 1
+                                           })
                                   }))
                       , typ =
                           ApplyType
-                            (ApplyType
-                               (ConstantType FunctionTypeName)
-                               (VariableType LambdaParameterPrefix 0))
-                            (VariableType IntegeryPrefix 1)
+                            (TypeApplication
+                               { function =
+                                   ApplyType
+                                     (TypeApplication
+                                        { function =
+                                            ConstantType
+                                              (TypeConstant
+                                                 { location =
+                                                     Location
+                                                       { start =
+                                                           SourcePos
+                                                             { line = 1
+                                                             , column = 1
+                                                             , name = ""
+                                                             }
+                                                       , end =
+                                                           SourcePos
+                                                             { line = 1
+                                                             , column = 7
+                                                             , name = ""
+                                                             }
+                                                       }
+                                                 , name = FunctionTypeName
+                                                 })
+                                        , argument =
+                                            VariableType
+                                              (TypeVariable
+                                                 { location =
+                                                     Location
+                                                       { start =
+                                                           SourcePos
+                                                             { line = 1
+                                                             , column = 1
+                                                             , name = ""
+                                                             }
+                                                       , end =
+                                                           SourcePos
+                                                             { line = 1
+                                                             , column = 7
+                                                             , name = ""
+                                                             }
+                                                       }
+                                                 , prefix =
+                                                     LambdaParameterPrefix
+                                                 , index = 0
+                                                 })
+                                        , location =
+                                            Location
+                                              { start =
+                                                  SourcePos
+                                                    { line = 1
+                                                    , column = 1
+                                                    , name = ""
+                                                    }
+                                              , end =
+                                                  SourcePos
+                                                    { line = 1
+                                                    , column = 7
+                                                    , name = ""
+                                                    }
+                                              }
+                                        })
+                               , argument =
+                                   VariableType
+                                     (TypeVariable
+                                        { location =
+                                            Location
+                                              { start =
+                                                  SourcePos
+                                                    { line = 1
+                                                    , column = 4
+                                                    , name = ""
+                                                    }
+                                              , end =
+                                                  SourcePos
+                                                    { line = 1
+                                                    , column = 7
+                                                    , name = ""
+                                                    }
+                                              }
+                                        , prefix = IntegeryPrefix
+                                        , index = 1
+                                        })
+                               , location =
+                                   Location
+                                     { start =
+                                         SourcePos
+                                           {line = 1, column = 1, name = ""}
+                                     , end =
+                                         SourcePos
+                                           {line = 1, column = 7, name = ""}
+                                     }
+                               })
                       })
              })))
