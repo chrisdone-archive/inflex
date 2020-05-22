@@ -80,20 +80,26 @@ renameLiteral cursor =
 
 renameIntegery :: CursorBuilder -> Integery Parsed -> Renamer (Integery Renamed)
 renameIntegery cursor Integery {..} = do
-  final <- finalizeCursor cursor location
+  final <- finalizeCursor cursor ExpressionCursor location
   pure Integery {location = final, ..}
 
 renameLambda :: CursorBuilder -> Lambda Parsed -> Renamer (Lambda Renamed)
 renameLambda cursor Lambda {..} = do
-  final <- finalizeCursor cursor location
-  body' <- renameExpression (cursor . InLambdaCursor) body
-  pure Lambda {body = body', location = final, ..}
+  final <- finalizeCursor cursor ExpressionCursor location
+  param' <- renameParam cursor param
+  body' <- renameExpression (cursor . LambdaBodyCursor) body
+  pure Lambda {body = body', location = final, param = param', ..}
+
+renameParam :: CursorBuilder -> Param Parsed -> Renamer (Param Renamed)
+renameParam cursor Param {..} = do
+  final <- finalizeCursor cursor LambdaParamCursor location
+  pure Param {name = (), location = final, ..}
 
 --------------------------------------------------------------------------------
 -- Cursor operations
 
-finalizeCursor :: CursorBuilder -> StagedLocation Parsed -> Renamer Cursor
-finalizeCursor cursor loc = do
+finalizeCursor :: CursorBuilder -> Cursor -> StagedLocation Parsed -> Renamer Cursor
+finalizeCursor cursor finalCursor loc = do
   modify (M.insert final loc)
   pure final
-  where final = cursor FinalCursor
+  where final = cursor finalCursor

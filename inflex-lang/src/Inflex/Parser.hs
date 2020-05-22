@@ -45,6 +45,7 @@ data ParseError
   = NoMoreInput
   | ExpectedInteger
   | ExpectedToken Token
+  | ExpectedParam
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -100,7 +101,15 @@ lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do
   Located {location = SourceLocation {start}} <-
     token (ExpectedToken BackslashToken) (preview _BackslashToken)
+  param <- paramParser
   token_ (ExpectedToken RightArrowToken) (preview _RightArrowToken)
   body <- expressionParser
   let SourceLocation {end} = expressionLocation body
-  pure Lambda {location = SourceLocation {start, end}, body, typ = ()}
+  pure
+    Lambda
+      {location = SourceLocation {start, end}, body, typ = (), param = param}
+
+paramParser :: Parser (Param Parsed)
+paramParser = do
+  Located {location, thing} <- token ExpectedParam (preview _LowerWordToken)
+  pure Param {name = thing, location, typ = ()}

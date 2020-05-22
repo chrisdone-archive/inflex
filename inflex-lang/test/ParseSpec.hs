@@ -32,15 +32,25 @@ spec = do
   it
     "Lambda"
     (shouldBe
-       (parseText "" "\\->123")
+       (parseText "" "\\x->123")
        (Right
           (LambdaExpression
              (Lambda
-                { typ = ()
-                , location =
+                { location =
                     SourceLocation
                       { start = SourcePos {line = 1, column = 1, name = ""}
-                      , end = SourcePos {line = 1, column = 7, name = ""}
+                      , end = SourcePos {line = 1, column = 8, name = ""}
+                      }
+                , param =
+                    Param
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 3, name = ""}
+                            }
+                      , name = "x"
+                      , typ = ()
                       }
                 , body =
                     LiteralExpression
@@ -50,12 +60,13 @@ spec = do
                                 SourceLocation
                                   { start =
                                       SourcePos
-                                        {line = 1, column = 4, name = ""}
+                                        {line = 1, column = 5, name = ""}
                                   , end =
                                       SourcePos
-                                        {line = 1, column = 7, name = ""}
+                                        {line = 1, column = 8, name = ""}
                                   }
                             , integer = 123
                             , typ = ()
                             }))
+                , typ = ()
                 }))))

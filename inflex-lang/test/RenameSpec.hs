@@ -6,7 +6,6 @@
 
 module RenameSpec where
 
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Inflex.Instances ()
 import           Inflex.Renamer
@@ -22,9 +21,10 @@ spec = do
        (Right
           ( LiteralExpression
               (IntegerLiteral
-                 (Integery {location = FinalCursor, integer = 123, typ = ()}))
+                 (Integery
+                    {location = ExpressionCursor, integer = 123, typ = ()}))
           , M.fromList
-              [ ( FinalCursor
+              [ ( ExpressionCursor
                 , SourceLocation
                     { start = SourcePos {line = 1, column = 1, name = ""}
                     , end = SourcePos {line = 1, column = 4, name = ""}
@@ -33,30 +33,37 @@ spec = do
   it
     "Lambda"
     (shouldBe
-       (renameText "" "\\->123")
+       (renameText "" "\\x->123")
        (Right
           ( LambdaExpression
               (Lambda
-                 { location = FinalCursor
+                 { location = ExpressionCursor
+                 , param =
+                     Param {location = LambdaParamCursor, name = (), typ = ()}
                  , body =
                      LiteralExpression
                        (IntegerLiteral
                           (Integery
-                             { location = InLambdaCursor FinalCursor
+                             { location = LambdaBodyCursor ExpressionCursor
                              , integer = 123
                              , typ = ()
                              }))
                  , typ = ()
                  })
           , M.fromList
-              [ ( FinalCursor
+              [ ( ExpressionCursor
                 , SourceLocation
                     { start = SourcePos {line = 1, column = 1, name = ""}
-                    , end = SourcePos {line = 1, column = 7, name = ""}
+                    , end = SourcePos {line = 1, column = 8, name = ""}
                     })
-              , ( InLambdaCursor FinalCursor
+              , ( LambdaBodyCursor ExpressionCursor
                 , SourceLocation
-                    { start = SourcePos {line = 1, column = 4, name = ""}
-                    , end = SourcePos {line = 1, column = 7, name = ""}
+                    { start = SourcePos {line = 1, column = 5, name = ""}
+                    , end = SourcePos {line = 1, column = 8, name = ""}
+                    })
+              , ( LambdaParamCursor
+                , SourceLocation
+                    { start = SourcePos {line = 1, column = 2, name = ""}
+                    , end = SourcePos {line = 1, column = 3, name = ""}
                     })
               ])))

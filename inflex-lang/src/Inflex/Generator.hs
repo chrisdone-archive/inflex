@@ -54,7 +54,7 @@ $(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
 
 generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText fp text = do
-  (expression, mapping) <- first RenameGenerateError (renameText fp text)
+  (expression, _mapping) <- first RenameGenerateError (renameText fp text)
   pure
     (let (expression', GenerateState {classConstraints = classes}) =
            runState
@@ -88,10 +88,7 @@ integeryGenerator Integery {typ = _, ..} = do
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
-  inputType <-
-    generateTypeVariable
-      location -- TODO: change to lambda's parameter.
-      LambdaParameterPrefix
+  param' <- paramGenerator param
   body' <- expressionGenerator body
   let outputType = expressionType body'
   pure
@@ -105,15 +102,21 @@ lambdaGenerator Lambda {typ = _, ..} = do
                       { function =
                           ConstantType
                             (TypeConstant {name = FunctionTypeName, location})
-                      , argument = inputType
+                      , argument = paramType param'
                       , location
                       }
               , argument = outputType
               , location
               }
       , body = body'
+      , param = param'
       , ..
       }
+
+paramGenerator :: Param Renamed -> Generate (Param Generated)
+paramGenerator Param {typ = _, ..} = do
+  typ <- generateTypeVariable location LambdaParameterPrefix
+  pure Param {typ, ..}
 
 --------------------------------------------------------------------------------
 -- Type system helpers

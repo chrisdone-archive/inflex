@@ -8,6 +8,7 @@
 module Inflex.Types where
 
 import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Text (Text)
 import           GHC.Generics
 
 --------------------------------------------------------------------------------
@@ -19,7 +20,14 @@ data Expression s =
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
-  , body :: Expression s
+  , param :: !(Param s)
+  , body :: !(Expression s)
+  , typ :: !(StagedType s)
+  }
+
+data Param s = Param
+  { location :: !(StagedLocation s)
+  , name :: !(StagedName s)
   , typ :: !(StagedType s)
   }
 
@@ -97,8 +105,9 @@ data SourcePos = SourcePos
 
 -- | Location of something within a tree.
 data Cursor
-  = FinalCursor
-  | InLambdaCursor Cursor
+  = ExpressionCursor
+  | LambdaBodyCursor Cursor
+  | LambdaParamCursor
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -120,3 +129,8 @@ type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
   StagedType Generated = Type Generated
+
+type family StagedName s where
+  StagedName Parsed = Text
+  StagedName Renamed = ()
+  StagedName Generated = ()

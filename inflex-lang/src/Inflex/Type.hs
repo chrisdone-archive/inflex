@@ -24,3 +24,6 @@ literalType =
 
 integeryType :: Integery s -> StagedType s
 integeryType Integery {typ} = typ
+
+paramType :: Param s -> StagedType s
+paramType Param {typ} = typ

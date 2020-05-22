@@ -24,6 +24,7 @@ module Inflex.Lexer
   , _IntegerToken
   , _BackslashToken
   , _RightArrowToken
+  , _LowerWordToken
   ) where
 
 import           Data.Bifunctor

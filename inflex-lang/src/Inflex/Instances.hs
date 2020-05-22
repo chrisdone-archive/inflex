@@ -53,6 +53,16 @@ deriving instance Eq (Lambda Generated)
 deriving instance Ord (Lambda Generated)
 deriving instance Show (Lambda Generated)
 
+deriving instance Show (Param Parsed)
+deriving instance Eq (Param Parsed)
+deriving instance Ord (Param Parsed)
+deriving instance Show (Param Renamed)
+deriving instance Eq (Param Renamed)
+deriving instance Ord (Param Renamed)
+deriving instance Eq (Param Generated)
+deriving instance Ord (Param Generated)
+deriving instance Show (Param Generated)
+
 -------------------------------------------------------------------------------
 -- Type system types
 
