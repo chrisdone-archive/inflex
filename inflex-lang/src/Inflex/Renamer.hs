@@ -35,6 +35,8 @@ data ParseRenameError
   | ParserErrored RenameParseError
   deriving (Show, Eq)
 
+type CursorBuilder = Cursor -> Cursor
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -43,26 +45,26 @@ renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
   first
     RenamerErrors
-    (toEither (runRenamer (renameExpression Cursor expression)))
+    (toEither (runRenamer (renameExpression id expression)))
 
 --------------------------------------------------------------------------------
 -- Renamers
 
-renameExpression :: Cursor -> Expression Parsed -> Renamer (Expression Renamed)
+renameExpression :: CursorBuilder -> Expression Parsed -> Renamer (Expression Renamed)
 renameExpression cursor =
   \case
     LiteralExpression literal -> fmap LiteralExpression (renameLiteral cursor literal)
-    LambdaExpression lambda -> fmap LambdaExpression (renameLambda cursor lambda)
+    LambdaExpression lambda -> fmap LambdaExpression (renameLambda (cursor . LambdaCursor) lambda)
 
-renameLiteral :: Cursor -> Literal Parsed -> Renamer (Literal Renamed)
+renameLiteral :: CursorBuilder -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral cursor =
   \case
     IntegerLiteral integery -> fmap IntegerLiteral (renameIntegery cursor integery)
 
-renameIntegery :: Cursor -> Integery Parsed -> Renamer (Integery Renamed)
-renameIntegery cursor Integery {..} = pure Integery {location = cursor, ..}
+renameIntegery :: CursorBuilder -> Integery Parsed -> Renamer (Integery Renamed)
+renameIntegery cursor Integery {..} = pure Integery {location = cursor FinalCursor, ..}
 
-renameLambda :: Cursor -> Lambda Parsed -> Renamer (Lambda Renamed)
+renameLambda :: CursorBuilder -> Lambda Parsed -> Renamer (Lambda Renamed)
 renameLambda cursor Lambda {..} = do
   body' <- renameExpression cursor body
-  pure Lambda {body = body', location = cursor, ..}
+  pure Lambda {body = body', location = cursor FinalCursor, ..}

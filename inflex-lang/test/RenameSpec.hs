@@ -20,7 +20,7 @@ spec = do
        (Right
           (LiteralExpression
              (IntegerLiteral
-                Integery {location = Cursor, integer = 123, typ = ()}))))
+                Integery {location = FinalCursor, integer = 123, typ = ()}))))
   it
     "Lambda"
     (shouldBe
@@ -28,10 +28,14 @@ spec = do
        (Right
           (LambdaExpression
              (Lambda
-                { typ = ()
-                , location = Cursor
+                { location = LambdaCursor FinalCursor
                 , body =
                     LiteralExpression
                       (IntegerLiteral
-                         (Integery {location = Cursor, integer = 123, typ = ()}))
+                         (Integery
+                            { location = LambdaCursor FinalCursor
+                            , integer = 123
+                            , typ = ()
+                            }))
+                , typ = ()
                 }))))

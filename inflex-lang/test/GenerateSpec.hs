@@ -31,24 +31,24 @@ spec = do
                              TypeVariable
                                { prefix = IntegeryPrefix
                                , index = 0
-                               , location = Cursor
+                               , location = FinalCursor
                                } :|
                            []
-                       , location = Cursor
+                       , location = FinalCursor
                        }
                    ]
              , thing =
                  LiteralExpression
                    (IntegerLiteral
                       (Integery
-                         { location = Cursor
+                         { location = FinalCursor
                          , integer = 123
                          , typ =
                              VariableType
                                TypeVariable
                                  { prefix = IntegeryPrefix
                                  , index = 0
-                                 , location = Cursor
+                                 , location = FinalCursor
                                  }
                          }))
              })))
@@ -65,28 +65,28 @@ spec = do
                        , types =
                            VariableType
                              (TypeVariable
-                                { location = Cursor
+                                { location = LambdaCursor FinalCursor
                                 , prefix = IntegeryPrefix
                                 , index = 1
                                 }) :|
                            []
-                       , location = Cursor
+                       , location = LambdaCursor FinalCursor
                        }
                    ]
              , thing =
                  LambdaExpression
                    (Lambda
-                      { location = Cursor
+                      { location = LambdaCursor FinalCursor
                       , body =
                           LiteralExpression
                             (IntegerLiteral
                                (Integery
-                                  { location = Cursor
+                                  { location = LambdaCursor FinalCursor
                                   , integer = 123
                                   , typ =
                                       VariableType
                                         (TypeVariable
-                                           { location = Cursor
+                                           { location = LambdaCursor FinalCursor
                                            , prefix = IntegeryPrefix
                                            , index = 1
                                            })
@@ -100,27 +100,29 @@ spec = do
                                         { function =
                                             ConstantType
                                               (TypeConstant
-                                                 { location = Cursor
+                                                 { location =
+                                                     LambdaCursor FinalCursor
                                                  , name = FunctionTypeName
                                                  })
                                         , argument =
                                             VariableType
                                               (TypeVariable
-                                                 { location = Cursor
+                                                 { location =
+                                                     LambdaCursor FinalCursor
                                                  , prefix =
                                                      LambdaParameterPrefix
                                                  , index = 0
                                                  })
-                                        , location = Cursor
+                                        , location = LambdaCursor FinalCursor
                                         })
                                , argument =
                                    VariableType
                                      (TypeVariable
-                                        { location = Cursor
+                                        { location = LambdaCursor FinalCursor
                                         , prefix = IntegeryPrefix
                                         , index = 1
                                         })
-                               , location = Cursor
+                               , location = LambdaCursor FinalCursor
                                })
                       })
              })))

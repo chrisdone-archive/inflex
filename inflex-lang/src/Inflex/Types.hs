@@ -96,8 +96,9 @@ data SourcePos = SourcePos
 -- Tree location information
 
 -- | Location of something within a tree.
-data Cursor =
-  Cursor
+data Cursor
+  = FinalCursor
+  | LambdaCursor Cursor
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
