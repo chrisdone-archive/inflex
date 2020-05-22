@@ -79,18 +79,26 @@ data ClassName =
 --------------------------------------------------------------------------------
 -- Source location information
 
--- | A location of a thing.
+-- | Source location of something originating in source code.
 data SourceLocation = SourceLocation
   { start :: !SourcePos
   , end :: !SourcePos
   } deriving (Show, Eq, Ord)
 
--- | Position in source.
+-- | Position in source code.
 data SourcePos = SourcePos
   { line :: !Int
   , column :: !Int
   , name :: !FilePath
   } deriving (Show, Eq, Ord, Generic)
+
+--------------------------------------------------------------------------------
+-- Tree location information
+
+-- | Location of something within a tree.
+data Cursor =
+  Cursor
+  deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Stages
@@ -104,8 +112,8 @@ data Generated
 
 type family StagedLocation s where
   StagedLocation Parsed = SourceLocation
-  StagedLocation Renamed = SourceLocation
-  StagedLocation Generated = SourceLocation
+  StagedLocation Renamed = Cursor
+  StagedLocation Generated = Cursor
 
 type family StagedType s where
   StagedType Parsed = ()
