@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -13,12 +14,15 @@ module Inflex.Renamer
   , ParseRenameError(..)
   ) where
 
-import Data.Bifunctor
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Text (Text)
-import Data.Validation
-import Inflex.Parser
-import Inflex.Types
+import           Control.Monad.State
+import           Control.Monad.Validate
+import           Data.Bifunctor
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import           Data.Text (Text)
+import           Inflex.Parser
+import           Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Renamer types
@@ -27,8 +31,12 @@ data RenameError = RenameError
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
-  { runRenamer :: Validation (NonEmpty RenameError) a
-  } deriving (Functor, Applicative)
+  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation)) a
+  } deriving ( Functor
+             , Applicative
+             , MonadState (Map Cursor SourceLocation)
+             , Monad
+             )
 
 data ParseRenameError
   = RenamerErrors (NonEmpty RenameError)
@@ -40,12 +48,19 @@ type CursorBuilder = Cursor -> Cursor
 --------------------------------------------------------------------------------
 -- Top-level
 
-renameText :: FilePath -> Text -> Either ParseRenameError (Expression Renamed)
+renameText ::
+     FilePath
+  -> Text
+  -> Either ParseRenameError (Expression Renamed, Map Cursor SourceLocation)
 renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
   first
     RenamerErrors
-    (toEither (runRenamer (renameExpression id expression)))
+    (let (result, state') =
+           runState
+             (runValidateT (runRenamer (renameExpression id expression)))
+             mempty
+      in fmap (, state') result)
 
 --------------------------------------------------------------------------------
 -- Renamers
@@ -53,8 +68,10 @@ renameText fp text = do
 renameExpression :: CursorBuilder -> Expression Parsed -> Renamer (Expression Renamed)
 renameExpression cursor =
   \case
-    LiteralExpression literal -> fmap LiteralExpression (renameLiteral cursor literal)
-    LambdaExpression lambda -> fmap LambdaExpression (renameLambda (cursor . LambdaCursor) lambda)
+    LiteralExpression literal ->
+      fmap LiteralExpression (renameLiteral cursor literal)
+    LambdaExpression lambda ->
+      fmap LambdaExpression (renameLambda cursor lambda)
 
 renameLiteral :: CursorBuilder -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral cursor =
@@ -62,9 +79,21 @@ renameLiteral cursor =
     IntegerLiteral integery -> fmap IntegerLiteral (renameIntegery cursor integery)
 
 renameIntegery :: CursorBuilder -> Integery Parsed -> Renamer (Integery Renamed)
-renameIntegery cursor Integery {..} = pure Integery {location = cursor FinalCursor, ..}
+renameIntegery cursor Integery {..} = do
+  final <- finalizeCursor cursor location
+  pure Integery {location = final, ..}
 
 renameLambda :: CursorBuilder -> Lambda Parsed -> Renamer (Lambda Renamed)
 renameLambda cursor Lambda {..} = do
-  body' <- renameExpression cursor body
-  pure Lambda {body = body', location = cursor FinalCursor, ..}
+  final <- finalizeCursor cursor location
+  body' <- renameExpression (cursor . InLambdaCursor) body
+  pure Lambda {body = body', location = final, ..}
+
+--------------------------------------------------------------------------------
+-- Cursor operations
+
+finalizeCursor :: CursorBuilder -> StagedLocation Parsed -> Renamer Cursor
+finalizeCursor cursor loc = do
+  modify (M.insert final loc)
+  pure final
+  where final = cursor FinalCursor
