@@ -52,7 +52,7 @@ data TypeApplication s = TypeApplication
   }
 
 data TypeVariable = TypeVariable
-  { location :: !Location
+  { location :: !(StagedLocation Generated)
   , prefix :: !TypeVariablePrefix
   , index :: !Integer
   } deriving (Show, Eq, Ord)
@@ -77,10 +77,10 @@ data ClassName =
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
--- Location information
+-- Source location information
 
 -- | A location of a thing.
-data Location = Location
+data SourceLocation = SourceLocation
   { start :: !SourcePos
   , end :: !SourcePos
   } deriving (Show, Eq, Ord)
@@ -103,9 +103,9 @@ data Generated
 -- Families
 
 type family StagedLocation s where
-  StagedLocation Parsed = Location
-  StagedLocation Renamed = Location
-  StagedLocation Generated = Location
+  StagedLocation Parsed = SourceLocation
+  StagedLocation Renamed = SourceLocation
+  StagedLocation Generated = SourceLocation
 
 type family StagedType s where
   StagedType Parsed = ()

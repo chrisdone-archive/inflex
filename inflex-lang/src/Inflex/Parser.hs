@@ -98,9 +98,9 @@ literalParser = do
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do
-  Located {location = Location {start}} <-
+  Located {location = SourceLocation {start}} <-
     token (ExpectedToken BackslashToken) (preview _BackslashToken)
   token_ (ExpectedToken RightArrowToken) (preview _RightArrowToken)
   body <- expressionParser
-  let Location {end} = expressionLocation body
-  pure Lambda {location = Location {start, end}, body, typ = ()}
+  let SourceLocation {end} = expressionLocation body
+  pure Lambda {location = SourceLocation {start, end}, body, typ = ()}

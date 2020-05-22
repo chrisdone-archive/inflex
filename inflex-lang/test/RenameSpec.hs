@@ -23,7 +23,7 @@ spec = do
              (IntegerLiteral
                 Integery
                   { location =
-                      Location
+                      SourceLocation
                         { start = SourcePos {name = "", line = 1, column = 1}
                         , end = SourcePos {name = "", line = 1, column = 4}
                         }
@@ -39,7 +39,7 @@ spec = do
              (Lambda
                 { typ = ()
                 , location =
-                    Location
+                    SourceLocation
                       { start = SourcePos {line = 1, column = 1, name = ""}
                       , end = SourcePos {line = 1, column = 7, name = ""}
                       }
@@ -48,7 +48,7 @@ spec = do
                       (IntegerLiteral
                          (Integery
                             { location =
-                                Location
+                                SourceLocation
                                   { start =
                                       SourcePos
                                         {line = 1, column = 4, name = ""}

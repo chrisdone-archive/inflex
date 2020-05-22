@@ -19,7 +19,7 @@ spec =
           (Seq.fromList
              [ Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 1, name = ""}
                        , end = SourcePos {line = 1, column = 2, name = ""}
                        }
@@ -27,7 +27,7 @@ spec =
                  }
              , Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 3, name = ""}
                        , end = SourcePos {line = 1, column = 6, name = ""}
                        }
@@ -35,7 +35,7 @@ spec =
                  }
              , Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 7, name = ""}
                        , end = SourcePos {line = 1, column = 8, name = ""}
                        }
@@ -43,7 +43,7 @@ spec =
                  }
              , Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 9, name = ""}
                        , end = SourcePos {line = 1, column = 10, name = ""}
                        }
@@ -51,7 +51,7 @@ spec =
                  }
              , Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 10, name = ""}
                        , end = SourcePos {line = 1, column = 11, name = ""}
                        }
@@ -59,7 +59,7 @@ spec =
                  }
              , Located
                  { location =
-                     Location
+                     SourceLocation
                        { start = SourcePos {line = 1, column = 11, name = ""}
                        , end = SourcePos {line = 1, column = 12, name = ""}
                        }

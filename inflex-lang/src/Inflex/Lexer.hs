@@ -18,7 +18,7 @@ module Inflex.Lexer
   ( Located(..)
   , Token(..)
   , SourcePos(..)
-  , Location(..)
+  , SourceLocation(..)
   , lexText
   , LexError
   , _IntegerToken
@@ -59,7 +59,7 @@ data Token
 
 -- | A located token.
 data Located l = Located
-  { location :: Location
+  { location :: SourceLocation
   , thing :: !l
   } deriving (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
 
@@ -113,7 +113,7 @@ located m = do
   pure
     (Located
        { location =
-           Location
+           SourceLocation
              { end =
                  SourcePos
                    { line = Mega.unPos (Mega.sourceLine end)

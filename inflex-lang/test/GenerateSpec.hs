@@ -33,7 +33,7 @@ spec = do
                                { prefix = IntegeryPrefix
                                , index = 0
                                , location =
-                                   Location
+                                   SourceLocation
                                      { start =
                                          SourcePos
                                            {line = 1, column = 1, name = ""}
@@ -44,7 +44,7 @@ spec = do
                                } :|
                            []
                        , location =
-                           Location
+                           SourceLocation
                              { start =
                                  SourcePos {line = 1, column = 1, name = ""}
                              , end = SourcePos {line = 1, column = 4, name = ""}
@@ -56,7 +56,7 @@ spec = do
                    (IntegerLiteral
                       (Integery
                          { location =
-                             Location
+                             SourceLocation
                                { start =
                                    SourcePos {line = 1, column = 1, name = ""}
                                , end =
@@ -69,7 +69,7 @@ spec = do
                                  { prefix = IntegeryPrefix
                                  , index = 0
                                  , location =
-                                     Location
+                                     SourceLocation
                                        { start =
                                            SourcePos
                                              {line = 1, column = 1, name = ""}
@@ -94,7 +94,7 @@ spec = do
                            VariableType
                              (TypeVariable
                                 { location =
-                                    Location
+                                    SourceLocation
                                       { start =
                                           SourcePos
                                             {line = 1, column = 4, name = ""}
@@ -107,7 +107,7 @@ spec = do
                                 }) :|
                            []
                        , location =
-                           Location
+                           SourceLocation
                              { start =
                                  SourcePos {line = 1, column = 4, name = ""}
                              , end = SourcePos {line = 1, column = 7, name = ""}
@@ -118,7 +118,7 @@ spec = do
                  LambdaExpression
                    (Lambda
                       { location =
-                          Location
+                          SourceLocation
                             { start =
                                 SourcePos {line = 1, column = 1, name = ""}
                             , end = SourcePos {line = 1, column = 7, name = ""}
@@ -128,7 +128,7 @@ spec = do
                             (IntegerLiteral
                                (Integery
                                   { location =
-                                      Location
+                                      SourceLocation
                                         { start =
                                             SourcePos
                                               {line = 1, column = 4, name = ""}
@@ -141,7 +141,7 @@ spec = do
                                       VariableType
                                         (TypeVariable
                                            { location =
-                                               Location
+                                               SourceLocation
                                                  { start =
                                                      SourcePos
                                                        { line = 1
@@ -169,7 +169,7 @@ spec = do
                                             ConstantType
                                               (TypeConstant
                                                  { location =
-                                                     Location
+                                                     SourceLocation
                                                        { start =
                                                            SourcePos
                                                              { line = 1
@@ -189,7 +189,7 @@ spec = do
                                             VariableType
                                               (TypeVariable
                                                  { location =
-                                                     Location
+                                                     SourceLocation
                                                        { start =
                                                            SourcePos
                                                              { line = 1
@@ -208,7 +208,7 @@ spec = do
                                                  , index = 0
                                                  })
                                         , location =
-                                            Location
+                                            SourceLocation
                                               { start =
                                                   SourcePos
                                                     { line = 1
@@ -227,7 +227,7 @@ spec = do
                                    VariableType
                                      (TypeVariable
                                         { location =
-                                            Location
+                                            SourceLocation
                                               { start =
                                                   SourcePos
                                                     { line = 1
@@ -245,7 +245,7 @@ spec = do
                                         , index = 1
                                         })
                                , location =
-                                   Location
+                                   SourceLocation
                                      { start =
                                          SourcePos
                                            {line = 1, column = 1, name = ""}

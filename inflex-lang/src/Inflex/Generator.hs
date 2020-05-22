@@ -118,7 +118,7 @@ lambdaGenerator Lambda {typ = _, ..} = do
 --------------------------------------------------------------------------------
 -- Type system helpers
 
-generateTypeVariable :: Location -> TypeVariablePrefix -> Generate (Type Generated)
+generateTypeVariable :: SourceLocation -> TypeVariablePrefix -> Generate (Type Generated)
 generateTypeVariable location prefix =
   Generate
     (do index <- gets (view generateStateCounterL)
