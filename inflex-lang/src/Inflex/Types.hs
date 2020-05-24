@@ -116,6 +116,7 @@ data Cursor
 data Parsed
 data Renamed
 data Generated
+data Solved
 
 --------------------------------------------------------------------------------
 -- Families
@@ -124,13 +125,16 @@ type family StagedLocation s where
   StagedLocation Parsed = SourceLocation
   StagedLocation Renamed = Cursor
   StagedLocation Generated = Cursor
+  StagedLocation Solved = Cursor
 
 type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
   StagedType Generated = Type Generated
+  StagedType Solved = Type Solved
 
 type family StagedName s where
   StagedName Parsed = Text
   StagedName Renamed = ()
   StagedName Generated = ()
+  StagedName Solved = ()
