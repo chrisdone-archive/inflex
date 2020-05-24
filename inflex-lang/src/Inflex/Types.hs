@@ -15,14 +15,21 @@ import           GHC.Generics
 -- AST types
 
 data Expression s =
-    LiteralExpression (Literal s)
-  | LambdaExpression (Lambda s)
+    LiteralExpression !(Literal s)
+  | LambdaExpression !(Lambda s)
+  | ApplyExpression !(Apply s)
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
   , param :: !(Param s)
   , body :: !(Expression s)
   , typ :: !(StagedType s)
+  }
+
+data Apply s = Apply
+  { location :: !(StagedLocation s)
+  , function :: !(Expression s)
+  , argument :: !(Expression s)
   }
 
 data Param s = Param

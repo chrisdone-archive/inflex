@@ -78,6 +78,19 @@ deriving instance Eq (Param Solved)
 deriving instance Ord (Param Solved)
 deriving instance Show (Param Solved)
 
+deriving instance Show (Apply Parsed)
+deriving instance Eq (Apply Parsed)
+deriving instance Ord (Apply Parsed)
+deriving instance Show (Apply Renamed)
+deriving instance Eq (Apply Renamed)
+deriving instance Ord (Apply Renamed)
+deriving instance Eq (Apply Generated)
+deriving instance Ord (Apply Generated)
+deriving instance Show (Apply Generated)
+deriving instance Eq (Apply Solved)
+deriving instance Ord (Apply Solved)
+deriving instance Show (Apply Solved)
+
 -------------------------------------------------------------------------------
 -- Type system types
 
