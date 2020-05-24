@@ -78,12 +78,16 @@ deriving instance Eq (Param Solved)
 deriving instance Ord (Param Solved)
 deriving instance Show (Param Solved)
 
+-------------------------------------------------------------------------------
+-- Type system types
+
 deriving instance Show TypeSignature
 deriving instance Eq TypeSignature
 deriving instance Ord TypeSignature
 
--------------------------------------------------------------------------------
--- Type system types
+deriving instance Show EqualityConstraint
+deriving instance Eq EqualityConstraint
+deriving instance Ord EqualityConstraint
 
 deriving instance Eq (Type Generated)
 deriving instance Ord (Type Generated)

@@ -88,6 +88,12 @@ data TypeVariablePrefix
   | LambdaParameterPrefix
   deriving (Show, Eq, Ord)
 
+data EqualityConstraint = EqualityConstraint
+  { type1 :: Type Generated
+  , type2 :: Type Generated
+  , location :: !(StagedLocation Generated)
+  }
+
 data ClassConstraint s = ClassConstraint
   { className :: !ClassName
   , types :: !(NonEmpty (Type s))

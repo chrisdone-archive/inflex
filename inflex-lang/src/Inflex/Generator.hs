@@ -33,6 +33,7 @@ import           Optics
 data GenerateState = GenerateState
   { counter :: !Integer
   , classConstraints :: !(Seq (ClassConstraint Generated))
+  , equalityConstraints :: !(Seq EqualityConstraint)
   } deriving (Show)
 
 newtype Generate a = Generate
@@ -62,7 +63,11 @@ generateText fp text = do
     (let (expression', GenerateState {classConstraints = classes}) =
            runState
              (runGenerator (expressionGenerator expression))
-             GenerateState {classConstraints = mempty, counter = 0}
+             GenerateState
+               { classConstraints = mempty
+               , counter = 0
+               , equalityConstraints = mempty
+               }
       in HasConstraints {classes, thing = expression', mappings})
 
 --------------------------------------------------------------------------------
