@@ -10,6 +10,7 @@
 
 module Inflex.Renamer
   ( renameText
+  , IsRenamed(..)
   , RenameError(..)
   , ParseRenameError(..)
   ) where
@@ -45,22 +46,27 @@ data ParseRenameError
 
 type CursorBuilder = Cursor -> Cursor
 
+data IsRenamed a = IsRenamed
+  { thing :: a
+  , mappings :: Map Cursor SourceLocation
+  } deriving (Show, Eq)
+
 --------------------------------------------------------------------------------
 -- Top-level
 
 renameText ::
      FilePath
   -> Text
-  -> Either ParseRenameError (Expression Renamed, Map Cursor SourceLocation)
+  -> Either ParseRenameError (IsRenamed (Expression Renamed))
 renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
   first
     RenamerErrors
-    (let (result, state') =
+    (let (result, mappings) =
            runState
              (runValidateT (runRenamer (renameExpression id expression)))
              mempty
-      in fmap (, state') result)
+      in fmap (\thing -> IsRenamed {thing, mappings}) result)
 
 --------------------------------------------------------------------------------
 -- Renamers

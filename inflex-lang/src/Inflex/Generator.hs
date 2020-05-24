@@ -56,7 +56,8 @@ $(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
 
 generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText fp text = do
-  (expression, mappings) <- first RenameGenerateError (renameText fp text)
+  IsRenamed {thing = expression, mappings} <-
+    first RenameGenerateError (renameText fp text)
   pure
     (let (expression', GenerateState {classConstraints = classes}) =
            runState
