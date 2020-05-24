@@ -63,21 +63,37 @@ deriving instance Eq (Param Generated)
 deriving instance Ord (Param Generated)
 deriving instance Show (Param Generated)
 
+deriving instance Show TypeSignature
+deriving instance Eq TypeSignature
+deriving instance Ord TypeSignature
+
 -------------------------------------------------------------------------------
 -- Type system types
 
 deriving instance Eq (Type Generated)
 deriving instance Ord (Type Generated)
 deriving instance Show (Type Generated)
+deriving instance Eq (Type Solved)
+deriving instance Ord (Type Solved)
+deriving instance Show (Type Solved)
 
 deriving instance Eq (TypeApplication Generated)
 deriving instance Ord (TypeApplication Generated)
 deriving instance Show (TypeApplication Generated)
+deriving instance Eq (TypeApplication Solved)
+deriving instance Ord (TypeApplication Solved)
+deriving instance Show (TypeApplication Solved)
 
 deriving instance Eq (TypeConstant Generated)
 deriving instance Ord (TypeConstant Generated)
 deriving instance Show (TypeConstant Generated)
+deriving instance Eq (TypeConstant Solved)
+deriving instance Ord (TypeConstant Solved)
+deriving instance Show (TypeConstant Solved)
 
 deriving instance Eq (ClassConstraint Generated)
 deriving instance Ord (ClassConstraint Generated)
 deriving instance Show (ClassConstraint Generated)
+deriving instance Eq (ClassConstraint Solved)
+deriving instance Ord (ClassConstraint Solved)
+deriving instance Show (ClassConstraint Solved)

@@ -47,6 +47,7 @@ data Type s where
   VariableType :: TypeVariable -> Type Generated
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
+  PolyType :: TypePoly -> Type Solved
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
@@ -58,6 +59,24 @@ data TypeApplication s = TypeApplication
   , argument :: !(Type s)
   , location :: !(StagedLocation s)
   }
+
+data TypeSignature = TypeSignature
+  { location :: !(StagedLocation Solved)
+  , variables :: ![Kind]
+  , constraints :: ![ClassConstraint Solved]
+  , typ :: !(Type Solved)
+  }
+
+data Kind
+  = TypeKind
+  | FunKind Kind
+            Kind
+  deriving (Show, Eq, Ord)
+
+data TypePoly = TypePoly
+  { location :: !(StagedLocation Generated)
+  , index :: !Integer
+  } deriving (Show, Eq, Ord)
 
 data TypeVariable = TypeVariable
   { location :: !(StagedLocation Generated)
@@ -131,7 +150,7 @@ type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
   StagedType Generated = Type Generated
-  StagedType Solved = Type Solved
+  StagedType Solved = TypeSignature
 
 type family StagedName s where
   StagedName Parsed = Text
