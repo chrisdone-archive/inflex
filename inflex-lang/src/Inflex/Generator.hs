@@ -16,6 +16,7 @@ module Inflex.Generator
 
 import           Control.Monad.State
 import           Data.Bifunctor
+import           Data.Map.Strict (Map)
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
@@ -44,7 +45,8 @@ data RenameGenerateError
 
 data HasConstraints a = HasConstraints
   { classes :: !(Seq (ClassConstraint Generated))
-  , thing :: a
+  , thing :: !a
+  , mappings :: !(Map Cursor SourceLocation)
   } deriving (Show, Functor, Eq, Ord)
 
 $(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
@@ -54,13 +56,13 @@ $(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
 
 generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText fp text = do
-  (expression, _mapping) <- first RenameGenerateError (renameText fp text)
+  (expression, mappings) <- first RenameGenerateError (renameText fp text)
   pure
     (let (expression', GenerateState {classConstraints = classes}) =
            runState
              (runGenerator (expressionGenerator expression))
              GenerateState {classConstraints = mempty, counter = 0}
-      in HasConstraints {classes, thing = expression'})
+      in HasConstraints {classes, thing = expression', mappings})
 
 --------------------------------------------------------------------------------
 -- Generators

@@ -8,6 +8,7 @@
 module GenerateSpec where
 
 import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Inflex.Generator
 import           Inflex.Instances ()
@@ -51,6 +52,14 @@ spec = do
                                  , location = ExpressionCursor
                                  }
                          }))
+             , mappings =
+                 M.fromList
+                   [ ( ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 4, name = ""}
+                         })
+                   ]
              })))
   it
     "Lambda"
@@ -137,4 +146,22 @@ spec = do
                                , location = ExpressionCursor
                                })
                       })
+             , mappings =
+                 M.fromList
+                   [ ( ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 8, name = ""}
+                         })
+                   , ( LambdaBodyCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 5, name = ""}
+                         , end = SourcePos {line = 1, column = 8, name = ""}
+                         })
+                   , ( LambdaParamCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 2, name = ""}
+                         , end = SourcePos {line = 1, column = 3, name = ""}
+                         })
+                   ]
              })))
