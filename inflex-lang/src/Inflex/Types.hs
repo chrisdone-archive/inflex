@@ -18,6 +18,7 @@ data Expression s =
     LiteralExpression !(Literal s)
   | LambdaExpression !(Lambda s)
   | ApplyExpression !(Apply s)
+  | VariableExpression !(Variable s)
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
@@ -30,11 +31,18 @@ data Apply s = Apply
   { location :: !(StagedLocation s)
   , function :: !(Expression s)
   , argument :: !(Expression s)
+  , typ :: !(StagedType s)
   }
 
 data Param s = Param
   { location :: !(StagedLocation s)
-  , name :: !(StagedName s)
+  , name :: !(StagedParamName s)
+  , typ :: !(StagedType s)
+  }
+
+data Variable s = Variable
+  { location :: !(StagedLocation s)
+  , name :: !(StagedVariableName s)
   , typ :: !(StagedType s)
   }
 
@@ -139,6 +147,12 @@ data Cursor
   = ExpressionCursor
   | LambdaBodyCursor Cursor
   | LambdaParamCursor
+  | ApplyFuncCursor Cursor
+  | ApplyArgCursor Cursor
+  deriving (Show, Eq, Ord)
+
+newtype DeBrujinIndex =
+  DeBrujinIndex Integer
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -164,11 +178,17 @@ type family StagedType s where
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
 
-type family StagedName s where
-  StagedName Parsed = Text
-  StagedName Renamed = ()
-  StagedName Generated = ()
-  StagedName Solved = ()
+type family StagedParamName s where
+  StagedParamName Parsed = Text
+  StagedParamName Renamed = ()
+  StagedParamName Generated = ()
+  StagedParamName Solved = ()
+
+type family StagedVariableName s where
+  StagedVariableName Parsed = Text
+  StagedVariableName Renamed = DeBrujinIndex
+  StagedVariableName Generated = ()
+  StagedVariableName Solved = ()
 
 type family TypeVariableStage s where
   TypeVariableStage Solved = Solved

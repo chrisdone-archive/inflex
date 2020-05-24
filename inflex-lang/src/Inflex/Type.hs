@@ -13,9 +13,17 @@ expressionType =
   \case
     LiteralExpression literal -> literalType literal
     LambdaExpression lambda -> lambdaType lambda
+    ApplyExpression apply -> applyType apply
+    VariableExpression variable -> variableType variable
 
 lambdaType :: Lambda s -> StagedType s
 lambdaType Lambda {typ} = typ
+
+applyType :: Apply s -> StagedType s
+applyType Apply {typ} = typ
+
+variableType :: Variable s -> StagedType s
+variableType Variable {typ} = typ
 
 literalType :: Literal s -> StagedType s
 literalType =

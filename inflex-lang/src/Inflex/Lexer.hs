@@ -25,6 +25,8 @@ module Inflex.Lexer
   , _BackslashToken
   , _RightArrowToken
   , _LowerWordToken
+  , _OpenRoundToken
+  , _CloseRoundToken
   ) where
 
 import           Data.Bifunctor

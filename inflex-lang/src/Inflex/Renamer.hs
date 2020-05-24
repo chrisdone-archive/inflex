@@ -78,6 +78,9 @@ renameExpression cursor =
       fmap LiteralExpression (renameLiteral cursor literal)
     LambdaExpression lambda ->
       fmap LambdaExpression (renameLambda cursor lambda)
+    ApplyExpression apply -> fmap ApplyExpression (renameApply cursor apply)
+    VariableExpression variable ->
+      fmap VariableExpression (renameVariable cursor variable)
 
 renameLiteral :: CursorBuilder -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral cursor =
@@ -95,6 +98,16 @@ renameLambda cursor Lambda {..} = do
   param' <- renameParam cursor param
   body' <- renameExpression (cursor . LambdaBodyCursor) body
   pure Lambda {body = body', location = final, param = param', ..}
+
+renameApply :: CursorBuilder -> Apply Parsed -> Renamer (Apply Renamed)
+renameApply cursor Apply {..} = do
+  function' <- renameExpression (cursor . ApplyFuncCursor) function
+  argument' <- renameExpression (cursor . ApplyArgCursor) argument
+  final <- finalizeCursor cursor ExpressionCursor location
+  pure Apply {function = function', argument = argument', location = final, ..}
+
+renameVariable :: CursorBuilder -> Variable Parsed -> Renamer (Variable Renamed)
+renameVariable = undefined
 
 renameParam :: CursorBuilder -> Param Parsed -> Renamer (Param Renamed)
 renameParam cursor Param {..} = do

@@ -46,6 +46,7 @@ data ParseError
   | ExpectedInteger
   | ExpectedToken Token
   | ExpectedParam
+  | ExpectedVariable
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -87,15 +88,60 @@ expressionParser :: Parser (Expression Parsed)
 expressionParser =
   fold1
     (NE.fromList
-       [ LiteralExpression <$> literalParser
+       [ ApplyExpression <$> applyParser
+       , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
+       , VariableExpression <$> variableParser
+       , parensParser
        ])
+
+applyParser :: Parser (Apply Parsed)
+applyParser = do
+  function <- functionParser
+  argument <- argumentParser
+  let SourceLocation {start} = expressionLocation function
+      SourceLocation {end} = expressionLocation function
+  pure
+    Apply
+      {function, argument, location = SourceLocation {start, end}, typ = ()}
+
+functionParser :: Parser (Expression Parsed)
+functionParser =
+  fold1
+    (NE.fromList
+       [ VariableExpression <$> variableParser
+       , parensParser
+       ])
+
+argumentParser :: Parser (Expression Parsed)
+argumentParser =
+  fold1
+    (NE.fromList
+       [ VariableExpression <$> variableParser
+       , LiteralExpression <$> literalParser
+       , LambdaExpression <$> lambdaParser
+       , VariableExpression <$> variableParser
+       , parensParser
+       ])
+
+parensParser :: Parser (Expression Parsed)
+parensParser = do
+  token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+  e <- expressionParser
+  token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+  pure e
 
 literalParser :: Parser (Literal Parsed)
 literalParser = do
   Located {thing = integer, location} <-
     token ExpectedInteger (preview _IntegerToken)
   pure (IntegerLiteral (Integery {integer, location, typ = ()}))
+
+variableParser :: Parser (Variable Parsed)
+variableParser = do
+  Located {thing = name, location} <-
+    token ExpectedVariable (preview _LowerWordToken)
+  pure Variable {name, location, typ = ()}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do

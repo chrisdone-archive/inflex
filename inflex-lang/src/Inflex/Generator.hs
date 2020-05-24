@@ -80,6 +80,10 @@ expressionGenerator =
       fmap LiteralExpression (literalGenerator literal)
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaGenerator lambda)
+    ApplyExpression apply ->
+      fmap ApplyExpression (applyGenerator apply)
+    VariableExpression variable ->
+      fmap VariableExpression (variableGenerator variable)
 
 literalGenerator :: Literal Renamed -> Generate (Literal Generated)
 literalGenerator =
@@ -125,6 +129,14 @@ paramGenerator :: Param Renamed -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do
   typ <- generateTypeVariable location LambdaParameterPrefix
   pure Param {typ, ..}
+
+applyGenerator :: Apply Renamed -> Generate (Apply Generated)
+applyGenerator Apply {typ = _, ..} = do
+  undefined
+
+variableGenerator :: Variable Renamed -> Generate (Variable Generated)
+variableGenerator Variable {typ = _, ..} = do
+  undefined
 
 --------------------------------------------------------------------------------
 -- Type system helpers

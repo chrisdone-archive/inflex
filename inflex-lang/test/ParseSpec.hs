@@ -70,3 +70,74 @@ spec = do
                             }))
                 , typ = ()
                 }))))
+  it
+    "Apply"
+    (shouldBe
+       (parseText "" "(\\x->x) 1")
+       (Right
+          (ApplyExpression
+             (Apply
+                { location =
+                    SourceLocation
+                      { start = SourcePos {line = 1, column = 2, name = ""}
+                      , end = SourcePos {line = 1, column = 7, name = ""}
+                      }
+                , function =
+                    LambdaExpression
+                      (Lambda
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 7, name = ""}
+                               }
+                         , param =
+                             Param
+                               { location =
+                                   SourceLocation
+                                     { start =
+                                         SourcePos
+                                           {line = 1, column = 3, name = ""}
+                                     , end =
+                                         SourcePos
+                                           {line = 1, column = 4, name = ""}
+                                     }
+                               , name = "x"
+                               , typ = ()
+                               }
+                         , body =
+                             VariableExpression
+                               (Variable
+                                  { location =
+                                      SourceLocation
+                                        { start =
+                                            SourcePos
+                                              {line = 1, column = 6, name = ""}
+                                        , end =
+                                            SourcePos
+                                              {line = 1, column = 7, name = ""}
+                                        }
+                                  , name = "x"
+                                  , typ = ()
+                                  })
+                         , typ = ()
+                         })
+                , argument =
+                    LiteralExpression
+                      (IntegerLiteral
+                         (Integery
+                            { location =
+                                SourceLocation
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 9, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 10, name = ""}
+                                  }
+                            , integer = 1
+                            , typ = ()
+                            }))
+                , typ = ()
+                }))))
