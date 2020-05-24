@@ -10,6 +10,7 @@ import           Data.Bifunctor
 import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
+import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Generator
 import           Inflex.Types
@@ -35,8 +36,9 @@ data ParseSolveError
 type CursorBuilder = Cursor -> Cursor
 
 data IsSolved a = IsSolved
-  { thing :: a
-  , mappings :: Map Cursor SourceLocation
+  { thing :: !a
+  , mappings :: !(Map Cursor SourceLocation)
+  , classes :: !(Seq (ClassConstraint Generated))
   } deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -52,7 +54,7 @@ solveText fp text = do
   first
     SolverErrors
     (let thing = runIdentity (runSolver (expressionSolver expression))
-      in pure (IsSolved {thing, mappings}))
+      in pure (IsSolved {thing, mappings, classes}))
 
 --------------------------------------------------------------------------------
 -- Solver

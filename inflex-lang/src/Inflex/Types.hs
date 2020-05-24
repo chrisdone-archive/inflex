@@ -44,10 +44,9 @@ data Integery s = Integery
 -- Type system types
 
 data Type s where
-  VariableType :: TypeVariable -> Type Generated
+  VariableType :: (TypeVariableStage s ~ s) => TypeVariable s -> Type s
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
-  PolyType :: TypePoly -> Type Solved
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
@@ -78,11 +77,11 @@ data TypePoly = TypePoly
   , index :: !Integer
   } deriving (Show, Eq, Ord)
 
-data TypeVariable = TypeVariable
-  { location :: !(StagedLocation Generated)
+data TypeVariable s = TypeVariable
+  { location :: !(StagedLocation s)
   , prefix :: !TypeVariablePrefix
   , index :: !Integer
-  } deriving (Show, Eq, Ord)
+  }
 
 data TypeVariablePrefix
   = IntegeryPrefix
@@ -150,10 +149,14 @@ type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
   StagedType Generated = Type Generated
-  StagedType Solved = TypeSignature
+  StagedType Solved = Type Solved
 
 type family StagedName s where
   StagedName Parsed = Text
   StagedName Renamed = ()
   StagedName Generated = ()
   StagedName Solved = ()
+
+type family TypeVariableStage s where
+  TypeVariableStage Solved = Solved
+  TypeVariableStage Generated = Generated
