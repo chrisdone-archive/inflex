@@ -294,6 +294,10 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO Consistent use of "input" and "output"
+As inputs to functions, as opposed to e.g. "param" or "argument",
+
+or "returns" which is a very imperative term!!
 ** TODO Lazy display of [infinite] data
 ** TODO Use streaming JSON parsers (defensive)
    - Note taken on [2020-04-11 Sat 23:42] \\
