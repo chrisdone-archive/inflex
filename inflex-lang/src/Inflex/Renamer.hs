@@ -107,7 +107,7 @@ renameApply cursor Apply {..} = do
   pure Apply {function = function', argument = argument', location = final, ..}
 
 renameVariable :: CursorBuilder -> Variable Parsed -> Renamer (Variable Renamed)
-renameVariable = undefined
+renameVariable = error "TODO: rename variable"
 
 renameParam :: CursorBuilder -> Param Parsed -> Renamer (Param Renamed)
 renameParam cursor Param {..} = do
