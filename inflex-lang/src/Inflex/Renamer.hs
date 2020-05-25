@@ -19,10 +19,12 @@ module Inflex.Renamer
 import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
+import           Inflex.Instances ()
 import           Inflex.Optics
 import           Inflex.Parser
 import           Inflex.Types
@@ -31,7 +33,8 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Renamer types
 
-data RenameError = RenameError
+data RenameError =
+  MissingVariable [Param Parsed] (Variable Parsed)
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
@@ -50,7 +53,8 @@ data ParseRenameError
 type CursorBuilder = Cursor -> Cursor
 
 data Env = Env
-  { cursor :: CursorBuilder
+  { cursor :: !CursorBuilder
+  , scope :: ![Param Parsed]
   }
 
 data IsRenamed a = IsRenamed
@@ -58,7 +62,7 @@ data IsRenamed a = IsRenamed
   , mappings :: Map Cursor SourceLocation
   } deriving (Show, Eq)
 
-$(makeLensesWith (inflexRules ['cursor]) ''Env)
+$(makeLensesWith (inflexRules ['cursor, 'scope]) ''Env)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -74,7 +78,10 @@ renameText fp text = do
     (let (result, mappings) =
            runState
              (runValidateT
-                (runRenamer (renameExpression (Env {cursor = id}) expression)))
+                (runRenamer
+                   (renameExpression
+                      (Env {cursor = id, scope = mempty})
+                      expression)))
              mempty
       in fmap (\thing -> IsRenamed {thing, mappings}) result)
 
@@ -103,10 +110,13 @@ renameIntegery Env{cursor} Integery {..} = do
   pure Integery {location = final, ..}
 
 renameLambda :: Env -> Lambda Parsed -> Renamer (Lambda Renamed)
-renameLambda env@Env{cursor} Lambda {..} = do
+renameLambda env@Env {cursor} Lambda {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
   param' <- renameParam env param
-  body' <- renameExpression (over envCursorL (. LambdaBodyCursor) env) body
+  body' <-
+    renameExpression
+      (over envScopeL (param :) (over envCursorL (. LambdaBodyCursor) env))
+      body
   pure Lambda {body = body', location = final, param = param', ..}
 
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
@@ -119,7 +129,12 @@ renameApply env@Env {cursor} Apply {..} = do
   pure Apply {function = function', argument = argument', location = final, ..}
 
 renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
-renameVariable = error "TODO: rename variable"
+renameVariable Env {scope, cursor} variable@Variable {name, location} =
+  case findIndex (\Param {name = name'} -> name' == name) scope of
+    Nothing -> Renamer (refute (pure (MissingVariable scope variable)))
+    Just index -> do
+      final <- finalizeCursor cursor ExpressionCursor location
+      pure (Variable {location = final, name = DeBrujinIndex index, typ = ()})
 
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam Env{cursor} Param {..} = do

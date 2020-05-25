@@ -152,7 +152,7 @@ data Cursor
   deriving (Show, Eq, Ord)
 
 newtype DeBrujinIndex =
-  DeBrujinIndex Integer
+  DeBrujinIndex Int
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
