@@ -15,6 +15,7 @@ module Inflex.Generator
   ) where
 
 import           Control.Monad.State
+import           Control.Monad.Trans.Reader
 import           Data.Bifunctor
 import           Data.Map.Strict (Map)
 import           Data.Sequence (Seq)
@@ -37,8 +38,12 @@ data GenerateState = GenerateState
   } deriving (Show)
 
 newtype Generate a = Generate
-  { runGenerator :: State GenerateState a
+  { runGenerator :: ReaderT Env (State GenerateState) a
   } deriving (Functor, Applicative, Monad)
+
+data Env = Env
+  { scope :: !(Map DeBrujinIndex (Param Parsed))
+  }
 
 data RenameGenerateError
   = RenameGenerateError ParseRenameError
@@ -62,7 +67,9 @@ generateText fp text = do
   pure
     (let (expression', GenerateState {classConstraints = classes}) =
            runState
-             (runGenerator (expressionGenerator expression))
+             (runReaderT
+                (runGenerator (expressionGenerator expression))
+                (Env {scope = mempty}))
              GenerateState
                { classConstraints = mempty
                , counter = 0
