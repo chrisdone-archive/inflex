@@ -101,6 +101,8 @@ data TypeVariable s = TypeVariable
 data TypeVariablePrefix
   = IntegeryPrefix
   | LambdaParameterPrefix
+  | VariablePrefix
+  | ApplyPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -187,8 +189,8 @@ type family StagedParamName s where
 type family StagedVariableName s where
   StagedVariableName Parsed = Text
   StagedVariableName Renamed = DeBrujinIndex
-  StagedVariableName Generated = ()
-  StagedVariableName Solved = ()
+  StagedVariableName Generated = DeBrujinIndex
+  StagedVariableName Solved = DeBrujinIndex
 
 type family TypeVariableStage s where
   TypeVariableStage Solved = Solved

@@ -14,14 +14,17 @@ module Inflex.Generator
   , HasConstraints(..)
   ) where
 
+import           Control.Monad.Reader
 import           Control.Monad.State
-import           Control.Monad.Trans.Reader
+import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Instances ()
+import           Inflex.Location
 import           Inflex.Optics
 import           Inflex.Renamer
 import           Inflex.Type
@@ -31,6 +34,10 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Types
 
+data GenerateError =
+  MissingVariableG (Variable Renamed)
+  deriving (Show, Eq)
+
 data GenerateState = GenerateState
   { counter :: !Integer
   , classConstraints :: !(Seq (ClassConstraint Generated))
@@ -38,24 +45,32 @@ data GenerateState = GenerateState
   } deriving (Show)
 
 newtype Generate a = Generate
-  { runGenerator :: ReaderT Env (State GenerateState) a
-  } deriving (Functor, Applicative, Monad)
+  { runGenerator :: ValidateT (NonEmpty GenerateError) (ReaderT Env (State GenerateState)) a
+  } deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadState GenerateState
+             , MonadReader Env
+             )
 
 data Env = Env
-  { scope :: !(Map DeBrujinIndex (Param Parsed))
+  { scope :: ![Param Generated]
   }
 
 data RenameGenerateError
   = RenameGenerateError ParseRenameError
+  | GeneratorErrors (NonEmpty GenerateError)
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints
   { classes :: !(Seq (ClassConstraint Generated))
+  , equalities :: !(Seq EqualityConstraint)
   , thing :: !a
   , mappings :: !(Map Cursor SourceLocation)
   } deriving (Show, Functor, Eq, Ord)
 
-$(makeLensesWith (inflexRules ['counter, 'classConstraints]) ''GenerateState)
+$(makeLensesWith (inflexRules ['counter, 'classConstraints, 'equalityConstraints]) ''GenerateState)
+$(makeLensesWith (inflexRules ['scope]) ''Env)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -64,18 +79,25 @@ generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (
 generateText fp text = do
   IsRenamed {thing = expression, mappings} <-
     first RenameGenerateError (renameText fp text)
-  pure
-    (let (expression', GenerateState {classConstraints = classes}) =
+  first
+    GeneratorErrors
+    (let (result, GenerateState { classConstraints = classes
+                                , equalityConstraints
+                                }) =
            runState
              (runReaderT
-                (runGenerator (expressionGenerator expression))
+                (runValidateT (runGenerator (expressionGenerator expression)))
                 (Env {scope = mempty}))
              GenerateState
                { classConstraints = mempty
                , counter = 0
                , equalityConstraints = mempty
                }
-      in HasConstraints {classes, thing = expression', mappings})
+      in fmap
+           (\thing ->
+              HasConstraints
+                {classes, thing, mappings, equalities = equalityConstraints})
+           result)
 
 --------------------------------------------------------------------------------
 -- Generators
@@ -108,7 +130,7 @@ integeryGenerator Integery {typ = _, ..} = do
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
   param' <- paramGenerator param
-  body' <- expressionGenerator body
+  body' <- local (over envScopeL (param' :)) (expressionGenerator body)
   let outputType = expressionType body'
   pure
     Lambda
@@ -139,22 +161,56 @@ paramGenerator Param {typ = _, ..} = do
 
 applyGenerator :: Apply Renamed -> Generate (Apply Generated)
 applyGenerator Apply {typ = _, ..} = do
-  undefined
+  function' <- expressionGenerator function
+  argument' <- expressionGenerator argument
+  outputType <- generateTypeVariable (expressionLocation argument') ApplyPrefix
+  let functionTemplate =
+        ApplyType
+          TypeApplication
+            { function =
+                ApplyType
+                  TypeApplication
+                    { function =
+                        ConstantType
+                          (TypeConstant {name = FunctionTypeName, location})
+                    , argument = expressionType argument'
+                    , location
+                    }
+            , argument = outputType
+            , location = expressionLocation function'
+            }
+  addEqualityConstraint
+    EqualityConstraint
+      {type1 = expressionType function', type2 = functionTemplate, ..}
+  pure Apply {function = function', argument = argument', typ = outputType, ..}
 
 variableGenerator :: Variable Renamed -> Generate (Variable Generated)
-variableGenerator Variable {typ = _, ..} = do
-  undefined
+variableGenerator variable@Variable { typ = _
+                                    , name = name@(DeBrujinIndex index)
+                                    , ..
+                                    } = do
+  Env {scope} <- ask
+  case lookup index (zip [0 ..] scope) of
+    Nothing -> Generate (refute (pure (MissingVariableG variable)))
+    Just Param {typ = type2} -> do
+      type1 <- generateTypeVariable location LambdaParameterPrefix
+      addEqualityConstraint
+        EqualityConstraint {type1, type2, ..}
+      pure Variable {typ = type1, name, ..}
 
 --------------------------------------------------------------------------------
 -- Type system helpers
 
 generateTypeVariable :: StagedLocation Generated -> TypeVariablePrefix -> Generate (Type Generated)
 generateTypeVariable location prefix =
-  Generate
-    (do index <- gets (view generateStateCounterL)
-        modify' (over generateStateCounterL succ)
-        pure (VariableType TypeVariable {prefix, index, location}))
+  do index <- gets (view generateStateCounterL)
+     modify' (over generateStateCounterL succ)
+     pure (VariableType TypeVariable {prefix, index, location})
 
 addClassConstraint :: ClassConstraint Generated -> Generate ()
 addClassConstraint constraint =
-  Generate (modify' (over generateStateClassConstraintsL (Seq.|> constraint)))
+  modify' (over generateStateClassConstraintsL (Seq.|> constraint))
+
+addEqualityConstraint :: EqualityConstraint -> Generate ()
+addEqualityConstraint constraint =
+  modify' (over generateStateEqualityConstraintsL (Seq.|> constraint))
