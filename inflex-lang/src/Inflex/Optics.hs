@@ -3,6 +3,7 @@
 module Inflex.Optics where
 
 import Data.Char
+import Data.List
 import Language.Haskell.TH.Syntax
 import Optics
 
@@ -12,12 +13,19 @@ inflexRules names =
     lensField
     (\tyname _ name ->
        [ (let Name (OccName tn) _ = tyname
-              Name (OccName n) f = name
-           in TopName (Name (OccName (downcaseFst tn <> upcaseFst n <> "L")) f))
-           | elem name names
+           in TopName
+                (Name
+                   (OccName
+                      (downcaseFst tn <> upcaseFst (nameBase' name) <> "L"))
+                   NameS))
+       | elem (nameBase' name) (map nameBase' names)
        ])
     lensRules
-  where upcaseFst (x:xs) = toUpper x : xs
-        upcaseFst xs = xs
-        downcaseFst (x:xs) = toLower x : xs
-        downcaseFst xs = xs
+  where
+    upcaseFst (x:xs) = toUpper x : xs
+    upcaseFst xs = xs
+    downcaseFst (x:xs) = toLower x : xs
+    downcaseFst xs = xs
+    nameBase' =
+      (\name -> maybe name (takeWhile (/= ':')) (stripPrefix "$sel:" name)) .
+      nameBase

@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -22,8 +23,10 @@ import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
+import           Inflex.Optics
 import           Inflex.Parser
 import           Inflex.Types
+import           Optics
 
 --------------------------------------------------------------------------------
 -- Renamer types
@@ -46,10 +49,16 @@ data ParseRenameError
 
 type CursorBuilder = Cursor -> Cursor
 
+data Env = Env
+  { cursor :: CursorBuilder
+  }
+
 data IsRenamed a = IsRenamed
   { thing :: a
   , mappings :: Map Cursor SourceLocation
   } deriving (Show, Eq)
+
+$(makeLensesWith (inflexRules ['cursor]) ''Env)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -64,53 +73,56 @@ renameText fp text = do
     RenamerErrors
     (let (result, mappings) =
            runState
-             (runValidateT (runRenamer (renameExpression id expression)))
+             (runValidateT
+                (runRenamer (renameExpression (Env {cursor = id}) expression)))
              mempty
       in fmap (\thing -> IsRenamed {thing, mappings}) result)
 
 --------------------------------------------------------------------------------
 -- Renamers
 
-renameExpression :: CursorBuilder -> Expression Parsed -> Renamer (Expression Renamed)
-renameExpression cursor =
+renameExpression :: Env -> Expression Parsed -> Renamer (Expression Renamed)
+renameExpression env =
   \case
     LiteralExpression literal ->
-      fmap LiteralExpression (renameLiteral cursor literal)
+      fmap LiteralExpression (renameLiteral env literal)
     LambdaExpression lambda ->
-      fmap LambdaExpression (renameLambda cursor lambda)
-    ApplyExpression apply -> fmap ApplyExpression (renameApply cursor apply)
+      fmap LambdaExpression (renameLambda env lambda)
+    ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable ->
-      fmap VariableExpression (renameVariable cursor variable)
+      fmap VariableExpression (renameVariable env variable)
 
-renameLiteral :: CursorBuilder -> Literal Parsed -> Renamer (Literal Renamed)
-renameLiteral cursor =
+renameLiteral :: Env -> Literal Parsed -> Renamer (Literal Renamed)
+renameLiteral env =
   \case
-    IntegerLiteral integery -> fmap IntegerLiteral (renameIntegery cursor integery)
+    IntegerLiteral integery -> fmap IntegerLiteral (renameIntegery env integery)
 
-renameIntegery :: CursorBuilder -> Integery Parsed -> Renamer (Integery Renamed)
-renameIntegery cursor Integery {..} = do
+renameIntegery :: Env -> Integery Parsed -> Renamer (Integery Renamed)
+renameIntegery Env{cursor} Integery {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
   pure Integery {location = final, ..}
 
-renameLambda :: CursorBuilder -> Lambda Parsed -> Renamer (Lambda Renamed)
-renameLambda cursor Lambda {..} = do
+renameLambda :: Env -> Lambda Parsed -> Renamer (Lambda Renamed)
+renameLambda env@Env{cursor} Lambda {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
-  param' <- renameParam cursor param
-  body' <- renameExpression (cursor . LambdaBodyCursor) body
+  param' <- renameParam env param
+  body' <- renameExpression (over envCursorL (. LambdaBodyCursor) env) body
   pure Lambda {body = body', location = final, param = param', ..}
 
-renameApply :: CursorBuilder -> Apply Parsed -> Renamer (Apply Renamed)
-renameApply cursor Apply {..} = do
-  function' <- renameExpression (cursor . ApplyFuncCursor) function
-  argument' <- renameExpression (cursor . ApplyArgCursor) argument
+renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
+renameApply env@Env {cursor} Apply {..} = do
+  function' <-
+    renameExpression (over envCursorL (. ApplyFuncCursor) env) function
+  argument' <-
+    renameExpression (over envCursorL (. ApplyArgCursor) env) argument
   final <- finalizeCursor cursor ExpressionCursor location
   pure Apply {function = function', argument = argument', location = final, ..}
 
-renameVariable :: CursorBuilder -> Variable Parsed -> Renamer (Variable Renamed)
+renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
 renameVariable = error "TODO: rename variable"
 
-renameParam :: CursorBuilder -> Param Parsed -> Renamer (Param Renamed)
-renameParam cursor Param {..} = do
+renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
+renameParam Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
   pure Param {name = (), location = final, ..}
 

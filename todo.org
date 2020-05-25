@@ -294,6 +294,14 @@ their individual hashes (with the cycle removed).
    - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
 
 * Considerations
+** TODO When linking across documents
+Granularity of changes accepted automatically:
+- Accept renames
+- Accept data changes
+- Accept behavior changes
+- Accept type changes -- important, because may fail to compile!
+- Accept changes if they type check
+- Accept changes if they pass a given test suite
 ** TODO Consistent use of "input" and "output"
 As inputs to functions, as opposed to e.g. "param" or "argument",
 
