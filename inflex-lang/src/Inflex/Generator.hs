@@ -12,6 +12,7 @@ module Inflex.Generator
   ( generateText
   , RenameGenerateError(..)
   , HasConstraints(..)
+  , hasConstraintsMappingsL
   ) where
 
 import           Control.Monad.Reader
@@ -26,7 +27,7 @@ import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Location
 import           Inflex.Optics
-import           Inflex.Renamer
+import qualified Inflex.Renamer as Renamer
 import           Inflex.Type
 import           Inflex.Types
 import           Optics
@@ -58,7 +59,7 @@ data Env = Env
   }
 
 data RenameGenerateError
-  = RenameGenerateError ParseRenameError
+  = RenameGenerateError Renamer.ParseRenameError
   | GeneratorErrors (NonEmpty GenerateError)
   deriving (Show, Eq)
 
@@ -69,16 +70,19 @@ data HasConstraints a = HasConstraints
   , mappings :: !(Map Cursor SourceLocation)
   } deriving (Show, Functor, Eq, Ord)
 
-$(makeLensesWith (inflexRules ['counter, 'classConstraints, 'equalityConstraints]) ''GenerateState)
+$(makeLensesWith
+    (inflexRules ['counter, 'classConstraints, 'equalityConstraints])
+    ''GenerateState)
 $(makeLensesWith (inflexRules ['scope]) ''Env)
+$(makeLensesWith (inflexRules ['mappings]) ''HasConstraints)
 
 --------------------------------------------------------------------------------
 -- Top-level
 
 generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText fp text = do
-  IsRenamed {thing = expression, mappings} <-
-    first RenameGenerateError (renameText fp text)
+  Renamer.IsRenamed {thing = expression, mappings} <-
+    first RenameGenerateError (Renamer.renameText fp text)
   first
     GeneratorErrors
     (let (result, GenerateState { classConstraints = classes

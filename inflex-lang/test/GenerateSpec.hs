@@ -7,12 +7,13 @@
 
 module GenerateSpec where
 
+import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Inflex.Generator
 import           Inflex.Instances ()
 import           Inflex.Types
+import           Optics
 import           Test.Hspec
 
 spec :: Spec
@@ -20,7 +21,7 @@ spec = do
   it
     "Literal"
     (shouldBe
-       (generateText "" "123")
+       (second (set hasConstraintsMappingsL mempty) (generateText "" "123"))
        (Right
           (HasConstraints
              { classes =
@@ -52,20 +53,13 @@ spec = do
                                  , location = ExpressionCursor
                                  }
                          }))
-             , mappings =
-                 M.fromList
-                   [ ( ExpressionCursor
-                     , SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 4, name = ""}
-                         })
-                   ]
+             , mappings = mempty
              , equalities = mempty
              })))
   it
     "Lambda"
     (shouldBe
-       (generateText "" "\\x->123")
+       (second (set hasConstraintsMappingsL mempty) (generateText "" "\\x->123"))
        (Right
           (HasConstraints
              { classes =
@@ -148,29 +142,14 @@ spec = do
                                , location = ExpressionCursor
                                })
                       })
-             , mappings =
-                 M.fromList
-                   [ ( ExpressionCursor
-                     , SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 8, name = ""}
-                         })
-                   , ( LambdaBodyCursor ExpressionCursor
-                     , SourceLocation
-                         { start = SourcePos {line = 1, column = 5, name = ""}
-                         , end = SourcePos {line = 1, column = 8, name = ""}
-                         })
-                   , ( LambdaParamCursor
-                     , SourceLocation
-                         { start = SourcePos {line = 1, column = 2, name = ""}
-                         , end = SourcePos {line = 1, column = 3, name = ""}
-                         })
-                   ]
+             , mappings = mempty
              })))
   it
     "Apply"
     (do shouldBe
-          (generateText "" "(\\x->x)123")
+          (second
+             (set hasConstraintsMappingsL mempty)
+             (generateText "" "(\\x->x)123"))
           (Right
              (HasConstraints
                 { classes =
@@ -402,37 +381,5 @@ spec = do
                                   , index = 3
                                   })
                          })
-                , mappings =
-                    M.fromList
-                      [ ( ExpressionCursor
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 2, name = ""}
-                            , end = SourcePos {line = 1, column = 7, name = ""}
-                            })
-                      , ( ApplyFuncCursor ExpressionCursor
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 2, name = ""}
-                            , end = SourcePos {line = 1, column = 7, name = ""}
-                            })
-                      , ( ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 6, name = ""}
-                            , end = SourcePos {line = 1, column = 7, name = ""}
-                            })
-                      , ( ApplyFuncCursor LambdaParamCursor
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 3, name = ""}
-                            , end = SourcePos {line = 1, column = 4, name = ""}
-                            })
-                      , ( ApplyArgCursor ExpressionCursor
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 8, name = ""}
-                            , end = SourcePos {line = 1, column = 11, name = ""}
-                            })
-                      ]
+                , mappings = mempty
                 })))
