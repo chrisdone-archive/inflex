@@ -33,12 +33,15 @@ data ParseSolveError
   | GeneratorErrored RenameGenerateError
   deriving (Show, Eq)
 
-type CursorBuilder = Cursor -> Cursor
-
 data IsSolved a = IsSolved
   { thing :: !a
   , mappings :: !(Map Cursor SourceLocation)
   , classes :: !(Seq (ClassConstraint Generated))
+  } deriving (Show, Eq)
+
+data Substitution = Substitution
+  { before :: !(TypeVariable Generated)
+  , after :: !(Type Generated)
   } deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -55,6 +58,9 @@ solveText fp text = do
     SolverErrors
     (let thing = runIdentity (runSolver (expressionSolver expression))
       in pure (IsSolved {thing, mappings, classes}))
+
+solveConstraints :: Seq EqualityConstraint -> Seq Substitution
+solveConstraints _ = mempty
 
 --------------------------------------------------------------------------------
 -- Solver
