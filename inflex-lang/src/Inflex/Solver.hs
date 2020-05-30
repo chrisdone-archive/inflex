@@ -27,8 +27,7 @@ import Optics
 -- Solver types
 
 data SolveError
-  = ConstantMismatch
-  | OccursCheckFail
+  = OccursCheckFail
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 

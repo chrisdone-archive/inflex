@@ -45,11 +45,9 @@ spec = do
              (Left (pure (TypeMismatch (_Integer .~ _Text)))))
         it
           "F a a ~ F (Option Text) (Option Integer)"
-          (do pending
-              shouldBe
-                (unifyConstraints
-                   [_F a a .~ _F (_Option _Text) (_Option _Integer)])
-                (Left (pure ConstantMismatch))))
+          (shouldBe
+             (unifyConstraints [_F a a .~ _F (_Option _Text) (_Option _Integer)])
+             (Left (pure (TypeMismatch (_Text .~ _Integer))))))
 
 --------------------------------------------------------------------------------
 -- Type variables
