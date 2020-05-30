@@ -42,10 +42,9 @@ spec = do
     "Failing"
     (do it
           "Integer ~ Text"
-          (do pending
-              shouldBe
-                (unifyConstraints [_Integer .~ _Text])
-                (Left (pure ConstantMismatch)))
+          (shouldBe
+             (unifyConstraints [_Integer .~ _Text])
+             (Left (pure (TypeMismatch (_Integer .~ _Text)))))
         it
           "F a a ~ F (Option Text) (Option Integer)"
           (do pending
