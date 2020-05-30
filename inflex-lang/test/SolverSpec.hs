@@ -15,7 +15,13 @@ import           Inflex.Types
 import           Test.Hspec
 
 spec :: Spec
-spec = do
+spec = describe "Fine-grained" fineGrained
+
+--------------------------------------------------------------------------------
+-- Fine-grained tests
+
+fineGrained :: Spec
+fineGrained = do
   describe
     "Successful"
     (do it "a ~ a" (shouldBe (unifyConstraints [a .~ a]) (pure []))
