@@ -33,10 +33,9 @@ spec = do
              (pure [a' .+-> _Integer, b' .+-> _Text]))
         it
           "F a a ~ F (Option b) (Option Integer)"
-          (do pending
-              shouldBe
-                (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
-                (pure [a' .+-> _Option b, b' .+-> _Integer])))
+          (shouldBe
+             (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
+             (pure [a' .+-> _Option _Integer, b' .+-> _Integer])))
   describe
     "Failing"
     (do it
