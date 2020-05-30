@@ -9,13 +9,244 @@
 
 module SolverSpec where
 
+import qualified Data.Map.Strict as M
+import qualified Data.Sequence as Seq
 import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Types
 import           Test.Hspec
 
 spec :: Spec
-spec = describe "Fine-grained" fineGrained
+spec = do describe "Fine-grained" fineGrained
+          describe "Coarse-grained" coarseGrained
+
+--------------------------------------------------------------------------------
+-- Coarse-grained tests
+
+coarseGrained :: Spec
+coarseGrained =
+  describe
+    "Successful"
+    (do it
+          "123"
+          (shouldBe
+             (solveText "" "123")
+             (Right
+                (IsSolved
+                   { thing =
+                       LiteralExpression
+                         (IntegerLiteral
+                            (Integery
+                               { location = ExpressionCursor
+                               , integer = 123
+                               , typ =
+                                   VariableType
+                                     (TypeVariable
+                                        { location = ExpressionCursor
+                                        , prefix = IntegeryPrefix
+                                        , index = 0
+                                        })
+                               }))
+                   , mappings =
+                       M.fromList
+                         [ ( ExpressionCursor
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 4, name = ""}
+                               })
+                         ]
+                   , classes =
+                       Seq.fromList
+                         [ ClassConstraint
+                             { className = FromIntegerClassName
+                             , types =
+                                 pure
+                                   (VariableType
+                                      (TypeVariable
+                                         { location = ExpressionCursor
+                                         , prefix = IntegeryPrefix
+                                         , index = 0
+                                         }))
+                             , location = ExpressionCursor
+                             }
+                         ]
+                   })))
+        it
+          "(\\x->x)123"
+          (shouldBe
+             (solveText "" "(\\x->x)123")
+             (Right
+                (IsSolved
+                   { thing =
+                       ApplyExpression
+                         (Apply
+                            { location = ExpressionCursor
+                            , function =
+                                LambdaExpression
+                                  (Lambda
+                                     { location =
+                                         ApplyFuncCursor ExpressionCursor
+                                     , param =
+                                         Param
+                                           { location =
+                                               ApplyFuncCursor LambdaParamCursor
+                                           , name = ()
+                                           , typ =
+                                               VariableType
+                                                 (TypeVariable
+                                                    { location =
+                                                        ApplyArgCursor
+                                                          ExpressionCursor
+                                                    , prefix = ApplyPrefix
+                                                    , index = 3
+                                                    })
+                                           }
+                                     , body =
+                                         VariableExpression
+                                           (Variable
+                                              { location =
+                                                  ApplyFuncCursor
+                                                    (LambdaBodyCursor
+                                                       ExpressionCursor)
+                                              , name = DeBrujinIndex 0
+                                              , typ =
+                                                  VariableType
+                                                    (TypeVariable
+                                                       { location =
+                                                           ApplyFuncCursor
+                                                             (LambdaBodyCursor
+                                                                ExpressionCursor)
+                                                       , prefix = VariablePrefix
+                                                       , index = 1
+                                                       })
+                                              })
+                                     , typ =
+                                         ApplyType
+                                           (TypeApplication
+                                              { function =
+                                                  ApplyType
+                                                    (TypeApplication
+                                                       { function =
+                                                           ConstantType
+                                                             (TypeConstant
+                                                                { location =
+                                                                    ApplyFuncCursor
+                                                                      ExpressionCursor
+                                                                , name =
+                                                                    FunctionTypeName
+                                                                })
+                                                       , argument =
+                                                           VariableType
+                                                             (TypeVariable
+                                                                { location =
+                                                                    ApplyArgCursor
+                                                                      ExpressionCursor
+                                                                , prefix =
+                                                                    ApplyPrefix
+                                                                , index = 3
+                                                                })
+                                                       , location =
+                                                           ApplyFuncCursor
+                                                             ExpressionCursor
+                                                       })
+                                              , argument =
+                                                  VariableType
+                                                    (TypeVariable
+                                                       { location =
+                                                           ApplyFuncCursor
+                                                             (LambdaBodyCursor
+                                                                ExpressionCursor)
+                                                       , prefix = VariablePrefix
+                                                       , index = 1
+                                                       })
+                                              , location =
+                                                  ApplyFuncCursor
+                                                    ExpressionCursor
+                                              })
+                                     })
+                            , argument =
+                                LiteralExpression
+                                  (IntegerLiteral
+                                     (Integery
+                                        { location =
+                                            ApplyArgCursor ExpressionCursor
+                                        , integer = 123
+                                        , typ =
+                                            VariableType
+                                              (TypeVariable
+                                                 { location =
+                                                     ApplyArgCursor
+                                                       ExpressionCursor
+                                                 , prefix = ApplyPrefix
+                                                 , index = 3
+                                                 })
+                                        }))
+                            , typ =
+                                VariableType
+                                  (TypeVariable
+                                     { location =
+                                         ApplyArgCursor ExpressionCursor
+                                     , prefix = ApplyPrefix
+                                     , index = 3
+                                     })
+                            })
+                   , mappings =
+                       M.fromList
+                         [ ( ExpressionCursor
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 7, name = ""}
+                               })
+                         , ( ApplyFuncCursor ExpressionCursor
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 7, name = ""}
+                               })
+                         , ( ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 6, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 7, name = ""}
+                               })
+                         , ( ApplyFuncCursor LambdaParamCursor
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 3, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 4, name = ""}
+                               })
+                         , ( ApplyArgCursor ExpressionCursor
+                           , SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 8, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 11, name = ""}
+                               })
+                         ]
+                   , classes =
+                       [ ClassConstraint
+                           { className = FromIntegerClassName
+                           , types =
+                               pure
+                                 (VariableType
+                                    (TypeVariable
+                                       { location =
+                                           ApplyArgCursor ExpressionCursor
+                                       , prefix = ApplyPrefix
+                                       , index = 3
+                                       }))
+                           , location = ApplyArgCursor ExpressionCursor
+                           }
+                       ]
+                   }))))
+
 
 --------------------------------------------------------------------------------
 -- Fine-grained tests

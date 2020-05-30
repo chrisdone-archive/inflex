@@ -83,7 +83,7 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
       unifyTypeApplications typeApplication1 typeApplication2
     (VariableType typeVariable, typ) -> bindTypeVariable typeVariable typ
     (typ, VariableType typeVariable) -> bindTypeVariable typeVariable typ
-    (ConstantType typeConstant1, ConstantType typeConstant2)
+    (ConstantType TypeConstant {name = typeConstant1}, ConstantType TypeConstant {name = typeConstant2})
       | typeConstant1 == typeConstant2 -> pure mempty
     _ -> Left (pure (TypeMismatch equalityConstraint))
 

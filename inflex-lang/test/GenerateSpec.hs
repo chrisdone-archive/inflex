@@ -176,7 +176,7 @@ spec = do
                                    { location =
                                        ApplyFuncCursor
                                          (LambdaBodyCursor ExpressionCursor)
-                                   , prefix = LambdaParameterPrefix
+                                   , prefix = VariablePrefix
                                    , index = 1
                                    })
                           , type2 =
@@ -226,7 +226,7 @@ spec = do
                                                 ApplyFuncCursor
                                                   (LambdaBodyCursor
                                                      ExpressionCursor)
-                                            , prefix = LambdaParameterPrefix
+                                            , prefix = VariablePrefix
                                             , index = 1
                                             })
                                    , location = ApplyFuncCursor ExpressionCursor
@@ -307,8 +307,7 @@ spec = do
                                                         ApplyFuncCursor
                                                           (LambdaBodyCursor
                                                              ExpressionCursor)
-                                                    , prefix =
-                                                        LambdaParameterPrefix
+                                                    , prefix = VariablePrefix
                                                     , index = 1
                                                     })
                                            })
@@ -348,8 +347,7 @@ spec = do
                                                         ApplyFuncCursor
                                                           (LambdaBodyCursor
                                                              ExpressionCursor)
-                                                    , prefix =
-                                                        LambdaParameterPrefix
+                                                    , prefix = VariablePrefix
                                                     , index = 1
                                                     })
                                            , location =

@@ -197,7 +197,7 @@ variableGenerator variable@Variable { typ = _
   case lookup index (zip [0 ..] scope) of
     Nothing -> Generate (refute (pure (MissingVariableG variable)))
     Just Param {typ = type2} -> do
-      type1 <- generateTypeVariable location LambdaParameterPrefix
+      type1 <- generateTypeVariable location VariablePrefix
       addEqualityConstraint
         EqualityConstraint {type1, type2, ..}
       pure Variable {typ = type1, name, ..}
