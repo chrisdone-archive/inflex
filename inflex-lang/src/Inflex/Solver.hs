@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
@@ -19,9 +18,7 @@ import Data.Map.Strict (Map)
 import Data.Sequence (Seq)
 import Data.Text (Text)
 import Inflex.Generator
-import Inflex.Optics
 import Inflex.Types
-import Optics
 
 --------------------------------------------------------------------------------
 -- Solver types
@@ -47,10 +44,6 @@ data Substitution = Substitution
   , after :: !(Type Generated)
   } deriving (Show, Eq)
 
-$(makeLensesWith
-    (inflexRules ['before, 'after])
-    ''Substitution)
-
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -59,12 +52,12 @@ solveText ::
   -> Text
   -> Either ParseSolveError (IsSolved (Expression Solved))
 solveText fp text = do
-  HasConstraints {thing = _expression, mappings, classes} <-
+  HasConstraints {thing = _expression, mappings = _, classes = _, equalities} <-
     first GeneratorErrored (generateText fp text)
   first
     SolverErrors
-    (let thing = undefined
-      in pure (IsSolved {thing, mappings, classes}))
+    (do _substitutions <- unifyConstraints equalities
+        undefined)
 
 --------------------------------------------------------------------------------
 -- Unification
@@ -130,7 +123,11 @@ data Extension = Extension
 extendSubstitutions :: Extension -> Seq Substitution
 extendSubstitutions Extension {new, existing} = existing' <> new
   where
-    existing' = fmap (over substitutionAfterL (substituteType new)) existing
+    existing' =
+      fmap
+        (\Substitution {after, ..} ->
+           Substitution {after = substituteType new after, ..})
+        existing
 
 --------------------------------------------------------------------------------
 -- Substitution
