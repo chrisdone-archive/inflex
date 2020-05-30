@@ -24,8 +24,7 @@ spec = do
           (shouldBe (unifyConstraints [_Integer .~ _Integer]) (pure []))
         it
           "a ~ b"
-          (do pending
-              shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
+          (shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
           (do pending
