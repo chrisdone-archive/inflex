@@ -28,10 +28,9 @@ spec = do
           (shouldBe (unifyConstraints [a .~ _Integer]) (pure [a' .+-> _Integer]))
         it
           "F a Text ~ F Integer b"
-          (do pending
-              shouldBe
-                (unifyConstraints [_F a _Text .~ _F _Integer b])
-                (pure [a' .+-> _Integer, b' .+-> _Text]))
+          (shouldBe
+             (unifyConstraints [_F a _Text .~ _F _Integer b])
+             (pure [a' .+-> _Integer, b' .+-> _Text]))
         it
           "F a a ~ F (Option b) (Option Integer)"
           (do pending
