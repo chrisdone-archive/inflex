@@ -18,7 +18,7 @@ import           Inflex.Types
 --------------------------------------------------------------------------------
 -- Solver types
 
-data SolveError = SolveError
+data SolveError = ConstantMismatch
   deriving (Show, Eq)
 
 newtype Solver a = Solver
@@ -59,8 +59,8 @@ solveText fp text = do
     (let thing = runIdentity (runSolver (expressionSolver expression))
       in pure (IsSolved {thing, mappings, classes}))
 
-solveConstraints :: Seq EqualityConstraint -> Seq Substitution
-solveConstraints _ = mempty
+solveConstraints :: Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+solveConstraints _ = Right mempty
 
 --------------------------------------------------------------------------------
 -- Solver

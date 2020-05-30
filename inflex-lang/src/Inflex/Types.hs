@@ -117,8 +117,11 @@ data ClassConstraint s = ClassConstraint
   , location :: !(StagedLocation s)
   }
 
-data TypeName =
-  FunctionTypeName
+data TypeName
+  = FunctionTypeName
+  | IntegerTypeName
+  | TextTypeName
+  | OptionTypeName
   deriving (Show, Eq, Ord)
 
 data ClassName =

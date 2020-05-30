@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeApplications #-}
@@ -15,21 +17,122 @@ import           Test.Hspec
 spec :: Spec
 spec = do
   describe
-    "Unit tests"
-    (do it "a ~ a" (shouldBe (solveConstraints [a .~. a]) [])
+    "Successful"
+    (do it "a ~ a" (shouldBe (solveConstraints [a .~ a]) (pure []))
+        it
+          "Integer ~ Integer"
+          (shouldBe (solveConstraints [_Integer .~ _Integer]) (pure []))
         it
           "a ~ b"
           (do pending
-              shouldBe (solveConstraints [a .~. b]) [a' .-> b]))
-  where
-    (.~.) x y =
-      EqualityConstraint {location = ExpressionCursor, type1 = x, type2 = y}
-    (.->) x y = Substitution {before = x, after = y}
-    a' =
-      TypeVariable
-        {location = ExpressionCursor, prefix = IntegeryPrefix, index = 0}
-    a = VariableType a'
-    b =
-      VariableType
-        TypeVariable
-          {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1}
+              shouldBe (solveConstraints [a .~ b]) (pure [a' .+-> b]))
+        it
+          "a ~ Integer"
+          (do pending
+              shouldBe
+                (solveConstraints [a .~ _Integer])
+                (pure [a' .+-> _Integer]))
+        it
+          "F a Text ~ F Integer b"
+          (do pending
+              shouldBe
+                (solveConstraints [_F a _Text .~ _F _Integer b])
+                (pure [a' .+-> _Integer, b' .+-> _Text]))
+        it
+          "F a a ~ F (Option b) (Option Integer)"
+          (do pending
+              shouldBe
+                (solveConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
+                (pure [a' .+-> _Option b, b' .+-> _Integer])))
+  describe
+    "Failing"
+    (do it
+          "Integer ~ Text"
+          (do pending
+              shouldBe
+                (solveConstraints [_Integer .~ _Text])
+                (Left (pure ConstantMismatch)) -- TODO: Left.
+           )
+        it
+          "F a a ~ F (Option Text) (Option Integer)"
+          (do pending
+              shouldBe
+                (solveConstraints
+                   [_F a a .~ _F (_Option _Text) (_Option _Integer)])
+                (Left (pure ConstantMismatch)) -- TODO: Left.
+           ))
+
+--------------------------------------------------------------------------------
+-- Type variables
+
+a' :: TypeVariable Generated
+a' =
+  TypeVariable
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 0}
+
+b' :: TypeVariable Generated
+b' =
+  TypeVariable
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1}
+
+--------------------------------------------------------------------------------
+-- Types of the variables
+
+a :: Type Generated
+a = VariableType a'
+
+b :: Type Generated
+b = VariableType b'
+
+--------------------------------------------------------------------------------
+-- Type constructors
+
+_Integer :: Type Generated
+_Integer =
+  ConstantType
+    TypeConstant {location = ExpressionCursor, name = IntegerTypeName}
+
+_Text :: Type Generated
+_Text =
+  ConstantType
+    TypeConstant {location = ExpressionCursor, name = TextTypeName}
+
+_F :: Type Generated -> Type Generated -> Type Generated
+_F x1 x2 =
+  ApplyType
+    TypeApplication
+      { location = ExpressionCursor
+      , function =
+          ApplyType
+            TypeApplication
+              { location = ExpressionCursor
+              , function =
+                  ConstantType
+                    TypeConstant
+                      {location = ExpressionCursor, name = FunctionTypeName}
+              , argument = x1
+              }
+      , argument = x2
+      }
+
+_Option :: Type Generated -> Type Generated
+_Option x1 =
+  ApplyType
+    TypeApplication
+      { location = ExpressionCursor
+      , function =
+          ConstantType
+            TypeConstant
+              {location = ExpressionCursor, name = OptionTypeName}
+      , argument = x1
+      }
+
+--------------------------------------------------------------------------------
+-- Operators for easier reading
+
+(.~) :: Type Generated -> Type Generated -> EqualityConstraint
+(.~) x y =
+  EqualityConstraint {location = ExpressionCursor, type1 = x, type2 = y}
+
+(.+->) :: TypeVariable Generated -> Type Generated -> Substitution
+(.+->) x y = Substitution {before = x, after = y}
