@@ -115,11 +115,10 @@ coarseGrained =
                                                   VariableType
                                                     (TypeVariable
                                                        { location =
-                                                           ApplyFuncCursor
-                                                             (LambdaBodyCursor
-                                                                ExpressionCursor)
-                                                       , prefix = VariablePrefix
-                                                       , index = 1
+                                                           ApplyArgCursor
+                                                             ExpressionCursor
+                                                       , prefix = ApplyPrefix
+                                                       , index = 3
                                                        })
                                               })
                                      , typ =
@@ -155,11 +154,10 @@ coarseGrained =
                                                   VariableType
                                                     (TypeVariable
                                                        { location =
-                                                           ApplyFuncCursor
-                                                             (LambdaBodyCursor
-                                                                ExpressionCursor)
-                                                       , prefix = VariablePrefix
-                                                       , index = 1
+                                                           ApplyArgCursor
+                                                             ExpressionCursor
+                                                       , prefix = ApplyPrefix
+                                                       , index = 3
                                                        })
                                               , location =
                                                   ApplyFuncCursor

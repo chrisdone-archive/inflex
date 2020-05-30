@@ -71,9 +71,11 @@ unifyConstraints ::
      Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
 unifyConstraints =
   foldM
-    (\constraints equalityConstraint ->
-       unifyEqualityConstraint
-         (substituteEqualityConstraint constraints equalityConstraint))
+    (\existing equalityConstraint ->
+       fmap
+         (\new -> extendSubstitutions Extension {existing, new})
+         (unifyEqualityConstraint
+            (substituteEqualityConstraint existing equalityConstraint)))
     mempty
 
 unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
