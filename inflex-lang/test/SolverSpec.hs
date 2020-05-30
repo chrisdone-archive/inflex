@@ -22,15 +22,10 @@ spec = do
         it
           "Integer ~ Integer"
           (shouldBe (unifyConstraints [_Integer .~ _Integer]) (pure []))
-        it
-          "a ~ b"
-          (shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
+        it "a ~ b" (shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
-          (do pending
-              shouldBe
-                (unifyConstraints [a .~ _Integer])
-                (pure [a' .+-> _Integer]))
+          (shouldBe (unifyConstraints [a .~ _Integer]) (pure [a' .+-> _Integer]))
         it
           "F a Text ~ F Integer b"
           (do pending
