@@ -161,3 +161,66 @@ substituteType substitutions = go
                  substitutions of
             Just Substitution {after} -> after
             Nothing -> typ
+
+--------------------------------------------------------------------------------
+-- Solving (i.e. substitution, but we also change the type from
+-- Generated to Solved)
+
+solveType :: Seq Substitution -> Type Generated -> Type Solved
+solveType substitutions = go . substituteType substitutions
+  where
+    go =
+      \case
+        VariableType TypeVariable {..} -> VariableType TypeVariable {..}
+        ApplyType TypeApplication {function, argument, ..} ->
+          ApplyType
+            TypeApplication {function = go function, argument = go argument, ..}
+        ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
+
+expressionSolve :: Seq Substitution -> Expression Generated -> Expression Solved
+expressionSolve substitutions =
+  \case
+    LiteralExpression literal ->
+      LiteralExpression (literalSolve substitutions literal)
+    LambdaExpression lambda ->
+      LambdaExpression (lambdaSolve substitutions lambda)
+    ApplyExpression apply ->
+      ApplyExpression (applySolve substitutions apply)
+    VariableExpression variable ->
+      VariableExpression (variableSolve substitutions variable)
+
+lambdaSolve :: Seq Substitution -> Lambda Generated -> Lambda Solved
+lambdaSolve substitutions Lambda {..} =
+  Lambda
+    { param = paramSolve substitutions param
+    , body = expressionSolve substitutions body
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+applySolve :: Seq Substitution -> Apply Generated -> Apply Solved
+applySolve substitutions Apply {..} =
+  Apply
+    { function = expressionSolve substitutions function
+    , argument = expressionSolve substitutions argument
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+variableSolve :: Seq Substitution -> Variable Generated -> Variable Solved
+variableSolve substitutions Variable {..} =
+  Variable {typ = solveType substitutions typ, ..}
+
+literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
+literalSolve substitutions =
+  \case
+    IntegerLiteral integery ->
+      IntegerLiteral (integerySolve substitutions integery)
+
+integerySolve :: Seq Substitution -> Integery Generated -> Integery Solved
+integerySolve substitutions Integery {..} =
+  Integery {typ = solveType substitutions typ, ..}
+
+paramSolve :: Seq Substitution -> Param Generated -> Param Solved
+paramSolve substitutions Param {..} =
+  Param {typ = solveType substitutions typ, ..}
