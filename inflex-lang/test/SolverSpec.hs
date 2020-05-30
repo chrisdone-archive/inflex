@@ -25,7 +25,7 @@ spec = do
         it
           "a ~ b"
           (do pending
-              shouldBe (solveConstraints [a .~ b]) (pure [a' .+-> b]))
+              shouldBe (solveConstraints [a .~ b]) (pure [a' .+-> c, b' .+-> c]))
         it
           "a ~ Integer"
           (do pending
@@ -51,16 +51,14 @@ spec = do
           (do pending
               shouldBe
                 (solveConstraints [_Integer .~ _Text])
-                (Left (pure ConstantMismatch)) -- TODO: Left.
-           )
+                (Left (pure ConstantMismatch)))
         it
           "F a a ~ F (Option Text) (Option Integer)"
           (do pending
               shouldBe
                 (solveConstraints
                    [_F a a .~ _F (_Option _Text) (_Option _Integer)])
-                (Left (pure ConstantMismatch)) -- TODO: Left.
-           ))
+                (Left (pure ConstantMismatch))))
 
 --------------------------------------------------------------------------------
 -- Type variables
@@ -75,6 +73,11 @@ b' =
   TypeVariable
     {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1}
 
+c' :: TypeVariable Generated
+c' =
+  TypeVariable
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 2}
+
 --------------------------------------------------------------------------------
 -- Types of the variables
 
@@ -83,6 +86,9 @@ a = VariableType a'
 
 b :: Type Generated
 b = VariableType b'
+
+c :: Type Generated
+c = VariableType c'
 
 --------------------------------------------------------------------------------
 -- Type constructors
