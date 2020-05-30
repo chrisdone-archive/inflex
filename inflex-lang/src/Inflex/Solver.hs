@@ -36,7 +36,7 @@ data ParseSolveError
 data IsSolved a = IsSolved
   { thing :: !a
   , mappings :: !(Map Cursor SourceLocation)
-  , classes :: !(Seq (ClassConstraint Generated))
+  , classes :: !(Seq (ClassConstraint Solved))
   } deriving (Show, Eq)
 
 data Substitution = Substitution
@@ -52,12 +52,17 @@ solveText ::
   -> Text
   -> Either ParseSolveError (IsSolved (Expression Solved))
 solveText fp text = do
-  HasConstraints {thing = _expression, mappings = _, classes = _, equalities} <-
+  HasConstraints {thing = expression, mappings, classes, equalities} <-
     first GeneratorErrored (generateText fp text)
   first
     SolverErrors
-    (do _substitutions <- unifyConstraints equalities
-        undefined)
+    (do substitutions <- unifyConstraints equalities
+        pure
+          IsSolved
+            { thing = expressionSolve substitutions expression
+            , mappings
+            , classes = fmap (classConstraintSolve substitutions) classes
+            })
 
 --------------------------------------------------------------------------------
 -- Unification
@@ -221,3 +226,8 @@ integerySolve substitutions Integery {..} =
 paramSolve :: Seq Substitution -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
+
+classConstraintSolve ::
+     Seq Substitution -> ClassConstraint Generated -> ClassConstraint Solved
+classConstraintSolve substitutions ClassConstraint {..} =
+  ClassConstraint {types = fmap (solveType substitutions) types, ..}
