@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
@@ -10,28 +11,26 @@
 
 module Inflex.Solver where
 
+import Control.Monad
 import Data.Bifunctor
-import Data.Functor.Identity
 import Data.List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (Map)
 import Data.Sequence (Seq)
 import Data.Text (Text)
 import Inflex.Generator
+import Inflex.Optics
 import Inflex.Types
+import Optics
 
 --------------------------------------------------------------------------------
 -- Solver types
 
-data SolveError = ConstantMismatch
+data SolveError
+  = ConstantMismatch
+  | OccursCheckFail
+  | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
-
-newtype Solver a = Solver
-  { runSolver :: Identity a
-  } deriving ( Functor
-             , Applicative
-             , Monad
-             )
 
 data ParseSolveError
   = SolverErrors (NonEmpty SolveError)
@@ -49,6 +48,10 @@ data Substitution = Substitution
   , after :: !(Type Generated)
   } deriving (Show, Eq)
 
+$(makeLensesWith
+    (inflexRules ['before, 'after])
+    ''Substitution)
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -57,27 +60,94 @@ solveText ::
   -> Text
   -> Either ParseSolveError (IsSolved (Expression Solved))
 solveText fp text = do
-  HasConstraints {thing = expression, mappings, classes} <-
+  HasConstraints {thing = _expression, mappings, classes} <-
     first GeneratorErrored (generateText fp text)
   first
     SolverErrors
-    (let thing = runIdentity (runSolver (expressionSolver expression))
+    (let thing = undefined
       in pure (IsSolved {thing, mappings, classes}))
 
-solveConstraints ::
+--------------------------------------------------------------------------------
+-- Unification
+
+unifyConstraints ::
      Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
-solveConstraints _ = Right mempty
+unifyConstraints =
+  foldM
+    (\constraints equalityConstraint ->
+       unifyEqualityConstraint
+         (substituteEqualityConstraint constraints equalityConstraint))
+    mempty
+
+unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
+  case (type1, type2) of
+    (ApplyType typeApplication1, ApplyType typeApplication2) ->
+      unifyTypeApplications typeApplication1 typeApplication2
+    (VariableType typeVariable, typ) -> bindTypeVariable typeVariable typ
+    (typ, VariableType typeVariable) -> bindTypeVariable typeVariable typ
+    (ConstantType typeConstant1, ConstantType typeConstant2)
+      | typeConstant1 == typeConstant2 -> pure mempty
+    _ -> Left (pure (TypeMismatch equalityConstraint))
+
+unifyTypeApplications ::
+     TypeApplication Generated
+  -> TypeApplication Generated
+  -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyTypeApplications typeApplication1 typeApplication2 = do
+  existing <-
+    unifyEqualityConstraint
+      EqualityConstraint {type1 = function1, type2 = function2, location}
+  new <-
+    unifyEqualityConstraint
+      (substituteEqualityConstraint
+         existing
+         (EqualityConstraint {type1 = argument1, type2 = argument2, location}))
+  pure (extendSubstitutions Extension {existing, new})
+  where
+    TypeApplication {function = function1, argument = argument1, location} {-TODO: set location properly -}
+     = typeApplication1
+    TypeApplication {function = function2, argument = argument2} =
+      typeApplication2
 
 --------------------------------------------------------------------------------
--- Solver
+-- Binding
 
-expressionSolver :: Expression Generated -> Solver (Expression Solved)
-expressionSolver = error "TODO"
+bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+bindTypeVariable typeVariable typ
+  | typ == VariableType typeVariable = pure mempty
+  -- TODO: Occurs check.
+  -- | occursCheck = Left OccursCheckFail
+  | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
+
+--------------------------------------------------------------------------------
+-- Extension
+
+data Extension = Extension
+  { existing :: Seq Substitution
+  , new :: Seq Substitution
+  }
+
+extendSubstitutions :: Extension -> Seq Substitution
+extendSubstitutions Extension {new, existing} = existing' <> new
+  where
+    existing' = fmap (over substitutionAfterL (substituteType new)) existing
 
 --------------------------------------------------------------------------------
 -- Substitution
 
-substituteType :: [Substitution] -> Type Generated -> Type Generated
+substituteEqualityConstraint ::
+     Seq Substitution -> EqualityConstraint -> EqualityConstraint
+substituteEqualityConstraint substitutions equalityConstraint =
+  EqualityConstraint
+    { type1 = substituteType substitutions type1
+    , type2 = substituteType substitutions type2
+    , ..
+    }
+  where
+    EqualityConstraint {type1, type2, ..} = equalityConstraint
+
+substituteType :: Seq Substitution -> Type Generated -> Type Generated
 substituteType substitutions = go
   where
     go =

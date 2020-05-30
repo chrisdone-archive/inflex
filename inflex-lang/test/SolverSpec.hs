@@ -18,31 +18,31 @@ spec :: Spec
 spec = do
   describe
     "Successful"
-    (do it "a ~ a" (shouldBe (solveConstraints [a .~ a]) (pure []))
+    (do it "a ~ a" (shouldBe (unifyConstraints [a .~ a]) (pure []))
         it
           "Integer ~ Integer"
-          (shouldBe (solveConstraints [_Integer .~ _Integer]) (pure []))
+          (shouldBe (unifyConstraints [_Integer .~ _Integer]) (pure []))
         it
           "a ~ b"
           (do pending
-              shouldBe (solveConstraints [a .~ b]) (pure [a' .+-> c, b' .+-> c]))
+              shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
           (do pending
               shouldBe
-                (solveConstraints [a .~ _Integer])
+                (unifyConstraints [a .~ _Integer])
                 (pure [a' .+-> _Integer]))
         it
           "F a Text ~ F Integer b"
           (do pending
               shouldBe
-                (solveConstraints [_F a _Text .~ _F _Integer b])
+                (unifyConstraints [_F a _Text .~ _F _Integer b])
                 (pure [a' .+-> _Integer, b' .+-> _Text]))
         it
           "F a a ~ F (Option b) (Option Integer)"
           (do pending
               shouldBe
-                (solveConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
+                (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
                 (pure [a' .+-> _Option b, b' .+-> _Integer])))
   describe
     "Failing"
@@ -50,13 +50,13 @@ spec = do
           "Integer ~ Text"
           (do pending
               shouldBe
-                (solveConstraints [_Integer .~ _Text])
+                (unifyConstraints [_Integer .~ _Text])
                 (Left (pure ConstantMismatch)))
         it
           "F a a ~ F (Option Text) (Option Integer)"
           (do pending
               shouldBe
-                (solveConstraints
+                (unifyConstraints
                    [_F a a .~ _F (_Option _Text) (_Option _Integer)])
                 (Left (pure ConstantMismatch))))
 
