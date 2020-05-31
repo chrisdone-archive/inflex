@@ -17,10 +17,10 @@ spec =
     "Hint"
     (shouldReturn
        (runInterpreter
-          (do set [languageExtensions := [ExplicitForAll, GADTs]]
+          (do set [languageExtensions := [GADTs]]
               setImportsQ [("Prelude", Nothing)]
               typeOf
-                "let f :: forall t a b. (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t; f = undefined in f"))
+                "let f :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t; f = undefined in f"))
        (Right "Maybe Integer -> Maybe Integer"))
 
 --------------------------------------------------------------------------------
