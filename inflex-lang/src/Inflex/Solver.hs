@@ -64,6 +64,14 @@ solveText fp text = do
             , classes = fmap (classConstraintSolve substitutions) classes
             })
 
+unifyAndSubstitute ::
+     Seq EqualityConstraint
+  -> Type Generated
+  -> Either (NonEmpty SolveError) (Type Solved)
+unifyAndSubstitute equalities typ =
+   do substitutions <- unifyConstraints equalities
+      pure (solveType substitutions typ)
+
 --------------------------------------------------------------------------------
 -- Unification
 

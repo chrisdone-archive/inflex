@@ -270,7 +270,14 @@ fineGrained = do
           "F a a ~ F (Option b) (Option Integer)"
           (shouldBe
              (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
-             (pure [a' .+-> _Option _Integer, b' .+-> _Integer])))
+             (pure [a' .+-> _Option _Integer, b' .+-> _Integer]))
+        it
+          "(t ~ F a a, F a a ~ F (Option b) (Option Integer)) => t"
+          (shouldBe
+             (unifyAndSubstitute
+                [t .~ _F a a, _F a a .~ _F (_Option b) (_Option _Integer)]
+                t)
+             (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer))))))
   describe
     "Failing"
     (do it
@@ -304,6 +311,12 @@ c' =
 
 --------------------------------------------------------------------------------
 -- Types of the variables
+
+t :: Type Generated
+t =
+  VariableType
+    TypeVariable
+      {location = ExpressionCursor, prefix = IntegeryPrefix, index = 3}
 
 a :: Type Generated
 a = VariableType a'
