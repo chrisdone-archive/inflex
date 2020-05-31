@@ -38,3 +38,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - inflex-lang
+    - hint
