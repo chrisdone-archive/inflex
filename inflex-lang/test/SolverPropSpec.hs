@@ -20,7 +20,7 @@ spec =
           (do set [languageExtensions := [GADTs]]
               setImportsQ [("Prelude", Nothing)]
               typeOf
-                "let f :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t; f = undefined in f"))
+                "undefined :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t"))
        (Right "Maybe Integer -> Maybe Integer"))
 
 --------------------------------------------------------------------------------
