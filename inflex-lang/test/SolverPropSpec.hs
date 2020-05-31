@@ -15,13 +15,14 @@ spec :: Spec
 spec =
   it
     "Hint"
-    (shouldReturn
-       (runInterpreter
-          (do set [languageExtensions := [GADTs]]
-              setImportsQ [("Prelude", Nothing)]
-              typeOf
-                "undefined :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t"))
-       (Right "Maybe Integer -> Maybe Integer"))
+    (do pendingWith "Implemented example, but slow; needs property testing."
+        shouldReturn
+          (runInterpreter
+             (do set [languageExtensions := [GADTs]]
+                 setImportsQ [("Prelude", Nothing)]
+                 typeOf
+                   "undefined :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t"))
+          (Right "Maybe Integer -> Maybe Integer"))
 
 --------------------------------------------------------------------------------
 -- Orphans
