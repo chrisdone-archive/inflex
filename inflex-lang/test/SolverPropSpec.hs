@@ -19,9 +19,9 @@ spec =
        (runInterpreter
           (do set [languageExtensions := [ExplicitForAll, GADTs]]
               setImportsQ [("Prelude", Nothing)]
-              typeChecksWithDetails
+              typeOf
                 "let f :: forall t a b. (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t; f = undefined in f"))
-       (Right (Right "Maybe Integer -> Maybe Integer")))
+       (Right "Maybe Integer -> Maybe Integer"))
 
 --------------------------------------------------------------------------------
 -- Orphans
