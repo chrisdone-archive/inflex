@@ -68,9 +68,9 @@ unifyAndSubstitute ::
      Seq EqualityConstraint
   -> Type Generated
   -> Either (NonEmpty SolveError) (Type Solved)
-unifyAndSubstitute equalities typ =
-   do substitutions <- unifyConstraints equalities
-      pure (solveType substitutions typ)
+unifyAndSubstitute equalities typ = do
+  substitutions <- unifyConstraints equalities
+  pure (solveType substitutions typ)
 
 --------------------------------------------------------------------------------
 -- Unification
@@ -123,8 +123,7 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
 bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
-  -- TODO: Occurs check.
-  -- | occursCheck = Left OccursCheckFail
+  | occursCheck = Left OccursCheckFail
   | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
 
 --------------------------------------------------------------------------------

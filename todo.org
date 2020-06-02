@@ -1,27 +1,12 @@
 * Feature
 ** Shop
 *** TODO Homepage
-*** DONE Register page
-    CLOSED: [2020-05-03 Sun 12:24]
-    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
-*** DONE Login/logout page
-    CLOSED: [2020-05-03 Sun 12:24]
-    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
 *** TODO Yesod tests
 ** Database
-*** DONE Create
-    CLOSED: [2020-05-03 Sun 12:24]
-    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
 *** TODO Setup indexes
 *** TODO Encrypt data at rest?
 *** TODO Versioning?
 ** Organizer
-** DONE List documents
-   CLOSED: [2020-05-03 Sun 12:24]
-   - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
-** DONE Create document
-   CLOSED: [2020-05-03 Sun 12:24]
-   - State "DONE"       from "TODO"       [2020-05-03 Sun 12:24]
 ** TODO Delete document
 ** TODO Rename
 ** UI
@@ -31,12 +16,6 @@
 Repro:
 [1, x] where x = 2 * 3
 Changing 1 => 3 should not replace x with 6.
-*** DONE [#B] Delete button
-    CLOSED: [2020-05-03 Sun 12:16]
-    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:16]
-*** DONE [#B] "New" button
-    CLOSED: [2020-05-02 Sat 12:06]
-    - State "DONE"       from "TODO"       [2020-05-02 Sat 12:06]
 *** TODO Canvas/rendering?
     - Note taken on [2020-05-02 Sat 12:05] \\
       Mandelbrot in Excel https://slicker.me/fractals/excel.htm
@@ -62,206 +41,23 @@ Int32/Int16/Int8
 
 Use floating points but make partial results explicit too?
 *** TODO [#C] Add TextE for String typed expressions
-*** DONE [#A] Add Rows
-    CLOSED: [2020-05-03 Sun 12:22]
-    - State "DONE"       from "TODO"       [2020-05-03 Sun 12:22]
-    - Note taken on [2020-04-27 Mon 15:57] \\
-      Make sure that the real type Integer gets pushed up into the row
-      type's field, instead of the variable:
+* Perf
+  - Note taken on [2020-06-02 Tue 10:42] \\
+    Consider parallel stuff in compiler?
 
-      #+BEGIN_SRC haskell
-      , Field
-          { fieldName =
-              Identifier
-                { identifierString =
-                    "y"
-                }
-          , fieldType =
-              VariableType
-                (TypeVariable
-                   { typeVariableIdentifier =
-                       ForallName
-                         3
-                   , typeVariableKind =
-                       StarKind
-                   })
-          }
-      #+END_SRC
+    http://hackage.haskell.org/package/parallel-3.2.2.0/docs/Control-Parallel-Strategies.html
 
-      Oddly, it appears properly within the field (see below), so probably
-      some more unification has to take place.
-
-      #+BEGIN_SRC haskell
-      InfixExpression
-        (TypeSignature
-           { typeSignatureA =
-               Location
-                 { locationStartLine = 0
-                 , locationStartColumn = 0
-                 , locationEndLine = 0
-                 , locationEndColumn = 0
-                 }
-           , typeSignatureScheme =
-               Forall
-                 []
-                 (Qualified
-                    { qualifiedPredicates =
-                        [ IsIn
-                            (ClassName 13 "Num")
-                            [ ConstructorType
-                                (TypeConstructor
-                                   { typeConstructorIdentifier =
-                                       TypeName
-                                         5
-                                         "Integer"
-                                   , typeConstructorKind =
-                                       StarKind
-                                   })
-                            ]
-                        ]
-                    , qualifiedType =
-                        ConstructorType
-                          (TypeConstructor
-                             { typeConstructorIdentifier =
-                                 TypeName
-                                   5
-                                   "Integer"
-                             , typeConstructorKind =
-                                 StarKind
-                             })
-                    })
-           })
-      #+END_SRC
-    - Note taken on [2020-04-26 Sun 16:01] \\
-      Actually I think you need row poly anyway:
-
-      #+BEGIN_SRC haskell
-      x = { x: 1, y: "a" }
-      #+END_SRC
-
-      This can be inferred, because we already know the type of x.
-
-      #+BEGIN_SRC haskell
-      x.x
-      #+END_SRC
-
-      But we can't assign a type to this:
-
-      #+BEGIN_SRC haskell
-      f = \r -> r.x
-      or even:
-      count = \xs -> sum (filter .x xs)
-      #+END_SRC
-
-      What would its type be?
-
-      #+BEGIN_SRC haskell
-      f :: { x :: a | r } -> x   -- ?
-      f :: Has "x" a r => r -> x -- ?
-      #+END_SRC
-
-      Probably best to just implement the row polymorphism anyway.
-    - Note taken on [2020-04-25 Sat 17:33] \\
-      Realization: let's just implement record types to start with, without
-      the row polymorphism!
-
-      Then we add row polymorphism later *when needed*.
-
-      #+BEGIN_SRC haskell
-      { a: 1, b: "foo" } :: { a :: Int, b :: String }
-      #+END_SRC
-
-      Easy peasy!
-
-      Inference rules for this are less invasive than row poly. {} is of kind Type.
-
-      Then we can easily have:
-
-      #+BEGIN_SRC haskell
-      [ { a: 1, b: "foo" }, { a: 2, b: "bar" } ] :: Array { a :: Int, b :: String }
-      #+END_SRC
-Notes:
-- [X] Row type inference
-- [X] Row type parsing
-- [X] Row type renaming
-- [X] Row type stepping
-- [ ] Use test suite to test this
-- [X] Add RowE display to Editor for row types
-- [X] Add TableE (Vector (r :: Row)) display to Editor sum type
-*** DONE [#A] Add Array
-    CLOSED: [2020-03-14 Sat 16:27]
-    - State "DONE"       from "TODO"       [2020-03-14 Sat 16:27]
-   - Note taken on [2020-03-06 Fri 17:54] \\
-     This will serve as a warm up for the Duet, for implementing row types.
-   - Note taken on [2020-03-06 Fri 17:41] \\
-     Work in progress. Needs inference for Array type.
-
-e.g. data Array (a :: Type)
-- [X] Add a Array type to Duet
-- [X] Add inference for Array type
-- [X] Add stepper for Array
-- [X] Add a Array display to Editor sum type
-
-#+BEGIN_SRC
-[1,2,3]
-=>
-| 1 |
-| 2 |
-| 3 |
-#+END_SRC
-*** DONE Make sum type of results
-   CLOSED: [2020-03-06 Fri 17:15]
-   - Note taken on [2020-03-06 Fri 17:15] \\
-     Made Editor type.
-
-     #+BEGIN_SRC
-     data Editor
-       = IntegerE Integer
-       -- | RationalE Rational
-       -- | TextE Text
-       -- | RecordE (HashMap Text Editor)
-       -- | TableE (Array Text) (Array (HashMap Text Editor))
-       | MiscE Text
-       deriving (Show)
-     #+END_SRC
-   - State "DONE"       from "TODO"       [2020-03-06 Fri 17:15]
-- [ ] Number
-- [ ] List of numbers
-- [ ] Table
-- [ ] Text
-*** DONE Get input value from Dec input
-    CLOSED: [2020-02-29 Sat 15:27]
-    - State "DONE"       from "TODO"       [2020-02-29 Sat 15:27]
-*** DONE Make Haskell server load at runtime the app.js
-    CLOSED: [2020-02-24 Mon 16:15]
-    - State "DONE"       from "TODO"       [2020-02-24 Mon 16:15]
-* Duet
-** TODO [#C] Convert to trees that grow
-** TODO [#A] Implement CAS name generation
-- [ ] de Brujin index
-- [ ] mutually recursive groups are rewritten into one
-
-Quoting Unison:
-
-#+BEGIN_QUOTE
-A term or type definition that’s part of a cycle of mutually recursive
-definitions hashes to the form #x.n where x is the hash of the cycle
-and n is the term or type’s index in its cycle. A cycle has a
-canonical order determined by sorting all the members of the cycle by
-their individual hashes (with the cycle removed).
-#+END_QUOTE
-** TODO [#A] Get mappend xs ys for Array working
-** TODO [#A] Rewrite Infer.hs module
-** TODO [#B] Delete Alts and such
 * Testing
-  - Note taken on [2020-03-07 Sat 11:29] \\
-    https://hackage.haskell.org/package/validity-0.9.0.3/docs/src/Data.Validity.html#trivialValidation
-  - Note taken on [2020-03-07 Sat 11:26] \\
-    #+BEGIN_QUOTE
-    syd
-    have you tried producesValidsOnValids?
-    it's basically totality testing
-    #+END_QUOTE
+** TODO Use GHC/PS to validity test compiler
+   - Note taken on [2020-06-02 Tue 10:44] \\
+     - Note taken on [2020-03-07 Sat 11:29] \\
+         https://hackage.haskell.org/package/validity-0.9.0.3/docs/src/Data.Validity.html#trivialValidation
+       - Note taken on [2020-03-07 Sat 11:26] \\
+         #+BEGIN_QUOTE
+         syd
+         have you tried producesValidsOnValids?
+         it's basically totality testing
+         #+END_QUOTE
 ** TODO hspec-yesod to test shop
 ** TODO nodejs benchmark frontend
 ** TODO nodejs PureScript to unit test
@@ -281,18 +77,6 @@ their individual hashes (with the cycle removed).
 
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
-** DONE Use psc-package-fast
-   CLOSED: [2020-02-24 Mon 13:29]
-   - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
-   - Note taken on [2020-02-24 Mon 13:29] \\
-     Opened PR
-
-     https://github.com/bitc/purescript-bundle-fast/pull/2
-
-** DONE Put .psc-package in /dev/shm to avoid thrashing
-   CLOSED: [2020-02-24 Mon 13:29]
-   - State "DONE"       from "TODO"       [2020-02-24 Mon 13:29]
-
 * Considerations
 ** TODO When linking across documents
 Granularity of changes accepted automatically:

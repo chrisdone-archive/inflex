@@ -281,6 +281,11 @@ fineGrained = do
   describe
     "Failing"
     (do it
+          "F a ~ a"
+          (shouldBe
+             (unifyConstraints [_F a .~ a])
+             (Left (pure (TypeMismatch (_Integer .~ _Text)))))
+        it
           "Integer ~ Text"
           (shouldBe
              (unifyConstraints [_Integer .~ _Text])
