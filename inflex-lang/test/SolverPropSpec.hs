@@ -9,11 +9,21 @@
 module SolverPropSpec where
 
 import           Data.Foldable
+import           Data.GenValidity
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           GHC.Generics
+import           Inflex.Instances
 import           Inflex.Types
+import           Inflex.Types
+import           Instances
+import           Language.Haskell.Interpreter
 import           Language.Haskell.Interpreter
 import           Test.Hspec
+import           Test.Hspec
+import           Test.QuickCheck
+import           Test.QuickCheck
+import           Test.Validity
 
 --------------------------------------------------------------------------------
 -- Test suite
@@ -53,7 +63,7 @@ typeHs =
                 else x
 
 typeVariableHs :: TypeVariable Generated -> Seq Char
-typeVariableHs TypeVariable {index} = Seq.fromList (show index)
+typeVariableHs TypeVariable {index} = Seq.fromList ("t" <> show index)
 
 typeConstantHs :: TypeConstant Generated -> Seq Char
 typeConstantHs TypeConstant {name=n} =
