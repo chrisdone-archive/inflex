@@ -281,17 +281,17 @@ fineGrained = do
   describe
     "Failing"
     (do it
-          "F a ~ a"
+          "Occurs check: F a ~ a"
           (shouldBe
-             (unifyConstraints [_F a .~ a])
-             (Left (pure (TypeMismatch (_Integer .~ _Text)))))
+             (unifyConstraints [_F a b .~ a])
+             (Left (pure (OccursCheckFail a' (_F a b)))))
         it
-          "Integer ~ Text"
+          "Constant mismatch: Integer ~ Text"
           (shouldBe
              (unifyConstraints [_Integer .~ _Text])
              (Left (pure (TypeMismatch (_Integer .~ _Text)))))
         it
-          "F a a ~ F (Option Text) (Option Integer)"
+          "Type mismatch: F a a ~ F (Option Text) (Option Integer)"
           (shouldBe
              (unifyConstraints [_F a a .~ _F (_Option _Text) (_Option _Integer)])
              (Left (pure (TypeMismatch (_Text .~ _Integer))))))

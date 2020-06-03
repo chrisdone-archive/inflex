@@ -24,7 +24,7 @@ import Inflex.Types
 -- Solver types
 
 data SolveError
-  = OccursCheckFail
+  = OccursCheckFail (TypeVariable Generated) (Type Generated)
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 
@@ -123,8 +123,16 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
 bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
-  | occursCheck = Left OccursCheckFail
+  | occursIn typeVariable typ = Left (pure (OccursCheckFail typeVariable typ))
   | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
+
+occursIn :: TypeVariable Generated -> Type Generated -> Bool
+occursIn typeVariable =
+  \case
+    VariableType typeVariable' -> typeVariable == typeVariable'
+    ApplyType TypeApplication {function, argument} ->
+      occursIn typeVariable function || occursIn typeVariable argument
+    ConstantType {} -> False
 
 --------------------------------------------------------------------------------
 -- Extension
