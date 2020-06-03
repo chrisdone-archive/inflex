@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -14,7 +15,7 @@ import Data.GenValidity
 import GHC.Generics
 import Inflex.Instances ()
 import Inflex.Types
-import Test.QuickCheck
+import Test.QuickCheck hiding (function)
 
 instance GenUnchecked (Type Generated) where
   genUnchecked =
@@ -30,6 +31,37 @@ instance GenUnchecked (TypeApplication Generated)
 
 instance Validity (Type Generated) where
   validate = mempty
+
+instance Validity EqualityConstraint where
+  validate = mempty
+
+deriving instance Generic EqualityConstraint
+instance GenUnchecked EqualityConstraint
+
+instance GenValid EqualityConstraint where
+  genValid = do
+    typ1 <- genType
+    typ2 <- variablize typ1
+    ~[type1,type2] <- shuffle [typ1,typ2]
+    pure EqualityConstraint {type1, type2, location = ExpressionCursor}
+
+variablize :: Type Generated -> Gen (Type Generated)
+variablize = go
+  where
+    go ty = oneof [variable, godeeper ty]
+      where
+        godeeper =
+          \case
+            t@ConstantType {} -> pure t
+            t@VariableType {} -> pure t
+            ApplyType TypeApplication {function, argument, ..} -> do
+              function' <- go function
+              argument' <- go argument
+              pure
+                (ApplyType
+                   TypeApplication
+                     {function = function', argument = argument', ..})
+        variable = genTypeVariable
 
 instance GenValid (Type Generated) where
   genValid = genType
@@ -53,15 +85,7 @@ genType = do
         , pure
             (ConstantType
                TypeConstant {location = ExpressionCursor, name = TextTypeName})
-        , do index <- choose (1, 10)
-             pure
-               (VariableType
-                  TypeVariable
-                    { location = ExpressionCursor
-                    , prefix = IntegeryPrefix
-                    , index = fromIntegral (index :: Integer)
-                    , kind = TypeKind
-                    })
+        , genTypeVariable
         ]
     gen1Type =
       pure
@@ -101,6 +125,18 @@ genType = do
              , location = ExpressionCursor
              , kind = TypeKind
              })
+
+genTypeVariable :: Gen (Type Generated)
+genTypeVariable = do
+  index <- choose (1, 10)
+  pure
+    (VariableType
+       TypeVariable
+         { location = ExpressionCursor
+         , prefix = IntegeryPrefix
+         , index = fromIntegral (index :: Integer)
+         , kind = TypeKind
+         })
 
 deriving instance Generic (TypeVariable Generated)
 instance GenUnchecked (TypeVariable Generated)

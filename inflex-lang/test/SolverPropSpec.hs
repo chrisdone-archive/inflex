@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -8,12 +9,18 @@
 
 module SolverPropSpec where
 
+import           Data.Bifunctor
 import           Data.Foldable
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           Inflex.Instances ()
+import           Inflex.Solver
 import           Inflex.Types
+import           Instances ()
 import           Language.Haskell.Interpreter
 import           Test.Hspec
+import           Test.QuickCheck
+import           Test.Validity
 
 --------------------------------------------------------------------------------
 -- Test suite
@@ -22,22 +29,38 @@ spec :: Spec
 spec =
   it
     "Hint"
-    (do pendingWith "Implemented example, but slow; needs property testing."
-        shouldReturn
-          (runInterpreter
-             (do set [languageExtensions := [GADTs]]
-                 setImportsQ [("Prelude", Nothing)]
-                 typeOf
-                   "undefined :: (t ~ (->) a a, (->) a a ~ (->) (Maybe b) (Maybe Integer)) => t"))
-          (Right "Maybe Integer -> Maybe Integer"))
+    (do property
+          (forAllValid
+             (\eq@(EqualityConstraint {type1}) -> do
+                let input =
+                      "undefined :: (t ~ (" <> typeHsString type1 <> "), " <>
+                      equalityString eq <>
+                      ") => t"
+                print input
+                shouldReturn
+                  (fmap
+                     (first (const ()))
+                     (runInterpreter
+                        (do set [languageExtensions := [GADTs]]
+                            setImportsQ [("Prelude", Nothing)]
+                            fmap clean (typeOf input))))
+                  (fmap
+                     (\cs -> clean (typeHsString (solveType cs type1)))
+                     (first (const ()) (unifyEqualityConstraint eq))))))
+  where
+    clean = unwords . words
 
 --------------------------------------------------------------------------------
 -- Rendering to Haskell string
 
-typeHsString :: Type Generated -> String
+equalityString :: EqualityConstraint -> String
+equalityString EqualityConstraint {type1, type2} =
+  "(" <> typeHsString type1 <> ") ~ (" <> typeHsString type2 <> ")"
+
+typeHsString :: Type s -> String
 typeHsString = toList . typeHs
 
-typeHs :: Type Generated -> Seq Char
+typeHs :: Type s -> Seq Char
 typeHs =
   \case
     VariableType typeVariable -> typeVariableHs typeVariable
@@ -54,16 +77,16 @@ typeHs =
                 then Seq.fromList "(" <> x <> Seq.fromList ")"
                 else x
 
-typeVariableHs :: TypeVariable Generated -> Seq Char
+typeVariableHs :: TypeVariable s -> Seq Char
 typeVariableHs TypeVariable {index} = Seq.fromList ("t" <> show index)
 
-typeConstantHs :: TypeConstant Generated -> Seq Char
+typeConstantHs :: TypeConstant s -> Seq Char
 typeConstantHs TypeConstant {name=n} =
   Seq.fromList
     (case n of
        FunctionTypeName -> "(->)"
        IntegerTypeName -> "Integer"
-       TextTypeName -> "Text"
+       TextTypeName -> "[Char]"
        OptionTypeName -> "Maybe")
 
 --------------------------------------------------------------------------------
