@@ -14,6 +14,7 @@ module Instances where
 import Data.GenValidity
 import GHC.Generics
 import Inflex.Instances ()
+import Inflex.Kind
 import Inflex.Types
 import Test.QuickCheck hiding (function)
 
@@ -61,7 +62,7 @@ variablize = go
                 (ApplyType
                    TypeApplication
                      {function = function', argument = argument', ..})
-        variable = genTypeVariable
+        variable = genTypeVariable (typeKind ty)
 
 instance GenValid (Type Generated) where
   genValid = genType
@@ -85,7 +86,7 @@ genType = do
         , pure
             (ConstantType
                TypeConstant {location = ExpressionCursor, name = TextTypeName})
-        , genTypeVariable
+        , genTypeVariable TypeKind
         ]
     gen1Type =
       pure
@@ -126,8 +127,8 @@ genType = do
              , kind = TypeKind
              })
 
-genTypeVariable :: Gen (Type Generated)
-genTypeVariable = do
+genTypeVariable :: Kind -> Gen (Type Generated)
+genTypeVariable kind = do
   index <- choose (1, 10)
   pure
     (VariableType
@@ -135,7 +136,7 @@ genTypeVariable = do
          { location = ExpressionCursor
          , prefix = IntegeryPrefix
          , index = fromIntegral (index :: Integer)
-         , kind = TypeKind
+         , kind
          })
 
 deriving instance Generic (TypeVariable Generated)
