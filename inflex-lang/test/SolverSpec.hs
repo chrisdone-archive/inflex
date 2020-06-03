@@ -297,7 +297,7 @@ fineGrained = do
   describe
     "Failing"
     (do it
-          "Occurs check: F a ~ a"
+          "Occurs check: F a b ~ a"
           (shouldBe
              (unifyConstraints [_F a b .~ a])
              (Left (pure (OccursCheckFail a' (_F a b)))))
