@@ -126,7 +126,7 @@ literalGenerator =
 
 integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
-  typ <- generateTypeVariable location IntegeryPrefix
+  typ <- generateTypeVariable location IntegeryPrefix TypeKind
   addClassConstraint
     (ClassConstraint
        {className = FromIntegerClassName, types = pure typ, location})
@@ -150,9 +150,11 @@ lambdaGenerator Lambda {typ = _, ..} = do
                             (TypeConstant {name = FunctionTypeName, location})
                       , argument = paramType param'
                       , location
+                      , kind = FunKind TypeKind TypeKind
                       }
               , argument = outputType
               , location
+              , kind = TypeKind
               }
       , body = body'
       , param = param'
@@ -161,14 +163,14 @@ lambdaGenerator Lambda {typ = _, ..} = do
 
 paramGenerator :: Param Renamed -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do
-  typ <- generateTypeVariable location LambdaParameterPrefix
+  typ <- generateTypeVariable location LambdaParameterPrefix TypeKind
   pure Param {typ, ..}
 
 applyGenerator :: Apply Renamed -> Generate (Apply Generated)
 applyGenerator Apply {typ = _, ..} = do
   function' <- expressionGenerator function
   argument' <- expressionGenerator argument
-  outputType <- generateTypeVariable (expressionLocation argument') ApplyPrefix
+  outputType <- generateTypeVariable (expressionLocation argument') ApplyPrefix TypeKind
   let functionTemplate =
         ApplyType
           TypeApplication
@@ -180,9 +182,11 @@ applyGenerator Apply {typ = _, ..} = do
                           (TypeConstant {name = FunctionTypeName, location})
                     , argument = expressionType argument'
                     , location
+                    , kind = FunKind TypeKind TypeKind
                     }
             , argument = outputType
             , location = expressionLocation function'
+            , kind = TypeKind
             }
   addEqualityConstraint
     EqualityConstraint
@@ -198,7 +202,7 @@ variableGenerator variable@Variable { typ = _
   case lookup index (zip [0 ..] scope) of
     Nothing -> Generate (refute (pure (MissingVariableG variable)))
     Just Param {typ = type2} -> do
-      type1 <- generateTypeVariable location VariablePrefix
+      type1 <- generateTypeVariable location VariablePrefix TypeKind
       addEqualityConstraint
         EqualityConstraint {type1, type2, ..}
       pure Variable {typ = type1, name, ..}
@@ -206,11 +210,15 @@ variableGenerator variable@Variable { typ = _
 --------------------------------------------------------------------------------
 -- Type system helpers
 
-generateTypeVariable :: StagedLocation Generated -> TypeVariablePrefix -> Generate (Type Generated)
-generateTypeVariable location prefix =
-  do index <- gets (view generateStateCounterL)
-     modify' (over generateStateCounterL succ)
-     pure (VariableType TypeVariable {prefix, index, location})
+generateTypeVariable ::
+     StagedLocation Generated
+  -> TypeVariablePrefix
+  -> Kind
+  -> Generate (Type Generated)
+generateTypeVariable location prefix kind = do
+  index <- gets (view generateStateCounterL)
+  modify' (over generateStateCounterL succ)
+  pure (VariableType TypeVariable {prefix, index, location, kind})
 
 addClassConstraint :: ClassConstraint Generated -> Generate ()
 addClassConstraint constraint =

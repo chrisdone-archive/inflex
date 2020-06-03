@@ -42,11 +42,13 @@ typeHs =
   \case
     VariableType typeVariable -> typeVariableHs typeVariable
     ConstantType typeConstant -> typeConstantHs typeConstant
-    ApplyType TypeApplication {function, argument} ->
-      case function of
-        ApplyType TypeApplication {function = ConstantType TypeConstant {name = FunctionTypeName}} ->
-          typeHs function <> Seq.fromList " -> " <> typeHs argument
-        _ -> typeHs function <> Seq.fromList " " <> paren (typeHs argument)
+    ApplyType TypeApplication {function = function0, argument} ->
+      case function0 of
+        ApplyType TypeApplication { function = ConstantType TypeConstant {name = FunctionTypeName}
+                                  , argument = function'
+                                  } ->
+          typeHs function' <> Seq.fromList " -> " <> typeHs argument
+        _ -> typeHs function0 <> Seq.fromList " " <> paren (typeHs argument)
       where paren x =
               if any (== ' ') (toList x)
                 then Seq.fromList "(" <> x <> Seq.fromList ")"

@@ -45,6 +45,7 @@ coarseGrained =
                                         { location = ExpressionCursor
                                         , prefix = IntegeryPrefix
                                         , index = 0
+                                        , kind = TypeKind
                                         })
                                }))
                    , mappings =
@@ -68,6 +69,7 @@ coarseGrained =
                                          { location = ExpressionCursor
                                          , prefix = IntegeryPrefix
                                          , index = 0
+                                         , kind = TypeKind
                                          }))
                              , location = ExpressionCursor
                              }
@@ -101,6 +103,7 @@ coarseGrained =
                                                           ExpressionCursor
                                                     , prefix = ApplyPrefix
                                                     , index = 3
+                                                    , kind = TypeKind
                                                     })
                                            }
                                      , body =
@@ -119,6 +122,7 @@ coarseGrained =
                                                              ExpressionCursor
                                                        , prefix = ApplyPrefix
                                                        , index = 3
+                                                       , kind = TypeKind
                                                        })
                                               })
                                      , typ =
@@ -145,10 +149,16 @@ coarseGrained =
                                                                 , prefix =
                                                                     ApplyPrefix
                                                                 , index = 3
+                                                                , kind =
+                                                                    TypeKind
                                                                 })
                                                        , location =
                                                            ApplyFuncCursor
                                                              ExpressionCursor
+                                                       , kind =
+                                                           FunKind
+                                                             TypeKind
+                                                             TypeKind
                                                        })
                                               , argument =
                                                   VariableType
@@ -158,10 +168,12 @@ coarseGrained =
                                                              ExpressionCursor
                                                        , prefix = ApplyPrefix
                                                        , index = 3
+                                                       , kind = TypeKind
                                                        })
                                               , location =
                                                   ApplyFuncCursor
                                                     ExpressionCursor
+                                              , kind = TypeKind
                                               })
                                      })
                             , argument =
@@ -179,6 +191,7 @@ coarseGrained =
                                                        ExpressionCursor
                                                  , prefix = ApplyPrefix
                                                  , index = 3
+                                                 , kind = TypeKind
                                                  })
                                         }))
                             , typ =
@@ -188,6 +201,7 @@ coarseGrained =
                                          ApplyArgCursor ExpressionCursor
                                      , prefix = ApplyPrefix
                                      , index = 3
+                                     , kind = TypeKind
                                      })
                             })
                    , mappings =
@@ -229,20 +243,22 @@ coarseGrained =
                                })
                          ]
                    , classes =
-                       [ ClassConstraint
-                           { className = FromIntegerClassName
-                           , types =
-                               pure
-                                 (VariableType
-                                    (TypeVariable
-                                       { location =
-                                           ApplyArgCursor ExpressionCursor
-                                       , prefix = ApplyPrefix
-                                       , index = 3
-                                       }))
-                           , location = ApplyArgCursor ExpressionCursor
-                           }
-                       ]
+                       Seq.fromList
+                         [ ClassConstraint
+                             { className = FromIntegerClassName
+                             , types =
+                                 pure
+                                   (VariableType
+                                      (TypeVariable
+                                         { location =
+                                             ApplyArgCursor ExpressionCursor
+                                         , prefix = ApplyPrefix
+                                         , index = 3
+                                         , kind = TypeKind
+                                         }))
+                             , location = ApplyArgCursor ExpressionCursor
+                             }
+                         ]
                    }))))
 
 
@@ -302,17 +318,17 @@ fineGrained = do
 a' :: TypeVariable Generated
 a' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 0}
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 0, kind = TypeKind}
 
 b' :: TypeVariable Generated
 b' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1}
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1, kind = TypeKind}
 
 c' :: TypeVariable Generated
 c' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 2}
+    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 2, kind = TypeKind}
 
 --------------------------------------------------------------------------------
 -- Types of the variables
@@ -321,7 +337,7 @@ t :: Type Generated
 t =
   VariableType
     TypeVariable
-      {location = ExpressionCursor, prefix = IntegeryPrefix, index = 3}
+      {location = ExpressionCursor, prefix = IntegeryPrefix, index = 3, kind = TypeKind}
 
 a :: Type Generated
 a = VariableType a'
@@ -359,8 +375,10 @@ _F x1 x2 =
                     TypeConstant
                       {location = ExpressionCursor, name = FunctionTypeName}
               , argument = x1
+              , kind = TypeKind
               }
       , argument = x2
+      , kind = TypeKind
       }
 
 _Option :: Type Generated -> Type Generated
@@ -373,6 +391,7 @@ _Option x1 =
             TypeConstant
               {location = ExpressionCursor, name = OptionTypeName}
       , argument = x1
+      , kind = TypeKind
       }
 
 --------------------------------------------------------------------------------

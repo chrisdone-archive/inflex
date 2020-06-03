@@ -1,8 +1,11 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
--- |
+
+-- | Testing instances.
 
 module Instances where
 
@@ -26,8 +29,6 @@ instance GenUnchecked (TypeApplication Generated)
 
 deriving instance Generic (TypeVariable Generated)
 instance GenUnchecked (TypeVariable Generated)
-instance GenValid (TypeVariable Generated)
-instance Validity (TypeVariable Generated)
 
 deriving instance Generic (TypeConstant Generated)
 instance GenUnchecked (TypeConstant Generated)
@@ -43,6 +44,11 @@ deriving instance Generic Cursor
 instance GenUnchecked Cursor
 instance GenValid Cursor
 instance Validity Cursor
+
+deriving instance Generic Kind
+instance GenUnchecked Kind
+instance GenValid Kind
+instance Validity Kind
 
 deriving instance Generic TypeVariablePrefix
 instance GenUnchecked TypeVariablePrefix

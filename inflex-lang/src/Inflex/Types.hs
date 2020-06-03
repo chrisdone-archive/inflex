@@ -73,6 +73,7 @@ data TypeApplication s = TypeApplication
   { function :: !(Type s)
   , argument :: !(Type s)
   , location :: !(StagedLocation s)
+  , kind :: !Kind
   }
 
 data TypeSignature = TypeSignature
@@ -97,6 +98,7 @@ data TypeVariable s = TypeVariable
   { location :: !(StagedLocation s)
   , prefix :: !TypeVariablePrefix
   , index :: !Natural
+  , kind :: !Kind
   }
 
 data TypeVariablePrefix
