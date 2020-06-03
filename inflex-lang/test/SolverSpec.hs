@@ -302,7 +302,7 @@ fineGrained = do
              (unifyConstraints [_F a b .~ a])
              (Left (pure (OccursCheckFail a' (_F a b)))))
         it
-          "Kind mismatch: F a ~ a"
+          "Kind mismatch: F a ~ b"
           (shouldBe
              (unifyConstraints [_F_partial a .~ b])
              (Left (pure (KindMismatch b' (_F_partial a)))))
