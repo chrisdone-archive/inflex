@@ -302,6 +302,11 @@ fineGrained = do
              (unifyConstraints [_F a b .~ a])
              (Left (pure (OccursCheckFail a' (_F a b)))))
         it
+          "Kind mismatch: F a ~ a"
+          (shouldBe
+             (unifyConstraints [_F_partial a .~ b])
+             (Left (pure (KindMismatch b' (_F_partial a)))))
+        it
           "Constant mismatch: Integer ~ Text"
           (shouldBe
              (unifyConstraints [_Integer .~ _Text])
@@ -375,11 +380,24 @@ _F x1 x2 =
                     TypeConstant
                       {location = ExpressionCursor, name = FunctionTypeName}
               , argument = x1
-              , kind = TypeKind
+              , kind = FunKind TypeKind TypeKind
               }
       , argument = x2
       , kind = TypeKind
       }
+
+_F_partial :: Type Generated -> Type Generated
+_F_partial x1 =
+  ApplyType
+      TypeApplication
+        { location = ExpressionCursor
+        , function =
+            ConstantType
+              TypeConstant
+                {location = ExpressionCursor, name = FunctionTypeName}
+        , argument = x1
+        , kind = FunKind TypeKind TypeKind
+        }
 
 _Option :: Type Generated -> Type Generated
 _Option x1 =

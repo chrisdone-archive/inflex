@@ -18,6 +18,7 @@ import Data.Map.Strict (Map)
 import Data.Sequence (Seq)
 import Data.Text (Text)
 import Inflex.Generator
+import Inflex.Kind
 import Inflex.Types
 
 --------------------------------------------------------------------------------
@@ -25,6 +26,7 @@ import Inflex.Types
 
 data SolveError
   = OccursCheckFail (TypeVariable Generated) (Type Generated)
+  | KindMismatch (TypeVariable Generated) (Type Generated)
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 
@@ -124,6 +126,7 @@ bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
   | occursIn typeVariable typ = Left (pure (OccursCheckFail typeVariable typ))
+  | typeVariableKind typeVariable /= typeKind typ = Left (pure (KindMismatch typeVariable typ))
   | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
