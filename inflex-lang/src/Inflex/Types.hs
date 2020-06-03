@@ -7,9 +7,10 @@
 
 module Inflex.Types where
 
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Text (Text)
-import           GHC.Generics
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Text (Text)
+import GHC.Generics
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -95,7 +96,7 @@ data TypePoly = TypePoly
 data TypeVariable s = TypeVariable
   { location :: !(StagedLocation s)
   , prefix :: !TypeVariablePrefix
-  , index :: !Integer
+  , index :: !Natural
   }
 
 data TypeVariablePrefix

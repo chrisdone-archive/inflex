@@ -30,6 +30,7 @@ import           Inflex.Optics
 import qualified Inflex.Renamer as Renamer
 import           Inflex.Type
 import           Inflex.Types
+import           Numeric.Natural
 import           Optics
 
 --------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ data GenerateError =
   deriving (Show, Eq)
 
 data GenerateState = GenerateState
-  { counter :: !Integer
+  { counter :: !Natural
   , classConstraints :: !(Seq (ClassConstraint Generated))
   , equalityConstraints :: !(Seq EqualityConstraint)
   } deriving (Show)

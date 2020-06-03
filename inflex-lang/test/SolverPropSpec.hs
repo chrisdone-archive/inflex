@@ -9,21 +9,11 @@
 module SolverPropSpec where
 
 import           Data.Foldable
-import           Data.GenValidity
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
-import           GHC.Generics
-import           Inflex.Instances
 import           Inflex.Types
-import           Inflex.Types
-import           Instances
-import           Language.Haskell.Interpreter
 import           Language.Haskell.Interpreter
 import           Test.Hspec
-import           Test.Hspec
-import           Test.QuickCheck
-import           Test.QuickCheck
-import           Test.Validity
 
 --------------------------------------------------------------------------------
 -- Test suite
