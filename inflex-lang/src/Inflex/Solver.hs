@@ -6,7 +6,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
--- |
+
+-- | Solve equality constraints, updating all type variables in the AST.
 
 module Inflex.Solver where
 
@@ -30,7 +31,7 @@ data SolveError
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 
-data ParseSolveError
+data GenerateSolveError
   = SolverErrors (NonEmpty SolveError)
   | GeneratorErrored RenameGenerateError
   deriving (Show, Eq)
@@ -52,7 +53,7 @@ data Substitution = Substitution
 solveText ::
      FilePath
   -> Text
-  -> Either ParseSolveError (IsSolved (Expression Solved))
+  -> Either GenerateSolveError (IsSolved (Expression Solved))
 solveText fp text = do
   HasConstraints {thing = expression, mappings, classes, equalities} <-
     first GeneratorErrored (generateText fp text)

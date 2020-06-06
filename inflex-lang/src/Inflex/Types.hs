@@ -170,6 +170,7 @@ data Parsed
 data Renamed
 data Generated
 data Solved
+data Generalised
 
 --------------------------------------------------------------------------------
 -- Families
@@ -179,24 +180,28 @@ type family StagedLocation s where
   StagedLocation Renamed = Cursor
   StagedLocation Generated = Cursor
   StagedLocation Solved = Cursor
+  StagedLocation Generalised = Cursor
 
 type family StagedType s where
   StagedType Parsed = ()
   StagedType Renamed = ()
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
+  StagedType Generalised = Type Generalised
 
 type family StagedParamName s where
   StagedParamName Parsed = Text
   StagedParamName Renamed = ()
   StagedParamName Generated = ()
   StagedParamName Solved = ()
+  StagedParamName Generalised = ()
 
 type family StagedVariableName s where
   StagedVariableName Parsed = Text
   StagedVariableName Renamed = DeBrujinIndex
   StagedVariableName Generated = DeBrujinIndex
   StagedVariableName Solved = DeBrujinIndex
+  StagedVariableName Generalised = DeBrujinIndex
 
 type family TypeVariableStage s where
   TypeVariableStage Solved = Solved
