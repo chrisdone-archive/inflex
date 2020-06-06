@@ -60,7 +60,7 @@ data Integery s = Integery
 -- Type system types
 
 data Type s where
-  VariableType :: (TypeVariableStage s ~ s) => TypeVariable s -> Type s
+  VariableType :: TypeVariable s -> Type s
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
 
@@ -202,7 +202,3 @@ type family StagedVariableName s where
   StagedVariableName Generated = DeBrujinIndex
   StagedVariableName Solved = DeBrujinIndex
   StagedVariableName Generalised = DeBrujinIndex
-
-type family TypeVariableStage s where
-  TypeVariableStage Solved = Solved
-  TypeVariableStage Generated = Generated
