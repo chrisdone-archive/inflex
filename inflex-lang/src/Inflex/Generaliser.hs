@@ -53,3 +53,9 @@ generalizeText ::
 generalizeText fp text = do
   IsSolved {thing, mappings, classes} <- first SolverErrored (solveText fp text)
   undefined
+
+--------------------------------------------------------------------------------
+-- Produce a polymorphic type
+
+toPolymorphic :: Type Solved -> Type Polymorphic
+toPolymorphic = undefined
