@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -14,6 +16,7 @@ typeKind =
     VariableType typeVariable -> typeVariableKind typeVariable
     ApplyType typeApplication -> typeApplicationKind typeApplication
     ConstantType typeConstant -> typeConstantKind typeConstant
+    PolyType typePoly -> typeVariableKind typePoly
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind

@@ -61,6 +61,7 @@ data Integery s = Integery
 
 data Type s where
   VariableType :: TypeVariable s -> Type s
+  PolyType :: TypeVariable Polymorphic -> Type Generalised
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
 
@@ -171,6 +172,7 @@ data Renamed
 data Generated
 data Solved
 data Generalised
+data Polymorphic
 
 --------------------------------------------------------------------------------
 -- Families
@@ -181,6 +183,7 @@ type family StagedLocation s where
   StagedLocation Generated = Cursor
   StagedLocation Solved = Cursor
   StagedLocation Generalised = Cursor
+  StagedLocation Polymorphic = Cursor
 
 type family StagedType s where
   StagedType Parsed = ()
