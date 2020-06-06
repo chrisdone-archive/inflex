@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
@@ -5,18 +7,16 @@
 
 module Inflex.Generaliser where
 
+import           Control.Monad.State
 import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
-import qualified Data.Sequence as Seq
 import           Data.Text (Text)
-import qualified Data.Text as T
-import           Inflex.Instances
 import           Inflex.Solver
 import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Generalizer types
@@ -43,6 +43,11 @@ data Substitution = Substitution
   , after :: !(Type Generated)
   } deriving (Show, Eq)
 
+data GeneraliseState = GeneraliseState
+  { counter :: !Natural
+  , replacements :: !(Map (TypeVariable Solved) (TypeVariable Polymorphic))
+  }
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -57,5 +62,33 @@ generalizeText fp text = do
 --------------------------------------------------------------------------------
 -- Produce a polymorphic type
 
-toPolymorphic :: Type Solved -> Type Polymorphic
-toPolymorphic = undefined
+toPolymorphic :: Type Solved -> (Type Polymorphic, Map (TypeVariable Solved) (TypeVariable Polymorphic))
+toPolymorphic =
+  second replacements .
+  flip runState GeneraliseState {counter = 0, replacements = mempty} . go
+  where
+    go =
+      \case
+        VariableType typeVariable@TypeVariable {location, kind} -> do
+          replacements <- gets replacements
+          case M.lookup typeVariable replacements of
+            Nothing -> do
+              index <- gets counter
+              let typeVariable' =
+                    TypeVariable {index, prefix = (), location, kind}
+              put
+                (GeneraliseState
+                   { counter = index + 1
+                   , replacements =
+                       M.insert typeVariable typeVariable' replacements
+                   })
+              pure (VariableType typeVariable')
+            Just replacement -> pure (VariableType replacement)
+        ApplyType TypeApplication {function, argument, location, kind} -> do
+          function' <- go function
+          argument' <- go argument
+          pure
+            (ApplyType
+               TypeApplication
+                 {function = function', argument = argument', location, kind})
+        ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
