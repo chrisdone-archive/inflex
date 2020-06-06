@@ -15,6 +15,7 @@ import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Solver
+import           Inflex.Type
 import           Inflex.Types
 import           Numeric.Natural
 
@@ -34,6 +35,7 @@ data SolveGeneraliseError
 
 data IsGeneralised a = IsGeneralised
   { thing :: !a
+  , polytype :: !(Type Polymorphic)
   , mappings :: !(Map Cursor SourceLocation)
   , classes :: !(Seq (ClassConstraint Generalised))
   } deriving (Show, Eq)
@@ -51,13 +53,20 @@ data GeneraliseState = GeneraliseState
 --------------------------------------------------------------------------------
 -- Top-level
 
-generalizeText ::
+generaliseText ::
      FilePath
   -> Text
   -> Either SolveGeneraliseError (IsGeneralised (Expression Generalised))
-generalizeText fp text = do
+generaliseText fp text = do
   IsSolved {thing, mappings, classes} <- first SolverErrored (solveText fp text)
-  undefined
+  let (polytype, substitions) = toPolymorphic (expressionType thing)
+  pure
+    IsGeneralised
+      { mappings
+      , classes = fmap (classConstraintGeneralise substitions) classes
+      , thing = expressionGeneralise substitions thing
+      , polytype
+      }
 
 --------------------------------------------------------------------------------
 -- Polymorphise a type
