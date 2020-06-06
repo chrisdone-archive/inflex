@@ -96,7 +96,7 @@ data TypePoly = TypePoly
   } deriving (Show, Eq, Ord)
 
 data TypeVariable s = TypeVariable
-  { location :: !(StagedLocation s)
+  { location :: !(StagedTyVarLocation s)
   , prefix :: !(StagedPrefix s)
   , index :: !Natural
   , kind :: !Kind
@@ -184,6 +184,14 @@ type family StagedLocation s where
   StagedLocation Solved = Cursor
   StagedLocation Generalised = Cursor
   StagedLocation Polymorphic = Cursor
+
+type family StagedTyVarLocation s where
+  StagedTyVarLocation Parsed = SourceLocation
+  StagedTyVarLocation Renamed = Cursor
+  StagedTyVarLocation Generated = Cursor
+  StagedTyVarLocation Solved = Cursor
+  StagedTyVarLocation Generalised = Cursor
+  StagedTyVarLocation Polymorphic = ()
 
 type family StagedPrefix s where
   StagedPrefix Parsed = TypeVariablePrefix

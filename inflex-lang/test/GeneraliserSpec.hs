@@ -71,7 +71,7 @@ fineGrained =
                        , argument =
                            VariableType
                              (TypeVariable
-                                { location = ApplyArgCursor ExpressionCursor
+                                { location = ()
                                 , prefix = ()
                                 , index = 0
                                 , kind = TypeKind
@@ -82,11 +82,7 @@ fineGrained =
               , argument =
                   VariableType
                     (TypeVariable
-                       { location = ApplyArgCursor ExpressionCursor
-                       , prefix = ()
-                       , index = 1
-                       , kind = TypeKind
-                       })
+                       {location = (), prefix = (), index = 1, kind = TypeKind})
               , location = ApplyFuncCursor ExpressionCursor
               , kind = TypeKind
               })
@@ -98,11 +94,7 @@ fineGrained =
                  , kind = TypeKind
                  }
              , TypeVariable
-                 { location = ApplyArgCursor ExpressionCursor
-                 , prefix = ()
-                 , index = 0
-                 , kind = TypeKind
-                 })
+                 {location = (), prefix = (), index = 0, kind = TypeKind})
            , ( TypeVariable
                  { location = ApplyArgCursor ExpressionCursor
                  , prefix = ApplyPrefix
@@ -110,9 +102,5 @@ fineGrained =
                  , kind = TypeKind
                  }
              , TypeVariable
-                 { location = ApplyArgCursor ExpressionCursor
-                 , prefix = ()
-                 , index = 1
-                 , kind = TypeKind
-                 })
+                 {location = (), prefix = (), index = 1, kind = TypeKind})
            ]))
