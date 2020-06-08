@@ -179,6 +179,7 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
     https://www.reddit.com/r/haskell/comments/fov9gt/closure_calculus_is_better_than_the_pure_%CE%BBcalculus/fljg9fb/
 * Mantras
 ** UI failures
+- "Generically failed, please refresh" crap like [[file+emacs:org/mantras-ui-failure.png][this]] mailgun failure
 - Scroll within scroll
 - Focus stealing
 * DigitalOcean
