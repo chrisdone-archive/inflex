@@ -24,6 +24,8 @@ data Submission parse view error a
   | NotSubmitted view
   deriving (Functor)
 
+-- TODO: Put an anti-CSRF token in here?
+
 generateForm ::
      ( MonadHandler m
      , Monad parse

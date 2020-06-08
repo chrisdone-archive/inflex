@@ -78,6 +78,7 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Put CSRF protection into forms?
 ** TODO When linking across documents
 Granularity of changes accepted automatically:
 - Accept renames
@@ -237,3 +238,51 @@ Notice: Adding cluster credentials to kubeconfig file found in "/home/chris/.kub
 Notice: Setting current-context to do-lon1-inflex-server
 chris@precision:~$
 #+END_SRC
+* References
+  - Note taken on [2020-06-07 Sun 19:00] \\
+    Type Inference with Polymorphic Recursion
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3091&rep=rep1&type=pdf
+  - Note taken on [2020-06-07 Sun 12:19] \\
+    #+BEGIN_SRC
+    -- So for both Hugs and GHC, a recursive type is not generalized
+    -- inferred.  You need a type signature.
+
+    -- ERROR "inflex-lang/src/Q.hs":4 - Type error in application
+    -- *** Expression     : f (n - 1) 'a'
+    -- *** Term           : 'a'
+    -- *** Type           : Char
+    -- *** Does not match : ()
+
+    -- • Couldn't match expected type ‘()’ with actual type ‘Char’
+    --      • In the second argument of ‘f’, namely ‘'a'’
+    --        In the expression: f (n - 1) 'a'
+
+    f :: Int -> a -> Int
+    f 0 x = 0
+    f 1 x = f 0 ()
+    f n x = f (n-1) 'a'
+    #+END_SRC
+  - Note taken on [2020-06-07 Sun 11:23] \\
+    http://reasonableapproximation.net/2019/05/05/hindley-milner.html
+  - Note taken on [2020-06-07 Sun 11:16] \\
+    Type classes: confluence, coherence and global uniqueness
+    http://blog.ezyang.com/2014/07/type-classes-confluence-coherence-global-uniqueness/
+  - Note taken on [2020-06-07 Sun 11:15] \\
+    Rust trait coherence
+
+    https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence
+  - Note taken on [2020-06-07 Sun 11:09] \\
+    Haskell with only one typeclass http://okmij.org/ftp/Haskell/TypeClass.html#Haskell1
+  - Note taken on [2020-06-07 Sun 11:05] \\
+    Algorithmically Scrapping Your Typeclasses
+    https://reasonablypolymorphic.com/blog/algorithmic-sytc/
+  - Note taken on [2020-06-07 Sun 11:04] \\
+    Typing Haskell in Haskell https://gist.github.com/chrisdone/0075a16b32bfd4f62b7b#ambiguity-and-defaults
+  - Note taken on [2020-06-07 Sun 11:02] \\
+    Type class vs the world https://www.youtube.com/watch?v=hIZxTQP1ifo
+  - Note taken on [2020-06-07 Sun 11:01] \\
+    http://www.cs.bu.edu/techreports/pdf/1993-019-recursivetype.pdf
+  - Note taken on [2020-06-07 Sun 11:01] \\
+    http://ropas.snu.ac.kr/lib/dock/He1993.pdf
+  - Note taken on [2020-06-07 Sun 11:01] \\
+    https://pchiusano.github.io/2018-02-13/typeclasses.html
