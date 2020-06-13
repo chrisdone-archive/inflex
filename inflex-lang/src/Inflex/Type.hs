@@ -28,10 +28,10 @@ variableType Variable {typ} = typ
 literalType :: Literal s -> StagedType s
 literalType =
   \case
-    IntegerLiteral integery -> integeryType integery
+    NumberLiteral number -> numberType number
 
-integeryType :: Integery s -> StagedType s
-integeryType Integery {typ} = typ
+numberType :: Number s -> StagedType s
+numberType Number {typ} = typ
 
 paramType :: Param s -> StagedType s
 paramType Param {typ} = typ

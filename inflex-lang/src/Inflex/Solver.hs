@@ -235,12 +235,12 @@ variableSolve substitutions Variable {..} =
 literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
 literalSolve substitutions =
   \case
-    IntegerLiteral integery ->
-      IntegerLiteral (integerySolve substitutions integery)
+    NumberLiteral number ->
+      NumberLiteral (numberSolve substitutions number)
 
-integerySolve :: Seq Substitution -> Integery Generated -> Integery Solved
-integerySolve substitutions Integery {..} =
-  Integery {typ = solveType substitutions typ, ..}
+numberSolve :: Seq Substitution -> Number Generated -> Number Solved
+numberSolve substitutions Number {..} =
+  Number {typ = solveType substitutions typ, ..}
 
 paramSolve :: Seq Substitution -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =

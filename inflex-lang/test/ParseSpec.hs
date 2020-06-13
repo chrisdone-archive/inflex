@@ -19,14 +19,14 @@ spec = do
        (parseText "" "123")
        (Right
           (LiteralExpression
-             (IntegerLiteral
-                Integery
+             (NumberLiteral
+                Number
                   { location =
                       SourceLocation
                         { start = SourcePos {name = "", line = 1, column = 1}
                         , end = SourcePos {name = "", line = 1, column = 4}
                         }
-                  , integer = 123
+                  , number = NaturalNumber 123
                   , typ = ()
                   }))))
   it
@@ -54,8 +54,8 @@ spec = do
                       }
                 , body =
                     LiteralExpression
-                      (IntegerLiteral
-                         (Integery
+                      (NumberLiteral
+                         (Number
                             { location =
                                 SourceLocation
                                   { start =
@@ -65,7 +65,7 @@ spec = do
                                       SourcePos
                                         {line = 1, column = 8, name = ""}
                                   }
-                            , integer = 123
+                            , number = NaturalNumber 123
                             , typ = ()
                             }))
                 , typ = ()
@@ -125,8 +125,8 @@ spec = do
                          })
                 , argument =
                     LiteralExpression
-                      (IntegerLiteral
-                         (Integery
+                      (NumberLiteral
+                         (Number
                             { location =
                                 SourceLocation
                                   { start =
@@ -136,7 +136,7 @@ spec = do
                                       SourcePos
                                         {line = 1, column = 10, name = ""}
                                   }
-                            , integer = 1
+                            , number = NaturalNumber 1
                             , typ = ()
                             }))
                 , typ = ()

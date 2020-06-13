@@ -21,7 +21,7 @@ module Inflex.Lexer
   , SourceLocation(..)
   , lexText
   , LexError
-  , _IntegerToken
+  , _NaturalToken
   , _BackslashToken
   , _RightArrowToken
   , _LowerWordToken
@@ -36,6 +36,7 @@ import           Data.Text (Text)
 import           Data.Void
 import           GHC.Generics
 import           Inflex.Types
+import           Numeric.Natural
 import           Optics
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as Mega
@@ -55,7 +56,7 @@ data Token
   | CloseSquareToken
   | OpenRoundToken
   | CloseRoundToken
-  | IntegerToken !Integer
+  | NaturalToken !Natural
   | BackslashToken
   | RightArrowToken
   deriving (Show, Eq, Ord, Generic)
@@ -87,7 +88,7 @@ tokensLexer =
   fmap
     mconcat
     (Mega.many
-       (Mega.choice [fmap pure symbol, fmap pure integer, fmap pure lowerWord] <*
+       (Mega.choice [fmap pure symbol, fmap pure natural, fmap pure lowerWord] <*
         Mega.space))
   where
     lowerWord =
@@ -95,7 +96,7 @@ tokensLexer =
         (do c <- Mega.takeWhile1P Nothing isAlpha
             cs <- Mega.takeWhileP Nothing isAlpha
             pure (LowerWordToken (c <> cs)))
-    integer = located (IntegerToken <$> Lexer.decimal)
+    natural = located (NaturalToken <$> Lexer.decimal)
     symbol =
       located
         (Mega.choice

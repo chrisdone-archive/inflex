@@ -102,12 +102,12 @@ renameExpression env =
 renameLiteral :: Env -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral env =
   \case
-    IntegerLiteral integery -> fmap IntegerLiteral (renameIntegery env integery)
+    NumberLiteral number -> fmap NumberLiteral (renameNumber env number)
 
-renameIntegery :: Env -> Integery Parsed -> Renamer (Integery Renamed)
-renameIntegery Env{cursor} Integery {..} = do
+renameNumber :: Env -> Number Parsed -> Renamer (Number Renamed)
+renameNumber Env{cursor} Number {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
-  pure Integery {location = final, ..}
+  pure Number {location = final, ..}
 
 renameLambda :: Env -> Lambda Parsed -> Renamer (Lambda Renamed)
 renameLambda env@Env {cursor} Lambda {..} = do

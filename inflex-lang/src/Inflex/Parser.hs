@@ -43,7 +43,7 @@ liftError = ParseErrors . pure
 
 data ParseError
   = NoMoreInput
-  | ExpectedInteger
+  | ExpectedNatural
   | ExpectedToken Token
   | ExpectedParam
   | ExpectedVariable
@@ -133,9 +133,14 @@ parensParser = do
 
 literalParser :: Parser (Literal Parsed)
 literalParser = do
-  Located {thing = integer, location} <-
-    token ExpectedInteger (preview _IntegerToken)
-  pure (IntegerLiteral (Integery {integer, location, typ = ()}))
+  number <- numberParser
+  pure (NumberLiteral number)
+
+numberParser :: Parser (Number Parsed)
+numberParser = do
+  Located {thing = number, location} <-
+    fmap (fmap NaturalNumber) (token ExpectedNatural (preview _NaturalToken))
+  pure (Number {number = number, location, typ = ()})
 
 variableParser :: Parser (Variable Parsed)
 variableParser = do

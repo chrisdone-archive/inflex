@@ -173,15 +173,15 @@ literalGeneralise ::
   -> Literal Generalised
 literalGeneralise substitutions =
   \case
-    IntegerLiteral integery ->
-      IntegerLiteral (integeryGeneralise substitutions integery)
+    NumberLiteral number ->
+      NumberLiteral (numberGeneralise substitutions number)
 
-integeryGeneralise ::
+numberGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> Integery Solved
-  -> Integery Generalised
-integeryGeneralise substitutions Integery {..} =
-  Integery {typ = generaliseType substitutions typ, ..}
+  -> Number Solved
+  -> Number Generalised
+numberGeneralise substitutions Number {..} =
+  Number {typ = generaliseType substitutions typ, ..}
 
 paramGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)

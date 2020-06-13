@@ -48,13 +48,21 @@ data Variable s = Variable
   }
 
 data Literal s =
-  IntegerLiteral (Integery s)
+  NumberLiteral (Number s)
 
-data Integery s = Integery
+-- | A number.
+data Number s = Number
   { location :: !(StagedLocation s)
-  , integer :: !Integer
+  , number :: !SomeNumber
   , typ :: !(StagedType s)
   }
+
+-- | A number's value.
+data SomeNumber
+  = NaturalNumber Natural -- ^ Any positive whole number.
+  | IntegerNumber Integer -- ^ Any whole number.
+  | DecimalNumber Integer Natural -- ^ A numerator and denominator.
+  deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Type system types
@@ -103,7 +111,7 @@ data TypeVariable s = TypeVariable
   }
 
 data TypeVariablePrefix
-  = IntegeryPrefix
+  = NumberPrefix
   | LambdaParameterPrefix
   | VariablePrefix
   | ApplyPrefix
@@ -123,13 +131,17 @@ data ClassConstraint s = ClassConstraint
 
 data TypeName
   = FunctionTypeName
+  | NaturalTypeName
   | IntegerTypeName
+  | DecimalTypeName Natural
   | TextTypeName
   | OptionTypeName
   deriving (Show, Eq, Ord)
 
-data ClassName =
-  FromIntegerClassName
+data ClassName
+  = FromNaturalClassName
+  | FromIntegerClassName
+  | FromDecimalClassName Natural
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------

@@ -22,9 +22,9 @@ spec = do
           IsRenamed
             { thing =
                 LiteralExpression
-                  (IntegerLiteral
-                     (Integery
-                        {location = ExpressionCursor, integer = 123, typ = ()}))
+                  (NumberLiteral
+                     (Number
+                        {location = ExpressionCursor, number = NaturalNumber 123, typ = ()}))
             , mappings =
                 M.fromList
                   [ ( ExpressionCursor
@@ -49,10 +49,10 @@ spec = do
                            {location = LambdaParamCursor, name = (), typ = ()}
                      , body =
                          LiteralExpression
-                           (IntegerLiteral
-                              (Integery
+                           (NumberLiteral
+                              (Number
                                  { location = LambdaBodyCursor ExpressionCursor
-                                 , integer = 123
+                                 , number = NaturalNumber 123
                                  , typ = ()
                                  }))
                      , typ = ()
@@ -154,11 +154,11 @@ spec = do
                                   })
                          , argument =
                              LiteralExpression
-                               (IntegerLiteral
-                                  (Integery
+                               (NumberLiteral
+                                  (Number
                                      { location =
                                          ApplyArgCursor ExpressionCursor
-                                     , integer = 123
+                                     , number = NaturalNumber 123
                                      , typ = ()
                                      }))
                          , typ = ()
@@ -306,11 +306,11 @@ spec = do
                                   })
                          , argument =
                              LiteralExpression
-                               (IntegerLiteral
-                                  (Integery
+                               (NumberLiteral
+                                  (Number
                                      { location =
                                          ApplyArgCursor ExpressionCursor
-                                     , integer = 123
+                                     , number = NaturalNumber 123
                                      , typ = ()
                                      }))
                          , typ = ()

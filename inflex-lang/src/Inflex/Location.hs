@@ -28,7 +28,7 @@ variableLocation Variable {location} = location
 literalLocation :: Literal s -> StagedLocation s
 literalLocation =
   \case
-    IntegerLiteral integery -> integeryLocation integery
+    NumberLiteral number -> numberLocation number
 
-integeryLocation :: Integery s -> StagedLocation s
-integeryLocation Integery {location} = location
+numberLocation :: Number s -> StagedLocation s
+numberLocation Number {location} = location

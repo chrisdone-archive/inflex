@@ -47,10 +47,10 @@ coarseGrained = do
                             }
                       , body =
                           LiteralExpression
-                            (IntegerLiteral
-                               (Integery
+                            (NumberLiteral
+                               (Number
                                   { location = LambdaBodyCursor ExpressionCursor
-                                  , integer = 123
+                                  , number = NaturalNumber 123
                                   , typ =
                                       PolyType
                                         (TypeVariable
@@ -221,13 +221,13 @@ coarseGrained = do
                                      }
                                , body =
                                    LiteralExpression
-                                     (IntegerLiteral
-                                        (Integery
+                                     (NumberLiteral
+                                        (Number
                                            { location =
                                                ApplyFuncCursor
                                                  (LambdaBodyCursor
                                                     ExpressionCursor)
-                                           , integer = 123
+                                           , number = NaturalNumber 123
                                            , typ =
                                                PolyType
                                                  (TypeVariable

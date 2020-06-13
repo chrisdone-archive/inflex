@@ -34,15 +34,15 @@ coarseGrained =
                 (IsSolved
                    { thing =
                        LiteralExpression
-                         (IntegerLiteral
-                            (Integery
+                         (NumberLiteral
+                            (Number
                                { location = ExpressionCursor
-                               , integer = 123
+                               , number = NaturalNumber 123
                                , typ =
                                    VariableType
                                      (TypeVariable
                                         { location = ExpressionCursor
-                                        , prefix = IntegeryPrefix
+                                        , prefix = NumberPrefix
                                         , index = 0
                                         , kind = TypeKind
                                         })
@@ -161,11 +161,11 @@ coarseGrained =
                                      })
                             , argument =
                                 LiteralExpression
-                                  (IntegerLiteral
-                                     (Integery
+                                  (NumberLiteral
+                                     (Number
                                         { location =
                                             ApplyArgCursor ExpressionCursor
-                                        , integer = 123
+                                        , number = NaturalNumber 123
                                         , typ =
                                             VariableType
                                               (TypeVariable
@@ -289,17 +289,17 @@ fineGrained = do
 a' :: TypeVariable Generated
 a' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 0, kind = TypeKind}
+    {location = ExpressionCursor, prefix = NumberPrefix, index = 0, kind = TypeKind}
 
 b' :: TypeVariable Generated
 b' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 1, kind = TypeKind}
+    {location = ExpressionCursor, prefix = NumberPrefix, index = 1, kind = TypeKind}
 
 c' :: TypeVariable Generated
 c' =
   TypeVariable
-    {location = ExpressionCursor, prefix = IntegeryPrefix, index = 2, kind = TypeKind}
+    {location = ExpressionCursor, prefix = NumberPrefix, index = 2, kind = TypeKind}
 
 --------------------------------------------------------------------------------
 -- Types of the variables
@@ -308,7 +308,7 @@ t :: Type Generated
 t =
   VariableType
     TypeVariable
-      {location = ExpressionCursor, prefix = IntegeryPrefix, index = 3, kind = TypeKind}
+      {location = ExpressionCursor, prefix = NumberPrefix, index = 3, kind = TypeKind}
 
 a :: Type Generated
 a = VariableType a'

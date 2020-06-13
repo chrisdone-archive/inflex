@@ -118,12 +118,12 @@ expressionGenerator =
 literalGenerator :: Literal Renamed -> Generate (Literal Generated)
 literalGenerator =
   \case
-    IntegerLiteral integery -> fmap IntegerLiteral (integeryGenerator integery)
+    NumberLiteral number -> fmap NumberLiteral (numberGenerator number)
 
-integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
-integeryGenerator Integery {typ = _, ..} = do
-  typ <- generateTypeVariable location IntegeryPrefix TypeKind
-  pure Integery {typ, ..}
+numberGenerator :: Number Renamed -> Generate (Number Generated)
+numberGenerator Number {typ = _, ..} = do
+  typ <- generateTypeVariable location NumberPrefix TypeKind
+  pure Number {typ, ..}
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
