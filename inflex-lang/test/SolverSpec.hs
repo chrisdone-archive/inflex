@@ -10,7 +10,6 @@
 module SolverSpec where
 
 import qualified Data.Map.Strict as M
-import qualified Data.Sequence as Seq
 import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Types
@@ -57,22 +56,6 @@ coarseGrained =
                                , end =
                                    SourcePos {line = 1, column = 4, name = ""}
                                })
-                         ]
-                   , classes =
-                       Seq.fromList
-                         [ ClassConstraint
-                             { className = FromIntegerClassName
-                             , types =
-                                 pure
-                                   (VariableType
-                                      (TypeVariable
-                                         { location = ExpressionCursor
-                                         , prefix = IntegeryPrefix
-                                         , index = 0
-                                         , kind = TypeKind
-                                         }))
-                             , location = ExpressionCursor
-                             }
                          ]
                    })))
         it
@@ -241,23 +224,6 @@ coarseGrained =
                                , end =
                                    SourcePos {line = 1, column = 11, name = ""}
                                })
-                         ]
-                   , classes =
-                       Seq.fromList
-                         [ ClassConstraint
-                             { className = FromIntegerClassName
-                             , types =
-                                 pure
-                                   (VariableType
-                                      (TypeVariable
-                                         { location =
-                                             ApplyArgCursor ExpressionCursor
-                                         , prefix = ApplyPrefix
-                                         , index = 3
-                                         , kind = TypeKind
-                                         }))
-                             , location = ApplyArgCursor ExpressionCursor
-                             }
                          ]
                    }))))
 

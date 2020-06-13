@@ -42,7 +42,6 @@ data GenerateError =
 
 data GenerateState = GenerateState
   { counter :: !Natural
-  , classConstraints :: !(Seq (ClassConstraint Generated))
   , equalityConstraints :: !(Seq EqualityConstraint)
   } deriving (Show)
 
@@ -65,14 +64,13 @@ data RenameGenerateError
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints
-  { classes :: !(Seq (ClassConstraint Generated))
-  , equalities :: !(Seq EqualityConstraint)
+  { equalities :: !(Seq EqualityConstraint)
   , thing :: !a
   , mappings :: !(Map Cursor SourceLocation)
   } deriving (Show, Functor, Eq, Ord)
 
 $(makeLensesWith
-    (inflexRules ['counter, 'classConstraints, 'equalityConstraints])
+    (inflexRules ['counter, 'equalityConstraints])
     ''GenerateState)
 $(makeLensesWith (inflexRules ['scope]) ''Env)
 $(makeLensesWith (inflexRules ['mappings]) ''HasConstraints)
@@ -86,22 +84,20 @@ generateText fp text = do
     first RenameGenerateError (Renamer.renameText fp text)
   first
     GeneratorErrors
-    (let (result, GenerateState { classConstraints = classes
-                                , equalityConstraints
+    (let (result, GenerateState { equalityConstraints
                                 }) =
            runState
              (runReaderT
                 (runValidateT (runGenerator (expressionGenerator expression)))
                 (Env {scope = mempty}))
              GenerateState
-               { classConstraints = mempty
-               , counter = 0
+               { counter = 0
                , equalityConstraints = mempty
                }
       in fmap
            (\thing ->
               HasConstraints
-                {classes, thing, mappings, equalities = equalityConstraints})
+                {thing, mappings, equalities = equalityConstraints})
            result)
 
 --------------------------------------------------------------------------------
@@ -127,9 +123,6 @@ literalGenerator =
 integeryGenerator :: Integery Renamed -> Generate (Integery Generated)
 integeryGenerator Integery {typ = _, ..} = do
   typ <- generateTypeVariable location IntegeryPrefix TypeKind
-  addClassConstraint
-    (ClassConstraint
-       {className = FromIntegerClassName, types = pure typ, location})
   pure Integery {typ, ..}
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
@@ -219,10 +212,6 @@ generateTypeVariable location prefix kind = do
   index <- gets (view generateStateCounterL)
   modify' (over generateStateCounterL succ)
   pure (VariableType TypeVariable {prefix, index, location, kind})
-
-addClassConstraint :: ClassConstraint Generated -> Generate ()
-addClassConstraint constraint =
-  modify' (over generateStateClassConstraintsL (Seq.|> constraint))
 
 addEqualityConstraint :: EqualityConstraint -> Generate ()
 addEqualityConstraint constraint =

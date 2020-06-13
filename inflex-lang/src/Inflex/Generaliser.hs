@@ -12,7 +12,6 @@ import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Solver
 import           Inflex.Type
@@ -37,7 +36,6 @@ data IsGeneralised a = IsGeneralised
   { thing :: !a
   , polytype :: !(Type Polymorphic)
   , mappings :: !(Map Cursor SourceLocation)
-  , classes :: !(Seq (ClassConstraint Generalised))
   } deriving (Show, Eq)
 
 data Substitution = Substitution
@@ -58,12 +56,11 @@ generaliseText ::
   -> Text
   -> Either SolveGeneraliseError (IsGeneralised (Expression Generalised))
 generaliseText fp text = do
-  IsSolved {thing, mappings, classes} <- first SolverErrored (solveText fp text)
+  IsSolved {thing, mappings} <- first SolverErrored (solveText fp text)
   let (polytype, substitions) = toPolymorphic (expressionType thing)
   pure
     IsGeneralised
       { mappings
-      , classes = fmap (classConstraintGeneralise substitions) classes
       , thing = expressionGeneralise substitions thing
       , polytype
       }

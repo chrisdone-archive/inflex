@@ -78,6 +78,8 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Add a session garbage collector
+** TODO Supporting Dex+SAML for Azure/Google?
 ** TODO Put CSRF protection into forms?
 ** TODO When linking across documents
 Granularity of changes accepted automatically:
@@ -183,6 +185,8 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
 - Scroll within scroll
 - Focus stealing
 * DigitalOcean
+  - Note taken on [2020-06-12 Fri 13:29] \\
+    We to block e.g. http://134.209.20.251:30909/
   - Note taken on [2020-04-14 Tue 10:55] \\
     externalTrafficPolicy is the key trick:
 

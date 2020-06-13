@@ -10,7 +10,6 @@
 module GeneraliserSpec where
 
 import qualified Data.Map.Strict as M
-import qualified Data.Sequence as Seq
 import           Inflex.Generaliser
 import           Inflex.Instances ()
 import           Inflex.Types
@@ -147,22 +146,6 @@ coarseGrained = do
                          { start = SourcePos {line = 1, column = 2, name = ""}
                          , end = SourcePos {line = 1, column = 3, name = ""}
                          })
-                   ]
-             , classes =
-                 Seq.fromList
-                   [ ClassConstraint
-                       { className = FromIntegerClassName
-                       , types =
-                           pure
-                             (PolyType
-                                (TypeVariable
-                                   { location = ()
-                                   , prefix = ()
-                                   , index = 1
-                                   , kind = TypeKind
-                                   }))
-                       , location = LambdaBodyCursor ExpressionCursor
-                       }
                    ]
              })))
   it
@@ -478,23 +461,6 @@ coarseGrained = do
                          { start = SourcePos {line = 1, column = 12, name = ""}
                          , end = SourcePos {line = 1, column = 13, name = ""}
                          })
-                   ]
-             , classes =
-                 Seq.fromList
-                   [ ClassConstraint
-                       { className = FromIntegerClassName
-                       , types =
-                           pure
-                             (PolyType
-                                (TypeVariable
-                                   { location = ()
-                                   , prefix = ()
-                                   , index = 0
-                                   , kind = TypeKind
-                                   }))
-                       , location =
-                           ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
-                       }
                    ]
              })))
 

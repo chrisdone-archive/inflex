@@ -39,7 +39,6 @@ data GenerateSolveError
 data IsSolved a = IsSolved
   { thing :: !a
   , mappings :: !(Map Cursor SourceLocation)
-  , classes :: !(Seq (ClassConstraint Solved))
   } deriving (Show, Eq)
 
 data Substitution = Substitution
@@ -55,7 +54,7 @@ solveText ::
   -> Text
   -> Either GenerateSolveError (IsSolved (Expression Solved))
 solveText fp text = do
-  HasConstraints {thing = expression, mappings, classes, equalities} <-
+  HasConstraints {thing = expression, mappings, equalities} <-
     first GeneratorErrored (generateText fp text)
   first
     SolverErrors
@@ -64,7 +63,6 @@ solveText fp text = do
           IsSolved
             { thing = expressionSolve substitutions expression
             , mappings
-            , classes = fmap (classConstraintSolve substitutions) classes
             })
 
 unifyAndSubstitute ::
