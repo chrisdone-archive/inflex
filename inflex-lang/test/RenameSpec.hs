@@ -24,7 +24,7 @@ spec = do
                 LiteralExpression
                   (NumberLiteral
                      (Number
-                        {location = ExpressionCursor, number = NaturalNumber 123, typ = ()}))
+                        {location = ExpressionCursor, number = IntegerNumber 123, typ = ()}))
             , mappings =
                 M.fromList
                   [ ( ExpressionCursor
@@ -52,7 +52,7 @@ spec = do
                            (NumberLiteral
                               (Number
                                  { location = LambdaBodyCursor ExpressionCursor
-                                 , number = NaturalNumber 123
+                                 , number = IntegerNumber 123
                                  , typ = ()
                                  }))
                      , typ = ()
@@ -158,7 +158,7 @@ spec = do
                                   (Number
                                      { location =
                                          ApplyArgCursor ExpressionCursor
-                                     , number = NaturalNumber 123
+                                     , number = IntegerNumber 123
                                      , typ = ()
                                      }))
                          , typ = ()
@@ -310,7 +310,7 @@ spec = do
                                   (Number
                                      { location =
                                          ApplyArgCursor ExpressionCursor
-                                     , number = NaturalNumber 123
+                                     , number = IntegerNumber 123
                                      , typ = ()
                                      }))
                          , typ = ()

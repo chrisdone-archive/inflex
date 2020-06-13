@@ -139,7 +139,7 @@ literalParser = do
 numberParser :: Parser (Number Parsed)
 numberParser = do
   Located {thing = number, location} <-
-    fmap (fmap NaturalNumber) (token ExpectedNatural (preview _NaturalToken))
+    fmap (fmap (IntegerNumber . fromIntegral)) (token ExpectedNatural (preview _NaturalToken))
   pure (Number {number = number, location, typ = ()})
 
 variableParser :: Parser (Variable Parsed)

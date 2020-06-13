@@ -26,7 +26,7 @@ spec = do
                         { start = SourcePos {name = "", line = 1, column = 1}
                         , end = SourcePos {name = "", line = 1, column = 4}
                         }
-                  , number = NaturalNumber 123
+                  , number = IntegerNumber 123
                   , typ = ()
                   }))))
   it
@@ -65,7 +65,7 @@ spec = do
                                       SourcePos
                                         {line = 1, column = 8, name = ""}
                                   }
-                            , number = NaturalNumber 123
+                            , number = IntegerNumber 123
                             , typ = ()
                             }))
                 , typ = ()
@@ -136,7 +136,7 @@ spec = do
                                       SourcePos
                                         {line = 1, column = 10, name = ""}
                                   }
-                            , number = NaturalNumber 1
+                            , number = IntegerNumber 1
                             , typ = ()
                             }))
                 , typ = ()

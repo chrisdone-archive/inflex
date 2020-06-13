@@ -50,7 +50,7 @@ coarseGrained = do
                             (NumberLiteral
                                (Number
                                   { location = LambdaBodyCursor ExpressionCursor
-                                  , number = NaturalNumber 123
+                                  , number = IntegerNumber 123
                                   , typ =
                                       PolyType
                                         (TypeVariable
@@ -227,7 +227,7 @@ coarseGrained = do
                                                ApplyFuncCursor
                                                  (LambdaBodyCursor
                                                     ExpressionCursor)
-                                           , number = NaturalNumber 123
+                                           , number = IntegerNumber 123
                                            , typ =
                                                PolyType
                                                  (TypeVariable

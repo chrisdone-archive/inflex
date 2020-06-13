@@ -192,6 +192,8 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
   - Note taken on [2020-03-26 Thu 09:33] \\
     https://www.reddit.com/r/haskell/comments/fov9gt/closure_calculus_is_better_than_the_pure_%CE%BBcalculus/fljg9fb/
 ** Number hierarchy
+   - Note taken on [2020-06-13 Sat 17:19] \\
+     Twitter survey on natural https://twitter.com/christopherdone/status/1271781700083818496
    - Note taken on [2020-06-13 Sat 17:03] \\
      Functions which have Int in them:
 

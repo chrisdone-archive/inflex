@@ -58,9 +58,12 @@ data Number s = Number
   }
 
 -- | A number's value.
+--
+-- I started with NaturalNumber in here, too. But I'm not sure that
+-- natural is worth the bother on the whole. It's a small proof about
+-- a number that doesn't get you much mileage.
 data SomeNumber
-  = NaturalNumber Natural -- ^ Any positive whole number.
-  | IntegerNumber Integer -- ^ Any whole number.
+  = IntegerNumber Integer -- ^ Any whole number.
   | DecimalNumber Integer Natural -- ^ A numerator and denominator.
   deriving (Show, Eq, Ord)
 

@@ -37,7 +37,7 @@ coarseGrained =
                          (NumberLiteral
                             (Number
                                { location = ExpressionCursor
-                               , number = NaturalNumber 123
+                               , number = IntegerNumber 123
                                , typ =
                                    VariableType
                                      (TypeVariable
@@ -165,7 +165,7 @@ coarseGrained =
                                      (Number
                                         { location =
                                             ApplyArgCursor ExpressionCursor
-                                        , number = NaturalNumber 123
+                                        , number = IntegerNumber 123
                                         , typ =
                                             VariableType
                                               (TypeVariable
