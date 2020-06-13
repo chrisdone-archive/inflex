@@ -78,6 +78,18 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO "Continued" expressions -- (re-vision pivot table)
+An easy way to do a transformation step by step:
+
+E.g. pivot table:
+
+1. Group by row. [[{p:red,d:2020,v:1},{p:red,d:2021,v:2}], ..]
+2. Group by column. [[{p:red,d:2020,v:1},{p:red,d:2020,v:2}], ..]]
+3. Fold over data field. [{p:red,cols:[{c:2020,vs: [ ] }]}]
+
+Then it's very easy to see the intermediate steps, and suddenly a
+pivot table isn't so magical and is just another data transformation.
+
 ** TODO Add a session garbage collector
 ** TODO Supporting Dex+SAML for Azure/Google?
 ** TODO Put CSRF protection into forms?
