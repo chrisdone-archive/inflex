@@ -192,17 +192,31 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
   - Note taken on [2020-03-26 Thu 09:33] \\
     https://www.reddit.com/r/haskell/comments/fov9gt/closure_calculus_is_better_than_the_pure_%CE%BBcalculus/fljg9fb/
 ** Number hierarchy
+   - Note taken on [2020-06-13 Sat 17:03] \\
+     Functions which have Int in them:
+
+     #+BEGIN_SRC haskell
+     Prelude/Data.List/Data.Vector/Data.Map:
+     (!!) :: [a] -> Int -> a
+     replicate :: Int -> a -> [a]
+     take :: Int -> [a] -> [a]
+     drop :: Int -> [a] -> [a]
+     splitAt :: Int -> [a] -> ([a], [a])
+     #+END_SRC
 Natural   -- 123
 Integer   -- 123 -123
 Decimal 2 -- 123 -123 123.12 -123.12
 
 Identification:
 
+#+BEGIN_SRC haskell
 123 :: Natural
 -123 :: Integer
 123.12 :: Decimal 2
 123.1 :: Decimal 1
+#+END_SRC
 
+#+BEGIN_SRC haskell
 class FromNatural n where fromNatural :: Natural -> n
 class FromInteger n where fromInteger :: Integer -> n
 class FromDecimal i n where fromDecimal :: Decimal i -> n
@@ -219,6 +233,7 @@ instance FromInteger (Decimal n)
 -- instance FromDecimal i Rational
 instance FromDecimal subset (Decimal superset) where subset <= superset
   -- e.g. fromDecimal (1.1 :: Decimal 1) :: Decimal 2
+#+END_SRC
 * Mantras
 ** UI failures
 - "The CSRF token has expired." refuses to login. Users don't know WTF
