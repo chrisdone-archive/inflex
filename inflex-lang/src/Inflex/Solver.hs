@@ -245,8 +245,3 @@ numberSolve substitutions Number {..} =
 paramSolve :: Seq Substitution -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
-
-classConstraintSolve ::
-     Seq Substitution -> ClassConstraint Generated -> ClassConstraint Solved
-classConstraintSolve substitutions ClassConstraint {..} =
-  ClassConstraint {types = fmap (solveType substitutions) types, ..}

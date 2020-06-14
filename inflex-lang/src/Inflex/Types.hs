@@ -7,7 +7,6 @@
 
 module Inflex.Types where
 
-import Data.List.NonEmpty (NonEmpty(..))
 import Data.Text (Text)
 import GHC.Generics
 import Numeric.Natural
@@ -97,7 +96,6 @@ data TypeApplication s = TypeApplication
 
 data Scheme s = Scheme
   { location :: !(StagedLocation s)
-  , variables :: ![StagedSchemeVariable s]
   , constraints :: ![ClassConstraint s]
   , typ :: !(Type s)
   }
@@ -135,7 +133,7 @@ data EqualityConstraint = EqualityConstraint
 
 data ClassConstraint s = ClassConstraint
   { className :: !ClassName
-  , types :: !(NonEmpty (Type s))
+  , typ :: !(Type s)
   , location :: !(StagedLocation s)
   }
 
@@ -249,6 +247,6 @@ type family StagedVariableName s where
   StagedVariableName Generalised = DeBrujinIndex
   StagedVariableName Resolved = DeBrujinIndex
 
-type family StagedSchemeVariable s where
-  StagedSchemeVariable Polymorphic = Kind
-  StagedSchemeVariable s = TypeVariable s
+-- type family StagedSchemeVariable s where
+--   StagedSchemeVariable Polymorphic = Kind
+--   StagedSchemeVariable s = TypeVariable s

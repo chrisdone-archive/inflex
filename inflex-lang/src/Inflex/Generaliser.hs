@@ -189,10 +189,3 @@ paramGeneralise ::
   -> Param Generalised
 paramGeneralise substitutions Param {..} =
   Param {typ = generaliseType substitutions typ, ..}
-
-classConstraintGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> ClassConstraint Solved
-  -> ClassConstraint Generalised
-classConstraintGeneralise substitutions ClassConstraint {..} =
-  ClassConstraint {types = fmap (generaliseType substitutions) types, ..}
