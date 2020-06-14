@@ -229,7 +229,7 @@ type family StagedType s where
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
-  StagedType Resolved = Type Resolved
+  StagedType Resolved = Type Generalised
 
 type family StagedParamName s where
   StagedParamName Parsed = Text
