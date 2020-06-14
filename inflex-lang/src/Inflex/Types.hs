@@ -70,7 +70,7 @@ data SomeNumber
 -- | Decimal backed by an Integer with N decimal places. Precision is
 -- determined at runtime.
 data Decimal = Decimal
-  { places :: !Int
+  { places :: !Natural
   , integer :: !Integer
   } deriving (Show, Eq, Ord)
 
@@ -141,7 +141,6 @@ data ClassConstraint s = ClassConstraint
 
 data TypeName
   = FunctionTypeName
-  | NaturalTypeName
   | IntegerTypeName
   | DecimalTypeName Natural
   | TextTypeName
@@ -149,8 +148,7 @@ data TypeName
   deriving (Show, Eq, Ord)
 
 data ClassName
-  = FromNaturalClassName
-  | FromIntegerClassName
+  = FromIntegerClassName
   | FromDecimalClassName Natural
   deriving (Show, Eq, Ord)
 

@@ -117,7 +117,9 @@ tokensLexer =
             case T.decimal (num <> denom) of
               Right (i, "") ->
                 pure
-                  (DecimalToken Decimal {places = T.length denom, integer = i})
+                  (DecimalToken
+                     Decimal
+                       {places = fromIntegral (T.length denom), integer = i})
               _ -> fail "Invalid decimal.")
     symbol =
       located

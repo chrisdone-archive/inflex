@@ -31,7 +31,6 @@ typeNameKind :: TypeName -> Kind
 typeNameKind =
   \case
     IntegerTypeName -> TypeKind
-    NaturalTypeName -> TypeKind
     DecimalTypeName{} -> TypeKind -- TODO: Return to this for consideration.
     TextTypeName -> TypeKind
     OptionTypeName -> FunKind TypeKind TypeKind
