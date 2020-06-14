@@ -128,9 +128,12 @@ deriving instance Show (Apply Generalised)
 -------------------------------------------------------------------------------
 -- Type system types
 
-deriving instance Show TypeSignature
-deriving instance Eq TypeSignature
-deriving instance Ord TypeSignature
+deriving instance Eq (Scheme Generalised)
+deriving instance Ord (Scheme Generalised)
+deriving instance Show (Scheme Generalised)
+deriving instance Eq (Scheme Polymorphic)
+deriving instance Ord (Scheme Polymorphic)
+deriving instance Show (Scheme Polymorphic)
 
 deriving instance Show EqualityConstraint
 deriving instance Eq EqualityConstraint

@@ -95,11 +95,11 @@ data TypeApplication s = TypeApplication
   , kind :: !Kind
   }
 
-data TypeSignature = TypeSignature
-  { location :: !(StagedLocation Solved)
-  , variables :: ![Kind]
-  , constraints :: ![ClassConstraint Solved]
-  , typ :: !(Type Solved)
+data Scheme s = Scheme
+  { location :: !(StagedLocation s)
+  , variables :: ![StagedSchemeVariable s]
+  , constraints :: ![ClassConstraint s]
+  , typ :: !(Type s)
   }
 
 data Kind
@@ -195,6 +195,7 @@ data Generated
 data Solved
 data Generalised
 data Polymorphic
+data Resolved
 
 --------------------------------------------------------------------------------
 -- Families
@@ -206,6 +207,7 @@ type family StagedLocation s where
   StagedLocation Solved = Cursor
   StagedLocation Generalised = Cursor
   StagedLocation Polymorphic = Cursor
+  StagedLocation Resolved = Cursor
 
 type family StagedTyVarLocation s where
   StagedTyVarLocation Parsed = SourceLocation
@@ -214,6 +216,7 @@ type family StagedTyVarLocation s where
   StagedTyVarLocation Solved = Cursor
   StagedTyVarLocation Generalised = Cursor
   StagedTyVarLocation Polymorphic = ()
+  StagedTyVarLocation Resolved = Cursor
 
 type family StagedPrefix s where
   StagedPrefix Parsed = TypeVariablePrefix
@@ -221,6 +224,7 @@ type family StagedPrefix s where
   StagedPrefix Generated = TypeVariablePrefix
   StagedPrefix Solved = TypeVariablePrefix
   StagedPrefix Generalised = TypeVariablePrefix
+  StagedPrefix Resolved = TypeVariablePrefix
   StagedPrefix Polymorphic = ()
 
 type family StagedType s where
@@ -229,6 +233,7 @@ type family StagedType s where
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
+  StagedType Resolved = Type Resolved
 
 type family StagedParamName s where
   StagedParamName Parsed = Text
@@ -236,6 +241,7 @@ type family StagedParamName s where
   StagedParamName Generated = ()
   StagedParamName Solved = ()
   StagedParamName Generalised = ()
+  StagedParamName Resolved = ()
 
 type family StagedVariableName s where
   StagedVariableName Parsed = Text
@@ -243,3 +249,8 @@ type family StagedVariableName s where
   StagedVariableName Generated = DeBrujinIndex
   StagedVariableName Solved = DeBrujinIndex
   StagedVariableName Generalised = DeBrujinIndex
+  StagedVariableName Resolved = DeBrujinIndex
+
+type family StagedSchemeVariable s where
+  StagedSchemeVariable Polymorphic = Kind
+  StagedSchemeVariable s = TypeVariable s
