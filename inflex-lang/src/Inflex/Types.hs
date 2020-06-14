@@ -139,6 +139,10 @@ data ClassConstraint s = ClassConstraint
   , location :: !(StagedLocation s)
   }
 
+data Implicit =
+  Implicit
+  deriving (Show, Eq, Ord)
+
 data InstanceName
   = FromIntegerIntegerInstance
   | FromIntegerDecimalInstance !Natural

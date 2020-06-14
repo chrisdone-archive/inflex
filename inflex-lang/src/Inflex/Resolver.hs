@@ -10,16 +10,17 @@
 
 module Inflex.Resolver where
 
-import Control.Monad.State
-import Control.Monad.Validate
-import Data.Bifunctor
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map.Strict (Map)
-import Data.Text (Text)
-import Inflex.Generaliser
-import Inflex.Location
-import Inflex.Types
-import Numeric.Natural
+import           Control.Monad.State
+import           Control.Monad.Validate
+import           Data.Bifunctor
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import           Data.Sequence (Seq)
+import           Data.Text (Text)
+import           Inflex.Generaliser
+import           Inflex.Location
+import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -60,10 +61,12 @@ data IsResolved a = IsResolved
   { thing :: !a
   , scheme :: !(Scheme Polymorphic)
   , mappings :: !(Map Cursor SourceLocation)
+  , implicits :: !(Seq Implicit)
   } deriving (Show, Eq)
 
-data ResolveState =
-  ResolveState
+data ResolveState = ResolveState
+  { implicits :: !(Seq Implicit)
+  }
 
 newtype Resolve a = Resolve
   { runResolve  :: ValidateT (NonEmpty ResolutionError) (State ResolveState) a
@@ -86,7 +89,7 @@ resolveText fp text = do
           ResolverErrors
           (evalState
              (runValidateT (runResolve (numberResolver number)))
-             ResolveState)
+             ResolveState {implicits = mempty})
       pure
         IsResolved
           { mappings
@@ -97,6 +100,7 @@ resolveText fp text = do
                 , constraints = [] -- TODO: Collect constraints from state monad.
                 , typ = polytype
                 }
+          , implicits = mempty -- TODO: Collect implicits from state monad.
           }
     _ -> undefined
 
@@ -113,7 +117,7 @@ resolveText fp text = do
 numberResolver :: Number Generalised -> Resolve (Number Resolved)
 numberResolver number'@Number {..} =
   case resolveConstraint (numberConstraint number') of
-    Right resolution ->
+    Right _resolution ->
       pure
       -- TODO: Case on resolution:
       -- if found, insert inline.
