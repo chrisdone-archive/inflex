@@ -30,7 +30,7 @@ import Numeric.Natural
 -- 2. No instance was found with polytypes.
 -- 3. No instance can be found for constant type.
 data ResolutionSuccess
-  = InstanceFound
+  = InstanceFound InstanceName
   | NoInstanceButPoly (TypeVariable Polymorphic)
   deriving (Show, Eq)
 
@@ -94,7 +94,7 @@ resolveText fp text = do
           , scheme =
               Scheme
                 { location = expressionLocation thing
-                , constraints = []
+                , constraints = [] -- TODO: Collect constraints from state monad.
                 , typ = polytype
                 }
           }
@@ -111,9 +111,19 @@ resolveText fp text = do
 -- 3. No instance was found with monotypes, so we try to default.
 -- 4. If we cannot default, an error is raised.
 numberResolver :: Number Generalised -> Resolve (Number Resolved)
-numberResolver number'@Number{..} =
+numberResolver number'@Number {..} =
   case resolveConstraint (numberConstraint number') of
-    Right resolution -> pure Number {..}
+    Right resolution ->
+      pure
+      -- TODO: Case on resolution:
+      -- if found, insert inline.
+      -- if poly, defer into state monad.
+      -- in both cases, add an implicit argument.
+        Number
+          { typ =
+              Scheme {location, constraints = [numberConstraint number'], typ}
+          , ..
+          }
     Left problem -> Resolve (refute (pure problem))
 
 -- | Given a number, the appropriate class constraint.
@@ -155,14 +165,21 @@ resolveConstraint constraint@ClassConstraint {className, typ} =
       case className of
         FromIntegerClassName ->
           case name of
-            IntegerTypeName -> pure InstanceFound
-            DecimalTypeName _places -> pure InstanceFound
+            IntegerTypeName -> pure (InstanceFound FromIntegerIntegerInstance)
+            DecimalTypeName places ->
+              pure (InstanceFound (FromIntegerDecimalInstance places))
             _ -> Left (NoInstanceForConstantType typeConstant)
         FromDecimalClassName placesAsWritten ->
           case name of
             DecimalTypeName placesAvailable ->
-              if placesAvailable >= placesAsWritten
-                then pure InstanceFound
+              if placesAsWritten <= placesAvailable
+                then pure
+                       (InstanceFound
+                          (FromDecimalDecimalInstance
+                             FromDecimalInstance
+                               { supersetPlaces = placesAvailable
+                               , subsetPlaces = placesAsWritten
+                               }))
                 else Left
                        (LiteralDecimalPrecisionMismatch
                           PrecisionMismatch

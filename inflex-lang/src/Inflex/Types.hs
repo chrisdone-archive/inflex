@@ -61,6 +61,8 @@ data Number s = Number
 -- I started with NaturalNumber in here, too. But I'm not sure that
 -- natural is worth the bother on the whole. It's a small proof about
 -- a number that doesn't get you much mileage.
+--
+-- Twitter poll: https://twitter.com/christopherdone/status/1271781700083818496
 data SomeNumber
   = IntegerNumber !Integer -- ^ Any whole number.
   | DecimalNumber !Decimal
@@ -137,17 +139,28 @@ data ClassConstraint s = ClassConstraint
   , location :: !(StagedLocation s)
   }
 
+data InstanceName
+  = FromIntegerIntegerInstance
+  | FromIntegerDecimalInstance !Natural
+  | FromDecimalDecimalInstance !FromDecimalInstance
+  deriving (Show, Eq, Ord)
+
+data FromDecimalInstance = FromDecimalInstance
+  { supersetPlaces :: Natural
+  , subsetPlaces :: Natural
+  } deriving (Show, Eq, Ord)
+
 data TypeName
   = FunctionTypeName
   | IntegerTypeName
-  | DecimalTypeName Natural
+  | DecimalTypeName !Natural
   | TextTypeName
   | OptionTypeName
   deriving (Show, Eq, Ord)
 
 data ClassName
   = FromIntegerClassName
-  | FromDecimalClassName Natural
+  | FromDecimalClassName !Natural
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -229,7 +242,7 @@ type family StagedType s where
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
-  StagedType Resolved = Type Generalised
+  StagedType Resolved = Scheme Generalised
 
 type family StagedParamName s where
   StagedParamName Parsed = Text
