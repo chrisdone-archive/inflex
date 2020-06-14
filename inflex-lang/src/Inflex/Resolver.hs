@@ -107,7 +107,7 @@ data Resolution
 data PrecisionMismatch = PrecisionMismatch
   { placesAsWritten :: !Natural
   , placesAvailable :: !Natural
-  , constraint :: ClassConstraint Generalised
+  , constraint :: !(ClassConstraint Generalised)
   }
 
 -- | Resovle the class constraints in a scheme.
