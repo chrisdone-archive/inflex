@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -43,10 +44,11 @@ liftError = ParseErrors . pure
 
 data ParseError
   = NoMoreInput
-  | ExpectedNatural
+  | ExpectedInteger
   | ExpectedToken Token
   | ExpectedParam
   | ExpectedVariable
+  | ExpectedDecimal
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -138,9 +140,16 @@ literalParser = do
 
 numberParser :: Parser (Number Parsed)
 numberParser = do
-  Located {thing = number, location} <-
-    fmap (fmap (IntegerNumber . fromIntegral)) (token ExpectedNatural (preview _NaturalToken))
-  pure (Number {number = number, location, typ = ()})
+  Located {thing = number, location} <- integerParser <> decimalParser
+  pure (Number {typ = (), ..})
+
+integerParser :: Parser (Located SomeNumber)
+integerParser =
+  fmap (fmap IntegerNumber) (token ExpectedInteger (preview _IntegerToken))
+
+decimalParser :: Parser (Located SomeNumber)
+decimalParser =
+  fmap (fmap DecimalNumber) (token ExpectedDecimal (preview _DecimalToken))
 
 variableParser :: Parser (Variable Parsed)
 variableParser = do

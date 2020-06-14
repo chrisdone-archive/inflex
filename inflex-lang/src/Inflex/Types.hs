@@ -63,9 +63,16 @@ data Number s = Number
 -- natural is worth the bother on the whole. It's a small proof about
 -- a number that doesn't get you much mileage.
 data SomeNumber
-  = IntegerNumber Integer -- ^ Any whole number.
-  | DecimalNumber Integer Natural -- ^ A numerator and denominator.
+  = IntegerNumber !Integer -- ^ Any whole number.
+  | DecimalNumber !Decimal
   deriving (Show, Eq, Ord)
+
+-- | Decimal backed by an Integer with N decimal places. Precision is
+-- determined at runtime.
+data Decimal = Decimal
+  { places :: !Int
+  , integer :: !Integer
+  } deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Type system types

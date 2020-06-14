@@ -128,6 +128,17 @@ packages:
       sha256: cfd66c0a53be1b45eae72df112ea1158614458bb7b1c9cbbe3410b04ab011ec6
   original:
     hackage: indexed-profunctors-0.1@sha256:ddf618d0d4c58319c1e735e746bc69a1021f13b6f475dc9614b80af03432e6d4,1016
+- completed:
+    size: 19130
+    url: https://github.com/chrisdone/safe-decimal/archive/7d12d7b326d7ca544306e2b3244b5e3bfd9b856b.tar.gz
+    name: safe-decimal
+    version: 0.2.0.0
+    sha256: c06dec7222ffcaf55f80d85a278731e7a4142f4bd4f2718007ae146eb37f1fb6
+    pantry-tree:
+      size: 925
+      sha256: 4b4b230d2e61aae0c265d315de99a4f88a04b1b35eb9fd94749802a46b77bf08
+  original:
+    url: https://github.com/chrisdone/safe-decimal/archive/7d12d7b326d7ca544306e2b3244b5e3bfd9b856b.tar.gz
 snapshots:
 - completed:
     size: 524154

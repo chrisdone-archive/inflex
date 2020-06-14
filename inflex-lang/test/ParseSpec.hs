@@ -15,20 +15,68 @@ spec :: Spec
 spec = do
   it
     "Literal"
-    (shouldBe
-       (parseText "" "123")
-       (Right
-          (LiteralExpression
-             (NumberLiteral
-                Number
-                  { location =
-                      SourceLocation
-                        { start = SourcePos {name = "", line = 1, column = 1}
-                        , end = SourcePos {name = "", line = 1, column = 4}
-                        }
-                  , number = IntegerNumber 123
-                  , typ = ()
-                  }))))
+    (do shouldBe
+          (parseText "" "123")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   Number
+                     { location =
+                         SourceLocation
+                           { start = SourcePos {name = "", line = 1, column = 1}
+                           , end = SourcePos {name = "", line = 1, column = 4}
+                           }
+                     , number = IntegerNumber 123
+                     , typ = ()
+                     })))
+        shouldBe
+          (parseText "" "123.0")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 1, integer = 1230})
+                      , typ = ()
+                      }))))
+        shouldBe
+          (parseText "" "123.123")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 8, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 3, integer = 123123})
+                      , typ = ()
+                      }))))
+        shouldBe
+          (parseText "" "0.000")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 3, integer = 0})
+                      , typ = ()
+                      })))))
   it
     "Lambda"
     (shouldBe

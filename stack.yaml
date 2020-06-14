@@ -34,3 +34,5 @@ extra-deps:
 - optics-extra-0.2@sha256:211ce1dfd1b3ffd95c1158d8c8beb53cbd17c4d477169e226b1831607f6789eb,3370
 - optics-th-0.2@sha256:b4f6c5a3f134c697837190ed6da969dd284aefe79e43c3ef793093b607bb83b9,1929
 - indexed-profunctors-0.1@sha256:ddf618d0d4c58319c1e735e746bc69a1021f13b6f475dc9614b80af03432e6d4,1016
+- github: chrisdone/safe-decimal
+  commit: 7d12d7b326d7ca544306e2b3244b5e3bfd9b856b

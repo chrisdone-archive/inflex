@@ -7,6 +7,7 @@ module LexSpec where
 
 import qualified Data.Sequence as Seq
 import           Inflex.Lexer
+import           Inflex.Types
 import           Test.Hspec
 
 spec :: Spec
@@ -14,7 +15,7 @@ spec =
   it
     "Tokens"
     (shouldBe
-       (lexText "" "a 123 ( )[]")
+       (lexText "" "a 123 456.1 123.456 12.000 ( )[]")
        (Right
           (Seq.fromList
              [ Located
@@ -31,37 +32,61 @@ spec =
                        { start = SourcePos {line = 1, column = 3, name = ""}
                        , end = SourcePos {line = 1, column = 6, name = ""}
                        }
-                 , thing = NaturalToken 123
+                 , thing = IntegerToken 123
                  }
              , Located
                  { location =
                      SourceLocation
                        { start = SourcePos {line = 1, column = 7, name = ""}
-                       , end = SourcePos {line = 1, column = 8, name = ""}
+                       , end = SourcePos {line = 1, column = 12, name = ""}
+                       }
+                 , thing = DecimalToken (Decimal {places = 1, integer = 4561})
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 13, name = ""}
+                       , end = SourcePos {line = 1, column = 20, name = ""}
+                       }
+                 , thing = DecimalToken (Decimal {places = 3, integer = 123456})
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 21, name = ""}
+                       , end = SourcePos {line = 1, column = 27, name = ""}
+                       }
+                 , thing = DecimalToken (Decimal {places = 3, integer = 12000})
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 28, name = ""}
+                       , end = SourcePos {line = 1, column = 29, name = ""}
                        }
                  , thing = OpenRoundToken
                  }
              , Located
                  { location =
                      SourceLocation
-                       { start = SourcePos {line = 1, column = 9, name = ""}
-                       , end = SourcePos {line = 1, column = 10, name = ""}
+                       { start = SourcePos {line = 1, column = 30, name = ""}
+                       , end = SourcePos {line = 1, column = 31, name = ""}
                        }
                  , thing = CloseRoundToken
                  }
              , Located
                  { location =
                      SourceLocation
-                       { start = SourcePos {line = 1, column = 10, name = ""}
-                       , end = SourcePos {line = 1, column = 11, name = ""}
+                       { start = SourcePos {line = 1, column = 31, name = ""}
+                       , end = SourcePos {line = 1, column = 32, name = ""}
                        }
                  , thing = OpenSquareToken
                  }
              , Located
                  { location =
                      SourceLocation
-                       { start = SourcePos {line = 1, column = 11, name = ""}
-                       , end = SourcePos {line = 1, column = 12, name = ""}
+                       { start = SourcePos {line = 1, column = 32, name = ""}
+                       , end = SourcePos {line = 1, column = 33, name = ""}
                        }
                  , thing = CloseSquareToken
                  }

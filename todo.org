@@ -219,20 +219,12 @@ Identification:
 #+END_SRC
 
 #+BEGIN_SRC haskell
-class FromNatural n where fromNatural :: Natural -> n
 class FromInteger n where fromInteger :: Integer -> n
 class FromDecimal i n where fromDecimal :: Decimal i -> n
 
-instance FromNatural Natural
-instance FromNatural Integer
--- instance FromNatural Rational
-instance FromNatural (Decimal n)
-
 instance FromInteger Integer
--- instance FromInteger Rational
 instance FromInteger (Decimal n)
 
--- instance FromDecimal i Rational
 instance FromDecimal subset (Decimal superset) where subset <= superset
   -- e.g. fromDecimal (1.1 :: Decimal 1) :: Decimal 2
 #+END_SRC

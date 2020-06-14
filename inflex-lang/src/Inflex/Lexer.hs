@@ -21,7 +21,8 @@ module Inflex.Lexer
   , SourceLocation(..)
   , lexText
   , LexError
-  , _NaturalToken
+  , _IntegerToken
+  , _DecimalToken
   , _BackslashToken
   , _RightArrowToken
   , _LowerWordToken
@@ -31,12 +32,14 @@ module Inflex.Lexer
 
 import           Data.Bifunctor
 import           Data.Char
+import           Data.Functor
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Read as T
 import           Data.Void
 import           GHC.Generics
 import           Inflex.Types
-import           Numeric.Natural
 import           Optics
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as Mega
@@ -56,7 +59,8 @@ data Token
   | CloseSquareToken
   | OpenRoundToken
   | CloseRoundToken
-  | NaturalToken !Natural
+  | IntegerToken !Integer
+  | DecimalToken !Decimal
   | BackslashToken
   | RightArrowToken
   deriving (Show, Eq, Ord, Generic)
@@ -88,7 +92,12 @@ tokensLexer =
   fmap
     mconcat
     (Mega.many
-       (Mega.choice [fmap pure symbol, fmap pure natural, fmap pure lowerWord] <*
+       (Mega.choice
+          [ fmap pure symbol
+          , fmap pure integer
+          , fmap pure decimal
+          , fmap pure lowerWord
+          ] <*
         Mega.space))
   where
     lowerWord =
@@ -96,7 +105,20 @@ tokensLexer =
         (do c <- Mega.takeWhile1P Nothing isAlpha
             cs <- Mega.takeWhileP Nothing isAlpha
             pure (LowerWordToken (c <> cs)))
-    natural = located (NaturalToken <$> Lexer.decimal)
+    integer =
+      Mega.try
+        (located (IntegerToken <$> Lexer.decimal) <*
+         Mega.notFollowedBy (void (Mega.char '.')))
+    decimal =
+      located
+        (do num <- Mega.takeWhile1P (pure "digit") isDigit
+            void (Mega.char '.')
+            denom <- Mega.takeWhile1P (pure "digit") isDigit
+            case T.decimal (num <> denom) of
+              Right (i, "") ->
+                pure
+                  (DecimalToken Decimal {places = T.length denom, integer = i})
+              _ -> fail "Invalid decimal.")
     symbol =
       located
         (Mega.choice
