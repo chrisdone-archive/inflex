@@ -246,7 +246,3 @@ type family StagedVariableName s where
   StagedVariableName Solved = DeBrujinIndex
   StagedVariableName Generalised = DeBrujinIndex
   StagedVariableName Resolved = DeBrujinIndex
-
--- type family StagedSchemeVariable s where
---   StagedSchemeVariable Polymorphic = Kind
---   StagedSchemeVariable s = TypeVariable s
