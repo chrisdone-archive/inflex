@@ -82,70 +82,30 @@ resolveText ::
 resolveText fp text = do
   IsGeneralised {thing, polytype, mappings} <-
     first GeneraliserErrored (generaliseText fp text)
-  case thing of
-    LiteralExpression (NumberLiteral number) -> do
-      number' <-
-        first
-          ResolverErrors
-          (evalState
-             (runValidateT (runResolve (numberResolver number)))
-             ResolveState {implicits = mempty})
-      pure
-        IsResolved
-          { mappings
-          , thing = LiteralExpression (NumberLiteral number')
-          , scheme =
-              Scheme
-                { location = expressionLocation thing
-                , constraints = [] -- TODO: Collect constraints from state monad.
-                , typ = polytype
-                }
-          , implicits = mempty -- TODO: Collect implicits from state monad.
-          }
-    _ -> undefined
+  expression <-
+    first
+      ResolverErrors
+      (evalState
+         (runValidateT (runResolve (expressionResolver thing)))
+         ResolveState {implicits = mempty})
+  pure
+    IsResolved
+      { mappings
+      , thing = expression
+      , scheme =
+          Scheme
+            { location = expressionLocation thing
+            , constraints = [] -- TODO: Collect constraints from state monad.
+            , typ = polytype
+            }
+      , implicits = mempty -- TODO: Collect implicits from state monad, and apply lambdas.
+      }
 
 --------------------------------------------------------------------------------
--- Resolving numbers
+-- Resolving expression tree
 
--- | Try to resolve the instance for the given number. May result in one of:
---
--- 1. An instance was found and inserted inline.
--- 2. No instance was found with polytypes, so we defer and add an
---    argument and constraint to the declaration.
--- 3. No instance was found with monotypes, so we try to default.
--- 4. If we cannot default, an error is raised.
-numberResolver :: Number Generalised -> Resolve (Number Resolved)
-numberResolver number'@Number {..} =
-  case resolveConstraint (numberConstraint number') of
-    Right _resolution ->
-      pure
-      -- TODO: Case on resolution:
-      -- if found, insert inline.
-      -- if poly, defer into state monad.
-      -- in both cases, add an implicit argument.
-        Number
-          { typ =
-              Scheme {location, constraints = [numberConstraint number'], typ}
-          , ..
-          }
-    Left problem -> Resolve (refute (pure problem))
-
--- | Given a number, the appropriate class constraint.
---
--- 1 :: FromInteger i => i
--- 1 :: FromInteger Integer => Integer -- if inferred.
--- 2.3 :: FromDecimal 1 i => i -- 1 decimal place.
--- 7.00 :: FromDecimal 2 (Decimal 2) => Decimal 2 -- if inferred.
-numberConstraint :: Number Generalised -> ClassConstraint Generalised
-numberConstraint Number {typ, number, location} =
-  ClassConstraint {className = someNumberClassName number, ..}
-
--- | Tells us which class constraint arises from some number literal.
-someNumberClassName :: SomeNumber -> ClassName
-someNumberClassName =
-  \case
-    IntegerNumber {} -> FromIntegerClassName
-    DecimalNumber Decimal {places} -> FromDecimalClassName places
+expressionResolver :: Expression Generalised -> Resolve (Expression Resolved)
+expressionResolver = undefined
 
 --------------------------------------------------------------------------------
 -- Instance resolution

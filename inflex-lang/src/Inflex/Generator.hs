@@ -122,6 +122,7 @@ literalGenerator =
 
 numberGenerator :: Number Renamed -> Generate (Number Generated)
 numberGenerator Number {typ = _, ..} = do
+  -- TODO: Replace with proper constant type.
   typ <- generateTypeVariable location NumberPrefix TypeKind
   pure Number {typ, ..}
 

@@ -19,6 +19,7 @@ data Expression s =
   | LambdaExpression !(Lambda s)
   | ApplyExpression !(Apply s)
   | VariableExpression !(Variable s)
+  -- TODO: Add GlobalExpression (for fromIntegral).
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
