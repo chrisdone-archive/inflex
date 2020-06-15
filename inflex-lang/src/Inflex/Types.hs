@@ -212,8 +212,11 @@ newtype CasHash =
   CasHash ByteString
   deriving (Show, Eq, Ord)
 
+-- TODO: Later we'll add CasHash to this.
 data GlobalRef =
-  FromIntegralGlobal
+  FromIntegerGlobal -- We can always lose type information later and
+                    -- change this to "fromInteger" lookup to
+                    -- CasHash. Going the other way is more expensive.
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
