@@ -212,6 +212,10 @@ newtype CasHash =
   CasHash ByteString
   deriving (Show, Eq, Ord)
 
+data GlobalRef =
+  FromIntegralGlobal
+  deriving (Show, Eq, Ord)
+
 --------------------------------------------------------------------------------
 -- Stages
 
@@ -279,8 +283,8 @@ type family StagedVariableName s where
 
 type family StagedGlobalName s where
   StagedGlobalName Parsed = Text
-  StagedGlobalName Renamed = CasHash
-  StagedGlobalName Generated = CasHash
-  StagedGlobalName Solved = CasHash
-  StagedGlobalName Generalised = CasHash
-  StagedGlobalName Resolved = CasHash
+  StagedGlobalName Renamed = GlobalRef
+  StagedGlobalName Generated = GlobalRef
+  StagedGlobalName Solved = GlobalRef
+  StagedGlobalName Generalised = GlobalRef
+  StagedGlobalName Resolved = GlobalRef
