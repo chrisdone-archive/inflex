@@ -7,9 +7,10 @@
 
 module Inflex.Types where
 
-import Data.Text (Text)
-import GHC.Generics
-import Numeric.Natural
+import           Data.ByteString (ByteString)
+import           Data.Text (Text)
+import           GHC.Generics
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -19,7 +20,14 @@ data Expression s =
   | LambdaExpression !(Lambda s)
   | ApplyExpression !(Apply s)
   | VariableExpression !(Variable s)
+  | GlobalExpression !(Global s)
   -- TODO: Add GlobalExpression (for fromIntegral).
+
+data Global s = Global
+  { location :: !(StagedLocation s)
+  , name :: !(StagedGlobalName s)
+  , typ :: !(StagedType s)
+  }
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
@@ -200,6 +208,10 @@ newtype DeBrujinIndex =
   DeBrujinIndex Int
   deriving (Show, Eq, Ord)
 
+newtype CasHash =
+  CasHash ByteString
+  deriving (Show, Eq, Ord)
+
 --------------------------------------------------------------------------------
 -- Stages
 
@@ -264,3 +276,11 @@ type family StagedVariableName s where
   StagedVariableName Solved = DeBrujinIndex
   StagedVariableName Generalised = DeBrujinIndex
   StagedVariableName Resolved = DeBrujinIndex
+
+type family StagedGlobalName s where
+  StagedGlobalName Parsed = Text
+  StagedGlobalName Renamed = CasHash
+  StagedGlobalName Generated = CasHash
+  StagedGlobalName Solved = CasHash
+  StagedGlobalName Generalised = CasHash
+  StagedGlobalName Resolved = CasHash
