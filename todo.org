@@ -1,3 +1,6 @@
+* Stripe
+  - Note taken on [2020-06-15 Mon 16:34] \\
+    Sending email reminders https://stripe.com/docs/billing/invoices/paying#emails
 * Feature
 ** Shop
 *** TODO Homepage
@@ -41,13 +44,31 @@ Int32/Int16/Int8
 
 Use floating points but make partial results explicit too?
 *** TODO [#C] Add TextE for String typed expressions
+* Analytics
+  - Note taken on [2020-06-17 Wed 16:20] \\
+    GA measurement protocol
+
+    https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide
+  - Note taken on [2020-06-17 Wed 15:48] \\
+    Server-side google analytics to track traffic
+
+    https://cloud.google.com/appengine/docs/standard/java/google-analytics
 * Perf
+  - Note taken on [2020-06-17 Wed 15:42] \\
+    Pageviews from HN:
+    https://web.archive.org/web/20140626150005/http://blog.talles.me/my-hacker-news-front-page-day.html
+    https://news.ycombinator.com/item?id=8107658
   - Note taken on [2020-06-02 Tue 10:42] \\
     Consider parallel stuff in compiler?
 
     http://hackage.haskell.org/package/parallel-3.2.2.0/docs/Control-Parallel-Strategies.html
 
 * Testing
+** TODO Use Chromium headless for JS tests?
+   - Note taken on [2020-06-17 Wed 11:30] \\
+     https://developers.google.com/web/updates/2017/04/headless-chrome
+   - Note taken on [2020-06-17 Wed 11:20] \\
+     In Docker https://github.com/Zenika/alpine-chrome
 ** TODO Use GHC/PS to validity test compiler
    - Note taken on [2020-06-02 Tue 10:44] \\
      - Note taken on [2020-03-07 Sat 11:29] \\
@@ -184,6 +205,8 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
 * Research
+  - Note taken on [2020-06-15 Mon 17:16] \\
+    SMS: https://www.twilio.com/pricing
   - Note taken on [2020-05-19 Tue 09:32] \\
     PureScript got field names right, Haskell got them wrong
     https://tek.brick.do/ff3d4f73-3748-4953-b9dc-4ba8b5237315
