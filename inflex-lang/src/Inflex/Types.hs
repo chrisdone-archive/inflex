@@ -150,6 +150,7 @@ data TypeVariablePrefix
   | ApplyPrefix
   | IntegerPrefix
   | DecimalPrefix
+  | NatPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint

@@ -258,7 +258,7 @@ globalGenerator Global {name, location} = do
             }
       FromDecimalGlobal -> do
         numberVar <- generateTypeVariable location DecimalPrefix TypeKind
-        precisionVar <- generateTypeVariable location DecimalPrefix NatKind
+        precisionVar <- generateTypeVariable location NatPrefix NatKind
         pure
           Scheme
             { constraints =

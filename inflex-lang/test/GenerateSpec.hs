@@ -548,7 +548,7 @@ globals =
                                                             { location =
                                                                 ExpressionCursor
                                                             , prefix =
-                                                                DecimalPrefix
+                                                                NatPrefix
                                                             , index = 1
                                                             , kind = NatKind
                                                             })) <>
@@ -596,7 +596,7 @@ globals =
                                                                             { location =
                                                                                 ExpressionCursor
                                                                             , prefix =
-                                                                                DecimalPrefix
+                                                                                NatPrefix
                                                                             , index =
                                                                                 1
                                                                             , kind =
