@@ -15,18 +15,17 @@ import           Numeric.Natural
 --------------------------------------------------------------------------------
 -- AST types
 
-data Expression s =
-    LiteralExpression !(Literal s)
-  | LambdaExpression !(Lambda s)
-  | ApplyExpression !(Apply s)
-  | VariableExpression !(Variable s)
-  | GlobalExpression !(Global s)
-  -- TODO: Add GlobalExpression (for fromIntegral).
+data Expression s where
+  LiteralExpression :: !(Literal s) -> Expression s
+  LambdaExpression :: !(Lambda s) -> Expression s
+  ApplyExpression :: !(Apply s) -> Expression s
+  VariableExpression :: !(Variable s) -> Expression s
+  GlobalExpression :: !(Global s) -> Expression s
 
 data Global s = Global
   { location :: !(StagedLocation s)
   , name :: !(StagedGlobalName s)
-  , typ :: !(StagedType s)
+  , scheme :: !(StagedScheme s)
   }
 
 data Lambda s = Lambda
@@ -105,10 +104,18 @@ data TypeApplication s = TypeApplication
   , kind :: !Kind
   }
 
+data StagedScheme s where
+  ParsedScheme :: StagedScheme Parsed
+  RenamedScheme :: StagedScheme Renamed
+  GeneratedScheme :: Scheme Generated -> StagedScheme Generated
+  SolvedScheme :: Scheme Solved -> StagedScheme Solved
+  GeneralisedScheme :: Scheme Generalised -> StagedScheme Generalised
+  ResolvedScheme :: Scheme Generalised -> StagedScheme Resolved
+
 data Scheme s = Scheme
   { location :: !(StagedLocation s)
   , constraints :: ![ClassConstraint s]
-  , typ :: !(Type s)
+  , typ :: !(StagedType s)
   }
 
 data Kind
@@ -213,10 +220,12 @@ newtype CasHash =
   deriving (Show, Eq, Ord)
 
 -- TODO: Later we'll add CasHash to this.
-data GlobalRef =
-  FromIntegerGlobal -- We can always lose type information later and
-                    -- change this to "fromInteger" lookup to
-                    -- CasHash. Going the other way is more expensive.
+data GlobalRef
+  -- We can always lose type information later and
+  -- change this to "fromInteger" lookup to
+  -- CasHash. Going the other way is more expensive.
+  = FromIntegerGlobal
+  | FromDecimalGlobal Natural
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -266,7 +275,8 @@ type family StagedType s where
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
-  StagedType Resolved = Scheme Generalised
+  StagedType Resolved = Type Generalised
+  StagedType Polymorphic = Type Polymorphic
 
 type family StagedParamName s where
   StagedParamName Parsed = Text

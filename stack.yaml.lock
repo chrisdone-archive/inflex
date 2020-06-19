@@ -26,18 +26,18 @@ packages:
   original:
     hackage: megaparsec-8.0.0
 - completed:
-    size: 92233
+    size: 92322
     subdir: reparsec
-    url: https://github.com/chrisdone/streaming-parsers/archive/8322c0752765c3d42f9e79f3f07a328703f22866.tar.gz
+    url: https://github.com/chrisdone/streaming-parsers/archive/3d369f7570e8f6fd646b4fd8a661862c0fe2117a.tar.gz
     name: reparsec
     version: 0.0.0
-    sha256: 8b767774440388564178c9471d7820bf4abe6f4bc20b525e7b0a98e943b2b16d
+    sha256: e5690f875d5a03aef34e523e660bfc5a307dcde07c51adf82269c2fd44982126
     pantry-tree:
       size: 474
-      sha256: f3ccd22f7cfb888363b966e7a5677fbdf09f4adb9e8e5cce4ce8dad13696e3a4
+      sha256: c09b98c3d506c3a70a0e869d57c1e4d83b152d83fc89502966ec5f9d3aab893c
   original:
     subdir: reparsec
-    url: https://github.com/chrisdone/streaming-parsers/archive/8322c0752765c3d42f9e79f3f07a328703f22866.tar.gz
+    url: https://github.com/chrisdone/streaming-parsers/archive/3d369f7570e8f6fd646b4fd8a661862c0fe2117a.tar.gz
 - completed:
     size: 533412
     url: https://github.com/purescript/purescript/archive/ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9.tar.gz

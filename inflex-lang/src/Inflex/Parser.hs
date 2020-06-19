@@ -48,6 +48,7 @@ data ParseError
   | ExpectedToken Token
   | ExpectedParam
   | ExpectedVariable
+  | ExpectedGlobal
   | ExpectedDecimal
   deriving (Eq, Show)
 
@@ -93,6 +94,7 @@ expressionParser =
        [ ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
+       , GlobalExpression <$> globalParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
@@ -102,7 +104,7 @@ applyParser = do
   function <- functionParser
   argument <- argumentParser
   let SourceLocation {start} = expressionLocation function
-      SourceLocation {end} = expressionLocation function
+      SourceLocation {end} = expressionLocation argument
   pure
     Apply
       {function, argument, location = SourceLocation {start, end}, typ = ()}
@@ -112,6 +114,7 @@ functionParser =
   fold1
     (NE.fromList
        [ VariableExpression <$> variableParser
+       , GlobalExpression <$> globalParser
        , parensParser
        ])
 
@@ -120,9 +123,9 @@ argumentParser =
   fold1
     (NE.fromList
        [ VariableExpression <$> variableParser
+       , GlobalExpression <$> globalParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
-       , VariableExpression <$> variableParser
        , parensParser
        ])
 
@@ -156,6 +159,12 @@ variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken)
   pure Variable {name, location, typ = ()}
+
+globalParser :: Parser (Global Parsed)
+globalParser = do
+  Located {thing = name, location} <-
+    token ExpectedGlobal (preview _LowerWordToken)
+  pure Global {name, location, scheme = ParsedScheme}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do

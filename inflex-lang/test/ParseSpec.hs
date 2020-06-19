@@ -78,6 +78,140 @@ spec = do
                       , typ = ()
                       })))))
   it
+    "Globals"
+    (do shouldBe
+          (parseText "" "abc")
+          (Right
+             (GlobalExpression
+                (Global
+                   { location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 4, name = ""}
+                         }
+                   , name = "abc"
+                   , scheme = ParsedScheme
+                   })))
+        shouldBe
+          (parseText "" "\\x->y")
+          (Right
+             (LambdaExpression
+                (Lambda
+                   { location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 6, name = ""}
+                         }
+                   , param =
+                       Param
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 3, name = ""}
+                               }
+                         , name = "x"
+                         , typ = ()
+                         }
+                   , body =
+                       GlobalExpression
+                         (Global
+                            { location =
+                                SourceLocation
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 5, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 6, name = ""}
+                                  }
+                            , name = "y"
+                            , scheme = ParsedScheme
+                            })
+                   , typ = ()
+                   })))
+        shouldBe
+          (parseText "" "\\x->x y")
+          (Right
+             (LambdaExpression
+                (Lambda
+                   { location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 8, name = ""}
+                         }
+                   , param =
+                       Param
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 3, name = ""}
+                               }
+                         , name = "x"
+                         , typ = ()
+                         }
+                   , body =
+                       ApplyExpression
+                         (Apply
+                            { location =
+                                SourceLocation
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 5, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 8, name = ""}
+                                  }
+                            , function =
+                                VariableExpression
+                                  (Variable
+                                     { location =
+                                         SourceLocation
+                                           { start =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 5
+                                                 , name = ""
+                                                 }
+                                           , end =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 6
+                                                 , name = ""
+                                                 }
+                                           }
+                                     , name = "x"
+                                     , typ = ()
+                                     })
+                            , argument =
+                                GlobalExpression
+                                  (Global
+                                     { location =
+                                         SourceLocation
+                                           { start =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 7
+                                                 , name = ""
+                                                 }
+                                           , end =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 8
+                                                 , name = ""
+                                                 }
+                                           }
+                                     , name = "y"
+                                     , scheme = ParsedScheme
+                                     })
+                            , typ = ()
+                            })
+                   , typ = ()
+                   }))))
+  it
     "Lambda"
     (shouldBe
        (parseText "" "\\x->123")

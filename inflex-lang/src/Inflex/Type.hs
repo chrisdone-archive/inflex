@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -15,6 +17,20 @@ expressionType =
     LambdaExpression lambda -> lambdaType lambda
     ApplyExpression apply -> applyType apply
     VariableExpression variable -> variableType variable
+    GlobalExpression global -> globalType global
+
+globalType :: Global s -> StagedType s
+globalType Global {scheme} =
+  case scheme of
+    ParsedScheme -> ()
+    RenamedScheme -> ()
+    GeneratedScheme scheme' -> schemeType scheme'
+    SolvedScheme scheme' -> schemeType scheme'
+    GeneralisedScheme scheme' -> schemeType scheme'
+    ResolvedScheme scheme' -> schemeType scheme'
+
+schemeType :: Scheme s -> StagedType s
+schemeType Scheme{typ} = typ
 
 lambdaType :: Lambda s -> StagedType s
 lambdaType Lambda {typ} = typ
