@@ -121,10 +121,18 @@ literalGenerator =
     NumberLiteral number -> fmap NumberLiteral (numberGenerator number)
 
 numberGenerator :: Number Renamed -> Generate (Number Generated)
-numberGenerator Number {typ = _, ..} = do
-  -- TODO: Replace with proper constant type.
-  typ <- generateTypeVariable location NumberPrefix TypeKind
-  pure Number {typ, ..}
+numberGenerator Number {typ = _, ..} =
+  pure Number {typ = ConstantType (someNumberTypeConstant location number), ..}
+
+-- | Produce a immediately-known concrete type
+someNumberTypeConstant ::
+     StagedLocation Renamed -> SomeNumber -> TypeConstant Generated
+someNumberTypeConstant location =
+  \case
+    IntegerNumber {} ->
+      TypeConstant {location, name = IntegerTypeName}
+    DecimalNumber Decimal {places} ->
+      TypeConstant {location, name = DecimalTypeName places}
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
