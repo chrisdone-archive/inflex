@@ -319,6 +319,29 @@ Notice: Adding cluster credentials to kubeconfig file found in "/home/chris/.kub
 Notice: Setting current-context to do-lon1-inflex-server
 chris@precision:~$
 #+END_SRC
+* Security
+  - Note taken on [2020-06-19 Fri 11:17] \\
+    Add a backup domain for the API part of the service?
+    E.g. inflex-io.com or inflex-api.com
+
+    #+BEGIN_QUOTE
+    In hindsight, using a .IO domain for our core APIs was not a great
+    choice. The outage on September 20th showed how severe the problems
+    and support infrastructure are. Based on our experience we would
+    advise against using a .IO domain name if availability is important.
+
+    To work around the DNS issue, Stream’s API traffic now runs on a .com
+    domain name. The site still runs on .io since this is harder to change
+    and not as critical in terms of uptime. To further improve reliability
+    we’re considering:
+
+    Adding a backup .ORG domain name.
+    Using a backup DNS provider for either the .COM or .ORG domain name.
+    Implementing client-side DNS failover in our SDKs.
+    #+END_QUOTE
+
+    https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20
+
 * References
   - Note taken on [2020-06-07 Sun 19:00] \\
     Type Inference with Polymorphic Recursion
