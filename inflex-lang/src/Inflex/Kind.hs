@@ -17,6 +17,7 @@ typeKind =
     ApplyType typeApplication -> typeApplicationKind typeApplication
     ConstantType typeConstant -> typeConstantKind typeConstant
     PolyType typePoly -> typeVariableKind typePoly
+    NatType {} -> NatKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind
@@ -31,7 +32,7 @@ typeNameKind :: TypeName -> Kind
 typeNameKind =
   \case
     IntegerTypeName -> TypeKind
-    DecimalTypeName{} -> TypeKind -- TODO: Return to this for consideration.
+    DecimalTypeName -> FunKind TypeKind TypeKind
     TextTypeName -> TypeKind
     OptionTypeName -> FunKind TypeKind TypeKind
     FunctionTypeName -> FunKind TypeKind (FunKind TypeKind TypeKind)

@@ -99,17 +99,17 @@ fineGrained = do
 a' :: TypeVariable Generated
 a' =
   TypeVariable
-    {location = ExpressionCursor, prefix = NumberPrefix, index = 0, kind = TypeKind}
+    {location = ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}
 
 b' :: TypeVariable Generated
 b' =
   TypeVariable
-    {location = ExpressionCursor, prefix = NumberPrefix, index = 1, kind = TypeKind}
+    {location = ExpressionCursor, prefix = IntegerPrefix, index = 1, kind = TypeKind}
 
 c' :: TypeVariable Generated
 c' =
   TypeVariable
-    {location = ExpressionCursor, prefix = NumberPrefix, index = 2, kind = TypeKind}
+    {location = ExpressionCursor, prefix = IntegerPrefix, index = 2, kind = TypeKind}
 
 --------------------------------------------------------------------------------
 -- Types of the variables
@@ -118,7 +118,7 @@ t :: Type Generated
 t =
   VariableType
     TypeVariable
-      {location = ExpressionCursor, prefix = NumberPrefix, index = 3, kind = TypeKind}
+      {location = ExpressionCursor, prefix = IntegerPrefix, index = 3, kind = TypeKind}
 
 a :: Type Generated
 a = VariableType a'

@@ -8,6 +8,7 @@
 module Inflex.Types where
 
 import           Data.ByteString (ByteString)
+import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import           GHC.Generics
 import           Numeric.Natural
@@ -91,6 +92,12 @@ data Type s where
   PolyType :: TypeVariable Polymorphic -> Type Generalised
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
+  NatType :: TypeNat s -> Type s
+
+data TypeNat s = TypeNat
+  { location :: !(StagedLocation s)
+  , natural :: !Natural
+  }
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
@@ -122,6 +129,7 @@ data Kind
   = TypeKind
   | FunKind Kind
             Kind
+  | NatKind
   deriving (Show, Eq, Ord)
 
 data TypePoly = TypePoly
@@ -137,10 +145,11 @@ data TypeVariable s = TypeVariable
   }
 
 data TypeVariablePrefix
-  = NumberPrefix
-  | LambdaParameterPrefix
+  = LambdaParameterPrefix
   | VariablePrefix
   | ApplyPrefix
+  | IntegerPrefix
+  | DecimalPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -151,7 +160,7 @@ data EqualityConstraint = EqualityConstraint
 
 data ClassConstraint s = ClassConstraint
   { className :: !ClassName
-  , typ :: !(Type s)
+  , typ :: !(NonEmpty (Type s)) -- TODO: Restrict this later?
   , location :: !(StagedLocation s)
   }
 
@@ -173,14 +182,14 @@ data FromDecimalInstance = FromDecimalInstance
 data TypeName
   = FunctionTypeName
   | IntegerTypeName
-  | DecimalTypeName !Natural
+  | DecimalTypeName
   | TextTypeName
   | OptionTypeName
   deriving (Show, Eq, Ord)
 
 data ClassName
   = FromIntegerClassName
-  | FromDecimalClassName !Natural
+  | FromDecimalClassName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------

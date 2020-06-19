@@ -121,7 +121,8 @@ expressionResolver = undefined
 resolveConstraint ::
      ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
 resolveConstraint constraint@ClassConstraint {className, typ} =
-  case typ of
+  undefined
+  {-case typ of
     ApplyType {} -> Left UnsupportedInstanceHead
     VariableType typeVariable -> Left (NoInstanceAndMono typeVariable)
     PolyType typeVariable -> pure (NoInstanceButPoly typeVariable)
@@ -130,13 +131,14 @@ resolveConstraint constraint@ClassConstraint {className, typ} =
         FromIntegerClassName ->
           case name of
             IntegerTypeName -> pure (InstanceFound FromIntegerIntegerInstance)
-            DecimalTypeName places ->
-              pure (InstanceFound (FromIntegerDecimalInstance places))
+            DecimalTypeName {-places-} -> undefined
+              -- pure (InstanceFound (FromIntegerDecimalInstance places))
             _ -> Left (NoInstanceForConstantType typeConstant)
-        FromDecimalClassName placesAsWritten ->
+        FromDecimalClassName {-placesAsWritten-} ->
           case name of
-            DecimalTypeName placesAvailable ->
-              if placesAsWritten <= placesAvailable
+            DecimalTypeName {-placesAvailable-} ->
+              undefined
+              {-if placesAsWritten <= placesAvailable
                 then pure
                        (InstanceFound
                           (FromDecimalDecimalInstance
@@ -147,5 +149,5 @@ resolveConstraint constraint@ClassConstraint {className, typ} =
                 else Left
                        (LiteralDecimalPrecisionMismatch
                           PrecisionMismatch
-                            {placesAsWritten, placesAvailable, constraint})
-            _ -> Left (NoInstanceForConstantType typeConstant)
+                            {placesAsWritten, placesAvailable, constraint})-}
+            _ -> Left (NoInstanceForConstantType typeConstant)-}

@@ -114,6 +114,8 @@ expressionGenerator =
       fmap ApplyExpression (applyGenerator apply)
     VariableExpression variable ->
       fmap VariableExpression (variableGenerator variable)
+    GlobalExpression global ->
+      fmap GlobalExpression (globalGenerator global)
 
 literalGenerator :: Literal Renamed -> Generate (Literal Generated)
 literalGenerator =
@@ -122,17 +124,24 @@ literalGenerator =
 
 numberGenerator :: Number Renamed -> Generate (Number Generated)
 numberGenerator Number {typ = _, ..} =
-  pure Number {typ = ConstantType (someNumberTypeConstant location number), ..}
+  pure Number {typ = someNumberType location number, ..}
 
 -- | Produce a immediately-known concrete type
-someNumberTypeConstant ::
-     StagedLocation Renamed -> SomeNumber -> TypeConstant Generated
-someNumberTypeConstant location =
+someNumberType ::
+     StagedLocation Renamed -> SomeNumber -> Type Generated
+someNumberType location =
   \case
     IntegerNumber {} ->
-      TypeConstant {location, name = IntegerTypeName}
+      ConstantType TypeConstant {location, name = IntegerTypeName}
     DecimalNumber Decimal {places} ->
-      TypeConstant {location, name = DecimalTypeName places}
+      ApplyType
+        TypeApplication
+          { function =
+              ConstantType TypeConstant {name = DecimalTypeName, location}
+          , argument = NatType TypeNat {natural = places, location}
+          , kind = TypeKind
+          , ..
+          }
 
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
@@ -208,6 +217,88 @@ variableGenerator variable@Variable { typ = _
       addEqualityConstraint
         EqualityConstraint {type1, type2, ..}
       pure Variable {typ = type1, name, ..}
+
+globalGenerator :: Global Renamed -> Generate (Global Generated)
+globalGenerator Global {name, location} = do
+  scheme <-
+    case name of
+      FromIntegerGlobal -> do
+        typeVariable <- generateTypeVariable location IntegerPrefix TypeKind
+        pure
+          Scheme
+            { constraints =
+                [ ClassConstraint
+                    { className = FromIntegerClassName
+                    , typ = pure typeVariable
+                    , ..
+                    }
+                ]
+            , typ =
+                ApplyType
+                  TypeApplication
+                    { function =
+                        ApplyType
+                          TypeApplication
+                            { function =
+                                ConstantType
+                                  TypeConstant
+                                    {name = FunctionTypeName, location}
+                            , argument =
+                                ConstantType
+                                  TypeConstant
+                                    {name = IntegerTypeName, location}
+                            , kind = FunKind TypeKind TypeKind
+                            , ..
+                            }
+                    , argument = typeVariable
+                    , kind = TypeKind
+                    , ..
+                    }
+            , ..
+            }
+      FromDecimalGlobal -> do
+        numberVar <- generateTypeVariable location DecimalPrefix TypeKind
+        precisionVar <- generateTypeVariable location DecimalPrefix NatKind
+        pure
+          Scheme
+            { constraints =
+                [ ClassConstraint
+                    { className = FromDecimalClassName
+                    , typ = pure precisionVar <> pure numberVar
+                    , ..
+                    }
+                ]
+            , typ =
+                ApplyType
+                  TypeApplication
+                    { function =
+                        ApplyType
+                          TypeApplication
+                            { function =
+                                ConstantType
+                                  TypeConstant
+                                    {name = FunctionTypeName, location}
+                            , argument =
+                                ApplyType
+                                  TypeApplication
+                                    { function =
+                                        ConstantType
+                                          TypeConstant
+                                            {name = DecimalTypeName, location}
+                                    , argument = precisionVar
+                                    , kind = TypeKind
+                                    , ..
+                                    }
+                            , kind = FunKind TypeKind TypeKind
+                            , ..
+                            }
+                    , argument = numberVar
+                    , kind = TypeKind
+                    , ..
+                    }
+            , ..
+            }
+  pure Global {scheme = GeneratedScheme scheme, ..}
 
 --------------------------------------------------------------------------------
 -- Type system helpers
