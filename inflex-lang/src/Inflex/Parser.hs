@@ -12,15 +12,16 @@
 
 module Inflex.Parser where
 
+import           Control.Monad.Reader
 import           Data.Bifunctor
-import           Data.Functor
-import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Lexer
 import           Inflex.Location
@@ -55,7 +56,7 @@ data ParseError
 instance Reparsec.NoMoreInput ParseErrors where
   noMoreInputError = liftError NoMoreInput
 
-type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
+type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors (Reader (Set Text)) a
 
 --------------------------------------------------------------------------------
 -- Top-level accessor
@@ -64,7 +65,9 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 parseText :: FilePath -> Text -> Either RenameParseError (Expression Parsed)
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
-  first ParseError (runIdentity (Reparsec.parseOnlyT expressionParser tokens))
+  first
+    ParseError
+    (runReader (Reparsec.parseOnlyT expressionParser tokens) mempty)
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -158,21 +161,27 @@ variableParser :: Parser (Variable Parsed)
 variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken)
-  pure Variable {name, location, typ = ()}
+  scope <- ask
+  if Set.member name scope
+    then pure Variable {name, location, typ = ()}
+    else Reparsec.failWith (liftError ExpectedVariable)
 
 globalParser :: Parser (Global Parsed)
 globalParser = do
   Located {thing = name, location} <-
     token ExpectedGlobal (preview _LowerWordToken)
-  pure Global {name, location, scheme = ParsedScheme}
+  scope <- ask
+  if Set.member name scope
+     then Reparsec.failWith (liftError ExpectedGlobal)
+     else pure Global {name, location, scheme = ParsedScheme}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do
   Located {location = SourceLocation {start}} <-
     token (ExpectedToken BackslashToken) (preview _BackslashToken)
-  param <- paramParser
+  param@Param {name} <- paramParser
   token_ (ExpectedToken RightArrowToken) (preview _RightArrowToken)
-  body <- expressionParser
+  body <- local (Set.insert name) expressionParser
   let SourceLocation {end} = expressionLocation body
   pure
     Lambda

@@ -262,7 +262,7 @@ spec = do
                 { location =
                     SourceLocation
                       { start = SourcePos {line = 1, column = 2, name = ""}
-                      , end = SourcePos {line = 1, column = 7, name = ""}
+                      , end = SourcePos {line = 1, column = 10, name = ""}
                       }
                 , function =
                     LambdaExpression

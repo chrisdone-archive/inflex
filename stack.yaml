@@ -16,7 +16,7 @@ extra-deps:
 - happy-1.19.9
 - megaparsec-8.0.0
 - github: chrisdone/streaming-parsers
-  commit: 3d369f7570e8f6fd646b4fd8a661862c0fe2117a
+  commit: 955675a074e8443ab9a65cc1bcb7abd7e49e188f
   subdirs:
     - reparsec
 - github: purescript/purescript
