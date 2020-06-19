@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ApplicativeDo #-}
@@ -33,8 +34,11 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Renamer types
 
-data RenameError =
-  MissingVariable [Param Parsed] (Variable Parsed)
+data RenameError
+  = MissingVariable [Param Parsed]
+                    (Variable Parsed)
+  | MissingGlobal (Map Text GlobalRef)
+                  (Global Parsed)
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
@@ -55,6 +59,7 @@ type CursorBuilder = Cursor -> Cursor
 data Env = Env
   { cursor :: !CursorBuilder
   , scope :: ![Param Parsed]
+  , globals :: !(Map Text GlobalRef)
   }
 
 data IsRenamed a = IsRenamed
@@ -80,10 +85,18 @@ renameText fp text = do
              (runValidateT
                 (runRenamer
                    (renameExpression
-                      (Env {cursor = id, scope = mempty})
+                      (Env {globals = wiredInGlobals, cursor = id, scope = mempty})
                       expression)))
              mempty
       in fmap (\thing -> IsRenamed {thing, mappings}) result)
+
+--------------------------------------------------------------------------------
+-- Wired-in
+
+wiredInGlobals :: Map Text GlobalRef
+wiredInGlobals =
+  M.fromList
+    [("fromInteger", FromIntegerGlobal), ("fromDecimal", FromDecimalGlobal)]
 
 --------------------------------------------------------------------------------
 -- Renamers
@@ -98,6 +111,8 @@ renameExpression env =
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable ->
       fmap VariableExpression (renameVariable env variable)
+    GlobalExpression global ->
+      fmap GlobalExpression (renameGlobal env global)
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral env =
@@ -140,6 +155,14 @@ renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
   pure Param {name = (), location = final, ..}
+
+renameGlobal :: Env -> Global Parsed -> Renamer (Global Renamed)
+renameGlobal Env {cursor, globals} global@Global {name, location} =
+  case M.lookup name globals of
+    Nothing -> Renamer (refute (pure (MissingGlobal globals global)))
+    Just globalRef -> do
+      final <- finalizeCursor cursor ExpressionCursor location
+      pure Global {location = final, name = globalRef, scheme = RenamedScheme}
 
 --------------------------------------------------------------------------------
 -- Cursor operations

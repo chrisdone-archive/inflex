@@ -225,7 +225,7 @@ data GlobalRef
   -- change this to "fromInteger" lookup to
   -- CasHash. Going the other way is more expensive.
   = FromIntegerGlobal
-  | FromDecimalGlobal Natural
+  | FromDecimalGlobal
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
