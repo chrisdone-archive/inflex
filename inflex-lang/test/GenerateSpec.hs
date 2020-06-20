@@ -64,11 +64,11 @@ spec = do
                                               , name = DecimalTypeName
                                               })
                                      , argument =
-                                         NatType
-                                           (TypeNat
-                                              { location = ExpressionCursor
-                                              , natural = 1
-                                              })
+                                         ConstantType
+                                           TypeConstant
+                                             { name = NatTypeName 1
+                                             , location = ExpressionCursor
+                                             }
                                      , location = ExpressionCursor
                                      , kind = TypeKind
                                      })
@@ -98,11 +98,11 @@ spec = do
                                               , name = DecimalTypeName
                                               })
                                      , argument =
-                                         NatType
-                                           (TypeNat
-                                              { location = ExpressionCursor
-                                              , natural = 2
-                                              })
+                                         ConstantType
+                                           TypeConstant
+                                             { name = NatTypeName 2
+                                             , location = ExpressionCursor
+                                             }
                                      , location = ExpressionCursor
                                      , kind = TypeKind
                                      })

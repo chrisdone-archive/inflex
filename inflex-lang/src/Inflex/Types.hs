@@ -92,12 +92,6 @@ data Type s where
   PolyType :: TypeVariable Polymorphic -> Type Generalised
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
-  NatType :: TypeNat s -> Type s
-
-data TypeNat s = TypeNat
-  { location :: !(StagedLocation s)
-  , natural :: !Natural
-  }
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
@@ -186,6 +180,7 @@ data TypeName
   | DecimalTypeName
   | TextTypeName
   | OptionTypeName
+  | NatTypeName !Natural
   deriving (Show, Eq, Ord)
 
 data ClassName

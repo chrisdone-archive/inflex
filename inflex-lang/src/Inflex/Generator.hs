@@ -138,7 +138,8 @@ someNumberType location =
         TypeApplication
           { function =
               ConstantType TypeConstant {name = DecimalTypeName, location}
-          , argument = NatType TypeNat {natural = places, location}
+          , argument =
+              ConstantType TypeConstant {name = NatTypeName places, location}
           , kind = TypeKind
           , ..
           }

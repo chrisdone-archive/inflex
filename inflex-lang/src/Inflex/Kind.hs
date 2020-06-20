@@ -17,7 +17,6 @@ typeKind =
     ApplyType typeApplication -> typeApplicationKind typeApplication
     ConstantType typeConstant -> typeConstantKind typeConstant
     PolyType typePoly -> typeVariableKind typePoly
-    NatType {} -> NatKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind
@@ -36,3 +35,4 @@ typeNameKind =
     TextTypeName -> TypeKind
     OptionTypeName -> FunKind TypeKind TypeKind
     FunctionTypeName -> FunKind TypeKind (FunKind TypeKind TypeKind)
+    NatTypeName{} -> NatKind
