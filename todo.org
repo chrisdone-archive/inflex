@@ -44,6 +44,9 @@ Int32/Int16/Int8
 
 Use floating points but make partial results explicit too?
 *** TODO [#C] Add TextE for String typed expressions
+* Running
+  - Note taken on [2020-06-20 Sat 23:20] \\
+    In Rust? https://github.com/chrisdone/redex/blob/f82c4a727321b11074d50734c09a23fdc1c9cb13/src/main.rs#L1
 * Analytics
   - Note taken on [2020-06-17 Wed 16:20] \\
     GA measurement protocol
