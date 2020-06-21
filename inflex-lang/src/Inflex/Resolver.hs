@@ -15,7 +15,6 @@ import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
-import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Generaliser
 import           Inflex.Location
@@ -29,9 +28,9 @@ import           Numeric.Natural
 --
 -- 1. An instance was found and inserted inline.
 -- 2. No instance was found with polytypes.
-data ResolutionSuccess
+data ImplicitArgument
   = InstanceFound InstanceName
-  | NoInstanceButPoly (TypeVariable Polymorphic)
+  | NoInstanceButPoly (ClassConstraint Polymorphic)
   deriving (Show, Eq)
 
 -- 1. The user put 2.52 when accuracy was 0.0.
@@ -60,11 +59,10 @@ data IsResolved a = IsResolved
   { thing :: !a
   , scheme :: !(Scheme Polymorphic)
   , mappings :: !(Map Cursor SourceLocation)
-  , implicits :: !(Seq Implicit)
   } deriving (Show, Eq)
 
 data ResolveState = ResolveState
-  { implicits :: !(Seq Implicit)
+  { implicits :: !()
   }
 
 newtype Resolve a = Resolve
@@ -97,7 +95,6 @@ resolveText fp text = do
             , constraints = [] -- TODO: Collect constraints from state monad.
             , typ = polytype
             }
-      , implicits = mempty -- TODO: Collect implicits from state monad, and apply lambdas.
       }
 
 --------------------------------------------------------------------------------
@@ -112,7 +109,7 @@ expressionResolver =
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver lambda)
     ApplyExpression apply -> fmap ApplyExpression (applyResolver apply)
-    GlobalExpression global -> fmap GlobalExpression (globalResolver global)
+    GlobalExpression global -> globalResolver global
 
 lambdaResolver :: Lambda Generalised -> Resolve (Lambda Resolved)
 lambdaResolver Lambda {..} = do
@@ -139,19 +136,49 @@ numberResolver Number {..} = Number { ..}
 paramResolver :: Param Generalised -> Param Resolved
 paramResolver Param {..} = Param { ..}
 
-globalResolver :: Global Generalised -> Resolve (Global Resolved)
-globalResolver Global { name
-                      , location
-                      , scheme = GeneralisedScheme scheme@Scheme {constraints}
-                      } = do
-  resolutions <-
+globalResolver :: Global Generalised -> Resolve (Expression Resolved)
+globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} = do
+  implicits <-
     traverse
       (\constraint ->
          case resolveConstraint constraint of
            Left err -> Resolve (refute (pure err))
-           Right resolution -> pure resolution)
+           Right resolution -> do
+             case resolution of
+               NoInstanceButPoly{} -> undefined
+               _ -> pure ()
+             pure resolution)
       constraints
-  pure Global {name, location, scheme = ResolvedScheme scheme}
+  pure (addImplicitsToGlobal implicits global)
+
+--------------------------------------------------------------------------------
+-- Adding implicit arguments to a global reference
+
+addImplicitsToGlobal ::
+     [ImplicitArgument] -> Global Generalised -> Expression Resolved
+addImplicitsToGlobal implicits global =
+  foldl
+    (\inner implicit ->
+       ApplyExpression
+         Apply
+           { location = ImplicitlyApplicationOn location
+           , function = inner
+           , argument =
+               case implicit of
+                 InstanceFound instanceName ->
+                   GlobalExpression
+                     Global
+                       { location = ImplicitArgumentFor location
+                       , name = InstanceGlobal instanceName
+                       , scheme = undefined
+                       }
+                 NoInstanceButPoly _ -> undefined
+           , typ = undefined
+           })
+    (GlobalExpression Global {scheme = ResolvedScheme scheme, ..})
+    implicits
+  where
+    Global {scheme = GeneralisedScheme scheme, location, ..} = global
 
 --------------------------------------------------------------------------------
 -- Instance resolution
@@ -165,7 +192,7 @@ globalResolver Global { name
 -- * A Decimal i type matches any FromDecimal j provided i<=j.
 --
 resolveConstraint ::
-     ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
+     ClassConstraint Generalised -> Either ResolutionError ImplicitArgument
 resolveConstraint constraint@ClassConstraint {className, typ} =
   undefined
   {-case typ of

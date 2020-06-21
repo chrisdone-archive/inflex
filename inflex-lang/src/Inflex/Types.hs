@@ -159,10 +159,6 @@ data ClassConstraint s = ClassConstraint
   , location :: !(StagedLocation s)
   }
 
-data Implicit =
-  Implicit
-  deriving (Show, Eq, Ord)
-
 data InstanceName
   = FromIntegerIntegerInstance
   | FromIntegerDecimalInstance !Natural
@@ -214,6 +210,8 @@ data Cursor
   | LambdaParamCursor
   | ApplyFuncCursor Cursor
   | ApplyArgCursor Cursor
+  | ImplicitlyApplicationOn Cursor
+  | ImplicitArgumentFor Cursor
   deriving (Show, Eq, Ord)
 
 newtype DeBrujinIndex =
@@ -231,6 +229,7 @@ data GlobalRef
   -- CasHash. Going the other way is more expensive.
   = FromIntegerGlobal
   | FromDecimalGlobal
+  | InstanceGlobal !InstanceName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
