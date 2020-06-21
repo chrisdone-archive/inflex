@@ -105,7 +105,50 @@ resolveText fp text = do
 -- Resolving expression tree
 
 expressionResolver :: Expression Generalised -> Resolve (Expression Resolved)
-expressionResolver = undefined
+expressionResolver =
+  \case
+    LiteralExpression literal ->
+      fmap LiteralExpression (pure (literalResolver literal))
+    VariableExpression variable ->
+      fmap VariableExpression (pure (variableResolver variable))
+    LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver lambda)
+    ApplyExpression apply -> fmap ApplyExpression (applyResolver apply)
+
+lambdaResolver :: Lambda Generalised -> Resolve (Lambda Resolved)
+lambdaResolver Lambda {..} = do
+  body' <- expressionResolver body
+  pure Lambda
+    { param = paramResolver param
+    , body = body'
+    , ..
+    }
+
+applyResolver :: Apply Generalised -> Resolve (Apply Resolved)
+applyResolver Apply {..} = do
+  function' <- expressionResolver function
+  argument' <- expressionResolver argument
+  pure Apply
+    { function = function'
+    , argument = argument'
+    , ..
+    }
+
+variableResolver :: Variable Generalised -> Variable Resolved
+variableResolver Variable {..} = Variable {..}
+
+literalResolver :: Literal Generalised -> Literal Resolved
+literalResolver =
+  \case
+    NumberLiteral number ->
+      NumberLiteral (numberResolver number)
+
+numberResolver :: Number Generalised -> Number Resolved
+numberResolver Number {..} =
+  Number { ..}
+
+paramResolver :: Param Generalised -> Param Resolved
+paramResolver Param {..} =
+  Param { ..}
 
 --------------------------------------------------------------------------------
 -- Instance resolution
