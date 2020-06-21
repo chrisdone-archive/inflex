@@ -10,16 +10,17 @@
 
 module Inflex.Resolver where
 
-import           Control.Monad.State
-import           Control.Monad.Validate
-import           Data.Bifunctor
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Map.Strict (Map)
-import           Data.Text (Text)
-import           Inflex.Generaliser
-import           Inflex.Location
-import           Inflex.Types
-import           Numeric.Natural
+import Control.Monad.State
+import Control.Monad.Validate
+import Data.Bifunctor
+import Data.Foldable
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Map.Strict (Map)
+import Data.Text (Text)
+import Inflex.Generaliser
+import Inflex.Location
+import Inflex.Types
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -41,13 +42,13 @@ data ResolutionError
   = LiteralDecimalPrecisionMismatch PrecisionMismatch
   | UnsupportedInstanceHead
   | NoInstanceAndMono (TypeVariable Generalised)
-  | NoInstanceForConstantType (TypeConstant Generalised)
+  | NoInstanceForType ClassName (Type Polymorphic)
   deriving (Show, Eq)
 
 data PrecisionMismatch = PrecisionMismatch
-  { placesAsWritten :: !Natural
-  , placesAvailable :: !Natural
-  , constraint :: !(ClassConstraint Generalised)
+  { supersetPlaces :: !Natural
+  , subsetPlaces :: !Natural
+  , constraint :: !(ClassConstraint Polymorphic)
   } deriving (Show, Eq)
 
 data GeneraliseResolveError
@@ -62,7 +63,7 @@ data IsResolved a = IsResolved
   } deriving (Show, Eq)
 
 data ResolveState = ResolveState
-  { implicits :: !()
+  { implicits :: ![ClassConstraint Polymorphic]
   }
 
 newtype Resolve a = Resolve
@@ -193,34 +194,83 @@ addImplicitsToGlobal implicits global =
 --
 resolveConstraint ::
      ClassConstraint Generalised -> Either ResolutionError ImplicitArgument
-resolveConstraint constraint@ClassConstraint {className, typ} =
-  undefined
-  {-case typ of
-    ApplyType {} -> Left UnsupportedInstanceHead
-    VariableType typeVariable -> Left (NoInstanceAndMono typeVariable)
-    PolyType typeVariable -> pure (NoInstanceButPoly typeVariable)
-    ConstantType typeConstant@TypeConstant {name} ->
-      case className of
-        FromIntegerClassName ->
-          case name of
-            IntegerTypeName -> pure (InstanceFound FromIntegerIntegerInstance)
-            DecimalTypeName {-places-} -> undefined
-              -- pure (InstanceFound (FromIntegerDecimalInstance places))
-            _ -> Left (NoInstanceForConstantType typeConstant)
-        FromDecimalClassName {-placesAsWritten-} ->
-          case name of
-            DecimalTypeName {-placesAvailable-} ->
-              undefined
-              {-if placesAsWritten <= placesAvailable
-                then pure
-                       (InstanceFound
-                          (FromDecimalDecimalInstance
-                             FromDecimalInstance
-                               { supersetPlaces = placesAvailable
-                               , subsetPlaces = placesAsWritten
-                               }))
-                else Left
-                       (LiteralDecimalPrecisionMismatch
-                          PrecisionMismatch
-                            {placesAsWritten, placesAvailable, constraint})-}
-            _ -> Left (NoInstanceForConstantType typeConstant)-}
+resolveConstraint constraint = do
+  polymorphicConstraint@ClassConstraint {typ, className} <-
+    classConstraintPoly constraint
+  case toList typ of
+    (VariableType {}:_) -> pure (NoInstanceButPoly polymorphicConstraint)
+    [_, VariableType {}] -> pure (NoInstanceButPoly polymorphicConstraint)
+    [numberType]
+      | className == FromIntegerClassName ->
+        fmap InstanceFound (resolveFromInteger numberType)
+    [ConstantType places, numberType]
+      | className == FromDecimalClassName ->
+        fmap
+          InstanceFound
+          (resolveFromDecimal places numberType polymorphicConstraint)
+    _ -> Left UnsupportedInstanceHead
+
+-- | Resolve an instance of FromInteger for a given type.
+resolveFromInteger ::
+     Type Polymorphic -> Either ResolutionError InstanceName
+resolveFromInteger numberType =
+  case numberType of
+    ConstantType TypeConstant {name = IntegerTypeName} ->
+      pure FromIntegerIntegerInstance
+    ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                              , argument = ConstantType TypeConstant {name = NatTypeName places}
+                              } -> pure (FromIntegerDecimalInstance places)
+    _ -> Left (NoInstanceForType FromIntegerClassName numberType)
+
+-- | Resolve an instance of FromDecimal for a given type.
+resolveFromDecimal ::
+     TypeConstant Polymorphic
+  -> Type Polymorphic
+  -> ClassConstraint Polymorphic
+  -> Either ResolutionError InstanceName
+resolveFromDecimal TypeConstant {name = natural} numericType constraint =
+  case (natural, numericType) of
+    (NatTypeName supersetPlaces, ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                                           , argument = ConstantType TypeConstant {name = NatTypeName subsetPlaces}
+                                                           }) ->
+      if supersetPlaces >= subsetPlaces
+        then pure
+               (FromDecimalDecimalInstance
+                  FromDecimalInstance {supersetPlaces, subsetPlaces})
+        else Left
+               (LiteralDecimalPrecisionMismatch
+                  PrecisionMismatch {subsetPlaces, supersetPlaces, constraint})
+    _ -> Left (NoInstanceForType FromDecimalClassName numericType)
+
+--------------------------------------------------------------------------------
+-- Polymorphization
+
+-- | Make sure the class constraint is polymorphic.
+classConstraintPoly ::
+     ClassConstraint Generalised
+  -> Either ResolutionError (ClassConstraint Polymorphic)
+classConstraintPoly ClassConstraint {typ, ..} =
+  case traverse constrainPolymorphic typ of
+    Left typeVariables -> Left (NoInstanceAndMono typeVariables)
+    Right polyTypes -> pure ClassConstraint {typ = polyTypes, ..}
+
+-- | Constraint the type to remove monomorphic variables into a
+-- polymorphic type. If there are any monomorphic variables, returns
+-- Left with that variable.
+constrainPolymorphic ::
+     Type Generalised -> Either (TypeVariable Generalised) (Type Polymorphic)
+constrainPolymorphic = go
+  where
+    go =
+      \case
+        VariableType typeVariable -> Left typeVariable
+        ApplyType TypeApplication {function, argument, location, kind} -> do
+          function' <- go function
+          argument' <- go argument
+          pure
+            (ApplyType
+               TypeApplication
+                 {function = function', argument = argument', location, kind})
+        ConstantType TypeConstant {..} ->
+          pure (ConstantType TypeConstant {..})
+        PolyType typeVariable -> pure (VariableType typeVariable)
