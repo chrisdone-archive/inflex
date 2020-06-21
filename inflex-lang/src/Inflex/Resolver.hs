@@ -113,25 +113,18 @@ expressionResolver =
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver lambda)
     ApplyExpression apply -> fmap ApplyExpression (applyResolver apply)
+    GlobalExpression global -> fmap GlobalExpression (globalResolver global)
 
 lambdaResolver :: Lambda Generalised -> Resolve (Lambda Resolved)
 lambdaResolver Lambda {..} = do
   body' <- expressionResolver body
-  pure Lambda
-    { param = paramResolver param
-    , body = body'
-    , ..
-    }
+  pure Lambda {param = paramResolver param, body = body', ..}
 
 applyResolver :: Apply Generalised -> Resolve (Apply Resolved)
 applyResolver Apply {..} = do
   function' <- expressionResolver function
   argument' <- expressionResolver argument
-  pure Apply
-    { function = function'
-    , argument = argument'
-    , ..
-    }
+  pure Apply {function = function', argument = argument', ..}
 
 variableResolver :: Variable Generalised -> Variable Resolved
 variableResolver Variable {..} = Variable {..}
@@ -139,19 +132,19 @@ variableResolver Variable {..} = Variable {..}
 literalResolver :: Literal Generalised -> Literal Resolved
 literalResolver =
   \case
-    NumberLiteral number ->
-      NumberLiteral (numberResolver number)
+    NumberLiteral number -> NumberLiteral (numberResolver number)
 
 numberResolver :: Number Generalised -> Number Resolved
-numberResolver Number {..} =
-  Number { ..}
+numberResolver Number {..} = Number { ..}
 
 paramResolver :: Param Generalised -> Param Resolved
-paramResolver Param {..} =
-  Param { ..}
+paramResolver Param {..} = Param { ..}
+
+globalResolver :: Global Generalised -> Resolve (Global Resolved)
+globalResolver Global {name, location, scheme} = undefined
 
 --------------------------------------------------------------------------------
--- Instance resolution
+-- instance resolution
 
 -- | Resolve a class constraint.
 --
