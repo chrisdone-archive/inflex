@@ -155,7 +155,7 @@ data EqualityConstraint = EqualityConstraint
 
 data ClassConstraint s = ClassConstraint
   { className :: !ClassName
-  , typ :: !(NonEmpty (Type s)) -- TODO: Restrict this later?
+  , typ :: !(NonEmpty (Type s))
   , location :: !(StagedLocation s)
   }
 

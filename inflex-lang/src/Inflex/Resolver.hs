@@ -140,9 +140,18 @@ paramResolver :: Param Generalised -> Param Resolved
 paramResolver Param {..} = Param { ..}
 
 globalResolver :: Global Generalised -> Resolve (Global Resolved)
-globalResolver Global {name, location, scheme = GeneralisedScheme Scheme{constraints}} =
-  do undefined
-     undefined
+globalResolver Global { name
+                      , location
+                      , scheme = GeneralisedScheme scheme@Scheme {constraints}
+                      } = do
+  resolutions <-
+    traverse
+      (\constraint ->
+         case resolveConstraint constraint of
+           Left err -> Resolve (refute (pure err))
+           Right resolution -> pure resolution)
+      constraints
+  pure Global {name, location, scheme = ResolvedScheme scheme}
 
 --------------------------------------------------------------------------------
 -- Instance resolution
