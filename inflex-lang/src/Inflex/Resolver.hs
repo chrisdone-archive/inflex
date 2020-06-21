@@ -73,6 +73,19 @@ data ResolveState = ResolveState
 
     -- The same implicit argument may be used more than once, so a
     -- lookup is performed first.
+    --
+    -- Finally, these are added -- in the same order! -- as class
+    -- constraints to the top-level scheme class constraints.
+    --
+    -- Nesting is
+    --
+    -- f c1 c2
+    -- is
+    -- \-> \_ -> .. f (idx+1+0) (idx+1+1) ..
+    --     ^-------|        c1         c2
+    -- ^-------------|
+    -- has reversed order!
+    -- :: C2, C1 => ..
   }
 
 newtype Resolve a = Resolve
