@@ -10,17 +10,18 @@
 
 module Inflex.Resolver where
 
-import Control.Monad.State
-import Control.Monad.Validate
-import Data.Bifunctor
-import Data.Foldable
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map.Strict (Map)
-import Data.Text (Text)
-import Inflex.Generaliser
-import Inflex.Location
-import Inflex.Types
-import Numeric.Natural
+import           Control.Monad.State
+import           Control.Monad.Validate
+import           Data.Bifunctor
+import           Data.Foldable
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import           Data.Sequence (Seq)
+import           Data.Text (Text)
+import           Inflex.Generaliser
+import           Inflex.Location
+import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -63,7 +64,15 @@ data IsResolved a = IsResolved
   } deriving (Show, Eq)
 
 data ResolveState = ResolveState
-  { implicits :: ![ClassConstraint Polymorphic]
+  { implicits :: !(Seq (ClassConstraint Polymorphic))
+    -- ^ Each implicit constraint is added to the end of the sequence.
+
+    -- The de Brujin index is calculated as current_deBurjin_index + 1
+    -- + offset.  Where offset = index (zero-based, left to right)
+    -- from this implicits list.
+
+    -- The same implicit argument may be used more than once, so a
+    -- lookup is performed first.
   }
 
 newtype Resolve a = Resolve
