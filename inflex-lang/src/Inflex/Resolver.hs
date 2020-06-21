@@ -159,6 +159,9 @@ numberResolver Number {..} = Number { ..}
 paramResolver :: Param Generalised -> Param Resolved
 paramResolver Param {..} = Param { ..}
 
+--------------------------------------------------------------------------------
+-- Adding implicit arguments to a global reference
+
 globalResolver :: Global Generalised -> Resolve (Expression Resolved)
 globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} = do
   implicits <-
@@ -168,14 +171,12 @@ globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} =
            Left err -> Resolve (refute (pure err))
            Right resolution -> do
              case resolution of
-               NoInstanceButPoly{} -> undefined
+               NoInstanceButPoly{} -> undefined -- TODO: Add to 'implicits'.
+               -- TODO: Elsewhere, track lambda nesting.
                _ -> pure ()
              pure resolution)
       constraints
   pure (addImplicitsToGlobal implicits global)
-
---------------------------------------------------------------------------------
--- Adding implicit arguments to a global reference
 
 addImplicitsToGlobal ::
      [ImplicitArgument] -> Global Generalised -> Expression Resolved
