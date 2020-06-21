@@ -29,7 +29,6 @@ import           Numeric.Natural
 --
 -- 1. An instance was found and inserted inline.
 -- 2. No instance was found with polytypes.
--- 3. No instance can be found for constant type.
 data ResolutionSuccess
   = InstanceFound InstanceName
   | NoInstanceButPoly (TypeVariable Polymorphic)
@@ -141,10 +140,12 @@ paramResolver :: Param Generalised -> Param Resolved
 paramResolver Param {..} = Param { ..}
 
 globalResolver :: Global Generalised -> Resolve (Global Resolved)
-globalResolver Global {name, location, scheme} = undefined
+globalResolver Global {name, location, scheme = GeneralisedScheme Scheme{constraints}} =
+  do undefined
+     undefined
 
 --------------------------------------------------------------------------------
--- instance resolution
+-- Instance resolution
 
 -- | Resolve a class constraint.
 --
