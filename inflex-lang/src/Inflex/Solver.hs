@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -209,6 +211,8 @@ expressionSolve substitutions =
       ApplyExpression (applySolve substitutions apply)
     VariableExpression variable ->
       VariableExpression (variableSolve substitutions variable)
+    GlobalExpression global ->
+      GlobalExpression (globalSolve substitutions global)
 
 lambdaSolve :: Seq Substitution -> Lambda Generated -> Lambda Solved
 lambdaSolve substitutions Lambda {..} =
@@ -231,6 +235,22 @@ applySolve substitutions Apply {..} =
 variableSolve :: Seq Substitution -> Variable Generated -> Variable Solved
 variableSolve substitutions Variable {..} =
   Variable {typ = solveType substitutions typ, ..}
+
+globalSolve :: Seq Substitution -> Global Generated -> Global Solved
+globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
+  Global {scheme = SolvedScheme (solveScheme substitutions scheme), ..}
+
+solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
+solveScheme substitutions Scheme {..} =
+  Scheme
+    { typ = solveType substitutions typ
+    , constraints = fmap (solveClassConstraint substitutions) constraints
+    , ..
+    }
+
+solveClassConstraint :: Seq Substitution -> ClassConstraint Generated -> ClassConstraint Solved
+solveClassConstraint substitutions ClassConstraint {..} =
+  ClassConstraint {typ = fmap (solveType substitutions) typ, ..}
 
 literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
 literalSolve substitutions =

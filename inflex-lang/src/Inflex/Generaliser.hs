@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -135,6 +137,28 @@ expressionGeneralise substitutions =
       ApplyExpression (applyGeneralise substitutions apply)
     VariableExpression variable ->
       VariableExpression (variableGeneralise substitutions variable)
+    GlobalExpression global ->
+      GlobalExpression (globalGeneralise substitutions global)
+
+globalGeneralise :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Global Solved -> Global Generalised
+globalGeneralise substitutions Global {scheme = SolvedScheme scheme, ..} =
+  Global
+    {scheme = GeneralisedScheme (generaliseScheme substitutions scheme), ..}
+
+generaliseScheme :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Scheme Solved -> Scheme Generalised
+generaliseScheme substitutions Scheme {..} =
+  Scheme
+    { typ = generaliseType substitutions typ
+    , constraints = fmap (generaliseClassConstraint substitutions) constraints
+    , ..
+    }
+
+generaliseClassConstraint ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> ClassConstraint Solved
+  -> ClassConstraint Generalised
+generaliseClassConstraint substitutions ClassConstraint {..} =
+  ClassConstraint {typ = fmap (generaliseType substitutions) typ, ..}
 
 lambdaGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)
