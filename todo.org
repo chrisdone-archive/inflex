@@ -109,6 +109,20 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Mutual recursive definitions?
+   - Note taken on [2020-06-24 Wed 17:13] \\
+     Needed, due to this kind of algorithm:
+
+     #+BEGIN_SRC python
+     def f_tree(tree) -> None:
+         f_value(tree.value)
+         f_forest(tree.children)
+
+     def f_forest(forest) -> None:
+         for tree in forest:
+             f_tree(tree)
+     #+END_SRC
+
 ** TODO Logic language feature?
    - Note taken on [2020-06-24 Wed 14:00] \\
      It's often that you have some numbers and constraints and you want to
