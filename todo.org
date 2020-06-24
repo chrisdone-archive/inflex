@@ -109,7 +109,7 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
-** TODO Mutual recursive definitions?
+** TODO Mutual recursive definitions? Yep!
    - Note taken on [2020-06-24 Wed 17:13] \\
      Needed, due to this kind of algorithm:
 
