@@ -47,6 +47,8 @@ Use floating points but make partial results explicit too?
 * Running
   - Note taken on [2020-06-20 Sat 23:20] \\
     In Rust? https://github.com/chrisdone/redex/blob/f82c4a727321b11074d50734c09a23fdc1c9cb13/src/main.rs#L1
+* Logging/metrics
+
 * Analytics
   - Note taken on [2020-06-17 Wed 16:20] \\
     GA measurement protocol
@@ -57,6 +59,8 @@ Use floating points but make partial results explicit too?
 
     https://cloud.google.com/appengine/docs/standard/java/google-analytics
 * Perf
+  - Note taken on [2020-06-24 Wed 11:55] \\
+    Brotli instead of gzip encoding?
   - Note taken on [2020-06-17 Wed 15:42] \\
     Pageviews from HN:
     https://web.archive.org/web/20140626150005/http://blog.talles.me/my-hacker-news-front-page-day.html
@@ -65,7 +69,10 @@ Use floating points but make partial results explicit too?
     Consider parallel stuff in compiler?
 
     http://hackage.haskell.org/package/parallel-3.2.2.0/docs/Control-Parallel-Strategies.html
-
+** TODO Cache-control to make shop faster
+   - Note taken on [2020-05-03 Sun 12:21] \\
+     immutible -- still relevant for Firefox/Safari/Edge. Not relevant
+     for Chrome.
 * Testing
 ** TODO Use Chromium headless for JS tests?
    - Note taken on [2020-06-17 Wed 11:30] \\
@@ -102,6 +109,15 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Logic language feature?
+   - Note taken on [2020-06-24 Wed 14:00] \\
+     It's often that you have some numbers and constraints and you want to
+     "fill in" potential solutions.
+
+     SMT?
+   - Note taken on [2020-06-24 Wed 14:00] \\
+     https://fpcomplete-my.sharepoint.com/:x:/r/personal/chrisdone_fpcomplete_com/_layouts/15/Doc.aspx?sourcedoc=%7BA16D446C-99A4-495C-9571-6045B9BDDC5E%7D&file=Book%202.xlsx&action=editnew&mobileredirect=true&wdNewAndOpenCt=1593001848450&wdPreviousSession=6222750b-3cb5-4f2d-ae25-47b238218b0f&wdOrigin=OFFICECOM-WEB.START.NEW
+     Example use case
 ** TODO "Continued" expressions -- (re-vision pivot table)
 An easy way to do a transformation step by step:
 
@@ -140,9 +156,6 @@ or "returns" which is a very imperative term!!
 https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-future-features/answer/Kyle-Neath
 ** TODO GDPR
 ** TODO Sending emails?
-** TODO Cache-control to make shop faster
-   - Note taken on [2020-05-03 Sun 12:21] \\
-     Immutible etc
 ** DONE The cookies spiel - needed before register/login page?
    CLOSED: [2020-04-14 Tue 11:42]
    - State "DONE"       from "TODO"       [2020-04-14 Tue 11:42]
@@ -210,6 +223,9 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
 * Research
+  - Note taken on [2020-06-23 Tue 11:36] \\
+    Graphs: https://vega.github.io/vega-lite/
+    Charts: https://www.chartjs.org/
   - Note taken on [2020-06-15 Mon 17:16] \\
     SMS: https://www.twilio.com/pricing
   - Note taken on [2020-05-19 Tue 09:32] \\
