@@ -20,6 +20,17 @@ spec = do
 
   describe "Coarse-grained" coarseGrained
 
+{-
+
+TODO:
+
+- Test order of implicits for a global.
+- Test order of parameters.
+- Test de Brujin indexes with other lambdas in the code.
+- Test multiple class constraints.
+
+-}
+
 coarseGrained :: Spec
 coarseGrained = do
   it
