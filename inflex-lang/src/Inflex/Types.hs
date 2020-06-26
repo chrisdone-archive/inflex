@@ -111,7 +111,7 @@ data StagedScheme s where
   GeneratedScheme :: Scheme Generated -> StagedScheme Generated
   SolvedScheme :: Scheme Solved -> StagedScheme Solved
   GeneralisedScheme :: Scheme Generalised -> StagedScheme Generalised
-  ResolvedScheme :: Scheme Generalised -> StagedScheme Resolved
+  ResolvedScheme :: Type Generalised -> StagedScheme Resolved
 
 data Scheme s = Scheme
   { location :: !(StagedLocation s)
@@ -212,6 +212,7 @@ data Cursor
   | ApplyArgCursor Cursor
   | ImplicitlyApplicationOn Cursor
   | ImplicitArgumentFor Cursor
+  | BuiltIn
   deriving (Show, Eq, Ord)
 
 newtype DeBrujinIndex =

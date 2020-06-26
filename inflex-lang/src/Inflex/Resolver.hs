@@ -10,18 +10,19 @@
 
 module Inflex.Resolver where
 
-import           Control.Monad.State
-import           Control.Monad.Validate
-import           Data.Bifunctor
-import           Data.Foldable
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Map.Strict (Map)
-import           Data.Sequence (Seq)
-import           Data.Text (Text)
-import           Inflex.Generaliser
-import           Inflex.Location
-import           Inflex.Types
-import           Numeric.Natural
+import Control.Monad.State
+import Control.Monad.Validate
+import Data.Bifunctor
+import Data.Foldable
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Map.Strict (Map)
+import Data.Sequence (Seq)
+import Data.Text (Text)
+import Inflex.Generaliser
+import Inflex.Location
+import Inflex.Type (expressionType, instanceNameType, typeOutput)
+import Inflex.Types
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -178,8 +179,11 @@ globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} =
       constraints
   pure (addImplicitsToGlobal implicits global)
 
+-- | Wrap implicit arguments around a global reference.
 addImplicitsToGlobal ::
-     [ImplicitArgument] -> Global Generalised -> Expression Resolved
+     [ImplicitArgument] -- ^ Implicit arguments to wrap.
+  -> Global Generalised -- ^ Global that accepts implicit arguments.
+  -> Expression Resolved
 addImplicitsToGlobal implicits global =
   foldl
     (\inner implicit ->
@@ -194,15 +198,15 @@ addImplicitsToGlobal implicits global =
                      Global
                        { location = ImplicitArgumentFor location
                        , name = InstanceGlobal instanceName
-                       , scheme = undefined
+                       , scheme = ResolvedScheme (instanceNameType instanceName)
                        }
                  NoInstanceButPoly _ -> undefined
-           , typ = undefined
+           , typ = typeOutput (expressionType inner)
            })
-    (GlobalExpression Global {scheme = ResolvedScheme scheme, ..})
+    (GlobalExpression Global {scheme = ResolvedScheme typ, ..})
     implicits
   where
-    Global {scheme = GeneralisedScheme scheme, location, ..} = global
+    Global {scheme = GeneralisedScheme Scheme {typ}, location, ..} = global
 
 --------------------------------------------------------------------------------
 -- Instance resolution
