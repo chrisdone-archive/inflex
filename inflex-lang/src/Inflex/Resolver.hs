@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE GADTs #-}
@@ -120,21 +121,23 @@ resolveText ::
 resolveText fp text = do
   IsGeneralised {thing, polytype, mappings} <-
     first GeneraliserErrored (generaliseText fp text)
-  expression <-
+  (expression, ResolveState {implicits}) <-
     first
       ResolverErrors
-      (evalState
-         (runValidateT
-            (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
-         ResolveState {implicits = mempty})
+      ((\(result, s) -> fmap (, s) result)
+         (runState
+            (runValidateT
+               (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
+            ResolveState {implicits = mempty}))
   pure
     IsResolved
       { mappings
-      , thing = expression
+      , thing = addImplicitParamsToExpression expression implicits
       , scheme =
           Scheme
             { location = expressionLocation thing
-            , constraints = [] -- TODO: Collect constraints from state monad.
+            -- The reverse is intentional. See documentation of ResolveState.
+            , constraints = reverse (toList implicits)
             , typ = polytype
             }
       }
@@ -195,16 +198,16 @@ globalResolver nesting global@Global {scheme = GeneralisedScheme Scheme {constra
                  pure (DeferredDeBrujin deBrujinOffset classConstraint)
                InstanceFound instanceName -> pure (ExactInstance instanceName))
       constraints
-  pure (addImplicitsToGlobal nesting implicits global)
+  pure (addImplicitArgsToGlobal nesting implicits global)
 
 -- | Wrap implicit arguments around a global reference.
-addImplicitsToGlobal ::
+addImplicitArgsToGlobal ::
      DeBrujinNesting -- ^ Current deBrujin nesting level.
   -> [ImplicitArgument] -- ^ Implicit arguments to wrap.
   -> Global Generalised -- ^ Global that accepts implicit arguments.
   -> Expression Resolved
-addImplicitsToGlobal nesting implicits global =
-  foldl
+addImplicitArgsToGlobal nesting implicitArgs global =
+  foldl -- TODO: Check foldl vs foldr ordering!
     (\inner implicit ->
        ApplyExpression
          Apply
@@ -230,13 +233,34 @@ addImplicitsToGlobal nesting implicits global =
            , typ = typeOutput (expressionType inner)
            })
     (GlobalExpression Global {scheme = ResolvedScheme typ, ..})
-    implicits
+    implicitArgs
   where
     Global {scheme = GeneralisedScheme Scheme {typ}, location, ..} = global
 
--- | Add an implicit constraint to the top-level. Duplicates are no-op.
+-- | Add implicit parameters to an expression.
 --
--- Returns the deBrujin offset which always starts at 1.
+-- We wrap it in one lambda per implicit argument.
+addImplicitParamsToExpression ::
+     Expression Resolved
+  -> Seq (ClassConstraint Polymorphic)
+  -> Expression Resolved
+addImplicitParamsToExpression =
+  foldl -- TODO: Check left vs right.
+    (\body ClassConstraint {location} ->
+       LambdaExpression
+         Lambda
+           { location = ImplicitArgumentFor location
+           , param =
+               Param
+                 { location = ImplicitArgumentFor location
+                 , name = ()
+                 , typ = expressionType body -- TODO: Make accurate. Low prio.
+                 }
+           , body
+           , typ = expressionType body -- TODO: Make accurate. Low prio.
+           })
+
+-- | Add an implicit constraint to the top-level. Duplicates are no-op.
 addImplicitConstraint :: ClassConstraint Polymorphic -> Resolve DeBrujinOffset
 addImplicitConstraint classConstraint = do
   implicits <- gets implicits
@@ -244,8 +268,8 @@ addImplicitConstraint classConstraint = do
     Nothing -> do
       let implicits' = implicits :|> classConstraint
       put (ResolveState {implicits = implicits'}) -- Must be added to the END.
-      pure (DeBrujinOffset (length implicits'))
-    Just index -> pure (DeBrujinOffset (index + 1))
+      pure (DeBrujinOffset (length implicits' - 1))
+    Just index -> pure (DeBrujinOffset index)
 
 -- | Given the current level of lambda nesting, offseted by the number
 -- of implicit arguments, calculate the proper de Brujin index.
