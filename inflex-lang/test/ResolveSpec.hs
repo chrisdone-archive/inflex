@@ -32,11 +32,19 @@ TODO:
 
 coarseGrained :: Spec
 coarseGrained = do
+  fromInteger_123
+  lambda'dfromInteger_123
+
+fromInteger_123 :: SpecWith ()
+fromInteger_123 =
   it
     "fromInteger 123"
     (shouldBe
        (resolveText "" "fromInteger 123")
        (Right (IsResolved {thing = LambdaExpression (Lambda {location = ImplicitArgumentFor (ApplyFuncCursor ExpressionCursor), param = Param {location = ImplicitArgumentFor (ApplyFuncCursor ExpressionCursor), name = (), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}, body = ApplyExpression (Apply {location = ExpressionCursor, function = ApplyExpression (Apply {location = ImplicitlyApplicationOn (ApplyFuncCursor ExpressionCursor), function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}))}), argument = VariableExpression (Variable {location = ImplicitArgumentFor (ApplyFuncCursor ExpressionCursor), name = DeBrujinIndex 0, typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), scheme = Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = pure (VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})), location = ApplyFuncCursor ExpressionCursor}], typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}, mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 16, name = ""}}),(ApplyFuncCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}),(ApplyArgCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 13, name = ""}, end = SourcePos {line = 1, column = 16, name = ""}})]})))
+
+lambda'dfromInteger_123 :: SpecWith ()
+lambda'dfromInteger_123 =
   it
     "\\x->fromInteger x"
     (shouldBe
