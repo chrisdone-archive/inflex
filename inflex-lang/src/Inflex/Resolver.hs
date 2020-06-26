@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,9 +15,10 @@ import Control.Monad.State
 import Control.Monad.Validate
 import Data.Bifunctor
 import Data.Foldable
+import Data.List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (Map)
-import Data.Sequence (Seq)
+import Data.Sequence (Seq(..))
 import Data.Text (Text)
 import Inflex.Generaliser
 import Inflex.Location
@@ -31,7 +33,7 @@ import Numeric.Natural
 --
 -- 1. An instance was found and inserted inline.
 -- 2. No instance was found with polytypes.
-data ImplicitArgument
+data ResolutionSuccess
   = InstanceFound InstanceName
   | NoInstanceButPoly (ClassConstraint Polymorphic)
   deriving (Show, Eq)
@@ -46,6 +48,21 @@ data ResolutionError
   | NoInstanceAndMono (TypeVariable Generalised)
   | NoInstanceForType ClassName (Type Polymorphic)
   deriving (Show, Eq)
+
+-- An implicit argument.
+data ImplicitArgument
+  = ExactInstance InstanceName
+  | DeferredDeBrujin DeBrujinOffset
+                     (ClassConstraint Polymorphic)
+  deriving (Show, Eq)
+
+newtype DeBrujinNesting =
+  DeBrujinNesting Int
+  deriving (Show, Eq, Ord)
+
+newtype DeBrujinOffset = DeBrujinOffset
+  { unDeBrujinOffset :: Int
+  } deriving (Show, Eq, Ord)
 
 data PrecisionMismatch = PrecisionMismatch
   { supersetPlaces :: !Natural
@@ -85,7 +102,7 @@ data ResolveState = ResolveState
     -- \-> \_ -> .. f (idx+1+0) (idx+1+1) ..
     --     ^-------|        c1         c2
     -- ^-------------|
-    -- has reversed order!
+    -- has REVERSED order!
     -- :: C2, C1 => ..
   }
 
@@ -107,7 +124,8 @@ resolveText fp text = do
     first
       ResolverErrors
       (evalState
-         (runValidateT (runResolve (expressionResolver thing)))
+         (runValidateT
+            (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
          ResolveState {implicits = mempty})
   pure
     IsResolved
@@ -124,26 +142,26 @@ resolveText fp text = do
 --------------------------------------------------------------------------------
 -- Resolving expression tree
 
-expressionResolver :: Expression Generalised -> Resolve (Expression Resolved)
-expressionResolver =
+expressionResolver :: DeBrujinNesting -> Expression Generalised -> Resolve (Expression Resolved)
+expressionResolver nesting =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (pure (literalResolver literal))
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
-    LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver lambda)
-    ApplyExpression apply -> fmap ApplyExpression (applyResolver apply)
-    GlobalExpression global -> globalResolver global
+    LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver nesting lambda)
+    ApplyExpression apply -> fmap ApplyExpression (applyResolver nesting apply)
+    GlobalExpression global -> globalResolver nesting global
 
-lambdaResolver :: Lambda Generalised -> Resolve (Lambda Resolved)
-lambdaResolver Lambda {..} = do
-  body' <- expressionResolver body
+lambdaResolver :: DeBrujinNesting -> Lambda Generalised -> Resolve (Lambda Resolved)
+lambdaResolver (DeBrujinNesting nesting) Lambda {..} = do
+  body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
   pure Lambda {param = paramResolver param, body = body', ..}
 
-applyResolver :: Apply Generalised -> Resolve (Apply Resolved)
-applyResolver Apply {..} = do
-  function' <- expressionResolver function
-  argument' <- expressionResolver argument
+applyResolver :: DeBrujinNesting -> Apply Generalised -> Resolve (Apply Resolved)
+applyResolver nesting Apply {..} = do
+  function' <- expressionResolver nesting function
+  argument' <- expressionResolver nesting argument
   pure Apply {function = function', argument = argument', ..}
 
 variableResolver :: Variable Generalised -> Variable Resolved
@@ -163,8 +181,8 @@ paramResolver Param {..} = Param { ..}
 --------------------------------------------------------------------------------
 -- Adding implicit arguments to a global reference
 
-globalResolver :: Global Generalised -> Resolve (Expression Resolved)
-globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} = do
+globalResolver :: DeBrujinNesting -> Global Generalised -> Resolve (Expression Resolved)
+globalResolver nesting global@Global {scheme = GeneralisedScheme Scheme {constraints}} = do
   implicits <-
     traverse
       (\constraint ->
@@ -172,19 +190,20 @@ globalResolver global@Global {scheme = GeneralisedScheme Scheme {constraints}} =
            Left err -> Resolve (refute (pure err))
            Right resolution -> do
              case resolution of
-               NoInstanceButPoly{} -> undefined -- TODO: Add to 'implicits'.
-               -- TODO: Elsewhere, track lambda nesting.
-               _ -> pure ()
-             pure resolution)
+               NoInstanceButPoly classConstraint -> do
+                 deBrujinOffset <- addImplicitConstraint classConstraint
+                 pure (DeferredDeBrujin deBrujinOffset classConstraint)
+               InstanceFound instanceName -> pure (ExactInstance instanceName))
       constraints
-  pure (addImplicitsToGlobal implicits global)
+  pure (addImplicitsToGlobal nesting implicits global)
 
 -- | Wrap implicit arguments around a global reference.
 addImplicitsToGlobal ::
-     [ImplicitArgument] -- ^ Implicit arguments to wrap.
+     DeBrujinNesting -- ^ Current deBrujin nesting level.
+  -> [ImplicitArgument] -- ^ Implicit arguments to wrap.
   -> Global Generalised -- ^ Global that accepts implicit arguments.
   -> Expression Resolved
-addImplicitsToGlobal implicits global =
+addImplicitsToGlobal nesting implicits global =
   foldl
     (\inner implicit ->
        ApplyExpression
@@ -193,20 +212,46 @@ addImplicitsToGlobal implicits global =
            , function = inner
            , argument =
                case implicit of
-                 InstanceFound instanceName ->
+                 ExactInstance instanceName ->
                    GlobalExpression
                      Global
                        { location = ImplicitArgumentFor location
                        , name = InstanceGlobal instanceName
                        , scheme = ResolvedScheme (instanceNameType instanceName)
                        }
-                 NoInstanceButPoly _ -> undefined
+                 -- TODO: Drop the _classConstraint from the type?
+                 DeferredDeBrujin offset _classConstraint ->
+                   VariableExpression
+                     Variable
+                       { location = ImplicitArgumentFor location
+                       , name = deBrujinIndex nesting offset
+                       , typ = typ -- TODO: Check that this makes sense.
+                       }
            , typ = typeOutput (expressionType inner)
            })
     (GlobalExpression Global {scheme = ResolvedScheme typ, ..})
     implicits
   where
     Global {scheme = GeneralisedScheme Scheme {typ}, location, ..} = global
+
+-- | Add an implicit constraint to the top-level. Duplicates are no-op.
+--
+-- Returns the deBrujin offset which always starts at 1.
+addImplicitConstraint :: ClassConstraint Polymorphic -> Resolve DeBrujinOffset
+addImplicitConstraint classConstraint = do
+  implicits <- gets implicits
+  case elemIndex classConstraint (toList implicits) of
+    Nothing -> do
+      let implicits' = implicits :|> classConstraint
+      put (ResolveState {implicits = implicits'}) -- Must be added to the END.
+      pure (DeBrujinOffset (length implicits'))
+    Just index -> pure (DeBrujinOffset (index + 1))
+
+-- | Given the current level of lambda nesting, offseted by the number
+-- of implicit arguments, calculate the proper de Brujin index.
+deBrujinIndex :: DeBrujinNesting -> DeBrujinOffset -> DeBrujinIndex
+deBrujinIndex (DeBrujinNesting nesting) (DeBrujinOffset offset) =
+  DeBrujinIndex (nesting + offset)
 
 --------------------------------------------------------------------------------
 -- Instance resolution
@@ -220,7 +265,7 @@ addImplicitsToGlobal implicits global =
 -- * A Decimal i type matches any FromDecimal j provided i<=j.
 --
 resolveConstraint ::
-     ClassConstraint Generalised -> Either ResolutionError ImplicitArgument
+     ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
 resolveConstraint constraint = do
   polymorphicConstraint@ClassConstraint {typ, className} <-
     classConstraintPoly constraint

@@ -215,6 +215,7 @@ data Cursor
   | BuiltIn
   deriving (Show, Eq, Ord)
 
+-- | Zero-based de Brujin indexing.
 newtype DeBrujinIndex =
   DeBrujinIndex Int
   deriving (Show, Eq, Ord)
