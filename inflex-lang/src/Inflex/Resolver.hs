@@ -326,8 +326,8 @@ resolveFromDecimal ::
   -> Either ResolutionError InstanceName
 resolveFromDecimal TypeConstant {name = natural} numericType constraint =
   case (natural, numericType) of
-    (NatTypeName supersetPlaces, ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
-                                                           , argument = ConstantType TypeConstant {name = NatTypeName subsetPlaces}
+    (NatTypeName subsetPlaces, ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                                           , argument = ConstantType TypeConstant {name = NatTypeName supersetPlaces}
                                                            }) ->
       if supersetPlaces >= subsetPlaces
         then pure
