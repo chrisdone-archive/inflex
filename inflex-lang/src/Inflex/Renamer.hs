@@ -120,9 +120,10 @@ renameLiteral env =
     NumberLiteral number -> fmap NumberLiteral (renameNumber env number)
 
 renameNumber :: Env -> Number Parsed -> Renamer (Number Renamed)
-renameNumber Env{cursor} Number {..} = do
+renameNumber env@Env{cursor} Number {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
-  pure Number {location = final, ..}
+  typ' <- renameSignature env typ
+  pure Number {location = final, typ=typ', ..}
 
 renameLambda :: Env -> Lambda Parsed -> Renamer (Lambda Renamed)
 renameLambda env@Env {cursor} Lambda {..} = do
@@ -132,7 +133,8 @@ renameLambda env@Env {cursor} Lambda {..} = do
     renameExpression
       (over envScopeL (param :) (over envCursorL (. LambdaBodyCursor) env))
       body
-  pure Lambda {body = body', location = final, param = param', ..}
+  typ' <- renameSignature env typ
+  pure Lambda {body = body', location = final, param = param', typ=typ', ..}
 
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
 renameApply env@Env {cursor} Apply {..} = do
@@ -141,20 +143,23 @@ renameApply env@Env {cursor} Apply {..} = do
   argument' <-
     renameExpression (over envCursorL (. ApplyArgCursor) env) argument
   final <- finalizeCursor cursor ExpressionCursor location
-  pure Apply {function = function', argument = argument', location = final, ..}
+  typ' <- renameSignature env typ
+  pure Apply {function = function', argument = argument', location = final, typ = typ'}
 
 renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
-renameVariable Env {scope, cursor} variable@Variable {name, location, typ} =
+renameVariable env@Env {scope, cursor} variable@Variable {name, location, typ} =
   case findIndex (\Param {name = name'} -> name' == name) scope of
     Nothing -> Renamer (refute (pure (MissingVariable scope variable)))
     Just index -> do
       final <- finalizeCursor cursor ExpressionCursor location
-      pure (Variable {location = final, name = DeBrujinIndex index, ..})
+      typ' <- renameSignature env typ
+      pure (Variable {location = final, name = DeBrujinIndex index, typ=typ'})
 
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
-renameParam Env{cursor} Param {..} = do
+renameParam env@Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
-  pure Param {name = (), location = final, ..}
+  typ' <- renameSignature env typ
+  pure Param {name = (), location = final, typ = typ'}
 
 renameGlobal :: Env -> Global Parsed -> Renamer (Global Renamed)
 renameGlobal Env {cursor, globals} global@Global {name, location} =
@@ -163,6 +168,38 @@ renameGlobal Env {cursor, globals} global@Global {name, location} =
     Just globalRef -> do
       final <- finalizeCursor cursor ExpressionCursor location
       pure Global {location = final, name = globalRef, scheme = RenamedScheme}
+
+renameSignature :: Env -> Maybe (Type Parsed) -> Renamer (Maybe (Type Renamed))
+renameSignature env = maybe (pure Nothing) (fmap Just . renameType env)
+
+renameType :: Env -> Type Parsed -> Renamer (Type Renamed)
+renameType env =
+  \case
+    VariableType typeVariable ->
+      fmap VariableType (renameTypeVariable env typeVariable)
+    ApplyType typeApplication ->
+      fmap ApplyType (renameTypeApplication env typeApplication)
+    ConstantType typeConstant ->
+      fmap ConstantType (renameTypeConstant env typeConstant)
+
+renameTypeConstant :: Env -> TypeConstant Parsed -> Renamer (TypeConstant Renamed)
+renameTypeConstant Env{cursor} TypeConstant {..} = do
+  final <- finalizeCursor cursor TypeCursor location
+  pure TypeConstant {location = final, ..}
+
+renameTypeApplication :: Env -> TypeApplication Parsed -> Renamer (TypeApplication Renamed)
+renameTypeApplication env@Env {cursor} TypeApplication {function, argument, ..} = do
+  function' <- renameType (over envCursorL (. TypeApply) env) function
+  argument' <- renameType (over envCursorL (. TypeApply) env) argument
+  final <- finalizeCursor cursor TypeCursor location
+  pure
+    TypeApplication
+      {function = function', argument = argument', location = final, ..}
+
+renameTypeVariable :: Env -> TypeVariable Parsed -> Renamer (TypeVariable Renamed)
+renameTypeVariable Env{cursor} TypeVariable {..} = do
+  final <- finalizeCursor cursor TypeCursor location
+  pure TypeVariable {location = final, ..}
 
 --------------------------------------------------------------------------------
 -- Cursor operations

@@ -210,6 +210,8 @@ data Cursor
   | LambdaParamCursor
   | ApplyFuncCursor Cursor
   | ApplyArgCursor Cursor
+  | TypeCursor
+  | TypeApply Cursor
   | ImplicitlyApplicationOn Cursor
   | ImplicitArgumentFor Cursor
   | BuiltIn
@@ -277,7 +279,7 @@ type family StagedPrefix s where
 
 type family StagedType s where
   StagedType Parsed = Maybe (Type Parsed)
-  StagedType Renamed = Maybe (Type Parsed)
+  StagedType Renamed = Maybe (Type Renamed)
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
