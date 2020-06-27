@@ -13,6 +13,23 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+  describe
+    "Type"
+    (do it
+          "Integer"
+          (shouldBe
+             (parseType "" "Integer")
+             (Right (ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, name = IntegerTypeName}))))
+        it
+          "Decimal 3"
+          (shouldBe
+             (parseType "" "Decimal 3")
+             (Right (ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, name = NatTypeName 3}), location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, kind = TypeKind}))))
+        it
+          "Integer -> Decimal 3"
+          (shouldBe
+             (parseType "" "Integer->Decimal 3")
+             (Right (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 8, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, name = IntegerTypeName}), location = SourceLocation {start = SourcePos {line = 1, column = 8, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 10, name = ""}, end = SourcePos {line = 1, column = 17, name = ""}}, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SourceLocation {start = SourcePos {line = 1, column = 18, name = ""}, end = SourcePos {line = 1, column = 19, name = ""}}, name = NatTypeName 3}), location = SourceLocation {start = SourcePos {line = 1, column = 10, name = ""}, end = SourcePos {line = 1, column = 19, name = ""}}, kind = TypeKind}), location = SourceLocation {start = SourcePos {line = 1, column = 8, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, kind = TypeKind})))))
   it
     "Literal"
     (do shouldBe

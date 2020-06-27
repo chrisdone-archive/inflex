@@ -32,7 +32,7 @@ spec =
                        { start = SourcePos {line = 1, column = 3, name = ""}
                        , end = SourcePos {line = 1, column = 6, name = ""}
                        }
-                 , thing = IntegerToken 123
+                 , thing = NaturalToken 123
                  }
              , Located
                  { location =

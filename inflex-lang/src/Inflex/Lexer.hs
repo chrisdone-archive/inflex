@@ -21,13 +21,14 @@ module Inflex.Lexer
   , SourceLocation(..)
   , lexText
   , LexError
-  , _IntegerToken
+  , _NaturalToken
   , _DecimalToken
   , _BackslashToken
   , _RightArrowToken
   , _LowerWordToken
   , _OpenRoundToken
   , _CloseRoundToken
+  , _DoubleColonToken
   ) where
 
 import           Data.Bifunctor
@@ -40,6 +41,7 @@ import qualified Data.Text.Read as T
 import           Data.Void
 import           GHC.Generics
 import           Inflex.Types
+import           Numeric.Natural
 import           Optics
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as Mega
@@ -55,14 +57,16 @@ type Lexer = Mega.Parsec Void Text
 -- | Lexical tokens for the Inflex language.
 data Token
   = LowerWordToken !Text
+  | UpperWordToken !Text
   | OpenSquareToken
   | CloseSquareToken
   | OpenRoundToken
   | CloseRoundToken
-  | IntegerToken !Integer
+  | NaturalToken !Natural
   | DecimalToken !Decimal
   | BackslashToken
   | RightArrowToken
+  | DoubleColonToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -97,17 +101,23 @@ tokensLexer =
           , fmap pure integer
           , fmap pure decimal
           , fmap pure lowerWord
+          , fmap pure upperWord
           ] <*
         Mega.space))
   where
     lowerWord =
       located
-        (do c <- Mega.takeWhile1P Nothing isAlpha
+        (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)
             cs <- Mega.takeWhileP Nothing isAlpha
             pure (LowerWordToken (c <> cs)))
+    upperWord =
+      located
+        (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isUpper)
+            cs <- Mega.takeWhileP Nothing isAlpha
+            pure (UpperWordToken (c <> cs)))
     integer =
       Mega.try
-        (located (IntegerToken <$> Lexer.decimal) <*
+        (located (NaturalToken <$> Lexer.decimal) <*
          Mega.notFollowedBy (void (Mega.char '.')))
     decimal =
       located
@@ -130,6 +140,7 @@ tokensLexer =
            , CloseRoundToken <$ Mega.char ')'
            , RightArrowToken <$ Mega.try (Mega.string "->")
            , BackslashToken <$ Mega.char '\\'
+           , DoubleColonToken <$ Mega.try (Mega.string "::")
            ])
 
 -- | Retain location information for a token.

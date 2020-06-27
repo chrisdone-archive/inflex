@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -23,6 +24,7 @@ import           Data.Sequence (Seq)
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Inflex.Instances
 import           Inflex.Lexer
 import           Inflex.Location
 import           Inflex.Types
@@ -51,6 +53,8 @@ data ParseError
   | ExpectedVariable
   | ExpectedGlobal
   | ExpectedDecimal
+  | ExpectedDecimalType
+  | ExpectedIntegerType
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -68,6 +72,14 @@ parseText fp bs = do
   first
     ParseError
     (runReader (Reparsec.parseOnlyT expressionParser tokens) mempty)
+
+-- | Parse a given block of type.
+parseType :: FilePath -> Text -> Either RenameParseError (Type Parsed)
+parseType fp bs = do
+  tokens <- first LexerError (lexText fp bs)
+  first
+    ParseError
+    (runReader (Reparsec.parseOnlyT typeParser tokens) mempty)
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -149,10 +161,12 @@ numberParser = do
   Located {thing = number, location} <- integerParser <> decimalParser
   pure (Number {typ = (), ..})
 
+-- TODO: Add negation.
 integerParser :: Parser (Located SomeNumber)
 integerParser =
-  fmap (fmap IntegerNumber) (token ExpectedInteger (preview _IntegerToken))
+  fmap (fmap (IntegerNumber . fromIntegral)) (token ExpectedInteger (preview _NaturalToken))
 
+-- TODO: Add negation.
 decimalParser :: Parser (Located SomeNumber)
 decimalParser =
   fmap (fmap DecimalNumber) (token ExpectedDecimal (preview _DecimalToken))
@@ -191,3 +205,68 @@ paramParser :: Parser (Param Parsed)
 paramParser = do
   Located {location, thing} <- token ExpectedParam (preview _LowerWordToken)
   pure Param {name = thing, location, typ = ()}
+
+typeParser :: Parser (Type Parsed)
+typeParser = do
+  functionType <> decimalType <> integerType <> parensType
+  where
+    atomicType = decimalType <> integerType <> parensType
+    parensType = do
+      token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+      t <- typeParser
+      token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+      pure t
+    functionType = do
+      f <- atomicType
+      Located {location} <- token ExpectedDecimalType (preview _RightArrowToken)
+      x <- typeParser
+      pure
+        (ApplyType
+           TypeApplication
+             { function =
+                 ApplyType
+                   TypeApplication
+                     { function =
+                         ConstantType
+                           TypeConstant {location, name = FunctionTypeName}
+                     , argument = f
+                     , location
+                     , kind = FunKind TypeKind TypeKind
+                     }
+             , argument = x
+             , location
+             , kind = TypeKind
+             })
+    decimalType = do
+      Located { location = decimalLocation@SourceLocation {start}
+              , thing = typeName
+              } <-
+        token
+          ExpectedDecimalType
+          (\case
+             UpperWordToken "Decimal" -> pure DecimalTypeName
+             _ -> Nothing)
+      Located {location = placesLocation@SourceLocation {end}, thing = places} <-
+        token ExpectedDecimalType (preview _NaturalToken)
+      pure
+        (ApplyType
+           TypeApplication
+             { function =
+                 ConstantType
+                   TypeConstant {location = decimalLocation, name = typeName}
+             , argument =
+                 ConstantType
+                   TypeConstant
+                     {location = placesLocation, name = NatTypeName places}
+             , location = SourceLocation {start, end}
+             , kind = TypeKind
+             })
+    integerType = do
+      Located {location = integerLocation, thing = typeName} <-
+        token
+          ExpectedIntegerType
+          (\case
+             UpperWordToken "Integer" -> pure IntegerTypeName
+             _ -> Nothing)
+      pure
+        (ConstantType TypeConstant {location = integerLocation, name = typeName})
