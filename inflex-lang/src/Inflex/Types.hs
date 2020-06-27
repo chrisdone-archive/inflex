@@ -228,14 +228,14 @@ newtype CasHash =
   deriving (Show, Eq, Ord)
 
 -- TODO: Later we'll add CasHash to this.
-data GlobalRef
+data GlobalRef s where
   -- We can always lose type information later and
   -- change this to "fromInteger" lookup to
   -- CasHash. Going the other way is more expensive.
-  = FromIntegerGlobal
-  | FromDecimalGlobal
-  | InstanceGlobal !InstanceName
-  deriving (Show, Eq, Ord)
+  FromIntegerGlobal :: GlobalRef s
+  FromDecimalGlobal :: GlobalRef s
+  InstanceGlobal :: !InstanceName -> GlobalRef Resolved
+
 
 --------------------------------------------------------------------------------
 -- Stages
@@ -305,8 +305,8 @@ type family StagedVariableName s where
 
 type family StagedGlobalName s where
   StagedGlobalName Parsed = Text
-  StagedGlobalName Renamed = GlobalRef
-  StagedGlobalName Generated = GlobalRef
-  StagedGlobalName Solved = GlobalRef
-  StagedGlobalName Generalised = GlobalRef
-  StagedGlobalName Resolved = GlobalRef
+  StagedGlobalName Renamed = GlobalRef Renamed
+  StagedGlobalName Generated = GlobalRef Generated
+  StagedGlobalName Solved = GlobalRef Solved
+  StagedGlobalName Generalised = GlobalRef Generalised
+  StagedGlobalName Resolved = GlobalRef Resolved

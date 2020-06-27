@@ -644,6 +644,7 @@ globals =
                             ]
                       })))))
 
+signatures :: SpecWith ()
 signatures =
   describe
     "Signatures"

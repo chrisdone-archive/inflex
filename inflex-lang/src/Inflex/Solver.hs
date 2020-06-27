@@ -238,7 +238,13 @@ variableSolve substitutions Variable {..} =
 
 globalSolve :: Seq Substitution -> Global Generated -> Global Solved
 globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
-  Global {scheme = SolvedScheme (solveScheme substitutions scheme), ..}
+  Global
+    {scheme = SolvedScheme (solveScheme substitutions scheme), name = refl, ..}
+  where
+    refl =
+      case name of
+        FromIntegerGlobal -> FromIntegerGlobal
+        FromDecimalGlobal -> FromDecimalGlobal
 
 solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
 solveScheme substitutions Scheme {..} =

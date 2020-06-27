@@ -232,10 +232,14 @@ addImplicitArgsToGlobal nesting implicitArgs global =
                        }
            , typ = typeOutput (expressionType inner)
            })
-    (GlobalExpression Global {scheme = ResolvedScheme typ, ..})
+    (GlobalExpression Global {scheme = ResolvedScheme typ, name = refl, ..})
     implicitArgs
   where
     Global {scheme = GeneralisedScheme Scheme {typ}, location, ..} = global
+    refl =
+      case name of
+        FromIntegerGlobal -> FromIntegerGlobal
+        FromDecimalGlobal -> FromDecimalGlobal
 
 -- | Add implicit parameters to an expression.
 --

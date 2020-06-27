@@ -143,7 +143,15 @@ expressionGeneralise substitutions =
 globalGeneralise :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Global Solved -> Global Generalised
 globalGeneralise substitutions Global {scheme = SolvedScheme scheme, ..} =
   Global
-    {scheme = GeneralisedScheme (generaliseScheme substitutions scheme), ..}
+    { scheme = GeneralisedScheme (generaliseScheme substitutions scheme)
+    , name = refl
+    , ..
+    }
+  where
+    refl =
+      case name of
+        FromIntegerGlobal -> FromIntegerGlobal
+        FromDecimalGlobal -> FromDecimalGlobal
 
 generaliseScheme :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Scheme Solved -> Scheme Generalised
 generaliseScheme substitutions Scheme {..} =

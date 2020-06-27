@@ -227,7 +227,6 @@ globalGenerator :: Global Renamed -> Generate (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
-      InstanceGlobal{} -> error "FIXME: Make this not possible in the type system."
       FromIntegerGlobal -> do
         typeVariable <- generateTypeVariable location IntegerPrefix TypeKind
         pure
@@ -304,7 +303,12 @@ globalGenerator Global {name, location} = do
                     }
             , ..
             }
-  pure Global {scheme = GeneratedScheme scheme, ..}
+  pure Global {scheme = GeneratedScheme scheme, name = refl, ..}
+  where
+    refl =
+      case name of
+        FromIntegerGlobal -> FromIntegerGlobal
+        FromDecimalGlobal -> FromDecimalGlobal
 
 --------------------------------------------------------------------------------
 -- Type system helpers

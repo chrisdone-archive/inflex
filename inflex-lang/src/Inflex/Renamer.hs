@@ -37,7 +37,7 @@ import           Optics
 data RenameError
   = MissingVariable [Param Parsed]
                     (Variable Parsed)
-  | MissingGlobal (Map Text GlobalRef)
+  | MissingGlobal (Map Text (GlobalRef Renamed))
                   (Global Parsed)
   deriving (Show, Eq)
 
@@ -59,7 +59,7 @@ type CursorBuilder = Cursor -> Cursor
 data Env = Env
   { cursor :: !CursorBuilder
   , scope :: ![Param Parsed]
-  , globals :: !(Map Text GlobalRef)
+  , globals :: !(Map Text (GlobalRef Renamed))
   }
 
 data IsRenamed a = IsRenamed
@@ -93,7 +93,7 @@ renameText fp text = do
 --------------------------------------------------------------------------------
 -- Wired-in
 
-wiredInGlobals :: Map Text GlobalRef
+wiredInGlobals :: Map Text (GlobalRef Renamed)
 wiredInGlobals =
   M.fromList
     [("fromInteger", FromIntegerGlobal), ("fromDecimal", FromDecimalGlobal)]
