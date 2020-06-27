@@ -210,8 +210,9 @@ data Cursor
   | LambdaParamCursor
   | ApplyFuncCursor Cursor
   | ApplyArgCursor Cursor
+  | SignatureCursor Cursor
   | TypeCursor
-  | TypeApply Cursor
+  | TypeApplyCursor Cursor
   | ImplicitlyApplicationOn Cursor
   | ImplicitArgumentFor Cursor
   | BuiltIn

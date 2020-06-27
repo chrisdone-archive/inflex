@@ -179,10 +179,14 @@ paramGenerator Param {typ = _, ..} = do
   pure Param {typ, ..}
 
 applyGenerator :: Apply Renamed -> Generate (Apply Generated)
-applyGenerator Apply {typ = _, ..} = do
+applyGenerator Apply {..} = do
   function' <- expressionGenerator function
   argument' <- expressionGenerator argument
-  outputType <- generateTypeVariable (expressionLocation argument') ApplyPrefix TypeKind
+  outputType <-
+    case typ of
+      Nothing ->
+        generateTypeVariable (expressionLocation argument') ApplyPrefix TypeKind
+      Just typ' -> pure (toGenerated typ')
   let functionTemplate =
         ApplyType
           TypeApplication
@@ -223,6 +227,7 @@ globalGenerator :: Global Renamed -> Generate (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
+      InstanceGlobal{} -> error "FIXME: Make this not possible in the type system."
       FromIntegerGlobal -> do
         typeVariable <- generateTypeVariable location IntegerPrefix TypeKind
         pure
@@ -317,3 +322,16 @@ generateTypeVariable location prefix kind = do
 addEqualityConstraint :: EqualityConstraint -> Generate ()
 addEqualityConstraint constraint =
   modify' (over generateStateEqualityConstraintsL (Seq.|> constraint))
+
+--------------------------------------------------------------------------------
+-- Generation of renamed type
+
+toGenerated :: Type Renamed -> Type Generated
+toGenerated =
+  \case
+    VariableType TypeVariable {..} -> VariableType TypeVariable {..}
+    ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
+    ApplyType TypeApplication {..} ->
+      ApplyType
+        TypeApplication
+          {function = toGenerated function, argument = toGenerated argument, ..}

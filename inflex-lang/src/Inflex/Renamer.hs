@@ -170,7 +170,10 @@ renameGlobal Env {cursor, globals} global@Global {name, location} =
       pure Global {location = final, name = globalRef, scheme = RenamedScheme}
 
 renameSignature :: Env -> Maybe (Type Parsed) -> Renamer (Maybe (Type Renamed))
-renameSignature env = maybe (pure Nothing) (fmap Just . renameType env)
+renameSignature env =
+  maybe
+    (pure Nothing)
+    (fmap Just . renameType (over envCursorL (. SignatureCursor) env))
 
 renameType :: Env -> Type Parsed -> Renamer (Type Renamed)
 renameType env =
@@ -189,8 +192,8 @@ renameTypeConstant Env{cursor} TypeConstant {..} = do
 
 renameTypeApplication :: Env -> TypeApplication Parsed -> Renamer (TypeApplication Renamed)
 renameTypeApplication env@Env {cursor} TypeApplication {function, argument, ..} = do
-  function' <- renameType (over envCursorL (. TypeApply) env) function
-  argument' <- renameType (over envCursorL (. TypeApply) env) argument
+  function' <- renameType (over envCursorL (. TypeApplyCursor) env) function
+  argument' <- renameType (over envCursorL (. TypeApplyCursor) env) argument
   final <- finalizeCursor cursor TypeCursor location
   pure
     TypeApplication
