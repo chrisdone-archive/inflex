@@ -24,7 +24,7 @@ import           Data.Sequence (Seq)
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
-import           Inflex.Instances
+import           Inflex.Instances ()
 import           Inflex.Lexer
 import           Inflex.Location
 import           Inflex.Types
@@ -55,10 +55,15 @@ data ParseError
   | ExpectedDecimal
   | ExpectedDecimalType
   | ExpectedIntegerType
+  | ExpectedSignature
+  | ExpectedEndOfInput
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
   noMoreInputError = liftError NoMoreInput
+
+instance Reparsec.ExpectedEndOfInput ParseErrors where
+  expectedEndOfInputError = liftError ExpectedEndOfInput
 
 type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors (Reader (Set Text)) a
 
@@ -71,7 +76,7 @@ parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first
     ParseError
-    (runReader (Reparsec.parseOnlyT expressionParser tokens) mempty)
+    (runReader (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens) mempty)
 
 -- | Parse a given block of type.
 parseType :: FilePath -> Text -> Either RenameParseError (Type Parsed)
@@ -118,11 +123,21 @@ applyParser :: Parser (Apply Parsed)
 applyParser = do
   function <- functionParser
   argument <- argumentParser
+  typ <- optionalSignatureParser
   let SourceLocation {start} = expressionLocation function
       SourceLocation {end} = expressionLocation argument
   pure
     Apply
-      {function, argument, location = SourceLocation {start, end}, typ = ()}
+      {function, argument, location = SourceLocation {start, end}, typ}
+
+optionalSignatureParser :: Parser (Maybe (Type Parsed))
+optionalSignatureParser = do
+  continue <-
+    fmap (const True) (token_ ExpectedSignature (preview _DoubleColonToken)) <>
+    pure False
+  if continue
+    then fmap Just typeParser
+    else pure Nothing
 
 functionParser :: Parser (Expression Parsed)
 functionParser =
@@ -159,7 +174,7 @@ literalParser = do
 numberParser :: Parser (Number Parsed)
 numberParser = do
   Located {thing = number, location} <- integerParser <> decimalParser
-  pure (Number {typ = (), ..})
+  pure (Number {typ = Nothing, ..})
 
 -- TODO: Add negation.
 integerParser :: Parser (Located SomeNumber)
@@ -177,7 +192,7 @@ variableParser = do
     token ExpectedVariable (preview _LowerWordToken)
   scope <- ask
   if Set.member name scope
-    then pure Variable {name, location, typ = ()}
+    then pure Variable {name, location, typ = Nothing}
     else Reparsec.failWith (liftError ExpectedVariable)
 
 globalParser :: Parser (Global Parsed)
@@ -199,12 +214,12 @@ lambdaParser = do
   let SourceLocation {end} = expressionLocation body
   pure
     Lambda
-      {location = SourceLocation {start, end}, body, typ = (), param = param}
+      {location = SourceLocation {start, end}, body, typ = Nothing, param = param}
 
 paramParser :: Parser (Param Parsed)
 paramParser = do
   Located {location, thing} <- token ExpectedParam (preview _LowerWordToken)
-  pure Param {name = thing, location, typ = ()}
+  pure Param {name = thing, location, typ = Nothing}
 
 typeParser :: Parser (Type Parsed)
 typeParser = do

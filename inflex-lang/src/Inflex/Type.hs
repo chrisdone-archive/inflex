@@ -34,8 +34,8 @@ expressionType =
 globalType :: Global s -> StagedType s
 globalType Global {scheme} =
   case scheme of
-    ParsedScheme -> ()
-    RenamedScheme -> ()
+    ParsedScheme -> Nothing
+    RenamedScheme -> Nothing
     GeneratedScheme scheme' -> schemeType scheme'
     SolvedScheme scheme' -> schemeType scheme'
     GeneralisedScheme scheme' -> schemeType scheme'

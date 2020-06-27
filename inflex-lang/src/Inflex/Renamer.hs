@@ -144,12 +144,12 @@ renameApply env@Env {cursor} Apply {..} = do
   pure Apply {function = function', argument = argument', location = final, ..}
 
 renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
-renameVariable Env {scope, cursor} variable@Variable {name, location} =
+renameVariable Env {scope, cursor} variable@Variable {name, location, typ} =
   case findIndex (\Param {name = name'} -> name' == name) scope of
     Nothing -> Renamer (refute (pure (MissingVariable scope variable)))
     Just index -> do
       final <- finalizeCursor cursor ExpressionCursor location
-      pure (Variable {location = final, name = DeBrujinIndex index, typ = ()})
+      pure (Variable {location = final, name = DeBrujinIndex index, ..})
 
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam Env{cursor} Param {..} = do

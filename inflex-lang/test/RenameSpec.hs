@@ -26,7 +26,7 @@ spec = do
                      (Number
                         { location = ExpressionCursor
                         , number = IntegerNumber 123
-                        , typ = ()
+                        , typ = Nothing
                         }))
             , mappings =
                 M.fromList
@@ -99,16 +99,16 @@ spec = do
                      { location = ExpressionCursor
                      , param =
                          Param
-                           {location = LambdaParamCursor, name = (), typ = ()}
+                           {location = LambdaParamCursor, name = (), typ = Nothing}
                      , body =
                          LiteralExpression
                            (NumberLiteral
                               (Number
                                  { location = LambdaBodyCursor ExpressionCursor
                                  , number = IntegerNumber 123
-                                 , typ = ()
+                                 , typ = Nothing
                                  }))
-                     , typ = ()
+                     , typ = Nothing
                      })
             , mappings =
                 M.fromList
@@ -148,7 +148,7 @@ spec = do
                                         { location =
                                             ApplyFuncCursor LambdaParamCursor
                                         , name = ()
-                                        , typ = ()
+                                        , typ = Nothing
                                         }
                                   , body =
                                       ApplyExpression
@@ -173,7 +173,7 @@ spec = do
                                                                    (ApplyFuncCursor
                                                                       LambdaParamCursor))
                                                           , name = ()
-                                                          , typ = ()
+                                                          , typ = Nothing
                                                           }
                                                     , body =
                                                         VariableExpression
@@ -186,9 +186,9 @@ spec = do
                                                                             ExpressionCursor)))
                                                              , name =
                                                                  DeBrujinIndex 0
-                                                             , typ = ()
+                                                             , typ = Nothing
                                                              })
-                                                    , typ = ()
+                                                    , typ = Nothing
                                                     })
                                            , argument =
                                                VariableExpression
@@ -199,11 +199,11 @@ spec = do
                                                              (ApplyArgCursor
                                                                 ExpressionCursor))
                                                     , name = DeBrujinIndex 0
-                                                    , typ = ()
+                                                    , typ = Nothing
                                                     })
-                                           , typ = ()
+                                           , typ = Nothing
                                            })
-                                  , typ = ()
+                                  , typ = Nothing
                                   })
                          , argument =
                              LiteralExpression
@@ -212,9 +212,9 @@ spec = do
                                      { location =
                                          ApplyArgCursor ExpressionCursor
                                      , number = IntegerNumber 123
-                                     , typ = ()
+                                     , typ = Nothing
                                      }))
-                         , typ = ()
+                         , typ = Nothing
                          })
                 , mappings =
                     M.fromList
@@ -300,7 +300,7 @@ spec = do
                                         { location =
                                             ApplyFuncCursor LambdaParamCursor
                                         , name = ()
-                                        , typ = ()
+                                        , typ = Nothing
                                         }
                                   , body =
                                       ApplyExpression
@@ -325,7 +325,7 @@ spec = do
                                                                    (ApplyFuncCursor
                                                                       LambdaParamCursor))
                                                           , name = ()
-                                                          , typ = ()
+                                                          , typ = Nothing
                                                           }
                                                     , body =
                                                         VariableExpression
@@ -338,9 +338,9 @@ spec = do
                                                                             ExpressionCursor)))
                                                              , name =
                                                                  DeBrujinIndex 1
-                                                             , typ = ()
+                                                             , typ = Nothing
                                                              })
-                                                    , typ = ()
+                                                    , typ = Nothing
                                                     })
                                            , argument =
                                                VariableExpression
@@ -351,11 +351,11 @@ spec = do
                                                              (ApplyArgCursor
                                                                 ExpressionCursor))
                                                     , name = DeBrujinIndex 0
-                                                    , typ = ()
+                                                    , typ = Nothing
                                                     })
-                                           , typ = ()
+                                           , typ = Nothing
                                            })
-                                  , typ = ()
+                                  , typ = Nothing
                                   })
                          , argument =
                              LiteralExpression
@@ -364,9 +364,9 @@ spec = do
                                      { location =
                                          ApplyArgCursor ExpressionCursor
                                      , number = IntegerNumber 123
-                                     , typ = ()
+                                     , typ = Nothing
                                      }))
-                         , typ = ()
+                         , typ = Nothing
                          })
                 , mappings =
                     M.fromList

@@ -276,8 +276,8 @@ type family StagedPrefix s where
   StagedPrefix Polymorphic = ()
 
 type family StagedType s where
-  StagedType Parsed = ()
-  StagedType Renamed = ()
+  StagedType Parsed = Maybe (Type Parsed)
+  StagedType Renamed = Maybe (Type Parsed)
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised

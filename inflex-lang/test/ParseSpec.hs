@@ -44,7 +44,7 @@ spec = do
                            , end = SourcePos {name = "", line = 1, column = 4}
                            }
                      , number = IntegerNumber 123
-                     , typ = ()
+                     , typ = Nothing
                      })))
         shouldBe
           (parseText "" "123.0")
@@ -60,7 +60,7 @@ spec = do
                             }
                       , number =
                           DecimalNumber (Decimal {places = 1, integer = 1230})
-                      , typ = ()
+                      , typ = Nothing
                       }))))
         shouldBe
           (parseText "" "123.123")
@@ -76,7 +76,7 @@ spec = do
                             }
                       , number =
                           DecimalNumber (Decimal {places = 3, integer = 123123})
-                      , typ = ()
+                      , typ = Nothing
                       }))))
         shouldBe
           (parseText "" "0.000")
@@ -92,7 +92,7 @@ spec = do
                             }
                       , number =
                           DecimalNumber (Decimal {places = 3, integer = 0})
-                      , typ = ()
+                      , typ = Nothing
                       })))))
   it
     "Globals"
@@ -129,7 +129,7 @@ spec = do
                                    SourcePos {line = 1, column = 3, name = ""}
                                }
                          , name = "x"
-                         , typ = ()
+                         , typ = Nothing
                          }
                    , body =
                        GlobalExpression
@@ -146,7 +146,7 @@ spec = do
                             , name = "y"
                             , scheme = ParsedScheme
                             })
-                   , typ = ()
+                   , typ = Nothing
                    })))
         shouldBe
           (parseText "" "\\x->x y")
@@ -168,7 +168,7 @@ spec = do
                                    SourcePos {line = 1, column = 3, name = ""}
                                }
                          , name = "x"
-                         , typ = ()
+                         , typ = Nothing
                          }
                    , body =
                        ApplyExpression
@@ -201,7 +201,7 @@ spec = do
                                                  }
                                            }
                                      , name = "x"
-                                     , typ = ()
+                                     , typ = Nothing
                                      })
                             , argument =
                                 GlobalExpression
@@ -224,9 +224,9 @@ spec = do
                                      , name = "y"
                                      , scheme = ParsedScheme
                                      })
-                            , typ = ()
+                            , typ = Nothing
                             })
-                   , typ = ()
+                   , typ = Nothing
                    }))))
   it
     "Lambda"
@@ -249,7 +249,7 @@ spec = do
                             , end = SourcePos {line = 1, column = 3, name = ""}
                             }
                       , name = "x"
-                      , typ = ()
+                      , typ = Nothing
                       }
                 , body =
                     LiteralExpression
@@ -265,9 +265,9 @@ spec = do
                                         {line = 1, column = 8, name = ""}
                                   }
                             , number = IntegerNumber 123
-                            , typ = ()
+                            , typ = Nothing
                             }))
-                , typ = ()
+                , typ = Nothing
                 }))))
   it
     "Apply"
@@ -303,7 +303,7 @@ spec = do
                                            {line = 1, column = 4, name = ""}
                                      }
                                , name = "x"
-                               , typ = ()
+                               , typ = Nothing
                                }
                          , body =
                              VariableExpression
@@ -318,9 +318,9 @@ spec = do
                                               {line = 1, column = 7, name = ""}
                                         }
                                   , name = "x"
-                                  , typ = ()
+                                  , typ = Nothing
                                   })
-                         , typ = ()
+                         , typ = Nothing
                          })
                 , argument =
                     LiteralExpression
@@ -336,7 +336,7 @@ spec = do
                                         {line = 1, column = 10, name = ""}
                                   }
                             , number = IntegerNumber 1
-                            , typ = ()
+                            , typ = Nothing
                             }))
-                , typ = ()
+                , typ = Nothing
                 }))))
