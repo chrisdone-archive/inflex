@@ -12,8 +12,10 @@ module ResolveSpec where
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
+import           Inflex.Generaliser
 import           Inflex.Instances ()
 import           Inflex.Resolver
+import           Inflex.Solver as Solver
 import           Inflex.Types
 import           Test.Hspec
 
@@ -39,7 +41,7 @@ coarseGrained :: Spec
 coarseGrained = do
   fromInteger_123
   fromInteger_123_DecimalSig
-  fromDecimalInteger_fail
+  fromDecimal_fails
   lambda'dfromInteger_123
   fromIntegerFromInteger_123
 
@@ -74,8 +76,8 @@ fromInteger_123_DecimalSig =
         (resolveText "" "fromInteger 123 :: Decimal 2")
         (Right (IsResolved {thing = ApplyExpression (Apply {location = ExpressionCursor, function = ApplyExpression (Apply {location = ImplicitlyApplicationOn (ApplyFuncCursor ExpressionCursor), function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}))}), argument = GlobalExpression (Global {location = ImplicitArgumentFor (ApplyFuncCursor ExpressionCursor), name = InstanceGlobal (FromIntegerDecimalInstance 2), scheme = ResolvedScheme (ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = NatTypeName 2}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), scheme = Scheme {location = ExpressionCursor, constraints = [], typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}, mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 16, name = ""}}),(ApplyFuncCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}),(ApplyArgCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 13, name = ""}, end = SourcePos {line = 1, column = 16, name = ""}}),(SignatureCursor TypeCursor,SourceLocation {start = SourcePos {line = 1, column = 20, name = ""}, end = SourcePos {line = 1, column = 29, name = ""}}),(SignatureCursor (TypeApplyCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 28, name = ""}, end = SourcePos {line = 1, column = 29, name = ""}})]})))
 
-fromDecimalInteger_fail :: Spec
-fromDecimalInteger_fail = do
+fromDecimal_fails :: Spec
+fromDecimal_fails = do
   it
     "fromDecimal 12.0 :: Integer"
     (shouldBe
@@ -137,3 +139,97 @@ fromDecimalInteger_fail = do
                          }
                    }) :|
               []))))
+  it
+    "fromDecimal (\\x -> x)"
+    (shouldBe
+       (resolveText "" "fromDecimal (\\x -> x)")
+       (Left
+          (GeneraliserErrored
+             (SolverErrored
+                (SolverErrors
+                   (pure
+                      (Solver.TypeMismatch
+                         (EqualityConstraint
+                            { type1 =
+                                ConstantType
+                                  (TypeConstant
+                                     { location =
+                                         ApplyFuncCursor ExpressionCursor
+                                     , name = DecimalTypeName
+                                     })
+                            , type2 =
+                                ApplyType
+                                  (TypeApplication
+                                     { function =
+                                         ConstantType
+                                           (TypeConstant
+                                              { location =
+                                                  ApplyArgCursor
+                                                    ExpressionCursor
+                                              , name = FunctionTypeName
+                                              })
+                                     , argument =
+                                         VariableType
+                                           (TypeVariable
+                                              { location =
+                                                  ApplyArgCursor
+                                                    LambdaParamCursor
+                                              , prefix = LambdaParameterPrefix
+                                              , index = 2
+                                              , kind = TypeKind
+                                              })
+                                     , location =
+                                         ApplyArgCursor ExpressionCursor
+                                     , kind = FunKind TypeKind TypeKind
+                                     })
+                            , location = ApplyFuncCursor ExpressionCursor
+                            }))))))))
+  it
+    "fromInteger 5 :: Integer -> Integer"
+    (shouldBe
+       (resolveText "" "fromInteger 5 :: Integer -> Integer")
+       (Left
+          (ResolverErrors
+             (NE.fromList
+                [ NoInstanceForType
+                    FromIntegerClassName
+                    (ApplyType
+                       (TypeApplication
+                          { function =
+                              ApplyType
+                                (TypeApplication
+                                   { function =
+                                       ConstantType
+                                         (TypeConstant
+                                            { location =
+                                                SignatureCursor
+                                                  (TypeApplyCursor
+                                                     (TypeApplyCursor TypeCursor))
+                                            , name = FunctionTypeName
+                                            })
+                                   , argument =
+                                       ConstantType
+                                         (TypeConstant
+                                            { location =
+                                                SignatureCursor
+                                                  (TypeApplyCursor
+                                                     (TypeApplyCursor TypeCursor))
+                                            , name = IntegerTypeName
+                                            })
+                                   , location =
+                                       SignatureCursor
+                                         (TypeApplyCursor TypeCursor)
+                                   , kind = FunKind TypeKind TypeKind
+                                   })
+                          , argument =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       SignatureCursor
+                                         (TypeApplyCursor TypeCursor)
+                                   , name = IntegerTypeName
+                                   })
+                          , location = SignatureCursor TypeCursor
+                          , kind = TypeKind
+                          }))
+                ]))))
