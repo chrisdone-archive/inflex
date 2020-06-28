@@ -45,6 +45,8 @@ data StripeSession = StripeSession
   { stripeConfig :: StripeConfig
   , successUrl :: Text
   , cancelUrl :: Text
+  , customerEmail :: Text
+  , trialFromPlan :: Bool
   }
 
 newtype CheckoutSessionId = CheckoutSessionId
@@ -77,6 +79,8 @@ createSession ::
 createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
                             , successUrl
                             , cancelUrl
+                            , customerEmail
+                            , trialFromPlan
                             } = do
   request <-
     fmap hydrate (parseRequest "https://api.stripe.com/v1/checkout/sessions")
@@ -87,9 +91,15 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
       setRequestMethod "POST" .
       setRequestSecure True .
       setRequestBasicAuth (T.encodeUtf8 (unSecretApiKey secretApiKey)) mempty .
+      -- TODO: Add https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-client_reference_id
       setRequestBodyURLEncoded
         [ ("payment_method_types[]", "card")
         , ("subscription_data[items][][plan]", T.encodeUtf8 (unPlanId planId))
         , ("success_url", T.encodeUtf8 successUrl)
         , ("cancel_url", T.encodeUtf8 cancelUrl)
+        , ("customer_email", T.encodeUtf8 customerEmail)
+        , ( "subscription_data[trial_from_plan]"
+          , if trialFromPlan
+              then "true"
+              else "false")
         ]

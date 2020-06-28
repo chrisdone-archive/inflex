@@ -152,6 +152,8 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             { stripeConfig
             , successUrl = render CheckoutWaitingR
             , cancelUrl = render CheckoutCancelR
+            , customerEmail = unEmail (registerEmail registrationDetails)
+            , trialFromPlan = True
             }
       case result of
         Left err -> error (show err) -- TODO:
@@ -170,7 +172,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
                       "Please enable JavaScript so that we can securely send you to Stripe."
                     p_ "Redirecting you to Stripe ..."
                     spinner_
-                    if True -- TODO: Remove or make debug/release.
+                    if False -- TODO: Remove or make debug/release.
                       then redirect_ 3 CheckoutWaitingR
                       else julius_
                              (stripeJavaScript
