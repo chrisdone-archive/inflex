@@ -23,6 +23,7 @@ module Inflex.Server.Forge
   , Field(..)
   , Autocomplete(..)
   , PasswordConfig(..)
+  , ShowError(..)
   , wrap
   , formGroup
   ) where
@@ -58,10 +59,10 @@ wrap f = Forge.CeilingForm (\es html -> (f html,es))
 
 -- | Wrap a formlet with its errors. Allow errors to bubble up.
 formGroup ::
-     Monad m
+     (Monad m, ShowError error)
   => Text
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
-  -> Forge.Form index parse (Lucid.HtmlT m ()) field Error a
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a
 formGroup label =
   Forge.CeilingForm
     (\errors html' ->
@@ -72,20 +73,17 @@ formGroup label =
                   unless
                     (null errors)
                     (Lucid.div_
-                       [Lucid.class_ "invalid-feedback", vdomkey_ key]
+                       [Lucid.class_ "invalid-feedback"]
                        (mapM_ (Lucid.span_ . showError) errors)))
-       , map (ContextedError label) errors))
-  where
-    key = "inline-errors:" <> label -- Ensures convenient uniqueness for the DOM differ.
+       , []))
 
 -- | Convert an error to HTML.
-showError :: Monad m => Error -> Lucid.HtmlT m ()
-showError =
+class ShowError error where
+  showError :: Monad m => error -> Lucid.HtmlT m ()
+
+instance ShowError Error where
+ showError =
   \case
-    ContextedError label e -> do
-      Lucid.toHtml label
-      ": "
-      showError e
     MissingInput {} -> "Missing input: please fill this one in."
     InvalidInputFormat {} -> "Invalid input format."
 
@@ -96,7 +94,6 @@ showError =
 data Error
   = MissingInput Forge.Key
   | InvalidInputFormat Forge.Key (NonEmpty Forge.Input)
-  | ContextedError Text Error
   deriving (Show, Eq)
 
 data PasswordConfig r = PasswordConfig

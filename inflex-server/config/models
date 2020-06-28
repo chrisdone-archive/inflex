@@ -1,6 +1,6 @@
 Account
-  username Username -- TODO: make unique
-  email Email -- TODO: make unique
+  username Username
+  email Email
   password Password -- TODO: use hash with salt
   UniqueUsername username
   UniqueEmail username

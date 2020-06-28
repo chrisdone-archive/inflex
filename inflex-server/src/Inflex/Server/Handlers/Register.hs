@@ -28,7 +28,6 @@ import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Server.Lucid
 import           Inflex.Server.App
-import           Inflex.Server.Forge
 import           Inflex.Server.Forms
 import           Inflex.Server.Session
 import           Inflex.Server.Types
@@ -132,7 +131,7 @@ registerView sessionState formView =
              (do formView
                  p_ (button_ [class_ "btn btn-primary"] "Continue"))))
 
-verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm Error RegistrationDetails
+verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm RegisterError RegistrationDetails
 verifiedRegisterForm = $$($$(Forge.verify1 [||registerForm||]))
 
 --------------------------------------------------------------------------------
