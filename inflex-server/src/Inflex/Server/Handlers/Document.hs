@@ -81,7 +81,7 @@ import           Yesod.Lucid
 getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR slug =
   withLogin
-    (\_ state@(LoginState {loginAccountId}) -> do
+    (\_ state@(LoginState {loginAccountId})
        {-(documentId, initialDecs') <-
          do mdoc <-
               runDB
@@ -105,11 +105,16 @@ getAppEditorR slug =
                                 pure (UUID.toText uuid, dec))
                              decs)
                       fmap (documentId, ) (evaluateInputDocument decs'))-}
+      -> do
        htmlWithUrl
          (appTemplate
             (Registered state)
             ((do url <- ask
-                 div_ [class_ "container-fluid"] (div_ [class_ "row"] (p_ "Coming soon!"))
+                 div_
+                   [class_ "container-fluid"]
+                   (div_
+                      [class_ "row"]
+                      (div_ [class_ "col"] (p_ "Coming soon! We're working on this right now. Check back in a week or two.")))
                  -- script_
                  --   [ src_
                  --       "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"
@@ -129,8 +134,7 @@ getAppEditorR slug =
                  -- script_
                  --   [type_ "text/javascript", src_ (url AppJsR)]
                  --   ""
-                 )
-            )))
+              ))))
 
 -- getAppJsR :: Handler TypedContent
 -- getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
