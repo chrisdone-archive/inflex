@@ -54,7 +54,6 @@ data ResolutionError
 data ImplicitArgument
   = ExactInstance InstanceName
   | DeferredDeBrujin DeBrujinOffset
-                     (ClassConstraint Polymorphic)
   deriving (Show, Eq)
 
 newtype DeBrujinNesting =
@@ -195,7 +194,7 @@ globalResolver nesting global@Global {scheme = GeneralisedScheme Scheme {constra
              case resolution of
                NoInstanceButPoly classConstraint -> do
                  deBrujinOffset <- addImplicitConstraint classConstraint
-                 pure (DeferredDeBrujin deBrujinOffset classConstraint)
+                 pure (DeferredDeBrujin deBrujinOffset)
                InstanceFound instanceName -> pure (ExactInstance instanceName))
       constraints
   pure (addImplicitArgsToGlobal nesting implicits global)
@@ -222,8 +221,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
                        , name = InstanceGlobal instanceName
                        , scheme = ResolvedScheme (instanceNameType instanceName)
                        }
-                 -- TODO: Drop the _classConstraint from the type?
-                 DeferredDeBrujin offset _classConstraint ->
+                 DeferredDeBrujin offset ->
                    VariableExpression
                      Variable
                        { location = ImplicitArgumentFor location
