@@ -35,8 +35,6 @@ dependencies:
 - persistent-sqlite
 - base >= 4.7 && < 5
 - yesod
-- inflex-engine
-- inflex-client
 - warp
 - wai-extra
 - wai
@@ -86,7 +84,7 @@ library:
     - Inflex.Server.Types
     - Inflex.Backend
     - Inflex.Server.Handlers.Shop
-    - Inflex.Server.Handlers.Shop.Register
+    - Inflex.Server.Handlers.Register
     - Inflex.Server.Handlers.Document
     - Inflex.Server.Forms
     - Inflex.Server.App

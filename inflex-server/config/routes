@@ -22,9 +22,9 @@
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
-/app/api/refresh/#DocumentId AppRefreshR POST
-/app/js AppJsR GET
+-- /app/api/refresh/#DocumentId AppRefreshR POST
+-- /app/js AppJsR GET
 /app/css AppCssR GET
 
 -- Vanity URLs for user documents
-!/#Username/#DocumentSlug ViewDocumentR GET
+-- !/#Username/#DocumentSlug ViewDocumentR GET

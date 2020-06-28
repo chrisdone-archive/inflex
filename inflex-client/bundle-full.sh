@@ -3,6 +3,8 @@
 set -e
 set -x
 
-stack exec --allow-different-user -- psc-package build
+stack build psc-package
 
-stack exec --allow-different-user -- purs bundle 'output/**/*.js' -m Main --main Main -o app.js
+stack exec -- psc-package build
+
+stack exec -- purs bundle 'output/**/*.js' -m Main --main Main -o app.js

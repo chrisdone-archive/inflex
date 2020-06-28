@@ -13,7 +13,7 @@
 
 -- |
 
-module Inflex.Server.Handlers.Shop.Register
+module Inflex.Server.Handlers.Register
   ( handleEnterDetailsR
   , getCheckoutCreateR
   , getCheckoutCancelR
