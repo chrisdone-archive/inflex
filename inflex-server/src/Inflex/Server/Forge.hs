@@ -26,6 +26,7 @@ module Inflex.Server.Forge
   , ShowError(..)
   , wrap
   , formGroup
+  , formWrap
   ) where
 
 import           Control.Applicative
@@ -57,7 +58,7 @@ wrap ::
   -> Forge.Form index parse t field error a
 wrap f = Forge.CeilingForm (\es html -> (f html,es))
 
--- | Wrap a formlet with its errors. Allow errors to bubble up.
+-- | Wrap a formlet with its errors. Do not allow errors to bubble up.
 formGroup ::
      (Monad m, ShowError error)
   => Text
@@ -75,6 +76,22 @@ formGroup label =
                     (Lucid.div_
                        [Lucid.class_ "invalid-feedback"]
                        (mapM_ (Lucid.span_ . showError) errors)))
+       , []))
+
+-- | Wrap a form with its errors. Do not allow errors to bubble up.
+formWrap ::
+     (Monad m, ShowError error)
+  => Forge.Form index parse (Lucid.HtmlT m ()) field error a
+  -> Forge.Form index parse (Lucid.HtmlT m ()) field error a
+formWrap =
+  Forge.CeilingForm
+    (\errors html' ->
+       ( do html'
+            unless
+              (null errors)
+              (Lucid.p_
+                 [Lucid.class_ "invalid-feedback invalid-feedback-visible"]
+                 (mapM_ (Lucid.span_ . showError) errors))
        , []))
 
 -- | Convert an error to HTML.

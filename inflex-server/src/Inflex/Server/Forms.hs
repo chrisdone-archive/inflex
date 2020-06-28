@@ -45,6 +45,21 @@ instance ShowError RegisterError where
       UsernameTaken -> "That username is already in use, sorry!"
       EmailTaken -> "That email is already in use, sorry!" -- TODO: Add link to sign in.
 
+data LoginError
+  = LoginError Error
+  | InvalidLogin
+  deriving (Show, Eq)
+
+instance Forge.FormError LoginError where
+  missingInputError = LoginError . Forge.missingInputError
+  invalidInputFormat x y = LoginError (Forge.invalidInputFormat x y)
+
+instance ShowError LoginError where
+  showError =
+    \case
+      LoginError e -> showError e
+      InvalidLogin -> "Invalid email/password combination." -- TODO: Add "forgot password" suggestion.
+
 registerForm :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails
 registerForm mregistrationDetails = do
   registerUsername <-
@@ -83,25 +98,30 @@ registerForm mregistrationDetails = do
             (PasswordField PasswordConfig {autocomplete = CompleteNewPassword})))
   pure RegistrationDetails {..}
 
-loginForm :: Form Error (Email, Password)
-loginForm = do
-  loginEmail <-
-    formGroup
-      "Email"
-      (Forge.FieldForm
-         (Forge.StaticFieldName "email")
-         Forge.RequiredField
-         Forge.noDefault
-         (EmailField CompleteEmail))
-  loginPassword <-
-    formGroup
-      "Password"
-      (Forge.FieldForm
-         (Forge.StaticFieldName "password")
-         Forge.RequiredField
-         Forge.noDefault
-         (PasswordField PasswordConfig {autocomplete = CurrentPassword}))
-  pure (loginEmail, loginPassword)
+-- TODO: Add "forgot password" link.
+-- TODO: 2FA.
+loginForm :: Form LoginError (Entity Account)
+loginForm =
+  formWrap
+    (Forge.ParseForm
+       parseValidLogin
+       (do loginEmail <-
+             formGroup
+               "Email"
+               (Forge.FieldForm
+                  (Forge.StaticFieldName "email")
+                  Forge.RequiredField
+                  Forge.noDefault
+                  (EmailField CompleteEmail))
+           loginPassword <-
+             formGroup
+               "Password"
+               (Forge.FieldForm
+                  (Forge.StaticFieldName "password")
+                  Forge.RequiredField
+                  Forge.noDefault
+                  (PasswordField PasswordConfig {autocomplete = CurrentPassword}))
+           pure (loginEmail, loginPassword)))
 
 parseUniqueUsername :: Username -> YesodDB App (Either RegisterError Username)
 parseUniqueUsername username = do
@@ -116,3 +136,11 @@ parseUniqueEmail email = do
   case result of
     Nothing -> pure (pure email)
     Just {} -> pure (Left EmailTaken)
+
+parseValidLogin :: (Email, Password) -> YesodDB App (Either LoginError (Entity Account))
+parseValidLogin (email, password) = do
+  maccount <-
+    selectFirst [AccountEmail ==. email, AccountPassword ==. password] []
+  case maccount of
+    Nothing -> pure (Left InvalidLogin) -- TODO: Update max attempts for this IP and per hour.
+    Just entity -> pure (Right entity)

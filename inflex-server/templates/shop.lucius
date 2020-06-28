@@ -27,3 +27,12 @@
     transition: 0.7s;
   }
 }
+
+/********************************************************************************
+ * Forms
+ */
+
+.invalid-feedback.invalid-feedback-visible {
+  display: block;
+  font-size: 20px;
+}

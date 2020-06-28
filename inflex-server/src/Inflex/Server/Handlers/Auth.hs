@@ -9,7 +9,6 @@ import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Server.App
-import           Inflex.Server.Forge
 import           Inflex.Server.Lucid
 import           Inflex.Server.Forms
 import           Inflex.Server.Session
@@ -33,27 +32,19 @@ handleLoginR = do
         runDB parse
       case generatedResult of
         Failure _errors -> htmlWithUrl (loginView state v)
-        Success (email, password) -> do
-          maccount <-
-            runDB
-              (selectFirst
-                 [AccountEmail ==. email, AccountPassword ==. password]
-                 [])
-          case maccount of
-            Nothing -> htmlWithUrl (loginView state v)
-            Just (Entity key account) -> do
-              runDB
-                (updateSession
-                   sessionId
-                   (Registered
-                      LoginState
-                        { loginEmail = email
-                        , loginUsername = accountUsername account
-                        , loginAccountId = fromAccountId key
-                        }))
-              redirect AppDashboardR
+        Success (Entity key account) -> do
+          runDB
+            (updateSession
+               sessionId
+               (Registered
+                  LoginState
+                    { loginEmail = accountEmail account
+                    , loginUsername = accountUsername account
+                    , loginAccountId = fromAccountId key
+                    }))
+          redirect AppDashboardR
 
-verifiedLoginForm :: VerifiedForm Error (Email, Password)
+verifiedLoginForm :: VerifiedForm LoginError (Entity Account)
 verifiedLoginForm = $$($$(Forge.verify [||loginForm||]))
 
 loginView :: SessionState -> Lucid App () -> Lucid App ()
