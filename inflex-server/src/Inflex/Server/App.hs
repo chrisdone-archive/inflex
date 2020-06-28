@@ -24,7 +24,6 @@
 module Inflex.Server.App where
 
 import           Control.Monad.Reader
-import           Data.Functor.Identity
 import           Data.Pool
 import           Data.Text (Text)
 import           Data.Time
@@ -64,5 +63,7 @@ fromAccountId = AccountID . fromSqlKey
 fromAccountID :: AccountID -> AccountId
 fromAccountID (AccountID i) = toSqlKey i
 
-type Form error a = Forge.Form 'Forge.Unverified Identity (Lucid App ()) (Field (Reader (Route App -> Text))) error a
-type VerifiedForm error a = Forge.VerifiedForm 'Forge.Unverified Identity (Lucid App ()) (Field (Reader (Route App -> Text))) error a
+type FormValidate = YesodDB App
+
+type Form error a = Forge.Form 'Forge.Unverified FormValidate (Lucid App ()) (Field (Reader (Route App -> Text))) error a
+type VerifiedForm error a = Forge.VerifiedForm 'Forge.Unverified FormValidate (Lucid App ()) (Field (Reader (Route App -> Text))) error a

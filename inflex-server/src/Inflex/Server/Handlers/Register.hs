@@ -22,7 +22,6 @@ module Inflex.Server.Handlers.Register
   ) where
 
 import           Control.Monad.Reader
-import           Data.Functor.Identity
 import           Data.Text (Text)
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
@@ -110,8 +109,8 @@ handleEnterDetailsR = withRegistrationState _EnterDetails go
       case submission of
         NotSubmitted v -> htmlWithUrl (registerView state v)
         Submitted parse -> do
-          let Forge.Generated {generatedView = v, generatedValue = result} =
-                runIdentity parse
+          Forge.Generated {generatedView = v, generatedValue = result} <-
+                runDB parse
           case result of
             Failure _errors -> htmlWithUrl (registerView state v)
             Success registrationDetails -> do

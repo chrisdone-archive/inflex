@@ -25,7 +25,6 @@ module Inflex.Server.Forms where
 import qualified Forge.Internal.Types as Forge
 import           Inflex.Server.App
 import           Inflex.Server.Forge
-import           Inflex.Server.Forge
 import           Inflex.Server.Types
 
 registerForm :: Forge.Default RegistrationDetails -> Form Error RegistrationDetails

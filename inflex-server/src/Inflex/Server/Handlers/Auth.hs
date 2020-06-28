@@ -5,7 +5,6 @@
 
 module Inflex.Server.Handlers.Auth where
 
-import           Data.Functor.Identity
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
@@ -30,8 +29,8 @@ handleLoginR = do
   case submission of
     NotSubmitted v -> htmlWithUrl (loginView state v)
     Submitted parse -> do
-      let Forge.Generated {generatedView = v, generatedValue = generatedResult} =
-            runIdentity parse
+      Forge.Generated {generatedView = v, generatedValue = generatedResult} <-
+        runDB parse
       case generatedResult of
         Failure _errors -> htmlWithUrl (loginView state v)
         Success (email, password) -> do
