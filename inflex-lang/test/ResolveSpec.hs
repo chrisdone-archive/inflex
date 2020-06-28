@@ -30,7 +30,7 @@ Pretty much need row types to be able to have a productive expression
 produce more than one type.
 
 TODO: Test order of implicits for a global.
-TODO: Test order of parameters.
+TODO: Test order of implicit parameters being correct.
 TODO: Test multiple class constraints.
 
 -}

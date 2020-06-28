@@ -226,7 +226,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
                      Variable
                        { location = ImplicitArgumentFor location
                        , name = deBrujinIndex nesting offset
-                       , typ = typ -- TODO: Check that this makes sense.
+                       , typ = typ -- TODO: Check that this makes sense. [low prio]
                        }
            , typ = typeOutput (expressionType inner)
            })
