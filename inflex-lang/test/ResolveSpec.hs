@@ -26,14 +26,12 @@ spec = do
 
 {-
 
-TODO:
-
 Pretty much need row types to be able to have a productive expression
 produce more than one type.
 
-- Test order of implicits for a global.
-- Test order of parameters.
-- Test multiple class constraints.
+TODO: Test order of implicits for a global.
+TODO: Test order of parameters.
+TODO: Test multiple class constraints.
 
 -}
 
