@@ -1,4 +1,8 @@
 * Stripe
+  - Note taken on [2020-06-28 Sun 22:15] \\
+    Premium support starts at £1400/mo
+
+    https://stripe.com/gb/support-and-services?utm_campaign=premiumsupport_m4&utm_source=pricing2&utm_medium=support-faq
   - Note taken on [2020-06-15 Mon 16:34] \\
     Sending email reminders https://stripe.com/docs/billing/invoices/paying#emails
 * Feature
