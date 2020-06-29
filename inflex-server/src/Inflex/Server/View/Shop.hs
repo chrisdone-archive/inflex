@@ -13,6 +13,7 @@ import Inflex.Server.Types
 import Lucid
 import Yesod.Lucid
 
+-- TODO: Drop bootstrap.
 shopTemplate :: SessionState -> Lucid App () -> Lucid App ()
 shopTemplate state body = do
   doctype_
