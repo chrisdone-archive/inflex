@@ -122,6 +122,20 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Brotli compression
+   - Note taken on [2020-07-02 Thu 16:29] \\
+     brotli vs gzip, an improvement
+
+     #+BEGIN_SRC
+     chris@precision:~/Work/skyabove/inflex/inflex-client$ ls -alh app.js*
+     -rw-rw-r-- 1 chris chris 490K Jun 28 15:05 app.js
+     -rw-rw-r-- 1 chris chris  95K Jun 30 15:11 app.js.br.1
+     -rw-rw-r-- 1 chris chris  59K Jun 30 15:11 app.js.br.9
+     -rw-rw-r-- 1 chris chris  54K Jun 30 15:12 app.js.br.default
+     -rw-rw-r-- 1 chris chris  54K Jun 30 15:18 app.js.br.z
+     -rw-rw-r-- 1 chris chris  94K Jun 30 15:11 app.js.gz.1
+     -rw-rw-r-- 1 chris chris  66K Jun 30 15:11 app.js.gz.9
+     #+END_SRC
 ** TODO Beginner Programming is hard because inputting values is hard
    - Note taken on [2020-07-02 Thu 12:23] \\
      Case in point:
