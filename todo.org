@@ -1,3 +1,12 @@
+* Go live checklist
+- [ ] Stripe checkout
+- [ ] Stripe portal working
+- [ ] Google Analytics setup with Measurement protocol
+- [ ] T's & C's
+- [ ] Privacy policy
+- [ ] Refunds policy
+- [ ] Database backups policy
+- [ ] Encryption of data at rest?
 * Stripe
   - Note taken on [2020-06-28 Sun 22:15] \\
     Premium support starts at £1400/mo
@@ -113,6 +122,13 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Beginner Programming is hard because inputting values is hard
+   - Note taken on [2020-07-02 Thu 12:23] \\
+     Case in point:
+
+     https://www.reddit.com/r/haskell/comments/hjratt/beginner_haskell_question_concerning_read_and_show/
+
+     In Inflex this would be much easier.
 ** TODO Mutual recursive definitions? Yep!
    - Note taken on [2020-06-24 Wed 17:13] \\
      Needed, due to this kind of algorithm:
