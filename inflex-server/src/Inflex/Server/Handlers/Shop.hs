@@ -25,8 +25,10 @@ module Inflex.Server.Handlers.Shop
   , getShopAccountR
   , getHealthR
   , getHomeR
+  , getFaviconR
   ) where
 
+import           Sendfile
 import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -90,3 +92,6 @@ getHealthR = do
 
 getShopCssR :: Handler Css
 getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")
+
+getFaviconR :: Handler TypedContent
+getFaviconR = $(sendFileFrom "application/javascript" "inflex-server/img/favicon.png")

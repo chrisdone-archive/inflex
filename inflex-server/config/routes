@@ -4,6 +4,9 @@
 -- Stripe
 /api/v1/stripe StripeR POST
 
+-- General
+/favicon.png FaviconR GET
+
 -- Shop
 / HomeR GET
 /register EnterDetailsR

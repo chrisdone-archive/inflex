@@ -7,6 +7,7 @@
 - [ ] Refunds policy
 - [ ] Database backups policy
 - [ ] Encryption of data at rest?
+- [ ] Custom user-friendly error handlers: 500, 400
 * Stripe
   - Note taken on [2020-06-28 Sun 22:15] \\
     Premium support starts at £1400/mo
