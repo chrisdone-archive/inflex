@@ -43,9 +43,9 @@ appTemplate state body = do
           (do header_
                 [class_ "navbar navbar-light bg-light"]
                 (do a_
-                      [class_ "navbar-brand mr-0 mr-md-2", href_ (url HomeR)]
+                      [class_ "navbar-brand mr-0 mr-md-2 logo-svg", href_ (url HomeR)]
                       (toHtmlRaw
-                         $(wrapStackRoot "inflex-server/svg/logo.svg" >>=
+                         $(wrapStackRoot "inflex-server/svg/inflex-logo.svg" >>=
                            embedFile))
                     div_
                       [class_ "navbar-nav ml-md-auto"]

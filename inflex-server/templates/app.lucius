@@ -2,17 +2,21 @@
  * Navigation
  */
 
-.navbar-light .navbar-brand svg {
-  path, ellipse {
-    fill: #333 !important;
-  }
+.logo-svg svg {
+  width: 100px;
 }
 
-.navbar-dark .navbar-brand svg {
-  path, ellipse {
-    fill: #eee !important;
-  }
-}
+/* .navbar-light .navbar-brand svg { */
+/*   path, ellipse { */
+/*     fill: #333 !important; */
+/*   } */
+/* } */
+
+/* .navbar-dark .navbar-brand svg { */
+/*   path, ellipse { */
+/*     fill: #eee !important; */
+/*   } */
+/* } */
 
 /********************************************************************************
  * Document
