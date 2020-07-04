@@ -20,6 +20,7 @@ module Inflex.Renamer
 import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
@@ -35,7 +36,7 @@ import           Optics
 -- Renamer types
 
 data RenameError
-  = MissingVariable [Param Parsed]
+  = MissingVariable [Binding Parsed]
                     (Variable Parsed)
   | MissingGlobal (Map Text (GlobalRef Renamed))
                   (Global Parsed)
@@ -56,9 +57,15 @@ data ParseRenameError
 
 type CursorBuilder = Cursor -> Cursor
 
+bindingParam :: Binding s -> NonEmpty (Param s)
+bindingParam =
+  \case
+    LambdaBinding p -> pure p
+    LetBinding p -> p
+
 data Env = Env
   { cursor :: !CursorBuilder
-  , scope :: ![Param Parsed]
+  , scope :: ![Binding Parsed]
   , globals :: !(Map Text (GlobalRef Renamed))
   }
 
@@ -131,10 +138,13 @@ renameLambda env@Env {cursor} Lambda {..} = do
   param' <- renameParam env param
   body' <-
     renameExpression
-      (over envScopeL (param :) (over envCursorL (. LambdaBodyCursor) env))
+      (over
+         envScopeL
+         (LambdaBinding param :)
+         (over envCursorL (. LambdaBodyCursor) env))
       body
   typ' <- renameSignature env typ
-  pure Lambda {body = body', location = final, param = param', typ=typ', ..}
+  pure Lambda {body = body', location = final, param = param', typ = typ', ..}
 
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
 renameApply env@Env {cursor} Apply {..} = do
@@ -148,12 +158,28 @@ renameApply env@Env {cursor} Apply {..} = do
 
 renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
 renameVariable env@Env {scope, cursor} variable@Variable {name, location, typ} =
-  case findIndex (\Param {name = name'} -> name' == name) scope of
+  case find
+         (any (\Param {name = name'} -> name' == name) . bindingParam . snd)
+         (zip [0 ..] scope) of
     Nothing -> Renamer (refute (pure (MissingVariable scope variable)))
-    Just index -> do
+    Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
-      pure (Variable {location = final, name = DeBrujinIndex index, typ=typ'})
+      deBrujinIndex <-
+        case binding of
+          LambdaBinding {} -> pure (DeBrujinIndex (DeBrujinNesting index))
+          LetBinding params ->
+            case findIndex
+                   (\Param {name = name'} -> name' == name)
+                   (toList params) of
+              Nothing ->
+                Renamer (refute (pure (MissingVariable scope variable)))
+              Just subIndex ->
+                pure
+                  (DeBrujinIndexOfLet
+                     (DeBrujinNesting index)
+                     (IndexInLet subIndex))
+      pure (Variable {location = final, name = deBrujinIndex, typ = typ'})
 
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam env@Env{cursor} Param {..} = do

@@ -19,6 +19,7 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import           Data.Sequence (Seq)
@@ -55,7 +56,7 @@ newtype Generate a = Generate
              )
 
 data Env = Env
-  { scope :: ![Param Generated]
+  { scope :: ![Binding Generated]
   }
 
 data RenameGenerateError
@@ -147,7 +148,7 @@ someNumberType location =
 lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
   param' <- paramGenerator param
-  body' <- local (over envScopeL (param' :)) (expressionGenerator body)
+  body' <- local (over envScopeL (LambdaBinding param' :)) (expressionGenerator body)
   let outputType = expressionType body'
   pure
     Lambda
@@ -210,18 +211,23 @@ applyGenerator Apply {..} = do
   pure Apply {function = function', argument = argument', typ = outputType, ..}
 
 variableGenerator :: Variable Renamed -> Generate (Variable Generated)
-variableGenerator variable@Variable { typ = _
-                                    , name = name@(DeBrujinIndex index)
-                                    , ..
-                                    } = do
+variableGenerator variable@Variable {typ = _, name = index, ..} = do
   Env {scope} <- ask
-  case lookup index (zip [0 ..] scope) of
+  case do binding <-
+            lookup
+              (deBrujinIndexNesting index)
+              (zip (map DeBrujinNesting [0 ..]) scope)
+          case binding of
+            LambdaBinding param -> pure param
+            LetBinding params
+              | DeBrujinIndexOfLet _ (IndexInLet subIndex) <- index ->
+                lookup subIndex (zip [0..] (toList params))
+            _ -> Nothing of
     Nothing -> Generate (refute (pure (MissingVariableG variable)))
     Just Param {typ = type2} -> do
       type1 <- generateTypeVariable location VariablePrefix TypeKind
-      addEqualityConstraint
-        EqualityConstraint {type1, type2, ..}
-      pure Variable {typ = type1, name, ..}
+      addEqualityConstraint EqualityConstraint {type1, type2, ..}
+      pure Variable {typ = type1, name = index, ..}
 
 globalGenerator :: Global Renamed -> Generate (Global Generated)
 globalGenerator Global {name, location} = do

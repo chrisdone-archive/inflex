@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -22,6 +24,20 @@ data Expression s where
   ApplyExpression :: !(Apply s) -> Expression s
   VariableExpression :: !(Variable s) -> Expression s
   GlobalExpression :: !(Global s) -> Expression s
+  -- TODO: Add LetExpression.
+  -- LetExpression :: !(Let s) -> Expression s
+
+data Let s = Let
+  { location :: !(StagedLocation s)
+  , binds :: !(NonEmpty (Bind s))
+  , body :: !(Expression s)
+  , typ :: !(StagedType s)
+  }
+
+data Bind s = Bind
+  { param :: !(Param s)
+  , value :: !(Expression s)
+  }
 
 data Global s = Global
   { location :: !(StagedLocation s)
@@ -48,6 +64,10 @@ data Param s = Param
   , name :: !(StagedParamName s)
   , typ :: !(StagedType s)
   }
+
+data Binding s
+  = LambdaBinding !(Param s)
+  | LetBinding !(NonEmpty (Param s))
 
 data Variable s = Variable
   { location :: !(StagedLocation s)
@@ -219,10 +239,33 @@ data Cursor
   deriving (Show, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.
-newtype DeBrujinIndex =
-  DeBrujinIndex Int
+--
+-- If referencing a let, then there is a sub-index for which of the
+-- let bindings we're referring to.
+data DeBrujinIndex
+  = DeBrujinIndex !DeBrujinNesting
+  | DeBrujinIndexOfLet !DeBrujinNesting
+                       !IndexInLet
   deriving (Show, Eq, Ord)
 
+deBrujinIndexNesting :: DeBrujinIndex -> DeBrujinNesting
+deBrujinIndexNesting =
+  \case
+    DeBrujinIndex n -> n
+    DeBrujinIndexOfLet n _ -> n
+
+-- | Within a let's set of bindings, which binding are we referring
+-- to?
+newtype IndexInLet =
+  IndexInLet Int
+  deriving (Show, Eq, Ord)
+
+-- | How many lambdas away are we from the binding lambda?
+newtype DeBrujinNesting =
+  DeBrujinNesting Int
+  deriving (Show, Eq, Ord, Num)
+
+-- | A hash of the contents of the referrent.
 newtype CasHash =
   CasHash ByteString
   deriving (Show, Eq, Ord)
@@ -235,7 +278,6 @@ data GlobalRef s where
   FromIntegerGlobal :: GlobalRef s
   FromDecimalGlobal :: GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
-
 
 --------------------------------------------------------------------------------
 -- Stages

@@ -56,10 +56,6 @@ data ImplicitArgument
   | DeferredDeBrujin DeBrujinOffset
   deriving (Show, Eq)
 
-newtype DeBrujinNesting =
-  DeBrujinNesting Int
-  deriving (Show, Eq, Ord)
-
 newtype DeBrujinOffset = DeBrujinOffset
   { unDeBrujinOffset :: Int
   } deriving (Show, Eq, Ord)
@@ -277,7 +273,7 @@ addImplicitConstraint classConstraint = do
 -- of implicit arguments, calculate the proper de Brujin index.
 deBrujinIndex :: DeBrujinNesting -> DeBrujinOffset -> DeBrujinIndex
 deBrujinIndex (DeBrujinNesting nesting) (DeBrujinOffset offset) =
-  DeBrujinIndex (nesting + offset)
+  DeBrujinIndex (DeBrujinNesting (nesting + offset))
 
 --------------------------------------------------------------------------------
 -- Instance resolution
