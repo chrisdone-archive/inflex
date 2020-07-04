@@ -27,6 +27,7 @@ expressionType =
   \case
     LiteralExpression literal -> literalType literal
     LambdaExpression lambda -> lambdaType lambda
+    LetExpression let' -> letType let'
     ApplyExpression apply -> applyType apply
     VariableExpression variable -> variableType variable
     GlobalExpression global -> globalType global
@@ -46,6 +47,9 @@ schemeType Scheme{typ} = typ
 
 lambdaType :: Lambda s -> StagedType s
 lambdaType Lambda {typ} = typ
+
+letType :: Let s -> StagedType s
+letType Let {typ} = typ
 
 applyType :: Apply s -> StagedType s
 applyType Apply {typ} = typ

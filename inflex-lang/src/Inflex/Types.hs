@@ -24,8 +24,7 @@ data Expression s where
   ApplyExpression :: !(Apply s) -> Expression s
   VariableExpression :: !(Variable s) -> Expression s
   GlobalExpression :: !(Global s) -> Expression s
-  -- TODO: Add LetExpression.
-  -- LetExpression :: !(Let s) -> Expression s
+  LetExpression :: !(Let s) -> Expression s
 
 data Let s = Let
   { location :: !(StagedLocation s)
@@ -35,7 +34,8 @@ data Let s = Let
   }
 
 data Bind s = Bind
-  { param :: !(Param s)
+  { location :: !(StagedLocation s)
+  , param :: !(Param s)
   , value :: !(Expression s)
   }
 
@@ -227,6 +227,8 @@ data SourcePos = SourcePos
 data Cursor
   = ExpressionCursor
   | LambdaBodyCursor Cursor
+  | LetBodyCursor Cursor
+  | LetBindCursor IndexInLet Cursor
   | LambdaParamCursor
   | ApplyFuncCursor Cursor
   | ApplyArgCursor Cursor

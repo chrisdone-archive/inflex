@@ -22,6 +22,7 @@ import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.List
+import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
@@ -70,6 +71,8 @@ renameExpression env =
       fmap LiteralExpression (renameLiteral env literal)
     LambdaExpression lambda ->
       fmap LambdaExpression (renameLambda env lambda)
+    LetExpression let' ->
+      fmap LetExpression (renameLet env let')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable ->
       fmap VariableExpression (renameVariable env variable)
@@ -100,6 +103,37 @@ renameLambda env@Env {cursor} Lambda {..} = do
       body
   typ' <- renameSignature env typ
   pure Lambda {body = body', location = final, param = param', typ = typ', ..}
+
+-- TODO: Disable duplicate names in bind list.
+renameLet :: Env -> Let Parsed -> Renamer (Let Renamed)
+renameLet env@Env {cursor} Let {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  binds' <-
+    traverse
+      (\(index, bind) ->
+         renameBind
+           (over
+              envScopeL
+              (LetBinding (fmap (\Bind {param} -> param) binds) :)
+              (over envCursorL (. LetBindCursor (IndexInLet index)) env))
+           bind)
+      (NE.zip (NE.fromList [0 ..]) binds)
+  body' <-
+    renameExpression
+      (over
+         envScopeL
+         (LetBinding (fmap (\Bind {param} -> param) binds) :)
+         (over envCursorL (. LetBodyCursor) env))
+      body
+  typ' <- renameSignature env typ
+  pure Let {body = body', location = final, binds = binds', typ = typ', ..}
+
+renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
+renameBind env@Env {cursor} Bind {param, value, location} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  param' <- renameParam env param
+  value' <- renameExpression env value
+  pure Bind {value = value', param = param', location = final}
 
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
 renameApply env@Env {cursor} Apply {..} = do

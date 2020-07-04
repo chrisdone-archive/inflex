@@ -13,12 +13,16 @@ expressionLocation =
   \case
     LiteralExpression literal -> literalLocation literal
     LambdaExpression lambda -> lambdaLocation lambda
+    LetExpression let' -> letLocation let'
     GlobalExpression global -> globalLocation global
     ApplyExpression apply -> applyLocation apply
     VariableExpression variable -> variableLocation variable
 
 lambdaLocation :: Lambda s -> StagedLocation s
 lambdaLocation Lambda {location} = location
+
+letLocation :: Let s -> StagedLocation s
+letLocation Let {location} = location
 
 globalLocation :: Global s -> StagedLocation s
 globalLocation Global {location} = location
