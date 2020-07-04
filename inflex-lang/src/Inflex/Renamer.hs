@@ -69,15 +69,11 @@ renameExpression env =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (renameLiteral env literal)
-    LambdaExpression lambda ->
-      fmap LambdaExpression (renameLambda env lambda)
-    LetExpression let' ->
-      fmap LetExpression (renameLet env let')
+    LambdaExpression lambda -> fmap LambdaExpression (renameLambda env lambda)
+    LetExpression let' -> fmap LetExpression (renameLet env let')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
-    VariableExpression variable ->
-      fmap VariableExpression (renameVariable env variable)
-    GlobalExpression global ->
-      fmap GlobalExpression (renameGlobal env global)
+    VariableExpression variable -> renameVariable env variable
+    GlobalExpression {} -> pure undefined -- TODO: oops
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral env =
@@ -146,12 +142,27 @@ renameApply env@Env {cursor} Apply {..} = do
   typ' <- renameSignature env typ
   pure Apply {function = function', argument = argument', location = final, typ = typ'}
 
-renameVariable :: Env -> Variable Parsed -> Renamer (Variable Renamed)
-renameVariable env@Env {scope, cursor} variable@Variable {name, location, typ} =
+renameVariable ::
+     Env
+  -> Variable Parsed
+  -> Renamer (Expression Renamed)
+renameVariable env@Env {scope, cursor, globals} variable@Variable { name
+                                                                  , location
+                                                                  , typ
+                                                                  } =
   case find
          (any (\Param {name = name'} -> name' == name) . bindingParam . snd)
          (zip [0 ..] scope) of
-    Nothing -> Renamer (refute (pure (MissingVariable scope variable)))
+    Nothing ->
+      case M.lookup name globals of
+        Nothing ->
+          Renamer (refute (pure (MissingVariable scope globals variable)))
+        Just globalRef -> do
+          final <- finalizeCursor cursor ExpressionCursor location
+          pure
+            (GlobalExpression
+               (Global
+                  {location = final, name = globalRef, scheme = RenamedScheme}))
     Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
@@ -163,27 +174,21 @@ renameVariable env@Env {scope, cursor} variable@Variable {name, location, typ} =
                    (\Param {name = name'} -> name' == name)
                    (toList params) of
               Nothing ->
-                Renamer (refute (pure (MissingVariable scope variable)))
+                Renamer (refute (pure (MissingVariable scope globals variable)))
               Just subIndex ->
                 pure
                   (DeBrujinIndexOfLet
                      (DeBrujinNesting index)
                      (IndexInLet subIndex))
-      pure (Variable {location = final, name = deBrujinIndex, typ = typ'})
+      pure
+        (VariableExpression
+           (Variable {location = final, name = deBrujinIndex, typ = typ'}))
 
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam env@Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
   typ' <- renameSignature env typ
   pure Param {name = (), location = final, typ = typ'}
-
-renameGlobal :: Env -> Global Parsed -> Renamer (Global Renamed)
-renameGlobal Env {cursor, globals} global@Global {name, location} =
-  case M.lookup name globals of
-    Nothing -> Renamer (refute (pure (MissingGlobal globals global)))
-    Just globalRef -> do
-      final <- finalizeCursor cursor ExpressionCursor location
-      pure Global {location = final, name = globalRef, scheme = RenamedScheme}
 
 renameSignature :: Env -> Maybe (Type Parsed) -> Renamer (Maybe (Type Renamed))
 renameSignature env =

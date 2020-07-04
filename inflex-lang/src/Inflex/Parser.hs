@@ -15,14 +15,13 @@ module Inflex.Parser where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
+import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
-import           Data.Set (Set)
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Lexer
@@ -69,7 +68,7 @@ instance Reparsec.NoMoreInput ParseErrors where
 instance Reparsec.ExpectedEndOfInput ParseErrors where
   expectedEndOfInputError = liftError ExpectedEndOfInput
 
-type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors (Reader (Set Text)) a
+type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 
 --------------------------------------------------------------------------------
 -- Top-level accessor
@@ -80,7 +79,7 @@ parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first
     ParseError
-    (runReader (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens) mempty)
+    (runIdentity (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens))
 
 -- | Parse a given block of type.
 parseType :: FilePath -> Text -> Either RenameParseError (Type Parsed)
@@ -88,7 +87,7 @@ parseType fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first
     ParseError
-    (runReader (Reparsec.parseOnlyT typeParser tokens) mempty)
+    (runIdentity (Reparsec.parseOnlyT typeParser tokens))
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -119,7 +118,6 @@ expressionParser =
        , ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
-       , GlobalExpression <$> globalParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
@@ -186,7 +184,6 @@ functionParser =
   fold1
     (NE.fromList
        [ VariableExpression <$> variableParser
-       , GlobalExpression <$> globalParser
        , parensParser
        ])
 
@@ -195,7 +192,6 @@ argumentParser =
   fold1
     (NE.fromList
        [ VariableExpression <$> variableParser
-       , GlobalExpression <$> globalParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , parensParser
@@ -232,27 +228,15 @@ variableParser :: Parser (Variable Parsed)
 variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken)
-  scope <- ask
-  if Set.member name scope
-    then pure Variable {name, location, typ = Nothing}
-    else Reparsec.failWith (liftError ExpectedVariable)
-
-globalParser :: Parser (Global Parsed)
-globalParser = do
-  Located {thing = name, location} <-
-    token ExpectedGlobal (preview _LowerWordToken)
-  scope <- ask
-  if Set.member name scope
-     then Reparsec.failWith (liftError ExpectedGlobal)
-     else pure Global {name, location, scheme = ParsedScheme}
+  pure Variable {name, location, typ = Nothing}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do
   Located {location = SourceLocation {start}} <-
     token (ExpectedToken BackslashToken) (preview _BackslashToken)
-  param@Param {name} <- paramParser
+  param <- paramParser
   token_ (ExpectedToken RightArrowToken) (preview _RightArrowToken)
-  body <- local (Set.insert name) expressionParser
+  body <- expressionParser
   let SourceLocation {end} = expressionLocation body
   pure
     Lambda
