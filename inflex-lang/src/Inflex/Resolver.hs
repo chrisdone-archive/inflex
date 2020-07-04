@@ -148,6 +148,7 @@ expressionResolver nesting =
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver nesting lambda)
+    LetExpression let' -> fmap LetExpression (letResolver nesting let')
     ApplyExpression apply -> fmap ApplyExpression (applyResolver nesting apply)
     GlobalExpression global -> globalResolver nesting global
 
@@ -155,6 +156,18 @@ lambdaResolver :: DeBrujinNesting -> Lambda Generalised -> Resolve (Lambda Resol
 lambdaResolver (DeBrujinNesting nesting) Lambda {..} = do
   body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
   pure Lambda {param = paramResolver param, body = body', ..}
+
+letResolver :: DeBrujinNesting -> Let Generalised -> Resolve (Let Resolved)
+letResolver (DeBrujinNesting nesting) Let {..} = do
+  binds' <- traverse (bindResolver (DeBrujinNesting (nesting + 1))) binds
+  body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
+  pure Let {binds = binds', body = body', ..}
+
+bindResolver :: DeBrujinNesting -> Bind Generalised -> Resolve (Bind Resolved)
+bindResolver nesting Bind {..} = do
+  let param' = paramResolver param
+  value' <- expressionResolver nesting value
+  pure Bind {param = param', value = value', ..}
 
 applyResolver :: DeBrujinNesting -> Apply Generalised -> Resolve (Apply Resolved)
 applyResolver nesting Apply {..} = do

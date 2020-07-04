@@ -37,6 +37,7 @@ data Bind s = Bind
   { location :: !(StagedLocation s)
   , param :: !(Param s)
   , value :: !(Expression s)
+  , typ :: !(StagedType s)
   }
 
 data Global s = Global

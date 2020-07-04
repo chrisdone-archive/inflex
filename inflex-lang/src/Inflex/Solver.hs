@@ -209,6 +209,8 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     LambdaExpression lambda ->
       LambdaExpression (lambdaSolve substitutions lambda)
+    LetExpression let' ->
+      LetExpression (letSolve substitutions let')
     ApplyExpression apply ->
       ApplyExpression (applySolve substitutions apply)
     VariableExpression variable ->
@@ -221,6 +223,24 @@ lambdaSolve substitutions Lambda {..} =
   Lambda
     { param = paramSolve substitutions param
     , body = expressionSolve substitutions body
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+letSolve :: Seq Substitution -> Let Generated -> Let Solved
+letSolve substitutions Let {..} =
+  Let
+    { binds = fmap (bindSolve substitutions) binds
+    , body = expressionSolve substitutions body
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+bindSolve :: Seq Substitution -> Bind Generated -> Bind Solved
+bindSolve substitutions Bind {..} =
+  Bind
+    { param = paramSolve substitutions param
+    , value = expressionSolve substitutions value
     , typ = solveType substitutions typ
     , ..
     }

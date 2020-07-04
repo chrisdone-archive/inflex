@@ -146,7 +146,7 @@ bindGenerator Bind {..} = do
   addEqualityConstraint
     EqualityConstraint
       {type1 = paramType param', type2 = expressionType value', ..}
-  pure Bind {param = param', value = value', ..}
+  pure Bind {param = param', value = value', typ = paramType param', ..}
 
 paramGenerator :: Param Renamed -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do

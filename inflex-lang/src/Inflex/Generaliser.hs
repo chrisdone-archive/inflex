@@ -133,6 +133,8 @@ expressionGeneralise substitutions =
       LiteralExpression (literalGeneralise substitutions literal)
     LambdaExpression lambda ->
       LambdaExpression (lambdaGeneralise substitutions lambda)
+    LetExpression let' ->
+      LetExpression (letGeneralise substitutions let')
     ApplyExpression apply ->
       ApplyExpression (applyGeneralise substitutions apply)
     VariableExpression variable ->
@@ -176,6 +178,30 @@ lambdaGeneralise substitutions Lambda {..} =
   Lambda
     { param = paramGeneralise substitutions param
     , body = expressionGeneralise substitutions body
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+letGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Let Solved
+  -> Let Generalised
+letGeneralise substitutions Let {..} =
+  Let
+    { binds = fmap (bindGeneralise substitutions) binds
+    , body = expressionGeneralise substitutions body
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+bindGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Bind Solved
+  -> Bind Generalised
+bindGeneralise substitutions Bind {..} =
+  Bind
+    { param = paramGeneralise substitutions param
+    , value = expressionGeneralise substitutions value
     , typ = generaliseType substitutions typ
     , ..
     }

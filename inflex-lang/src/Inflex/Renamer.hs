@@ -129,11 +129,12 @@ renameLet env@Env {cursor} Let {..} = do
   pure Let {body = body', location = final, binds = binds', typ = typ', ..}
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
-renameBind env@Env {cursor} Bind {param, value, location} = do
+renameBind env@Env {cursor} Bind {param, value, location, typ} = do
   final <- finalizeCursor cursor ExpressionCursor location
   param' <- renameParam env param
   value' <- renameExpression env value
-  pure Bind {value = value', param = param', location = final}
+  typ' <- renameSignature env typ
+  pure Bind {value = value', param = param', location = final, typ = typ'}
 
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
 renameApply env@Env {cursor} Apply {..} = do
