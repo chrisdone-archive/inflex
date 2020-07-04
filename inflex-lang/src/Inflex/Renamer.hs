@@ -22,59 +22,14 @@ import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.List
-import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
 import           Inflex.Instances ()
-import           Inflex.Optics
 import           Inflex.Parser
 import           Inflex.Types
+import           Inflex.Types.Renamer
 import           Optics
-
---------------------------------------------------------------------------------
--- Renamer types
-
-data RenameError
-  = MissingVariable [Binding Parsed]
-                    (Variable Parsed)
-  | MissingGlobal (Map Text (GlobalRef Renamed))
-                  (Global Parsed)
-  deriving (Show, Eq)
-
-newtype Renamer a = Renamer
-  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation)) a
-  } deriving ( Functor
-             , Applicative
-             , MonadState (Map Cursor SourceLocation)
-             , Monad
-             )
-
-data ParseRenameError
-  = RenamerErrors (NonEmpty RenameError)
-  | ParserErrored RenameParseError
-  deriving (Show, Eq)
-
-type CursorBuilder = Cursor -> Cursor
-
-bindingParam :: Binding s -> NonEmpty (Param s)
-bindingParam =
-  \case
-    LambdaBinding p -> pure p
-    LetBinding p -> p
-
-data Env = Env
-  { cursor :: !CursorBuilder
-  , scope :: ![Binding Parsed]
-  , globals :: !(Map Text (GlobalRef Renamed))
-  }
-
-data IsRenamed a = IsRenamed
-  { thing :: a
-  , mappings :: Map Cursor SourceLocation
-  } deriving (Show, Eq)
-
-$(makeLensesWith (inflexRules ['cursor, 'scope]) ''Env)
 
 --------------------------------------------------------------------------------
 -- Top-level
