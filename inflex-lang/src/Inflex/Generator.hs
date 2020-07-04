@@ -65,6 +65,8 @@ expressionGenerator =
       fmap LiteralExpression (literalGenerator literal)
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaGenerator lambda)
+    LetExpression let' ->
+      fmap LetExpression (letGenerator let')
     ApplyExpression apply ->
       fmap ApplyExpression (applyGenerator apply)
     VariableExpression variable ->
@@ -127,6 +129,24 @@ lambdaGenerator Lambda {typ = _, ..} = do
       , param = param'
       , ..
       }
+
+letGenerator :: Let Renamed -> Generate (Let Generated)
+letGenerator Let {typ = _, ..} = do
+  binds' <- traverse bindGenerator binds
+  body' <-
+    local
+      (over envScopeL (LetBinding (fmap (\Bind {param} -> param) binds') :))
+      (expressionGenerator body)
+  pure Let {body = body', binds = binds', typ = expressionType body', ..}
+
+bindGenerator :: Bind Renamed -> Generate (Bind Generated)
+bindGenerator Bind {..} = do
+  param' <- paramGenerator param
+  value' <- expressionGenerator value
+  addEqualityConstraint
+    EqualityConstraint
+      {type1 = paramType param', type2 = expressionType value', ..}
+  pure Bind {param = param', value = value', ..}
 
 paramGenerator :: Param Renamed -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do
