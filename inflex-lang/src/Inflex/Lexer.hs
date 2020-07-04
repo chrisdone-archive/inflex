@@ -28,7 +28,13 @@ module Inflex.Lexer
   , _LowerWordToken
   , _OpenRoundToken
   , _CloseRoundToken
+  , _OpenCurlyToken
+  , _CloseCurlyToken
+  , _LetToken
+  , _InToken
   , _DoubleColonToken
+  , _SemiColonToken
+  , _EqualsToken
   ) where
 
 import           Data.Bifunctor
@@ -67,6 +73,12 @@ data Token
   | BackslashToken
   | RightArrowToken
   | DoubleColonToken
+  | SemiColonToken
+  | EqualsToken
+  | LetToken
+  | InToken
+  | OpenCurlyToken
+  | CloseCurlyToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -109,7 +121,11 @@ tokensLexer =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)
             cs <- Mega.takeWhileP Nothing isAlpha
-            pure (LowerWordToken (c <> cs)))
+            let text = (c <> cs)
+            case text of
+              "let" -> pure LetToken
+              "in" -> pure InToken
+              _ -> pure (LowerWordToken text))
     upperWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isUpper)
@@ -136,11 +152,15 @@ tokensLexer =
         (Mega.choice
            [ OpenSquareToken <$ Mega.char '['
            , CloseSquareToken <$ Mega.char ']'
+           , OpenCurlyToken <$ Mega.char '{'
+           , CloseCurlyToken <$ Mega.char '}'
+           , EqualsToken <$ Mega.char '='
            , OpenRoundToken <$ Mega.char '('
            , CloseRoundToken <$ Mega.char ')'
            , RightArrowToken <$ Mega.try (Mega.string "->")
            , BackslashToken <$ Mega.char '\\'
            , DoubleColonToken <$ Mega.try (Mega.string "::")
+           , SemiColonToken <$ Mega.try (Mega.string ";")
            ])
 
 -- | Retain location information for a token.

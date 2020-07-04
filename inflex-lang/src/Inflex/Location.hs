@@ -21,6 +21,9 @@ expressionLocation =
 lambdaLocation :: Lambda s -> StagedLocation s
 lambdaLocation Lambda {location} = location
 
+paramLocation :: Param s -> StagedLocation s
+paramLocation Param {location} = location
+
 letLocation :: Let s -> StagedLocation s
 letLocation Let {location} = location
 

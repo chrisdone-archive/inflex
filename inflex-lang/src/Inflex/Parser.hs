@@ -57,6 +57,10 @@ data ParseError
   | ExpectedIntegerType
   | ExpectedSignature
   | ExpectedEndOfInput
+  | ExpectedLet
+  | ExpectedIn
+  | ExpectedEquals
+  | ExpectedContinuation
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -111,13 +115,51 @@ expressionParser :: Parser (Expression Parsed)
 expressionParser =
   fold1
     (NE.fromList
-       [ ApplyExpression <$> applyParser
+       [ LetExpression <$> letParser
+       , ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , GlobalExpression <$> globalParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
+
+letParser :: Parser (Let Parsed)
+letParser = do
+  Located {location = SourceLocation {start}} <-
+    token ExpectedLet (preview _LetToken)
+  let loop = do
+        bind <- bindParser
+        colon <-
+          fmap
+            (const True)
+            (token_ ExpectedContinuation (preview _SemiColonToken)) <>
+          pure False
+        rest <-
+          if colon
+            then fmap NE.toList loop
+            else pure []
+        pure (bind :| rest)
+  binds <- loop
+  token_ ExpectedIn (preview _InToken)
+  body <- expressionParser
+  pure
+    Let
+      { binds
+      , typ = Nothing
+      , location = SourceLocation {start, end = end (expressionLocation body)}
+      , body = body
+      }
+
+bindParser :: Parser (Bind Parsed)
+bindParser = do
+  param <- paramParser
+  token_ ExpectedEquals (preview _EqualsToken)
+  value <- expressionParser
+  let SourceLocation {start} = paramLocation param
+      SourceLocation {end} = expressionLocation value
+  pure
+    Bind {param, location = SourceLocation {start, end}, value, typ = Nothing}
 
 applyParser :: Parser (Apply Parsed)
 applyParser = do
