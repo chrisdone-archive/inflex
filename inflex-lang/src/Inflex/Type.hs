@@ -28,6 +28,7 @@ expressionType =
     LiteralExpression literal -> literalType literal
     LambdaExpression lambda -> lambdaType lambda
     LetExpression let' -> letType let'
+    InfixExpression infix' -> infixType infix'
     ApplyExpression apply -> applyType apply
     VariableExpression variable -> variableType variable
     GlobalExpression global -> globalType global
@@ -50,6 +51,9 @@ lambdaType Lambda {typ} = typ
 
 letType :: Let s -> StagedType s
 letType Let {typ} = typ
+
+infixType :: Infix s -> StagedType s
+infixType Infix {typ} = typ
 
 applyType :: Apply s -> StagedType s
 applyType Apply {typ} = typ

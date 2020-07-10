@@ -15,12 +15,13 @@ module Inflex.Parser where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
+import           Data.Semigroup.Foldable
 import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
+import           Data.List.Split
 import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
-import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Instances ()
@@ -60,6 +61,10 @@ data ParseError
   | ExpectedIn
   | ExpectedEquals
   | ExpectedContinuation
+  | ExpectedOperator
+  | EmptyOperand
+  | MissingOpRhs
+  | OddNumberOfExpressions
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -110,8 +115,76 @@ token_ err parser =
 --------------------------------------------------------------------------------
 -- Parsers
 
+-- Precedence from loosest to tightest.
+operatorPrecedence :: [Text]
+operatorPrecedence = ["-", "+", "*", "/"]
+
 expressionParser :: Parser (Expression Parsed)
-expressionParser =
+expressionParser = do
+  chain <- infixChainParser
+  resolveChain chain
+
+infixChainParser :: Parser [Either (Located Text) (Expression Parsed)]
+infixChainParser = do
+  lhs <- unchainedExpressionParser
+  moperator <- fmap Just operatorParser <> pure Nothing
+  case moperator of
+    Nothing -> pure [Right lhs]
+    Just operator -> do
+      rhs <- infixChainParser
+      pure (Right lhs : Left operator : rhs)
+
+-- | Group by loosest precedence, e.g. for + then fold [x,y,z] into
+-- x+y+z. Each x, y and z is also grouped and folded by the next
+-- higher precedence operator.
+resolveChain ::
+     [Either (Located Text) (Expression Parsed)] -> Parser (Expression Parsed)
+resolveChain = go operatorPrecedence
+  where
+    go ::
+         [Text]
+      -> [Either (Located Text) (Expression Parsed)]
+      -> Parser (Expression Parsed)
+    go [] es =
+      case es of
+        [Right e] -> pure e
+        [] -> Reparsec.failWith (liftError EmptyOperand)
+        [Left _op] -> Reparsec.failWith (liftError MissingOpRhs)
+        _ -> Reparsec.failWith (liftError OddNumberOfExpressions)
+    go (name:os) es =
+      let parts = splitWhen ((== Left name) . first thing) es
+       in case NE.nonEmpty parts of
+            Nothing -> Reparsec.failWith (liftError EmptyOperand)
+            Just parts1 -> do
+              resolvedParts1 <- traverse (go os) parts1
+              foldlM1 makeInfixOperator resolvedParts1
+      where
+        makeInfixOperator ::
+             (Expression Parsed)
+          -> (Expression Parsed)
+          -> Parser (Expression Parsed)
+        makeInfixOperator left right = do
+          let location =
+                SourceLocation
+                  { start = start (expressionLocation left)
+                  , end = end (expressionLocation right)
+                  }
+          pure
+            (InfixExpression
+               Infix
+                 { location
+                 , global = Global {location, name, scheme = ParsedScheme}
+                 , left
+                 , right
+                 , typ = Nothing
+                 })
+
+
+operatorParser :: Parser (Located Text)
+operatorParser = token ExpectedOperator (preview _OperatorToken)
+
+unchainedExpressionParser :: Parser (Expression Parsed)
+unchainedExpressionParser =
   fold1
     (NE.fromList
        [ LetExpression <$> letParser

@@ -71,9 +71,10 @@ renameExpression env =
       fmap LiteralExpression (renameLiteral env literal)
     LambdaExpression lambda -> fmap LambdaExpression (renameLambda env lambda)
     LetExpression let' -> fmap LetExpression (renameLet env let')
+    InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable -> renameVariable env variable
-    GlobalExpression {} -> pure undefined -- TODO: oops
+    GlobalExpression{} -> error "impossible" -- TODO: Make impossible at type-level.
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Literal Renamed)
 renameLiteral env =
@@ -123,6 +124,36 @@ renameLet env@Env {cursor} Let {..} = do
       body
   typ' <- renameSignature env typ
   pure Let {body = body', location = final, binds = binds', typ = typ', ..}
+
+renameInfix :: Env -> Infix Parsed -> Renamer (Infix Renamed)
+renameInfix env@Env {cursor} Infix {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  global' <- renameGlobal (over envCursorL (. InfixOpCursor) env) global
+  left' <- renameExpression (over envCursorL (. InfixLeftCursor) env) left
+  right' <- renameExpression (over envCursorL (. InfixRightCursor) env) right
+  typ' <- renameSignature env typ
+  pure
+    Infix
+      { left = left'
+      , global = global'
+      , right = right'
+      , location = final
+      , typ = typ'
+      , ..
+      }
+
+renameGlobal :: Env -> Global Parsed -> Renamer (Global Renamed)
+renameGlobal Env {cursor} Global {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  let op = pure . NumericBinOpGlobal
+  name' <-
+    case name of
+      "*" -> op MulitplyOp
+      "+" -> op AddOp
+      "-" -> op SubtractOp
+      "/" -> op DivideOp
+      _ -> Renamer (refute (pure (UnknownOperatorName name)))
+  pure Global {location = final, scheme = RenamedScheme, name = name'}
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
 renameBind env@Env {cursor} Bind {param, value, location, typ} = do

@@ -67,6 +67,8 @@ expressionGenerator =
       fmap LambdaExpression (lambdaGenerator lambda)
     LetExpression let' ->
       fmap LetExpression (letGenerator let')
+    InfixExpression infix' ->
+      fmap InfixExpression (infixGenerator infix')
     ApplyExpression apply ->
       fmap ApplyExpression (applyGenerator apply)
     VariableExpression variable ->
@@ -139,6 +141,21 @@ letGenerator Let {typ = _, ..} = do
       (expressionGenerator body)
   pure Let {body = body', binds = binds', typ = expressionType body', ..}
 
+infixGenerator :: Infix Renamed -> Generate (Infix Generated)
+infixGenerator Infix {typ = _, ..} = do
+  ty <- generateTypeVariable location InfixOutputPrefix TypeKind
+  global' <- globalGenerator global
+  left' <- expressionGenerator left
+  right' <- expressionGenerator right
+  addEqualityConstraint
+    EqualityConstraint {type1 = expressionType left', type2 = ty, ..}
+  addEqualityConstraint
+    EqualityConstraint {type1 = expressionType right', type2 = ty, ..}
+  addEqualityConstraint
+    EqualityConstraint
+      {type1 = globalType global', type2 = funcType location ty ty, ..}
+  pure Infix {global = global', right = right', left = left', typ = ty, ..}
+
 bindGenerator :: Bind Renamed -> Generate (Bind Generated)
 bindGenerator Bind {..} = do
   param' <- paramGenerator param
@@ -207,6 +224,20 @@ globalGenerator :: Global Renamed -> Generate (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
+      NumericBinOpGlobal numericBinOp -> do
+        a <- generateTypeVariable location IntegerPrefix TypeKind
+        pure
+          Scheme
+            { constraints =
+                [ ClassConstraint
+                    { className = numericBinOpClassName numericBinOp
+                    , typ = pure a
+                    , ..
+                    }
+                ]
+            , typ = funcType location a a
+            , ..
+            }
       FromIntegerGlobal -> do
         typeVariable <- generateTypeVariable location IntegerPrefix TypeKind
         pure
@@ -289,6 +320,17 @@ globalGenerator Global {name, location} = do
       case name of
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
+        NumericBinOpGlobal n -> NumericBinOpGlobal n
+
+--------------------------------------------------------------------------------
+-- Map from operators to classes
+
+numericBinOpClassName :: NumericBinOp -> ClassName
+numericBinOpClassName = \case
+  MulitplyOp -> MulitplyOpClassName
+  AddOp -> AddOpClassName
+  SubtractOp -> SubtractOpClassName
+  DivideOp -> DivideOpClassName
 
 --------------------------------------------------------------------------------
 -- Type system helpers
@@ -306,6 +348,24 @@ generateTypeVariable location prefix kind = do
 addEqualityConstraint :: EqualityConstraint -> Generate ()
 addEqualityConstraint constraint =
   modify' (over generateStateEqualityConstraintsL (Seq.|> constraint))
+
+funcType :: StagedLocation s -> Type s -> Type s -> Type s
+funcType location inp out =
+  ApplyType
+    TypeApplication
+      { function =
+          ApplyType
+            TypeApplication
+              { function =
+                  ConstantType TypeConstant {name = FunctionTypeName, ..}
+              , argument = inp
+              , kind = TypeKind
+              , ..
+              }
+      , argument = out
+      , kind = TypeKind
+      , ..
+      }
 
 --------------------------------------------------------------------------------
 -- Generation of renamed type

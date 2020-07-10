@@ -135,6 +135,8 @@ expressionGeneralise substitutions =
       LambdaExpression (lambdaGeneralise substitutions lambda)
     LetExpression let' ->
       LetExpression (letGeneralise substitutions let')
+    InfixExpression infix' ->
+      InfixExpression (infixGeneralise substitutions infix')
     ApplyExpression apply ->
       ApplyExpression (applyGeneralise substitutions apply)
     VariableExpression variable ->
@@ -154,6 +156,7 @@ globalGeneralise substitutions Global {scheme = SolvedScheme scheme, ..} =
       case name of
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
+        NumericBinOpGlobal n -> NumericBinOpGlobal n
 
 generaliseScheme :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Scheme Solved -> Scheme Generalised
 generaliseScheme substitutions Scheme {..} =
@@ -190,6 +193,19 @@ letGeneralise substitutions Let {..} =
   Let
     { binds = fmap (bindGeneralise substitutions) binds
     , body = expressionGeneralise substitutions body
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+infixGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Infix Solved
+  -> Infix Generalised
+infixGeneralise substitutions Infix {..} =
+  Infix
+    { left = expressionGeneralise substitutions left
+    , right = expressionGeneralise substitutions right
+    , global = globalGeneralise substitutions global
     , typ = generaliseType substitutions typ
     , ..
     }

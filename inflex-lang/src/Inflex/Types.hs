@@ -25,6 +25,15 @@ data Expression s where
   VariableExpression :: !(Variable s) -> Expression s
   GlobalExpression :: !(Global s) -> Expression s
   LetExpression :: !(Let s) -> Expression s
+  InfixExpression :: !(Infix s) -> Expression s
+
+data Infix s = Infix
+  { location :: !(StagedLocation s)
+  , global :: !(StagedOp s)
+  , left :: !(Expression s)
+  , right :: !(Expression s)
+  , typ :: !(StagedType s)
+  }
 
 data Let s = Let
   { location :: !(StagedLocation s)
@@ -166,6 +175,7 @@ data TypeVariablePrefix
   | IntegerPrefix
   | DecimalPrefix
   | NatPrefix
+  | InfixOutputPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -203,6 +213,10 @@ data TypeName
 data ClassName
   = FromIntegerClassName
   | FromDecimalClassName
+  | MulitplyOpClassName
+  | AddOpClassName
+  | SubtractOpClassName
+  | DivideOpClassName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -228,6 +242,9 @@ data SourcePos = SourcePos
 data Cursor
   = ExpressionCursor
   | LambdaBodyCursor Cursor
+  | InfixOpCursor Cursor
+  | InfixLeftCursor Cursor
+  | InfixRightCursor Cursor
   | LetBodyCursor Cursor
   | LetBindCursor IndexInLet Cursor
   | LambdaParamCursor
@@ -280,7 +297,15 @@ data GlobalRef s where
   -- CasHash. Going the other way is more expensive.
   FromIntegerGlobal :: GlobalRef s
   FromDecimalGlobal :: GlobalRef s
+  NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
+
+data NumericBinOp
+  = MulitplyOp
+  | AddOp
+  | SubtractOp
+  | DivideOp
+  deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Stages
@@ -355,3 +380,11 @@ type family StagedGlobalName s where
   StagedGlobalName Solved = GlobalRef Solved
   StagedGlobalName Generalised = GlobalRef Generalised
   StagedGlobalName Resolved = GlobalRef Resolved
+
+type family StagedOp s where
+  StagedOp Parsed = Global Parsed
+  StagedOp Renamed = Global Renamed
+  StagedOp Generated = Global Generated
+  StagedOp Solved = Global Solved
+  StagedOp Generalised = Global Generalised
+  StagedOp Resolved = Expression Resolved

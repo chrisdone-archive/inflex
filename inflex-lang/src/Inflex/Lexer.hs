@@ -35,6 +35,7 @@ module Inflex.Lexer
   , _DoubleColonToken
   , _SemiColonToken
   , _EqualsToken
+  , _OperatorToken
   ) where
 
 import           Data.Bifunctor
@@ -79,6 +80,7 @@ data Token
   | InToken
   | OpenCurlyToken
   | CloseCurlyToken
+  | OperatorToken !Text
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -158,6 +160,10 @@ tokensLexer =
            , OpenRoundToken <$ Mega.char '('
            , CloseRoundToken <$ Mega.char ')'
            , RightArrowToken <$ Mega.try (Mega.string "->")
+           , OperatorToken <$> Mega.string "*"
+           , OperatorToken <$> Mega.string "/"
+           , OperatorToken <$> Mega.string "+"
+           , OperatorToken <$> Mega.string "-"
            , BackslashToken <$ Mega.char '\\'
            , DoubleColonToken <$ Mega.try (Mega.string "::")
            , SemiColonToken <$ Mega.try (Mega.string ";")

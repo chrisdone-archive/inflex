@@ -211,6 +211,8 @@ expressionSolve substitutions =
       LambdaExpression (lambdaSolve substitutions lambda)
     LetExpression let' ->
       LetExpression (letSolve substitutions let')
+    InfixExpression infix' ->
+      InfixExpression (infixSolve substitutions infix')
     ApplyExpression apply ->
       ApplyExpression (applySolve substitutions apply)
     VariableExpression variable ->
@@ -223,6 +225,16 @@ lambdaSolve substitutions Lambda {..} =
   Lambda
     { param = paramSolve substitutions param
     , body = expressionSolve substitutions body
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+infixSolve :: Seq Substitution -> Infix Generated -> Infix Solved
+infixSolve substitutions Infix {..} =
+  Infix
+    { left = expressionSolve substitutions left
+    , right = expressionSolve substitutions right
+    , global = globalSolve substitutions global
     , typ = solveType substitutions typ
     , ..
     }
@@ -267,6 +279,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
       case name of
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
+        NumericBinOpGlobal n -> NumericBinOpGlobal n
 
 solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
 solveScheme substitutions Scheme {..} =

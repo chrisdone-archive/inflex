@@ -23,6 +23,8 @@ dependencies:
 - optics-core
 - template-haskell
 - bytestring
+- split
+- semigroupoids
 
 ghc-options: -Wall
 

@@ -14,6 +14,7 @@ expressionLocation =
     LiteralExpression literal -> literalLocation literal
     LambdaExpression lambda -> lambdaLocation lambda
     LetExpression let' -> letLocation let'
+    InfixExpression infix' -> infixLocation infix'
     GlobalExpression global -> globalLocation global
     ApplyExpression apply -> applyLocation apply
     VariableExpression variable -> variableLocation variable
@@ -26,6 +27,9 @@ paramLocation Param {location} = location
 
 letLocation :: Let s -> StagedLocation s
 letLocation Let {location} = location
+
+infixLocation :: Infix s -> StagedLocation s
+infixLocation Infix {location} = location
 
 globalLocation :: Global s -> StagedLocation s
 globalLocation Global {location} = location

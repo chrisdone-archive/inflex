@@ -147,10 +147,13 @@ expressionResolver nesting =
       fmap LiteralExpression (pure (literalResolver literal))
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
-    LambdaExpression lambda -> fmap LambdaExpression (lambdaResolver nesting lambda)
+    LambdaExpression lambda ->
+      fmap LambdaExpression (lambdaResolver nesting lambda)
     LetExpression let' -> fmap LetExpression (letResolver nesting let')
     ApplyExpression apply -> fmap ApplyExpression (applyResolver nesting apply)
     GlobalExpression global -> globalResolver nesting global
+    InfixExpression infix' ->
+      fmap InfixExpression (infixResolver nesting infix')
 
 lambdaResolver :: DeBrujinNesting -> Lambda Generalised -> Resolve (Lambda Resolved)
 lambdaResolver (DeBrujinNesting nesting) Lambda {..} = do
@@ -188,6 +191,13 @@ numberResolver Number {..} = Number { ..}
 
 paramResolver :: Param Generalised -> Param Resolved
 paramResolver Param {..} = Param { ..}
+
+infixResolver :: DeBrujinNesting -> Infix Generalised -> Resolve (Infix Resolved)
+infixResolver nesting Infix {..} = do
+  global' <- globalResolver nesting global
+  left' <- expressionResolver nesting left
+  right' <- expressionResolver nesting right
+  pure Infix {global = global', left = left', right = right', ..}
 
 --------------------------------------------------------------------------------
 -- Adding implicit arguments to a global reference
@@ -247,6 +257,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
       case name of
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
+        NumericBinOpGlobal n -> NumericBinOpGlobal n
 
 -- | Add implicit parameters to an expression.
 --
