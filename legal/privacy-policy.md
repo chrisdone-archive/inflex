@@ -20,7 +20,7 @@
 
 We are Sky Above Limited (registered in England and Wales under
 company number 12447208) and we are the controller and are responsible
-for your personal data. If you have an questions about this policy or
+for your personal data. If you have any questions about this policy or
 our privacy practices please contact #{supportEmailAddress}.
 
 ## General Goals
