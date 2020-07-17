@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -81,6 +82,10 @@ instanceNameType =
                                                    , subsetPlaces
                                                    } ->
       decimalT subsetPlaces .-> decimalT supersetPlaces
+    IntegerOpInstance (_op :: NumericBinOp) ->
+      integerT .-> integerT .-> integerT
+    DecimalOpInstance n (_op :: NumericBinOp) ->
+      decimalT n .-> decimalT n .-> decimalT n
 
 --------------------------------------------------------------------------------
 -- Convenience DSL for built-in types

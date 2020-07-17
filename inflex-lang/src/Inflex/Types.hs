@@ -194,11 +194,13 @@ data InstanceName
   = FromIntegerIntegerInstance
   | FromIntegerDecimalInstance !Natural
   | FromDecimalDecimalInstance !FromDecimalInstance
+  | IntegerOpInstance !NumericBinOp
+  | DecimalOpInstance !Natural !NumericBinOp
   deriving (Show, Eq, Ord)
 
 data FromDecimalInstance = FromDecimalInstance
-  { supersetPlaces :: Natural
-  , subsetPlaces :: Natural
+  { supersetPlaces :: !Natural
+  , subsetPlaces :: !Natural
   } deriving (Show, Eq, Ord)
 
 data TypeName
