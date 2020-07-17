@@ -300,7 +300,7 @@ rights. Please note after an account has been deleted:
 ## Your rights
 
 Under certain circumstances, you have the following rights under data
-protection laws in relation to your personal data.
+protection laws in relation to your personal data:
 
 * Request access to your personal data
 
@@ -314,7 +314,7 @@ protection laws in relation to your personal data.
 
 * Request transfer of your personal data
 
-* Right to withdraw consent.
+* Right to withdraw consent
 
 You will not have to pay a fee to access your personal data (or to
 exercise any of the other rights). However, we may charge a reasonable
