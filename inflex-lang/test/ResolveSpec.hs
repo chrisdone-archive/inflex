@@ -46,6 +46,385 @@ coarseGrained = do
   addIntegers
   addDecimals
   addOverloadedThings
+  multipleOperators
+
+multipleOperators :: SpecWith ()
+multipleOperators =
+  it
+    "2 + 3 / 5"
+    (shouldBe
+       (resolveText "" "2 + 3 / 5")
+       (Right
+          (IsResolved
+             { thing =
+                 InfixExpression
+                   (Infix
+                      { location = ExpressionCursor
+                      , global =
+                          ApplyExpression
+                            (Apply
+                               { location =
+                                   ImplicitlyApplicationOn
+                                     (InfixOpCursor ExpressionCursor)
+                               , function =
+                                   GlobalExpression
+                                     (Global
+                                        { location =
+                                            InfixOpCursor ExpressionCursor
+                                        , name = NumericBinOpGlobal AddOp
+                                        , scheme =
+                                            ResolvedScheme
+                                              (ApplyType
+                                                 (TypeApplication
+                                                    { function =
+                                                        ApplyType
+                                                          (TypeApplication
+                                                             { function =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          InfixOpCursor
+                                                                            ExpressionCursor
+                                                                      , name =
+                                                                          FunctionTypeName
+                                                                      })
+                                                             , argument =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          InfixLeftCursor
+                                                                            ExpressionCursor
+                                                                      , name =
+                                                                          IntegerTypeName
+                                                                      })
+                                                             , location =
+                                                                 InfixOpCursor
+                                                                   ExpressionCursor
+                                                             , kind = TypeKind
+                                                             })
+                                                    , argument =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { location =
+                                                                 InfixLeftCursor
+                                                                   ExpressionCursor
+                                                             , name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    , location =
+                                                        InfixOpCursor
+                                                          ExpressionCursor
+                                                    , kind = TypeKind
+                                                    }))
+                                        })
+                               , argument =
+                                   GlobalExpression
+                                     (Global
+                                        { location =
+                                            ImplicitArgumentFor
+                                              (InfixOpCursor ExpressionCursor)
+                                        , name =
+                                            InstanceGlobal
+                                              (IntegerOpInstance AddOp)
+                                        , scheme =
+                                            ResolvedScheme
+                                              (ApplyType
+                                                 (TypeApplication
+                                                    { function =
+                                                        ApplyType
+                                                          (TypeApplication
+                                                             { function =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          BuiltIn
+                                                                      , name =
+                                                                          IntegerTypeName
+                                                                      })
+                                                             , argument =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          BuiltIn
+                                                                      , name =
+                                                                          IntegerTypeName
+                                                                      })
+                                                             , location =
+                                                                 BuiltIn
+                                                             , kind = TypeKind
+                                                             })
+                                                    , argument =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { location =
+                                                                 BuiltIn
+                                                             , name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    , location = BuiltIn
+                                                    , kind = TypeKind
+                                                    }))
+                                        })
+                               , typ =
+                                   ConstantType
+                                     (TypeConstant
+                                        { location =
+                                            InfixLeftCursor ExpressionCursor
+                                        , name = IntegerTypeName
+                                        })
+                               })
+                      , left =
+                          LiteralExpression
+                            (NumberLiteral
+                               (Number
+                                  { location = InfixLeftCursor ExpressionCursor
+                                  , number = IntegerNumber 2
+                                  , typ =
+                                      ConstantType
+                                        (TypeConstant
+                                           { location =
+                                               InfixLeftCursor ExpressionCursor
+                                           , name = IntegerTypeName
+                                           })
+                                  }))
+                      , right =
+                          InfixExpression
+                            (Infix
+                               { location = InfixRightCursor ExpressionCursor
+                               , global =
+                                   ApplyExpression
+                                     (Apply
+                                        { location =
+                                            ImplicitlyApplicationOn
+                                              (InfixRightCursor
+                                                 (InfixOpCursor ExpressionCursor))
+                                        , function =
+                                            GlobalExpression
+                                              (Global
+                                                 { location =
+                                                     InfixRightCursor
+                                                       (InfixOpCursor
+                                                          ExpressionCursor)
+                                                 , name =
+                                                     NumericBinOpGlobal DivideOp
+                                                 , scheme =
+                                                     ResolvedScheme
+                                                       (ApplyType
+                                                          (TypeApplication
+                                                             { function =
+                                                                 ApplyType
+                                                                   (TypeApplication
+                                                                      { function =
+                                                                          ConstantType
+                                                                            (TypeConstant
+                                                                               { location =
+                                                                                   InfixRightCursor
+                                                                                     (InfixOpCursor
+                                                                                        ExpressionCursor)
+                                                                               , name =
+                                                                                   FunctionTypeName
+                                                                               })
+                                                                      , argument =
+                                                                          ConstantType
+                                                                            (TypeConstant
+                                                                               { location =
+                                                                                   InfixRightCursor
+                                                                                     (InfixLeftCursor
+                                                                                        ExpressionCursor)
+                                                                               , name =
+                                                                                   IntegerTypeName
+                                                                               })
+                                                                      , location =
+                                                                          InfixRightCursor
+                                                                            (InfixOpCursor
+                                                                               ExpressionCursor)
+                                                                      , kind =
+                                                                          TypeKind
+                                                                      })
+                                                             , argument =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          InfixRightCursor
+                                                                            (InfixLeftCursor
+                                                                               ExpressionCursor)
+                                                                      , name =
+                                                                          IntegerTypeName
+                                                                      })
+                                                             , location =
+                                                                 InfixRightCursor
+                                                                   (InfixOpCursor
+                                                                      ExpressionCursor)
+                                                             , kind = TypeKind
+                                                             }))
+                                                 })
+                                        , argument =
+                                            GlobalExpression
+                                              (Global
+                                                 { location =
+                                                     ImplicitArgumentFor
+                                                       (InfixRightCursor
+                                                          (InfixOpCursor
+                                                             ExpressionCursor))
+                                                 , name =
+                                                     InstanceGlobal
+                                                       (IntegerOpInstance
+                                                          DivideOp)
+                                                 , scheme =
+                                                     ResolvedScheme
+                                                       (ApplyType
+                                                          (TypeApplication
+                                                             { function =
+                                                                 ApplyType
+                                                                   (TypeApplication
+                                                                      { function =
+                                                                          ConstantType
+                                                                            (TypeConstant
+                                                                               { location =
+                                                                                   BuiltIn
+                                                                               , name =
+                                                                                   IntegerTypeName
+                                                                               })
+                                                                      , argument =
+                                                                          ConstantType
+                                                                            (TypeConstant
+                                                                               { location =
+                                                                                   BuiltIn
+                                                                               , name =
+                                                                                   IntegerTypeName
+                                                                               })
+                                                                      , location =
+                                                                          BuiltIn
+                                                                      , kind =
+                                                                          TypeKind
+                                                                      })
+                                                             , argument =
+                                                                 ConstantType
+                                                                   (TypeConstant
+                                                                      { location =
+                                                                          BuiltIn
+                                                                      , name =
+                                                                          IntegerTypeName
+                                                                      })
+                                                             , location =
+                                                                 BuiltIn
+                                                             , kind = TypeKind
+                                                             }))
+                                                 })
+                                        , typ =
+                                            ConstantType
+                                              (TypeConstant
+                                                 { location =
+                                                     InfixRightCursor
+                                                       (InfixLeftCursor
+                                                          ExpressionCursor)
+                                                 , name = IntegerTypeName
+                                                 })
+                                        })
+                               , left =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location =
+                                               InfixRightCursor
+                                                 (InfixLeftCursor
+                                                    ExpressionCursor)
+                                           , number = IntegerNumber 3
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        InfixRightCursor
+                                                          (InfixLeftCursor
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , right =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location =
+                                               InfixRightCursor
+                                                 (InfixRightCursor
+                                                    ExpressionCursor)
+                                           , number = IntegerNumber 5
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        InfixRightCursor
+                                                          (InfixRightCursor
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , typ =
+                                   ConstantType
+                                     (TypeConstant
+                                        { location =
+                                            InfixRightCursor
+                                              (InfixLeftCursor ExpressionCursor)
+                                        , name = IntegerTypeName
+                                        })
+                               })
+                      , typ =
+                          ConstantType
+                            (TypeConstant
+                               { location = InfixLeftCursor ExpressionCursor
+                               , name = IntegerTypeName
+                               })
+                      })
+             , scheme =
+                 Scheme
+                   { location = ExpressionCursor
+                   , constraints = []
+                   , typ =
+                       ConstantType
+                         (TypeConstant
+                            { location = InfixLeftCursor ExpressionCursor
+                            , name = IntegerTypeName
+                            })
+                   }
+             , mappings =
+                 M.fromList
+                   [ ( ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         })
+                   , ( InfixOpCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         })
+                   , ( InfixLeftCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 2, name = ""}
+                         })
+                   , ( InfixRightCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 5, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         })
+                   , ( InfixRightCursor (InfixOpCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 5, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         })
+                   , ( InfixRightCursor (InfixLeftCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 5, name = ""}
+                         , end = SourcePos {line = 1, column = 6, name = ""}
+                         })
+                   , ( InfixRightCursor (InfixRightCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 9, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         })
+                   ]
+             })))
 
 addOverloadedThings :: SpecWith ()
 addOverloadedThings =
