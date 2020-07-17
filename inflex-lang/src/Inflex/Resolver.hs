@@ -326,7 +326,40 @@ resolveConstraint constraint = do
         fmap
           InstanceFound
           (resolveFromDecimal places numberType polymorphicConstraint)
+    [numberType]
+      | Just numericBinOp <- classNameToNumericBinOp className ->
+        fmap
+          InstanceFound
+          (resolveNumericBinOp numericBinOp className numberType)
     _ -> Left UnsupportedInstanceHead
+
+-- | Given a class constraint, produce the operation that would be run
+-- eventually. Immediately, we put it in the InstanceName, either
+-- IntegerOpInstance or DecimalOpInstance.
+classNameToNumericBinOp :: ClassName -> Maybe NumericBinOp
+classNameToNumericBinOp =
+  \case
+    MulitplyOpClassName -> pure MulitplyOp
+    AddOpClassName -> pure AddOp
+    SubtractOpClassName -> pure SubtractOp
+    DivideOpClassName -> pure DivideOp
+    _ -> Nothing
+
+-- | Make sure the type is really numeric, then produce the right
+-- DecimalOpInstance or IntegerOpInstance.
+resolveNumericBinOp ::
+     NumericBinOp
+  -> ClassName
+  -> Type Polymorphic
+  -> Either ResolutionError InstanceName
+resolveNumericBinOp numericBinOp className =
+  \case
+    ConstantType TypeConstant {name = IntegerTypeName} ->
+      pure (IntegerOpInstance numericBinOp)
+    ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                              , argument = ConstantType TypeConstant {name = NatTypeName places}
+                              } -> pure (DecimalOpInstance places numericBinOp)
+    numberType -> Left (NoInstanceForType className numberType)
 
 -- | Resolve an instance of FromInteger for a given type.
 resolveFromInteger ::
