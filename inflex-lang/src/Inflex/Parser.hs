@@ -285,7 +285,8 @@ literalParser = do
 numberParser :: Parser (Number Parsed)
 numberParser = do
   Located {thing = number, location} <- integerParser <> decimalParser
-  pure (Number {typ = Nothing, ..})
+  typ <- optionalSignatureParser
+  pure (Number {typ, ..})
 
 -- TODO: Add negation.
 integerParser :: Parser (Located SomeNumber)
