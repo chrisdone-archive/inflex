@@ -8,6 +8,9 @@
 - [ ] Database backups policy
 - [ ] Encryption of data at rest?
 - [ ] Custom user-friendly error handlers: 500, 400
+* Data protection office
+  - Note taken on [2020-07-17 Fri 11:09] \\
+    https://ico.org.uk/for-organisations/data-protection-fee/next/
 * Stripe
   - Note taken on [2020-06-28 Sun 22:15] \\
     Premium support starts at £1400/mo

@@ -2,6 +2,7 @@ Account
   username Username
   email Email
   password Password -- TODO: use hash with salt
+  -- TODO: customerId CustomerId
   UniqueUsername username
   UniqueEmail username
   deriving Show
