@@ -45,6 +45,826 @@ coarseGrained = do
   fromIntegerFromInteger_123
   addIntegers
   addDecimals
+  addOverloadedThings
+
+addOverloadedThings :: SpecWith ()
+addOverloadedThings =
+  it
+    "fromInteger 2 + fromDecimal 3.0"
+    (shouldBe
+       (resolveText "" "fromInteger 2 + fromDecimal 3.0")
+       (Right
+          (IsResolved
+             { thing =
+                 LambdaExpression
+                   (Lambda
+                      { location =
+                          ImplicitArgumentFor
+                            (InfixRightCursor (ApplyFuncCursor ExpressionCursor))
+                      , param =
+                          Param
+                            { location =
+                                ImplicitArgumentFor
+                                  (InfixRightCursor
+                                     (ApplyFuncCursor ExpressionCursor))
+                            , name = ()
+                            , typ =
+                                PolyType
+                                  (TypeVariable
+                                     { location = ()
+                                     , prefix = ()
+                                     , index = 0
+                                     , kind = TypeKind
+                                     })
+                            }
+                      , body =
+                          LambdaExpression
+                            (Lambda
+                               { location =
+                                   ImplicitArgumentFor
+                                     (InfixLeftCursor
+                                        (ApplyFuncCursor ExpressionCursor))
+                               , param =
+                                   Param
+                                     { location =
+                                         ImplicitArgumentFor
+                                           (InfixLeftCursor
+                                              (ApplyFuncCursor ExpressionCursor))
+                                     , name = ()
+                                     , typ =
+                                         PolyType
+                                           (TypeVariable
+                                              { location = ()
+                                              , prefix = ()
+                                              , index = 0
+                                              , kind = TypeKind
+                                              })
+                                     }
+                               , body =
+                                   LambdaExpression
+                                     (Lambda
+                                        { location =
+                                            ImplicitArgumentFor
+                                              (InfixOpCursor ExpressionCursor)
+                                        , param =
+                                            Param
+                                              { location =
+                                                  ImplicitArgumentFor
+                                                    (InfixOpCursor
+                                                       ExpressionCursor)
+                                              , name = ()
+                                              , typ =
+                                                  PolyType
+                                                    (TypeVariable
+                                                       { location = ()
+                                                       , prefix = ()
+                                                       , index = 0
+                                                       , kind = TypeKind
+                                                       })
+                                              }
+                                        , body =
+                                            InfixExpression
+                                              (Infix
+                                                 { location = ExpressionCursor
+                                                 , global =
+                                                     ApplyExpression
+                                                       (Apply
+                                                          { location =
+                                                              ImplicitlyApplicationOn
+                                                                (InfixOpCursor
+                                                                   ExpressionCursor)
+                                                          , function =
+                                                              GlobalExpression
+                                                                (Global
+                                                                   { location =
+                                                                       InfixOpCursor
+                                                                         ExpressionCursor
+                                                                   , name =
+                                                                       NumericBinOpGlobal
+                                                                         AddOp
+                                                                   , scheme =
+                                                                       ResolvedScheme
+                                                                         (ApplyType
+                                                                            (TypeApplication
+                                                                               { function =
+                                                                                   ApplyType
+                                                                                     (TypeApplication
+                                                                                        { function =
+                                                                                            ConstantType
+                                                                                              (TypeConstant
+                                                                                                 { location =
+                                                                                                     InfixOpCursor
+                                                                                                       ExpressionCursor
+                                                                                                 , name =
+                                                                                                     FunctionTypeName
+                                                                                                 })
+                                                                                        , argument =
+                                                                                            PolyType
+                                                                                              (TypeVariable
+                                                                                                 { location =
+                                                                                                     ()
+                                                                                                 , prefix =
+                                                                                                     ()
+                                                                                                 , index =
+                                                                                                     0
+                                                                                                 , kind =
+                                                                                                     TypeKind
+                                                                                                 })
+                                                                                        , location =
+                                                                                            InfixOpCursor
+                                                                                              ExpressionCursor
+                                                                                        , kind =
+                                                                                            TypeKind
+                                                                                        })
+                                                                               , argument =
+                                                                                   PolyType
+                                                                                     (TypeVariable
+                                                                                        { location =
+                                                                                            ()
+                                                                                        , prefix =
+                                                                                            ()
+                                                                                        , index =
+                                                                                            0
+                                                                                        , kind =
+                                                                                            TypeKind
+                                                                                        })
+                                                                               , location =
+                                                                                   InfixOpCursor
+                                                                                     ExpressionCursor
+                                                                               , kind =
+                                                                                   TypeKind
+                                                                               }))
+                                                                   })
+                                                          , argument =
+                                                              VariableExpression
+                                                                (Variable
+                                                                   { location =
+                                                                       ImplicitArgumentFor
+                                                                         (InfixOpCursor
+                                                                            ExpressionCursor)
+                                                                   , name =
+                                                                       DeBrujinIndex
+                                                                         (DeBrujinNesting
+                                                                            0)
+                                                                   , typ =
+                                                                       ApplyType
+                                                                         (TypeApplication
+                                                                            { function =
+                                                                                ApplyType
+                                                                                  (TypeApplication
+                                                                                     { function =
+                                                                                         ConstantType
+                                                                                           (TypeConstant
+                                                                                              { location =
+                                                                                                  InfixOpCursor
+                                                                                                    ExpressionCursor
+                                                                                              , name =
+                                                                                                  FunctionTypeName
+                                                                                              })
+                                                                                     , argument =
+                                                                                         PolyType
+                                                                                           (TypeVariable
+                                                                                              { location =
+                                                                                                  ()
+                                                                                              , prefix =
+                                                                                                  ()
+                                                                                              , index =
+                                                                                                  0
+                                                                                              , kind =
+                                                                                                  TypeKind
+                                                                                              })
+                                                                                     , location =
+                                                                                         InfixOpCursor
+                                                                                           ExpressionCursor
+                                                                                     , kind =
+                                                                                         TypeKind
+                                                                                     })
+                                                                            , argument =
+                                                                                PolyType
+                                                                                  (TypeVariable
+                                                                                     { location =
+                                                                                         ()
+                                                                                     , prefix =
+                                                                                         ()
+                                                                                     , index =
+                                                                                         0
+                                                                                     , kind =
+                                                                                         TypeKind
+                                                                                     })
+                                                                            , location =
+                                                                                InfixOpCursor
+                                                                                  ExpressionCursor
+                                                                            , kind =
+                                                                                TypeKind
+                                                                            })
+                                                                   })
+                                                          , typ =
+                                                              PolyType
+                                                                (TypeVariable
+                                                                   { location =
+                                                                       ()
+                                                                   , prefix = ()
+                                                                   , index = 0
+                                                                   , kind =
+                                                                       TypeKind
+                                                                   })
+                                                          })
+                                                 , left =
+                                                     ApplyExpression
+                                                       (Apply
+                                                          { location =
+                                                              InfixLeftCursor
+                                                                ExpressionCursor
+                                                          , function =
+                                                              ApplyExpression
+                                                                (Apply
+                                                                   { location =
+                                                                       ImplicitlyApplicationOn
+                                                                         (InfixLeftCursor
+                                                                            (ApplyFuncCursor
+                                                                               ExpressionCursor))
+                                                                   , function =
+                                                                       GlobalExpression
+                                                                         (Global
+                                                                            { location =
+                                                                                InfixLeftCursor
+                                                                                  (ApplyFuncCursor
+                                                                                     ExpressionCursor)
+                                                                            , name =
+                                                                                FromIntegerGlobal
+                                                                            , scheme =
+                                                                                ResolvedScheme
+                                                                                  (ApplyType
+                                                                                     (TypeApplication
+                                                                                        { function =
+                                                                                            ApplyType
+                                                                                              (TypeApplication
+                                                                                                 { function =
+                                                                                                     ConstantType
+                                                                                                       (TypeConstant
+                                                                                                          { location =
+                                                                                                              InfixLeftCursor
+                                                                                                                (ApplyFuncCursor
+                                                                                                                   ExpressionCursor)
+                                                                                                          , name =
+                                                                                                              FunctionTypeName
+                                                                                                          })
+                                                                                                 , argument =
+                                                                                                     ConstantType
+                                                                                                       (TypeConstant
+                                                                                                          { location =
+                                                                                                              InfixLeftCursor
+                                                                                                                (ApplyFuncCursor
+                                                                                                                   ExpressionCursor)
+                                                                                                          , name =
+                                                                                                              IntegerTypeName
+                                                                                                          })
+                                                                                                 , location =
+                                                                                                     InfixLeftCursor
+                                                                                                       (ApplyFuncCursor
+                                                                                                          ExpressionCursor)
+                                                                                                 , kind =
+                                                                                                     FunKind
+                                                                                                       TypeKind
+                                                                                                       TypeKind
+                                                                                                 })
+                                                                                        , argument =
+                                                                                            PolyType
+                                                                                              (TypeVariable
+                                                                                                 { location =
+                                                                                                     ()
+                                                                                                 , prefix =
+                                                                                                     ()
+                                                                                                 , index =
+                                                                                                     0
+                                                                                                 , kind =
+                                                                                                     TypeKind
+                                                                                                 })
+                                                                                        , location =
+                                                                                            InfixLeftCursor
+                                                                                              (ApplyFuncCursor
+                                                                                                 ExpressionCursor)
+                                                                                        , kind =
+                                                                                            TypeKind
+                                                                                        }))
+                                                                            })
+                                                                   , argument =
+                                                                       VariableExpression
+                                                                         (Variable
+                                                                            { location =
+                                                                                ImplicitArgumentFor
+                                                                                  (InfixLeftCursor
+                                                                                     (ApplyFuncCursor
+                                                                                        ExpressionCursor))
+                                                                            , name =
+                                                                                DeBrujinIndex
+                                                                                  (DeBrujinNesting
+                                                                                     1)
+                                                                            , typ =
+                                                                                ApplyType
+                                                                                  (TypeApplication
+                                                                                     { function =
+                                                                                         ApplyType
+                                                                                           (TypeApplication
+                                                                                              { function =
+                                                                                                  ConstantType
+                                                                                                    (TypeConstant
+                                                                                                       { location =
+                                                                                                           InfixLeftCursor
+                                                                                                             (ApplyFuncCursor
+                                                                                                                ExpressionCursor)
+                                                                                                       , name =
+                                                                                                           FunctionTypeName
+                                                                                                       })
+                                                                                              , argument =
+                                                                                                  ConstantType
+                                                                                                    (TypeConstant
+                                                                                                       { location =
+                                                                                                           InfixLeftCursor
+                                                                                                             (ApplyFuncCursor
+                                                                                                                ExpressionCursor)
+                                                                                                       , name =
+                                                                                                           IntegerTypeName
+                                                                                                       })
+                                                                                              , location =
+                                                                                                  InfixLeftCursor
+                                                                                                    (ApplyFuncCursor
+                                                                                                       ExpressionCursor)
+                                                                                              , kind =
+                                                                                                  FunKind
+                                                                                                    TypeKind
+                                                                                                    TypeKind
+                                                                                              })
+                                                                                     , argument =
+                                                                                         PolyType
+                                                                                           (TypeVariable
+                                                                                              { location =
+                                                                                                  ()
+                                                                                              , prefix =
+                                                                                                  ()
+                                                                                              , index =
+                                                                                                  0
+                                                                                              , kind =
+                                                                                                  TypeKind
+                                                                                              })
+                                                                                     , location =
+                                                                                         InfixLeftCursor
+                                                                                           (ApplyFuncCursor
+                                                                                              ExpressionCursor)
+                                                                                     , kind =
+                                                                                         TypeKind
+                                                                                     })
+                                                                            })
+                                                                   , typ =
+                                                                       PolyType
+                                                                         (TypeVariable
+                                                                            { location =
+                                                                                ()
+                                                                            , prefix =
+                                                                                ()
+                                                                            , index =
+                                                                                0
+                                                                            , kind =
+                                                                                TypeKind
+                                                                            })
+                                                                   })
+                                                          , argument =
+                                                              LiteralExpression
+                                                                (NumberLiteral
+                                                                   (Number
+                                                                      { location =
+                                                                          InfixLeftCursor
+                                                                            (ApplyArgCursor
+                                                                               ExpressionCursor)
+                                                                      , number =
+                                                                          IntegerNumber
+                                                                            2
+                                                                      , typ =
+                                                                          ConstantType
+                                                                            (TypeConstant
+                                                                               { location =
+                                                                                   InfixLeftCursor
+                                                                                     (ApplyArgCursor
+                                                                                        ExpressionCursor)
+                                                                               , name =
+                                                                                   IntegerTypeName
+                                                                               })
+                                                                      }))
+                                                          , typ =
+                                                              PolyType
+                                                                (TypeVariable
+                                                                   { location =
+                                                                       ()
+                                                                   , prefix = ()
+                                                                   , index = 0
+                                                                   , kind =
+                                                                       TypeKind
+                                                                   })
+                                                          })
+                                                 , right =
+                                                     ApplyExpression
+                                                       (Apply
+                                                          { location =
+                                                              InfixRightCursor
+                                                                ExpressionCursor
+                                                          , function =
+                                                              ApplyExpression
+                                                                (Apply
+                                                                   { location =
+                                                                       ImplicitlyApplicationOn
+                                                                         (InfixRightCursor
+                                                                            (ApplyFuncCursor
+                                                                               ExpressionCursor))
+                                                                   , function =
+                                                                       GlobalExpression
+                                                                         (Global
+                                                                            { location =
+                                                                                InfixRightCursor
+                                                                                  (ApplyFuncCursor
+                                                                                     ExpressionCursor)
+                                                                            , name =
+                                                                                FromDecimalGlobal
+                                                                            , scheme =
+                                                                                ResolvedScheme
+                                                                                  (ApplyType
+                                                                                     (TypeApplication
+                                                                                        { function =
+                                                                                            ApplyType
+                                                                                              (TypeApplication
+                                                                                                 { function =
+                                                                                                     ConstantType
+                                                                                                       (TypeConstant
+                                                                                                          { location =
+                                                                                                              InfixRightCursor
+                                                                                                                (ApplyFuncCursor
+                                                                                                                   ExpressionCursor)
+                                                                                                          , name =
+                                                                                                              FunctionTypeName
+                                                                                                          })
+                                                                                                 , argument =
+                                                                                                     ApplyType
+                                                                                                       (TypeApplication
+                                                                                                          { function =
+                                                                                                              ConstantType
+                                                                                                                (TypeConstant
+                                                                                                                   { location =
+                                                                                                                       InfixRightCursor
+                                                                                                                         (ApplyFuncCursor
+                                                                                                                            ExpressionCursor)
+                                                                                                                   , name =
+                                                                                                                       DecimalTypeName
+                                                                                                                   })
+                                                                                                          , argument =
+                                                                                                              ConstantType
+                                                                                                                (TypeConstant
+                                                                                                                   { location =
+                                                                                                                       InfixRightCursor
+                                                                                                                         (ApplyArgCursor
+                                                                                                                            ExpressionCursor)
+                                                                                                                   , name =
+                                                                                                                       NatTypeName
+                                                                                                                         1
+                                                                                                                   })
+                                                                                                          , location =
+                                                                                                              InfixRightCursor
+                                                                                                                (ApplyFuncCursor
+                                                                                                                   ExpressionCursor)
+                                                                                                          , kind =
+                                                                                                              TypeKind
+                                                                                                          })
+                                                                                                 , location =
+                                                                                                     InfixRightCursor
+                                                                                                       (ApplyFuncCursor
+                                                                                                          ExpressionCursor)
+                                                                                                 , kind =
+                                                                                                     FunKind
+                                                                                                       TypeKind
+                                                                                                       TypeKind
+                                                                                                 })
+                                                                                        , argument =
+                                                                                            PolyType
+                                                                                              (TypeVariable
+                                                                                                 { location =
+                                                                                                     ()
+                                                                                                 , prefix =
+                                                                                                     ()
+                                                                                                 , index =
+                                                                                                     0
+                                                                                                 , kind =
+                                                                                                     TypeKind
+                                                                                                 })
+                                                                                        , location =
+                                                                                            InfixRightCursor
+                                                                                              (ApplyFuncCursor
+                                                                                                 ExpressionCursor)
+                                                                                        , kind =
+                                                                                            TypeKind
+                                                                                        }))
+                                                                            })
+                                                                   , argument =
+                                                                       VariableExpression
+                                                                         (Variable
+                                                                            { location =
+                                                                                ImplicitArgumentFor
+                                                                                  (InfixRightCursor
+                                                                                     (ApplyFuncCursor
+                                                                                        ExpressionCursor))
+                                                                            , name =
+                                                                                DeBrujinIndex
+                                                                                  (DeBrujinNesting
+                                                                                     2)
+                                                                            , typ =
+                                                                                ApplyType
+                                                                                  (TypeApplication
+                                                                                     { function =
+                                                                                         ApplyType
+                                                                                           (TypeApplication
+                                                                                              { function =
+                                                                                                  ConstantType
+                                                                                                    (TypeConstant
+                                                                                                       { location =
+                                                                                                           InfixRightCursor
+                                                                                                             (ApplyFuncCursor
+                                                                                                                ExpressionCursor)
+                                                                                                       , name =
+                                                                                                           FunctionTypeName
+                                                                                                       })
+                                                                                              , argument =
+                                                                                                  ApplyType
+                                                                                                    (TypeApplication
+                                                                                                       { function =
+                                                                                                           ConstantType
+                                                                                                             (TypeConstant
+                                                                                                                { location =
+                                                                                                                    InfixRightCursor
+                                                                                                                      (ApplyFuncCursor
+                                                                                                                         ExpressionCursor)
+                                                                                                                , name =
+                                                                                                                    DecimalTypeName
+                                                                                                                })
+                                                                                                       , argument =
+                                                                                                           ConstantType
+                                                                                                             (TypeConstant
+                                                                                                                { location =
+                                                                                                                    InfixRightCursor
+                                                                                                                      (ApplyArgCursor
+                                                                                                                         ExpressionCursor)
+                                                                                                                , name =
+                                                                                                                    NatTypeName
+                                                                                                                      1
+                                                                                                                })
+                                                                                                       , location =
+                                                                                                           InfixRightCursor
+                                                                                                             (ApplyFuncCursor
+                                                                                                                ExpressionCursor)
+                                                                                                       , kind =
+                                                                                                           TypeKind
+                                                                                                       })
+                                                                                              , location =
+                                                                                                  InfixRightCursor
+                                                                                                    (ApplyFuncCursor
+                                                                                                       ExpressionCursor)
+                                                                                              , kind =
+                                                                                                  FunKind
+                                                                                                    TypeKind
+                                                                                                    TypeKind
+                                                                                              })
+                                                                                     , argument =
+                                                                                         PolyType
+                                                                                           (TypeVariable
+                                                                                              { location =
+                                                                                                  ()
+                                                                                              , prefix =
+                                                                                                  ()
+                                                                                              , index =
+                                                                                                  0
+                                                                                              , kind =
+                                                                                                  TypeKind
+                                                                                              })
+                                                                                     , location =
+                                                                                         InfixRightCursor
+                                                                                           (ApplyFuncCursor
+                                                                                              ExpressionCursor)
+                                                                                     , kind =
+                                                                                         TypeKind
+                                                                                     })
+                                                                            })
+                                                                   , typ =
+                                                                       PolyType
+                                                                         (TypeVariable
+                                                                            { location =
+                                                                                ()
+                                                                            , prefix =
+                                                                                ()
+                                                                            , index =
+                                                                                0
+                                                                            , kind =
+                                                                                TypeKind
+                                                                            })
+                                                                   })
+                                                          , argument =
+                                                              LiteralExpression
+                                                                (NumberLiteral
+                                                                   (Number
+                                                                      { location =
+                                                                          InfixRightCursor
+                                                                            (ApplyArgCursor
+                                                                               ExpressionCursor)
+                                                                      , number =
+                                                                          DecimalNumber
+                                                                            (Decimal
+                                                                               { places =
+                                                                                   1
+                                                                               , integer =
+                                                                                   30
+                                                                               })
+                                                                      , typ =
+                                                                          ApplyType
+                                                                            (TypeApplication
+                                                                               { function =
+                                                                                   ConstantType
+                                                                                     (TypeConstant
+                                                                                        { location =
+                                                                                            InfixRightCursor
+                                                                                              (ApplyArgCursor
+                                                                                                 ExpressionCursor)
+                                                                                        , name =
+                                                                                            DecimalTypeName
+                                                                                        })
+                                                                               , argument =
+                                                                                   ConstantType
+                                                                                     (TypeConstant
+                                                                                        { location =
+                                                                                            InfixRightCursor
+                                                                                              (ApplyArgCursor
+                                                                                                 ExpressionCursor)
+                                                                                        , name =
+                                                                                            NatTypeName
+                                                                                              1
+                                                                                        })
+                                                                               , location =
+                                                                                   InfixRightCursor
+                                                                                     (ApplyArgCursor
+                                                                                        ExpressionCursor)
+                                                                               , kind =
+                                                                                   TypeKind
+                                                                               })
+                                                                      }))
+                                                          , typ =
+                                                              PolyType
+                                                                (TypeVariable
+                                                                   { location =
+                                                                       ()
+                                                                   , prefix = ()
+                                                                   , index = 0
+                                                                   , kind =
+                                                                       TypeKind
+                                                                   })
+                                                          })
+                                                 , typ =
+                                                     PolyType
+                                                       (TypeVariable
+                                                          { location = ()
+                                                          , prefix = ()
+                                                          , index = 0
+                                                          , kind = TypeKind
+                                                          })
+                                                 })
+                                        , typ =
+                                            PolyType
+                                              (TypeVariable
+                                                 { location = ()
+                                                 , prefix = ()
+                                                 , index = 0
+                                                 , kind = TypeKind
+                                                 })
+                                        })
+                               , typ =
+                                   PolyType
+                                     (TypeVariable
+                                        { location = ()
+                                        , prefix = ()
+                                        , index = 0
+                                        , kind = TypeKind
+                                        })
+                               })
+                      , typ =
+                          PolyType
+                            (TypeVariable
+                               { location = ()
+                               , prefix = ()
+                               , index = 0
+                               , kind = TypeKind
+                               })
+                      })
+             , scheme =
+                 Scheme
+                   { location = ExpressionCursor
+                   , constraints =
+                       [ ClassConstraint
+                           { className = FromDecimalClassName
+                           , typ =
+                               ConstantType
+                                 (TypeConstant
+                                    { location =
+                                        InfixRightCursor
+                                          (ApplyArgCursor ExpressionCursor)
+                                    , name = NatTypeName 1
+                                    }) :|
+                               [ VariableType
+                                   (TypeVariable
+                                      { location = ()
+                                      , prefix = ()
+                                      , index = 0
+                                      , kind = TypeKind
+                                      })
+                               ]
+                           , location =
+                               InfixRightCursor
+                                 (ApplyFuncCursor ExpressionCursor)
+                           }
+                       , ClassConstraint
+                           { className = FromIntegerClassName
+                           , typ =
+                               VariableType
+                                 (TypeVariable
+                                    { location = ()
+                                    , prefix = ()
+                                    , index = 0
+                                    , kind = TypeKind
+                                    }) :|
+                               []
+                           , location =
+                               InfixLeftCursor
+                                 (ApplyFuncCursor ExpressionCursor)
+                           }
+                       , ClassConstraint
+                           { className = AddOpClassName
+                           , typ =
+                               VariableType
+                                 (TypeVariable
+                                    { location = ()
+                                    , prefix = ()
+                                    , index = 0
+                                    , kind = TypeKind
+                                    }) :|
+                               []
+                           , location = InfixOpCursor ExpressionCursor
+                           }
+                       ]
+                   , typ =
+                       VariableType
+                         (TypeVariable
+                            { location = ()
+                            , prefix = ()
+                            , index = 0
+                            , kind = TypeKind
+                            })
+                   }
+             , mappings =
+                 M.fromList
+                   [ ( ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 32, name = ""}
+                         })
+                   , ( InfixOpCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 32, name = ""}
+                         })
+                   , ( InfixLeftCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 14, name = ""}
+                         })
+                   , ( InfixLeftCursor (ApplyFuncCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 12, name = ""}
+                         })
+                   , ( InfixLeftCursor (ApplyArgCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 13, name = ""}
+                         , end = SourcePos {line = 1, column = 14, name = ""}
+                         })
+                   , ( InfixRightCursor ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 17, name = ""}
+                         , end = SourcePos {line = 1, column = 32, name = ""}
+                         })
+                   , ( InfixRightCursor (ApplyFuncCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 17, name = ""}
+                         , end = SourcePos {line = 1, column = 28, name = ""}
+                         })
+                   , ( InfixRightCursor (ApplyArgCursor ExpressionCursor)
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 29, name = ""}
+                         , end = SourcePos {line = 1, column = 32, name = ""}
+                         })
+                   ]
+             })))
 
 addIntegers :: SpecWith ()
 addIntegers =
