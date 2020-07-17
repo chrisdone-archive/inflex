@@ -150,30 +150,30 @@ Performance of a contract with you
 <tr>
 <td>
 To process and deliver our services to you including:
-* (a) Manage payments, fees and charges
-* (b) Collect and recover money owed to us
+(a) Manage payments, fees and charges
+(b) Collect and recover money owed to us
 </td>
 <td>
 Profile
 </td>
 <td>
-* (a) Performance of a contract with you
-* (b) Necessary for our legitimate interests (to recover debts due to us)
+(a) Performance of a contract with you
+(b) Necessary for our legitimate interests (to recover debts due to us)
 </td>
 </tr>
 <tr>
 <td>
 To manage our relationship with you which will include:
-* (a) Notifying you about changes to our terms or privacy policy
-* (b) Asking you to leave a review or take a survey
+(a) Notifying you about changes to our terms or privacy policy
+(b) Asking you to leave a review or take a survey
 </td>
 <td>
 Profile
 </td>
 <td>
-* (a) Performance of a contract with you
-* (b) Necessary to comply with a legal obligation
-* (c) Necessary for our legitimate interests (to keep our records
+(a) Performance of a contract with you
+(b) Necessary to comply with a legal obligation
+(c) Necessary for our legitimate interests (to keep our records
   updated and to study how customers use our products/services)
 </td>
 </tr>
@@ -188,11 +188,11 @@ Profile
 Technical
 </td>
 <td>
-* (a) Necessary for our legitimate interests (for running our
+(a) Necessary for our legitimate interests (for running our
   business, provision of administration and IT services, network
   security, to prevent fraud and in the context of a business
   reorganisation or group restructuring exercise)
-* (b) Necessary to comply with a legal obligation
+(b) Necessary to comply with a legal obligation
 </td>
 </tr>
 <tr>
