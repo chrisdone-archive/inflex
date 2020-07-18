@@ -27,8 +27,9 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Types
 
-data GenerateError =
-  MissingVariableG (Variable Renamed)
+data GenerateError
+  = MissingVariableG (Variable Renamed)
+  | MissingHashG Hash
   deriving (Show, Eq)
 
 data GenerateState = GenerateState
@@ -47,6 +48,7 @@ newtype Generate a = Generate
 
 data Env = Env
   { scope :: ![Binding Generated]
+  , globals :: Map Hash (Scheme Polymorphic)
   }
 
 data RenameGenerateError

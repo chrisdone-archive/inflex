@@ -25,6 +25,11 @@ dependencies:
 - bytestring
 - split
 - semigroupoids
+- aeson
+- memory
+- base16-bytestring
+- th-orphans
+- attoparsec
 
 ghc-options: -Wall
 

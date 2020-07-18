@@ -110,12 +110,13 @@ newtype Resolve a = Resolve
 -- Top-level
 
 resolveText ::
-     FilePath
+     Map Hash (Scheme Polymorphic)
+  -> FilePath
   -> Text
   -> Either GeneraliseResolveError (IsResolved (Expression Resolved))
-resolveText fp text = do
+resolveText globals fp text = do
   IsGeneralised {thing, polytype, mappings} <-
-    first GeneraliserErrored (generaliseText fp text)
+    first GeneraliserErrored (generaliseText globals fp text)
   (expression, ResolveState {implicits}) <-
     first
       ResolverErrors
@@ -255,6 +256,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
     Global {scheme = GeneralisedScheme Scheme {typ}, location, ..} = global
     refl =
       case name of
+        HashGlobal g -> HashGlobal g
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n

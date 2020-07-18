@@ -20,6 +20,8 @@ import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Instances ()
@@ -33,26 +35,25 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Top-level
 
-generateText :: FilePath -> Text -> Either RenameGenerateError (HasConstraints (Expression Generated))
-generateText fp text = do
+generateText ::
+     Map Hash (Scheme Polymorphic)
+  -> FilePath
+  -> Text
+  -> Either RenameGenerateError (HasConstraints (Expression Generated))
+generateText globals fp text = do
   Renamer.IsRenamed {thing = expression, mappings} <-
     first RenameGenerateError (Renamer.renameText fp text)
   first
     GeneratorErrors
-    (let (result, GenerateState { equalityConstraints
-                                }) =
+    (let (result, GenerateState {equalityConstraints}) =
            runState
              (runReaderT
                 (runValidateT (runGenerator (expressionGenerator expression)))
-                (Env {scope = mempty}))
-             GenerateState
-               { counter = 0
-               , equalityConstraints = mempty
-               }
+                (Env {globals, scope = mempty}))
+             GenerateState {counter = 0, equalityConstraints = mempty}
       in fmap
            (\thing ->
-              HasConstraints
-                {thing, mappings, equalities = equalityConstraints})
+              HasConstraints {thing, mappings, equalities = equalityConstraints})
            result)
 
 --------------------------------------------------------------------------------
@@ -143,7 +144,7 @@ letGenerator Let {typ = _, ..} = do
 
 infixGenerator :: Infix Renamed -> Generate (Infix Generated)
 infixGenerator Infix {typ = _, ..} = do
-  ty <- generateTypeVariable location InfixOutputPrefix TypeKind
+  ty <- generateVariableType location InfixOutputPrefix TypeKind
   global' <- globalGenerator global
   left' <- expressionGenerator left
   right' <- expressionGenerator right
@@ -167,7 +168,7 @@ bindGenerator Bind {..} = do
 
 paramGenerator :: Param Renamed -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do
-  typ <- generateTypeVariable location LambdaParameterPrefix TypeKind
+  typ <- generateVariableType location LambdaParameterPrefix TypeKind
   pure Param {typ, ..}
 
 applyGenerator :: Apply Renamed -> Generate (Apply Generated)
@@ -177,8 +178,8 @@ applyGenerator Apply {..} = do
   outputType <-
     case typ of
       Nothing ->
-        generateTypeVariable (expressionLocation argument') ApplyPrefix TypeKind
-      Just typ' -> pure (toGenerated typ')
+        generateVariableType (expressionLocation argument') ApplyPrefix TypeKind
+      Just typ' -> pure (renamedToGenerated typ')
   let functionTemplate =
         ApplyType
           TypeApplication
@@ -216,7 +217,7 @@ variableGenerator variable@Variable {typ = _, name = index, ..} = do
             _ -> Nothing of
     Nothing -> Generate (refute (pure (MissingVariableG variable)))
     Just Param {typ = type2} -> do
-      type1 <- generateTypeVariable location VariablePrefix TypeKind
+      type1 <- generateVariableType location VariablePrefix TypeKind
       addEqualityConstraint EqualityConstraint {type1, type2, ..}
       pure Variable {typ = type1, name = index, ..}
 
@@ -224,8 +225,13 @@ globalGenerator :: Global Renamed -> Generate (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
+      HashGlobal hash -> do
+        Env {globals} <- ask
+        case M.lookup hash globals of
+          Nothing -> Generate (refute (pure (MissingHashG hash)))
+          Just scheme -> polymorphicSchemeToGenerated location scheme
       NumericBinOpGlobal numericBinOp -> do
-        a <- generateTypeVariable location IntegerPrefix TypeKind
+        a <- generateVariableType location IntegerPrefix TypeKind
         pure
           Scheme
             { constraints =
@@ -239,7 +245,7 @@ globalGenerator Global {name, location} = do
             , ..
             }
       FromIntegerGlobal -> do
-        typeVariable <- generateTypeVariable location IntegerPrefix TypeKind
+        typeVariable <- generateVariableType location IntegerPrefix TypeKind
         pure
           Scheme
             { constraints =
@@ -273,8 +279,8 @@ globalGenerator Global {name, location} = do
             , ..
             }
       FromDecimalGlobal -> do
-        numberVar <- generateTypeVariable location DecimalPrefix TypeKind
-        precisionVar <- generateTypeVariable location NatPrefix NatKind
+        numberVar <- generateVariableType location DecimalPrefix TypeKind
+        precisionVar <- generateVariableType location NatPrefix NatKind
         pure
           Scheme
             { constraints =
@@ -321,6 +327,7 @@ globalGenerator Global {name, location} = do
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
+        HashGlobal h -> HashGlobal h
 
 --------------------------------------------------------------------------------
 -- Map from operators to classes
@@ -339,11 +346,19 @@ generateTypeVariable ::
      StagedLocation Generated
   -> TypeVariablePrefix
   -> Kind
-  -> Generate (Type Generated)
+  -> Generate (TypeVariable Generated)
 generateTypeVariable location prefix kind = do
   index <- gets (view generateStateCounterL)
   modify' (over generateStateCounterL succ)
-  pure (VariableType TypeVariable {prefix, index, location, kind})
+  pure (TypeVariable {prefix, index, location, kind})
+
+generateVariableType ::
+     StagedLocation Generated
+  -> TypeVariablePrefix
+  -> Kind
+  -> Generate (Type Generated)
+generateVariableType location prefix kind =
+  fmap VariableType (generateTypeVariable location prefix kind)
 
 addEqualityConstraint :: EqualityConstraint -> Generate ()
 addEqualityConstraint constraint =
@@ -370,12 +385,55 @@ funcType location inp out =
 --------------------------------------------------------------------------------
 -- Generation of renamed type
 
-toGenerated :: Type Renamed -> Type Generated
-toGenerated =
+renamedToGenerated :: Type Renamed -> Type Generated
+renamedToGenerated =
   \case
     VariableType TypeVariable {..} -> VariableType TypeVariable {..}
     ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
     ApplyType TypeApplication {..} ->
       ApplyType
         TypeApplication
-          {function = toGenerated function, argument = toGenerated argument, ..}
+          {function = renamedToGenerated function, argument = renamedToGenerated argument, ..}
+
+--------------------------------------------------------------------------------
+-- Convert a polymorphic scheme to a generated scheme
+
+-- | This is where a polymorphic variable becomes monomorphic, with
+-- each poly type becoming a unification type variable.
+polymorphicSchemeToGenerated :: Cursor -> Scheme Polymorphic -> Generate (Scheme Generated)
+polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
+  where
+    rewriteScheme ::
+         Scheme Polymorphic
+      -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) Generate (Scheme Generated)
+    rewriteScheme Scheme {typ, constraints, location} = do
+      constraints' <- traverse rewriteConstraint constraints
+      typ' <- rewriteType typ
+      pure Scheme {location = location, typ = typ', constraints = constraints'}
+    rewriteConstraint ::
+         ClassConstraint Polymorphic
+      -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) Generate (ClassConstraint Generated)
+    rewriteConstraint ClassConstraint {..} = do
+      typ' <- traverse rewriteType typ
+      pure ClassConstraint {typ = typ', ..}
+    rewriteType ::
+         Type Polymorphic
+      -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) Generate (Type Generated)
+    rewriteType =
+      \case
+        ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
+        ApplyType TypeApplication {..} -> do
+          function' <- rewriteType function
+          argument' <- rewriteType argument
+          pure
+            (ApplyType
+               TypeApplication {function = function', argument = argument', ..})
+        VariableType typeVariable@TypeVariable {..} -> do
+          scope <- get
+          case M.lookup typeVariable scope of
+            Just typeVariable' -> pure (VariableType typeVariable')
+            Nothing -> do
+              generatedTypeVariable <-
+                lift (generateTypeVariable location0 PolyPrefix kind)
+              modify (M.insert typeVariable generatedTypeVariable)
+              pure (VariableType generatedTypeVariable)

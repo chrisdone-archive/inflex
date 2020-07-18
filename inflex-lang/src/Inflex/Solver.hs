@@ -52,12 +52,13 @@ data Substitution = Substitution
 -- Top-level
 
 solveText ::
-     FilePath
+     Map Hash (Scheme Polymorphic)
+  -> FilePath
   -> Text
   -> Either GenerateSolveError (IsSolved (Expression Solved))
-solveText fp text = do
+solveText globals fp text = do
   HasConstraints {thing = expression, mappings, equalities} <-
-    first GeneratorErrored (generateText fp text)
+    first GeneratorErrored (generateText globals fp text)
   first
     SolverErrors
     (do substitutions <- unifyConstraints equalities
@@ -277,6 +278,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
   where
     refl =
       case name of
+        HashGlobal x -> HashGlobal x
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n

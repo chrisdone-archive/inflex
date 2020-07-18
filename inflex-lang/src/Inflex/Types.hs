@@ -9,11 +9,11 @@
 
 module Inflex.Types where
 
-import           Data.ByteString (ByteString)
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Text (Text)
-import           GHC.Generics
-import           Numeric.Natural
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Text (Text)
+import GHC.Generics
+import Inflex.Types.SHA512
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -176,6 +176,7 @@ data TypeVariablePrefix
   | DecimalPrefix
   | NatPrefix
   | InfixOutputPrefix
+  | PolyPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -288,21 +289,20 @@ newtype DeBrujinNesting =
   DeBrujinNesting Int
   deriving (Show, Eq, Ord, Num)
 
--- | A hash of the contents of the referrent.
-newtype CasHash =
-  CasHash ByteString
+-- | Hash used for CAS referencing.
+newtype Hash = Hash SHA512
   deriving (Show, Eq, Ord)
 
--- TODO: Later we'll add CasHash to this.
+-- | A global reference, which may either be a hash, or a built-in
+-- thing.
 data GlobalRef s where
-  -- We can always lose type information later and
-  -- change this to "fromInteger" lookup to
-  -- CasHash. Going the other way is more expensive.
+  HashGlobal :: Hash -> GlobalRef s
   FromIntegerGlobal :: GlobalRef s
   FromDecimalGlobal :: GlobalRef s
   NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
 
+-- | Numeric binary operator.
 data NumericBinOp
   = MulitplyOp
   | AddOp

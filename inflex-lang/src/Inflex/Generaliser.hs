@@ -54,11 +54,12 @@ data GeneraliseState = GeneraliseState
 -- Top-level
 
 generaliseText ::
-     FilePath
+     Map Hash (Scheme Polymorphic)
+  -> FilePath
   -> Text
   -> Either SolveGeneraliseError (IsGeneralised (Expression Generalised))
-generaliseText fp text = do
-  IsSolved {thing, mappings} <- first SolverErrored (solveText fp text)
+generaliseText globals fp text = do
+  IsSolved {thing, mappings} <- first SolverErrored (solveText globals fp text)
   let (polytype, substitions) = toPolymorphic (expressionType thing)
   pure
     IsGeneralised
@@ -157,6 +158,7 @@ globalGeneralise substitutions Global {scheme = SolvedScheme scheme, ..} =
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
+        HashGlobal x -> HashGlobal x
 
 generaliseScheme :: Map (TypeVariable Solved) (TypeVariable Polymorphic) -> Scheme Solved -> Scheme Generalised
 generaliseScheme substitutions Scheme {..} =
