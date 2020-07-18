@@ -30,6 +30,7 @@ dependencies:
 - base16-bytestring
 - th-orphans
 - attoparsec
+- rio
 
 ghc-options: -Wall
 
