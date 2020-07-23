@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -14,8 +15,10 @@ import Control.Monad.State
 import Data.Bifunctor
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Inflex.Decimal
 import Inflex.Resolver
 import Inflex.Types
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -28,6 +31,7 @@ data ResolveStepError
 data StepError
   = NotInScope Hash
   | InvalidPrimOpOperands
+  | MismatchingPrecisions
   deriving (Show, Eq)
 
 data Stepped
@@ -90,7 +94,7 @@ stepApply Apply {..} = do
       pure
         (ApplyExpression Apply {function = function', argument = argument', ..})
     Continue ->
-      pure
+      pure -- TODO:
         (ApplyExpression Apply {function = function', argument = argument', ..})
 
 stepInfix :: Infix Resolved -> Step (Expression Resolved)
@@ -109,6 +113,9 @@ stepInfix Infix {..} = do
         ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                               , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
                               } -> stepIntegerOp numericBinOp left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
+                              , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
+                              } -> stepDecimalOp precision numericBinOp left' right'
         _ -> error ("stepInfix: " ++ show global')
 
 stepIntegerOp ::
@@ -133,4 +140,46 @@ stepIntegerOp numericBinOp left' right' =
                 , location = SteppedCursor
                 , ..
                 }))
+    _ -> Step (lift (lift (Left InvalidPrimOpOperands)))
+
+stepDecimalOp ::
+     Natural
+  -> NumericBinOp
+  -> Expression Resolved
+  -> Expression Resolved
+  -> Step (Expression Resolved)
+stepDecimalOp places numericBinOp left' right' =
+  case (left', right') of
+    (LiteralExpression (NumberLiteral Number { number = DecimalNumber (decimalToFixed -> left)
+                                             , typ
+                                             }), LiteralExpression (NumberLiteral Number {number = DecimalNumber (decimalToFixed -> right)})) -> do
+      case sameFixed
+             left
+             right
+             (\x y ->
+                fixedToDecimal
+                  (SomeFixed
+                     places
+                     (case numericBinOp of
+                        AddOp -> x + y
+                        SubtractOp -> x - y
+                        MulitplyOp -> x * y
+                        -- TODO: Catch x/0 and stop the
+                        -- evaluator. Possibly later, we could print
+                        -- the origin of the 0. See SteppedCursor
+                        -- below.
+                        DivideOp -> x / y))) of
+        Nothing -> Step (lift (lift (Left MismatchingPrecisions)))
+        Just result ->
+          pure
+            (LiteralExpression
+               (NumberLiteral
+                  Number
+                    { number = DecimalNumber result
+                    , location = SteppedCursor
+                    -- TODO: Add "step number X" or something to say
+                    -- "this is where the value came from". Could be
+                    -- useful for finding 0's which hit an x/0.
+                    , ..
+                    }))
     _ -> Step (lift (lift (Left InvalidPrimOpOperands)))
