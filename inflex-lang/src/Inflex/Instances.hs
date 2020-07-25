@@ -387,3 +387,11 @@ deriving instance Ord (Binding Generated)
 deriving instance Show (Binding Resolved)
 deriving instance Eq (Binding Resolved)
 deriving instance Ord (Binding Resolved)
+
+deriving instance Eq Cell
+deriving instance Ord Cell
+deriving instance Show Cell
+
+deriving instance Eq (Default Polymorphic)
+deriving instance Ord (Default Polymorphic)
+deriving instance Show (Default Polymorphic)
