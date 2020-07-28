@@ -1,9 +1,9 @@
 * Go live checklist
-- [ ] Stripe checkout
+- [X] Stripe checkout
 - [ ] Stripe portal working
 - [ ] Google Analytics setup with Measurement protocol
 - [ ] T's & C's
-- [ ] Privacy policy
+- [X] Privacy policy
 - [ ] Refunds policy
 - [ ] Database backups policy
 - [ ] Encryption of data at rest?
@@ -126,6 +126,7 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO WASM for client-side eval???
 ** TODO Brotli compression
    - Note taken on [2020-07-02 Thu 16:29] \\
      brotli vs gzip, an improvement
@@ -147,7 +148,9 @@ Use floating points but make partial results explicit too?
      https://www.reddit.com/r/haskell/comments/hjratt/beginner_haskell_question_concerning_read_and_show/
 
      In Inflex this would be much easier.
-** TODO Mutual recursive definitions? Yep!
+** DONE Mutual recursive definitions? Yep!
+   CLOSED: [2020-07-28 Tue 17:01]
+   - State "DONE"       from "TODO"       [2020-07-28 Tue 17:01]
    - Note taken on [2020-06-24 Wed 17:13] \\
      Needed, due to this kind of algorithm:
 

@@ -208,7 +208,7 @@ globalResolver nesting global@Global {scheme = GeneralisedScheme Scheme {constra
   implicits <-
     traverse
       (\constraint ->
-         case resolveConstraint constraint of
+         case resolveGeneralisedConstraint constraint of
            Left err -> Resolve (refute (pure err))
            Right resolution -> do
              case resolution of
@@ -304,7 +304,15 @@ deBrujinIndex (DeBrujinNesting nesting) (DeBrujinOffset offset) =
 --------------------------------------------------------------------------------
 -- Instance resolution
 
--- | Resolve a class constraint.
+-- | Resolve a class constraint. Ensures that generalised type is
+-- polymorphic first.
+resolveGeneralisedConstraint ::
+     ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
+resolveGeneralisedConstraint constraint = do
+  polymorphicConstraint <- classConstraintPoly constraint
+  resolvePolyConstraint polymorphicConstraint
+
+-- | For resolving polymorphic constraints.
 --
 -- Currently, there is no instances list. We have no user-definable
 -- instances or classes. Therefore it's a trivial piece of logic to check that:
@@ -312,11 +320,9 @@ deBrujinIndex (DeBrujinNesting nesting) (DeBrujinOffset offset) =
 -- * An Integer type matches with FromDecimal or FromInteger.
 -- * A Decimal i type matches any FromDecimal j provided i<=j.
 --
-resolveConstraint ::
-     ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
-resolveConstraint constraint = do
-  polymorphicConstraint@ClassConstraint {typ, className} <-
-    classConstraintPoly constraint
+resolvePolyConstraint ::
+     ClassConstraint Polymorphic -> Either ResolutionError ResolutionSuccess
+resolvePolyConstraint polymorphicConstraint@ClassConstraint {typ, className} = do
   case toList typ of
     (VariableType {}:_) -> pure (NoInstanceButPoly polymorphicConstraint)
     [_, VariableType {}] -> pure (NoInstanceButPoly polymorphicConstraint)

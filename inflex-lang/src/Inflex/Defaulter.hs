@@ -24,7 +24,9 @@ import           Numeric.Natural
 --------------------------------------------------------------------------------
 -- Types
 
-data DefaulterError = DO
+data DefaulterError
+  = ResolutionError ResolutionError
+  | DefaultingNoInstanceFound (ClassConstraint Polymorphic)
   deriving (Eq, Show)
 
 data ResolverDefaulterError
@@ -75,20 +77,27 @@ applyDefaults = undefined
 --------------------------------------------------------------------------------
 -- Generating a default from a class constraint
 
--- TODO: Use Inflex.Resolver.resolveConstraint to check that THE SET
--- OF suggested types correctly produce an instance for each of the
--- class constraints.
+-- Uses Inflex.Resolver.resolveConstraint to check that the suggested
+-- types correctly produce an instance for the class constraint.
 --
--- If it produces a ResolutionError, that's one case. If no instance
--- is found, that's another case. In both cases, we simply produce the
--- cell, and report instances that are ambiguous.
+-- If it produces a ResolutionError, that's a hard fail. If no instance
+-- is found, that's a hard fail.
 
 -- | We check to see whether the defaulted class constraint is valid.
 makeValidDefault ::
      ClassConstraint Polymorphic
   -> ClassConstraint Polymorphic
   -> Either DefaulterError (Default Polymorphic)
-makeValidDefault _original _defaulted = undefined
+makeValidDefault classConstraintOriginal classConstraintDefaulted = do
+  resolutionSuccess <-
+    first ResolutionError (resolvePolyConstraint classConstraintDefaulted)
+  case resolutionSuccess of
+    InstanceFound instanceName ->
+      pure
+        Default
+          {classConstraintOriginal, classConstraintDefaulted, instanceName}
+    NoInstanceButPoly noInstanceConstraint ->
+      Left (DefaultingNoInstanceFound noInstanceConstraint)
 
 --------------------------------------------------------------------------------
 -- Infer an appropriate defaulted type for a set of constraints
