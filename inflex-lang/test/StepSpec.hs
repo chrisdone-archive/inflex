@@ -50,9 +50,9 @@ spec = do
              (Right "1.50"))
         it
           "6.0 - 3.0 * 3 / 2.0"
-          (do pending
+          (do
               shouldBe
-                (stepTextly
+                (stepDefaultedTextly
                    "6.0 :: Decimal 2 - 3.0 :: Decimal 2 * 3 :: Decimal 2 / 2.0 :: Decimal 2")
                 (Right "1.5")))
   describe

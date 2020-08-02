@@ -81,12 +81,17 @@ instance Display InstanceName where
     \case
       FromIntegerIntegerInstance -> "<FromInteger Integer>"
       FromIntegerDecimalInstance {} -> "<FromInteger Decimal>"
-      FromDecimalDecimalInstance {} -> "<FromDecimal Decimal"
-      IntegerOpInstance op -> "<" <> display op <> " Integer>"
+      FromDecimalDecimalInstance FromDecimalInstance { supersetPlaces
+                                                     , subsetPlaces
+                                                     } ->
+        "<FromDecimal " <> displayShow supersetPlaces <> " (Decimal " <>
+        displayShow subsetPlaces <>
+        ")>"
+      IntegerOpInstance op -> "<(" <> display op <> ") @ Integer>"
       DecimalOpInstance nat op ->
-        "<" <> display op <> " Decimal " <>
+        "<(" <> display op <> ") @(Decimal " <>
         display (fromIntegral nat :: Integer) <>
-        ">"
+        ")>"
 
 instance Display (Apply Resolved) where
   display Apply {function, argument} =
