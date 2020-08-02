@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,6 +13,8 @@ import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Ord
 import           Data.Set (Set)
@@ -56,11 +59,13 @@ defaultResolvedExpression IsResolved {scheme = scheme@Scheme {constraints}} = do
       , expression = undefined
       }
   where
-    constrainedDefaultableTypeVariables :: Set (TypeVariable Polymorphic)
+    constrainedDefaultableTypeVariables ::
+         Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
     constrainedDefaultableTypeVariables =
-      Set.intersection
+      M.intersectionWith
+        (<>)
         (constraintedTypeVariables scheme)
-        (defaultableTypeVariables scheme)
+        (M.fromList (map (, mempty) (toList (defaultableTypeVariables scheme))))
 
 --------------------------------------------------------------------------------
 -- Applying defaults
@@ -75,6 +80,25 @@ applyDefaults ::
   -> Expression Resolved
   -> Expression Resolved
 applyDefaults = undefined
+
+--------------------------------------------------------------------------------
+-- Substituting constants into schemes
+
+-- | Default the given type variable in the scheme.
+defaultScheme ::
+     TypeVariable Polymorphic -- ^ Replace this.
+  -> TypeConstant Polymorphic -- ^ With this.
+  -> Scheme Polymorphic -- ^ In this scheme.
+  -> Scheme Polymorphic
+defaultScheme = undefined
+
+-- | Default the given type variable in the constraint.
+defaultConstraint ::
+     TypeVariable Polymorphic -- ^ Replace this.
+  -> TypeConstant Polymorphic -- ^ With this.
+  -> ClassConstraint Polymorphic
+  -> ClassConstraint Polymorphic
+defaultConstraint = undefined
 
 --------------------------------------------------------------------------------
 -- Generating a default from a class constraint
@@ -165,10 +189,20 @@ suggestTypeConstant =
 -- Example:
 --
 -- f(C a => C b => a -> b -> c) => {a,b}
-constraintedTypeVariables :: Scheme Polymorphic -> Set (TypeVariable Polymorphic)
+constraintedTypeVariables ::
+     Scheme Polymorphic
+  -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
 constraintedTypeVariables Scheme {constraints} =
-  foldMap (\ClassConstraint {typ} -> foldMap typeVariables typ) constraints
+  M.fromListWith
+    (<>)
+    (concatMap
+       (\classConstraint@ClassConstraint {typ = types} ->
+          [ (typeVariable, Set.singleton classConstraint)
+          | typeVariable <- toList (foldMap typeVariables types)
+          ])
+       constraints)
   where
+    typeVariables :: Type Polymorphic -> Set (TypeVariable Polymorphic)
     typeVariables =
       \case
         VariableType typeVariable -> Set.singleton typeVariable
