@@ -49,12 +49,17 @@ spec = do
                 "6.00 :: Decimal 2 - 3.00 :: Decimal 2 * 3.00 :: Decimal 2 / 2.00 :: Decimal 2")
              (Right "1.50"))
         it
-          "6.0 - 3.0 * 3 / 2.0"
-          (do
-              shouldBe
+          "6 + 3"
+          (do shouldBe
                 (stepDefaultedTextly
-                   "6.0 :: Decimal 2 - 3.0 :: Decimal 2 * 3 :: Decimal 2 / 2.0 :: Decimal 2")
-                (Right "1.5")))
+                   "6 + 3")
+                (Right "9"))
+        it
+          "6 + 3 :: Integer"
+          (do shouldBe
+                (stepDefaultedTextly
+                   "6 + 3 :: Integer")
+                (Right "9")))
   describe
     "Defaulted single expressions"
     (do it
