@@ -31,6 +31,7 @@ import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Resolver
+import           Inflex.Type
 import           Inflex.Types
 import           Numeric.Natural
 
@@ -133,7 +134,38 @@ applyDefaults ::
   -> Seq (Default Polymorphic)
   -> Expression Resolved
   -> Expression Resolved
-applyDefaults _originalClassConstraints _defaults expression = expression
+applyDefaults [] _ = id
+applyDefaults (classConstraint:originalClassConstraints) defaults =
+  \case
+    LambdaExpression lambda@Lambda {body} ->
+      immediatelyApplied
+        (LambdaExpression
+           (lambda {body = applyDefaults originalClassConstraints defaults body}))
+    e -> error ("Unexpected expr: " ++ show e) -- TODO: Eliminate.
+  where
+    immediatelyApplied :: Expression Resolved -> Expression Resolved
+    immediatelyApplied =
+      case find
+             (\Default {classConstraintOriginal} ->
+                classConstraintOriginal == classConstraint)
+             defaults of
+        Nothing -> id
+        Just Default {instanceName} ->
+          \function ->
+            ApplyExpression
+              Apply
+                { location = AutoInsertedForDefaulterCursor
+                , typ = typeOutput (expressionType function)
+                , function
+                , argument =
+                    GlobalExpression
+                      Global
+                        { location = AutoInsertedForDefaulterCursor
+                        , scheme =
+                            ResolvedScheme (instanceNameType instanceName)
+                        , name = InstanceGlobal instanceName
+                        }
+                }
 
 --------------------------------------------------------------------------------
 -- Generating a default from a class constraint
