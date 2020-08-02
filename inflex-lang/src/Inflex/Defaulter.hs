@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
@@ -6,16 +7,26 @@
 
 -- | Defaulting class instances that are ambiguous.
 
-module Inflex.Defaulter where
+module Inflex.Defaulter
+  ( defaultText
+  , DefaulterError(..)
+  , ResolverDefaulterError(..)
+  ) where
 
+import           Control.Monad
+import           Control.Monad.Trans
+import           Control.Monad.Trans.Writer
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Ord
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
@@ -47,24 +58,66 @@ defaultText globals fp text = do
 
 defaultResolvedExpression ::
      IsResolved (Expression Resolved) -> Either DefaulterError Cell
-defaultResolvedExpression IsResolved {scheme = scheme@Scheme {constraints}} = do
-  error (show (constraints, constrainedDefaultableTypeVariables))
+defaultResolvedExpression IsResolved { scheme = scheme0@Scheme { constraints
+                                                               , location
+                                                               }
+                                     , thing = expression
+                                     } = do
+  typeVariableReplacements :: Map (TypeVariable Polymorphic) ( NonEmpty (ClassConstraint Polymorphic)
+                                                             , Type Polymorphic) <-
+    M.traverseMaybeWithKey
+      (\_key constraints' ->
+         fmap (fmap (constraints', )) (suggestTypeConstant constraints'))
+      constrainedDefaultableTypeVariables
+  let classConstraintReplacements :: Map (ClassConstraint Polymorphic) (Set Substitution) =
+        M.fromListWith
+          (<>)
+          (concatMap
+             (\(typeVariable, (constraints', typ)) ->
+                map
+                  (\constraint ->
+                     ( constraint
+                     , Set.singleton
+                         (Substitution {before = typeVariable, after = typ})))
+                  (toList constraints'))
+             (M.toList typeVariableReplacements))
+  (scheme', defaults) <-
+    runWriterT
+      (foldM
+         (\scheme@Scheme {constraints = acc, typ} classConstraint ->
+            case M.lookup classConstraint classConstraintReplacements of
+              Nothing -> pure scheme {constraints = acc ++ [classConstraint]}
+              Just replacements -> do
+                let substitutions = Seq.fromList (toList replacements)
+                    classConstraint' =
+                      substituteClassConstraint substitutions classConstraint
+                    typ' = substituteType substitutions typ
+                default' <-
+                  lift (makeValidDefault classConstraint classConstraint')
+                tell (pure default')
+                pure
+                  (scheme {constraints = acc, typ = typ'}))
+         scheme0 {constraints = mempty}
+         constraints)
   pure
     Cell
-      { location = undefined
-      , scheme = undefined
-      , defaultedClassConstraints = undefined
-      , ambiguousClassConstraints = undefined
-      , expression = undefined
+      { location
+      , scheme = scheme'
+      , defaultedClassConstraints = defaults
+      , ambiguousClassConstraints = mempty -- TODO: Provide this info.
+      , expression = applyDefaults constraints defaults expression
       }
   where
     constrainedDefaultableTypeVariables ::
-         Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
+         Map (TypeVariable Polymorphic) (NonEmpty (ClassConstraint Polymorphic))
     constrainedDefaultableTypeVariables =
-      M.intersectionWith
-        (<>)
-        (constraintedTypeVariables scheme)
-        (M.fromList (map (, mempty) (toList (defaultableTypeVariables scheme))))
+      M.mapMaybe
+        (NE.nonEmpty . toList)
+        (M.intersectionWith
+           (<>)
+           (constraintedTypeVariables scheme0)
+           (M.fromList
+              (map (, mempty) (toList (defaultableTypeVariables scheme0)))))
 
 --------------------------------------------------------------------------------
 -- Applying defaults
@@ -75,29 +128,10 @@ defaultResolvedExpression IsResolved {scheme = scheme@Scheme {constraints}} = do
 -- constraint, we step down into the lambda and continue.
 applyDefaults ::
      [ClassConstraint Polymorphic]
-  -> Set (Default Polymorphic)
+  -> Seq (Default Polymorphic)
   -> Expression Resolved
   -> Expression Resolved
-applyDefaults = undefined
-
---------------------------------------------------------------------------------
--- Substituting constants into schemes
-
--- | Default the given type variable in the scheme.
-defaultScheme ::
-     TypeVariable Polymorphic -- ^ Replace this.
-  -> TypeConstant Polymorphic -- ^ With this.
-  -> Scheme Polymorphic -- ^ In this scheme.
-  -> Scheme Polymorphic
-defaultScheme = undefined
-
--- | Default the given type variable in the constraint.
-defaultConstraint ::
-     TypeVariable Polymorphic -- ^ Replace this.
-  -> TypeConstant Polymorphic -- ^ With this.
-  -> ClassConstraint Polymorphic
-  -> ClassConstraint Polymorphic
-defaultConstraint = undefined
+applyDefaults _originalClassConstraints _defaults expression = expression
 
 --------------------------------------------------------------------------------
 -- Generating a default from a class constraint
@@ -238,3 +272,34 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
               mempty -- We ignore the whole function.
             _ -> typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
+
+--------------------------------------------------------------------------------
+-- Substitution
+
+data Substitution = Substitution
+  { before :: !(TypeVariable Polymorphic)
+  , after :: !(Type Polymorphic)
+  } deriving (Show, Eq, Ord)
+
+substituteClassConstraint ::
+     Seq Substitution
+  -> ClassConstraint Polymorphic
+  -> ClassConstraint Polymorphic
+substituteClassConstraint substitutions ClassConstraint {..} =
+  ClassConstraint {typ = fmap (substituteType substitutions) typ, ..}
+
+substituteType :: Seq Substitution -> Type Polymorphic -> Type Polymorphic
+substituteType substitutions = go
+  where
+    go =
+      \case
+        typ@ConstantType {} -> typ
+        ApplyType TypeApplication {function, argument, ..} ->
+          ApplyType
+            TypeApplication {function = go function, argument = go argument, ..}
+        typ@(VariableType typeVariable :: Type Polymorphic) ->
+          case find
+                 (\Substitution {before} -> before == typeVariable)
+                 substitutions of
+            Just Substitution {after} -> after
+            Nothing -> typ
