@@ -27,6 +27,7 @@ import           Numeric.Natural
 data DefaulterError
   = ResolutionError ResolutionError
   | DefaultingNoInstanceFound (ClassConstraint Polymorphic)
+  | DO
   deriving (Eq, Show)
 
 data ResolverDefaulterError
@@ -44,7 +45,8 @@ defaultText globals fp text = do
 
 defaultResolvedExpression ::
      IsResolved (Expression Resolved) -> Either DefaulterError Cell
-defaultResolvedExpression IsResolved {scheme = scheme@Scheme {constraints}} =
+defaultResolvedExpression IsResolved {scheme = scheme@Scheme {constraints}} = do
+  error (show (constraints, constrainedDefaultableTypeVariables))
   pure
     Cell
       { location = undefined
@@ -102,8 +104,11 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
 --------------------------------------------------------------------------------
 -- Infer an appropriate defaulted type for a set of constraints
 
--- | Given a set of constraints mentioning the given type variable,
--- produce an appropriate constant.
+-- | Given a set of constraints that are for a SINGLE type variable
+-- (and @FromDecimal 2 n@ counts, or @FromInteger n@), produce an
+-- appropriate constant type, for each, if possible. So we will have a
+-- set of type constants. At the end, choose the most appropriate type
+-- based on priority (see below).
 --
 -- It's not the responsibility of this function to determine validity
 -- of instances. Just to produce a type @Integer@ or @Decimal n@.
@@ -112,6 +117,8 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
 -- such that x > y.
 suggestTypeConstant ::
      NonEmpty (ClassConstraint Polymorphic)
+     -- ^ All of them must only refer to THE SAME, SINGLE type
+     -- variable.
   -> Either DefaulterError (Maybe (Type Polymorphic))
 suggestTypeConstant =
   fmap (listToMaybe . map snd . sortBy (flip (comparing fst)) . catMaybes) .
