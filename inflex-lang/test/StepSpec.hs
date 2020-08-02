@@ -40,14 +40,14 @@ spec = do
         it
           "6.0 + 3.0"
           (shouldBe
-             (stepTextly "6.2 :: Decimal 2 + 3.1 :: Decimal 2")
-             (Right "9.3"))
+             (stepTextly "6.20 :: Decimal 2 + 3.10 :: Decimal 2")
+             (Right "9.30"))
         it
           "6.0 - 3.0 * 3.0 / 2.0"
           (shouldBe
              (stepTextly
-                "6.0 :: Decimal 2 - 3.0 :: Decimal 2 * 3.0 :: Decimal 2 / 2.0 :: Decimal 2")
-             (Right "1.5"))
+                "6.00 :: Decimal 2 - 3.00 :: Decimal 2 * 3.00 :: Decimal 2 / 2.00 :: Decimal 2")
+             (Right "1.50"))
         it
           "6.0 - 3.0 * 3 / 2.0"
           (do pending

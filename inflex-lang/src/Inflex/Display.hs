@@ -46,7 +46,6 @@ instance Display SomeNumber where
                IntegerNumber i -> display i
                DecimalNumber decimal -> display decimal
 
-
 instance Display Decimal where
   display decimal =
     case decimalToFixed decimal of
