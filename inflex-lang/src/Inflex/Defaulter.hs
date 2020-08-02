@@ -13,7 +13,6 @@ import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Ord
@@ -224,8 +223,8 @@ constraintedTypeVariables Scheme {constraints} =
 --
 -- (FromInteger a, FromDecimal b) => (a -> b) => {}
 -- (FromInteger a, FromDecimal b) => {x: a, y: b} => {a,b}
--- (FromInteger a, FromDecimal b, FromDecimal c) => {x: a, y: c -> b} => {a,b}
--- (FromDecimal b, FromDecimal c) => {x: c, y: c -> b} => {b,c}
+-- (FromInteger a, FromDecimal b, FromDecimal c) => {x: a, y: c -> b} => {a}
+-- (FromDecimal b, FromDecimal c) => {x: c, y: c -> b} => {c}
 --
 defaultableTypeVariables :: Scheme Polymorphic -> Set (TypeVariable Polymorphic)
 defaultableTypeVariables Scheme {typ} = typeVariables typ
@@ -236,9 +235,6 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
         ApplyType TypeApplication {function, argument} ->
           case function of
             ConstantType TypeConstant {name = FunctionTypeName} ->
-              mempty -- We ignore `argument', the left-hand-side
-                     -- negative-position (the input type). We can't
-                     -- necessarily default any type variable that is in
-                     -- negative position.
+              mempty -- We ignore the whole function.
             _ -> typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
