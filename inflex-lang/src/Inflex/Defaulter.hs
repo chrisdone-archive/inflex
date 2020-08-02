@@ -58,29 +58,8 @@ defaultText globals fp text = do
 
 defaultResolvedExpression ::
      IsResolved (Expression Resolved) -> Either DefaulterError Cell
-defaultResolvedExpression IsResolved { scheme = scheme0@Scheme { constraints
-                                                               , location
-                                                               }
-                                     , thing = expression
-                                     } = do
-  typeVariableReplacements :: Map (TypeVariable Polymorphic) ( NonEmpty (ClassConstraint Polymorphic)
-                                                             , Type Polymorphic) <-
-    M.traverseMaybeWithKey
-      (\_key constraints' ->
-         fmap (fmap (constraints', )) (suggestTypeConstant constraints'))
-      constrainedDefaultableTypeVariables
-  let classConstraintReplacements :: Map (ClassConstraint Polymorphic) (Set Substitution) =
-        M.fromListWith
-          (<>)
-          (concatMap
-             (\(typeVariable, (constraints', typ)) ->
-                map
-                  (\constraint ->
-                     ( constraint
-                     , Set.singleton
-                         (Substitution {before = typeVariable, after = typ})))
-                  (toList constraints'))
-             (M.toList typeVariableReplacements))
+defaultResolvedExpression IsResolved {scheme = scheme0, thing = expression} = do
+  classConstraintReplacements <- generateReplacements scheme0
   (scheme', defaults) <-
     runWriterT
       (foldM
@@ -95,21 +74,44 @@ defaultResolvedExpression IsResolved { scheme = scheme0@Scheme { constraints
                 default' <-
                   lift (makeValidDefault classConstraint classConstraint')
                 tell (pure default')
-                pure
-                  (scheme {constraints = acc, typ = typ'}))
+                pure (scheme {constraints = acc, typ = typ'}))
          scheme0 {constraints = mempty}
-         constraints)
+         originalConstraints)
   pure
     Cell
       { location
       , scheme = scheme'
       , defaultedClassConstraints = defaults
       , ambiguousClassConstraints = mempty -- TODO: Provide this info.
-      , expression = applyDefaults constraints defaults expression
+      , expression = applyDefaults originalConstraints defaults expression
       }
   where
-    constrainedDefaultableTypeVariables ::
-         Map (TypeVariable Polymorphic) (NonEmpty (ClassConstraint Polymorphic))
+    Scheme {constraints = originalConstraints, location} = scheme0
+
+-- | Generate replacements for each class constraint that can be generated.
+generateReplacements ::
+     Scheme Polymorphic
+  -> Either DefaulterError (Map (ClassConstraint Polymorphic) (Set Substitution))
+generateReplacements scheme0 = do
+  typeVariableReplacements <-
+    M.traverseMaybeWithKey
+      (\_key constraints' ->
+         fmap (fmap (constraints', )) (suggestTypeConstant constraints'))
+      constrainedDefaultableTypeVariables
+  let classConstraintReplacements =
+        M.fromListWith
+          (<>)
+          (concatMap
+             (\(typeVariable, (constraints', typ)) ->
+                map
+                  (\constraint ->
+                     ( constraint
+                     , Set.singleton
+                         (Substitution {before = typeVariable, after = typ})))
+                  (toList constraints'))
+             (M.toList typeVariableReplacements))
+  pure classConstraintReplacements
+  where
     constrainedDefaultableTypeVariables =
       M.mapMaybe
         (NE.nonEmpty . toList)
