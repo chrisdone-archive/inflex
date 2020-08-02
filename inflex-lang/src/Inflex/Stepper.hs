@@ -16,6 +16,7 @@ import Data.Bifunctor
 import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Inflex.Decimal
+import Inflex.Defaulter
 import Inflex.Resolver
 import Inflex.Types
 import Numeric.Natural
@@ -26,6 +27,11 @@ import Numeric.Natural
 data ResolveStepError
   = ResolverErrored GeneraliseResolveError
   | StepError StepError
+  deriving (Show, Eq)
+
+data DefaultStepError
+  = DefaulterErrored ResolverDefaulterError
+  | StepError' StepError
   deriving (Show, Eq)
 
 data StepError
@@ -62,6 +68,20 @@ stepText schemes values fp text = do
     StepError
     (evalStateT
        (runReaderT (unStep (stepExpression thing)) values)
+       Continue)
+
+stepTextDefaulted ::
+     Map Hash (Scheme Polymorphic)
+  -> Map Hash (Expression Resolved)
+  -> FilePath
+  -> Text
+  -> Either DefaultStepError (Expression Resolved)
+stepTextDefaulted schemes values fp text = do
+  Cell{expression} <- first DefaulterErrored (defaultText schemes fp text)
+  first
+    StepError'
+    (evalStateT
+       (runReaderT (unStep (stepExpression expression)) values)
        Continue)
 
 --------------------------------------------------------------------------------

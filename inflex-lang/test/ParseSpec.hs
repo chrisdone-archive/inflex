@@ -14,6 +14,7 @@ import           Test.Hspec
 
 spec :: Spec
 spec = do
+  sigs
   types
   literals
   globals
@@ -1086,3 +1087,106 @@ apply = it
                                   }))
                       , typ = Nothing
                       }))))
+
+sigs :: SpecWith ()
+sigs =
+  it
+    "Signatures"
+    (do shouldBe
+          (parseText "" "123 :: Integer")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 4, name = ""}
+                            }
+                      , number = IntegerNumber 123
+                      , typ =
+                          Just
+                            (ConstantType
+                               (TypeConstant
+                                  { location =
+                                      SourceLocation
+                                        { start =
+                                            SourcePos
+                                              {line = 1, column = 8, name = ""}
+                                        , end =
+                                            SourcePos
+                                              {line = 1, column = 15, name = ""}
+                                        }
+                                  , name = IntegerTypeName
+                                  }))
+                      }))))
+        shouldBe
+          (parseText "" "123 :: Decimal 1")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 4, name = ""}
+                            }
+                      , number = IntegerNumber 123
+                      , typ =
+                          Just
+                            (ApplyType
+                               (TypeApplication
+                                  { function =
+                                      ConstantType
+                                        (TypeConstant
+                                           { location =
+                                               SourceLocation
+                                                 { start =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 8
+                                                       , name = ""
+                                                       }
+                                                 , end =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 15
+                                                       , name = ""
+                                                       }
+                                                 }
+                                           , name = DecimalTypeName
+                                           })
+                                  , argument =
+                                      ConstantType
+                                        (TypeConstant
+                                           { location =
+                                               SourceLocation
+                                                 { start =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 16
+                                                       , name = ""
+                                                       }
+                                                 , end =
+                                                     SourcePos
+                                                       { line = 1
+                                                       , column = 17
+                                                       , name = ""
+                                                       }
+                                                 }
+                                           , name = NatTypeName 1
+                                           })
+                                  , location =
+                                      SourceLocation
+                                        { start =
+                                            SourcePos
+                                              {line = 1, column = 8, name = ""}
+                                        , end =
+                                            SourcePos
+                                              {line = 1, column = 17, name = ""}
+                                        }
+                                  , kind = TypeKind
+                                  }))
+                      })))))
