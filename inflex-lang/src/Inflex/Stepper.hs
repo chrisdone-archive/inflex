@@ -36,7 +36,8 @@ data DefaultStepError
 
 data StepError
   = NotInScope Hash
-  | InvalidPrimOpOperands
+  | InvalidIntegerOpOperands (Expression Resolved) (Expression Resolved)
+  | InvalidDecimalOpOperands
   | MismatchingPrecisions
   deriving (Show, Eq)
 
@@ -113,9 +114,23 @@ stepApply Apply {..} = do
     Stepped ->
       pure
         (ApplyExpression Apply {function = function', argument = argument', ..})
-    Continue ->
-      pure -- TODO:
-        (ApplyExpression Apply {function = function', argument = argument', ..})
+    Continue -> do
+      case function' of
+        LambdaExpression lambda -> error "OK, lambda!"
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
+                              }
+          | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
+             argument' -> pure argument'
+        _ ->
+          pure
+            (ApplyExpression
+               Apply {function = function', argument = argument', ..})
+
+
+betaReduce :: Lambda Resolved -> Expression Resolved -> Expression Resolved
+betaReduce Lambda {body} arg = go 0 body
+  where go depth = undefined
 
 stepInfix :: Infix Resolved -> Step (Expression Resolved)
 stepInfix Infix {..} = do
@@ -160,7 +175,7 @@ stepIntegerOp numericBinOp left' right' =
                 , location = SteppedCursor
                 , ..
                 }))
-    _ -> Step (lift (lift (Left InvalidPrimOpOperands)))
+    _ -> Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))
 
 stepDecimalOp ::
      Natural
@@ -202,4 +217,4 @@ stepDecimalOp places numericBinOp left' right' =
                     -- useful for finding 0's which hit an x/0.
                     , ..
                     }))
-    _ -> Step (lift (lift (Left InvalidPrimOpOperands)))
+    _ -> Step (lift (lift (Left InvalidDecimalOpOperands)))
