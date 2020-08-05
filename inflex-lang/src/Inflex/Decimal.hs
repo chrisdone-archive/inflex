@@ -34,6 +34,12 @@ deriving instance Show SomeFixed
 instance KnownNat n => HasResolution (Places n) where
   resolution _ = natVal (Proxy @n)
 
+-- | Set the decimal precision to larger @p@.
+expandDecimalPrecision :: Natural -> Decimal -> Decimal
+expandDecimalPrecision new Decimal {integer, places = old} =
+  Decimal {places = new, integer = integer * (10 ^ (new - old))}
+
+-- | Convert a fixed number back to decimal.
 fixedToDecimal :: SomeFixed -> Decimal
 fixedToDecimal (SomeFixed places (MkFixed integer :: Fixed (Places n))) =
   Decimal {places, integer}

@@ -37,8 +37,10 @@ data DefaultStepError
 data StepError
   = NotInScope Hash
   | InvalidIntegerOpOperands (Expression Resolved) (Expression Resolved)
-  | InvalidDecimalOpOperands
-  | MismatchingPrecisions
+  | InvalidDecimalOpOperands (Expression Resolved) (Expression Resolved)
+  | MismatchingPrecisionsInOp
+  | MismatchingPrecisionsInFromDecimal Natural Natural
+  | CannotShrinkADecimalFromTo Natural Natural
   deriving (Show, Eq)
 
 data Stepped
@@ -124,6 +126,17 @@ stepApply Apply {..} = do
                               }
           | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
              argument' -> pure argument'
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromDecimalGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromDecimalDecimalInstance fromDecimalInstance))})
+                              }
+          | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
+                                                     , typ = typ'
+                                                     })) <- argument' -> do
+            decimal' <- fromDecimalStep fromDecimalInstance decimal
+            pure
+              (LiteralExpression
+                 (NumberLiteral
+                    (Number {number = DecimalNumber decimal', typ = typ', ..})))
         _ ->
           pure
             (ApplyExpression
@@ -207,7 +220,7 @@ stepDecimalOp places numericBinOp left' right' =
                         -- the origin of the 0. See SteppedCursor
                         -- below.
                         DivideOp -> x / y))) of
-        Nothing -> Step (lift (lift (Left MismatchingPrecisions)))
+        Nothing -> Step (lift (lift (Left MismatchingPrecisionsInOp)))
         Just result ->
           pure
             (LiteralExpression
@@ -220,7 +233,7 @@ stepDecimalOp places numericBinOp left' right' =
                     -- useful for finding 0's which hit an x/0.
                     , ..
                     }))
-    _ -> Step (lift (lift (Left InvalidDecimalOpOperands)))
+    _ -> Step (lift (lift (Left (InvalidDecimalOpOperands left' right'))))
 
 --------------------------------------------------------------------------------
 -- Beta reduction
@@ -256,3 +269,31 @@ betaReduce Lambda {body = body0} arg = go 0 body0
           pure (LetExpression Let {body = body', ..})
         e@GlobalExpression {} -> pure e
         e@LiteralExpression {} -> pure e
+
+--------------------------------------------------------------------------------
+-- FromDecimal instance stepping
+
+fromDecimalStep :: FromDecimalInstance -> Decimal -> Step Decimal
+fromDecimalStep fromDecimalInstance decimal =
+  if thisSubsetPlaces == subsetPlaces
+    then if thisSubsetPlaces == supersetPlaces
+           then pure decimal
+           else if thisSubsetPlaces < supersetPlaces
+                  then pure (expandDecimalPrecision supersetPlaces decimal)
+                  else Step
+                         (lift
+                            (lift
+                               (Left
+                                  (CannotShrinkADecimalFromTo
+                                     thisSubsetPlaces
+                                     supersetPlaces))))
+    else Step
+           (lift
+              (lift
+                 (Left
+                    (MismatchingPrecisionsInFromDecimal
+                       thisSubsetPlaces
+                       subsetPlaces))))
+  where
+    Decimal {places = thisSubsetPlaces, integer} = decimal
+    FromDecimalInstance {supersetPlaces, subsetPlaces} = fromDecimalInstance

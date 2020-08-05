@@ -56,33 +56,37 @@ spec = do
     "Defaulted single expressions"
     (do it
           "6"
-          (do pending
-              shouldBe (stepTextly "6") (Right "6"))
+          (do
+              shouldBe (stepDefaultedTextly "6") (Right "6"))
         it
           "6 + 3"
-          (do pending
-              shouldBe (stepTextly "6 + 3") (Right "9"))
+          (do
+              shouldBe (stepDefaultedTextly "6 + 3") (Right "9"))
         it
           "6 * 3"
-          (do pending
-              shouldBe (stepTextly "6 * 3") (Right "18"))
+          (do
+              shouldBe (stepDefaultedTextly "6 * 3") (Right "18"))
         it
           "6 / 3"
-          (do pending
-              shouldBe (stepTextly "6 / 3") (Right "2"))
+          (do
+              shouldBe (stepDefaultedTextly "6 / 3") (Right "2"))
         it
           "6 - 3"
-          (do pending
-              shouldBe (stepTextly "6 - 3") (Right "3"))
+          (do
+              shouldBe (stepDefaultedTextly "6 - 3") (Right "3"))
         it
           "6 - 3 * 3"
-          (do pending
-              shouldBe (stepTextly "6 - 3 * 3") (Right "-3"))
+          (do
+              shouldBe (stepDefaultedTextly "6 - 3 * 3") (Right "-3"))
+        it
+          "6.2 + 3.10"
+          (do
+              shouldBe (stepDefaultedTextly "6.2 + 3.10") (Right "9.30"))
         it
           "6.0 + 3.0"
-          (do pending
-              shouldBe (stepTextly "6.2 2 + 3.1") (Right "9.3"))
+          (do
+              shouldBe (stepDefaultedTextly "6.2 + 3.1") (Right "9.3"))
         it
           "6.0 - 3.0 * 3.0 / 2.0"
-          (do pending
-              shouldBe (stepTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5")))
+          (do
+              shouldBe (stepDefaultedTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5")))
