@@ -11,9 +11,6 @@ module Inflex.Types where
 
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Sequence (Seq)
-import qualified Data.Sequence as Seq
-import           Data.Set (Set)
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import           GHC.Generics
 import           Inflex.Types.SHA512
