@@ -85,6 +85,12 @@ spec = do
           "0.1 + 0.1"
           (shouldBe (stepDefaultedTextly "0.1 + 0.2") (Right "0.3"))
         it "10/3" (shouldBe (stepDefaultedTextly "10/3") (Right "3"))
+        it
+          "5/2/2.000/2"
+          (shouldBe (stepDefaultedTextly "5/2/2.000/2") (Right "0.625"))
+        it
+          "5/2/2.0/2"
+          (shouldBe (stepDefaultedTextly "5/2/2.0/2") (Right "0.6"))
         it "1/3" (shouldBe (stepDefaultedTextly "1/3.000") (Right "0.333"))
         it "10/3.0" (shouldBe (stepDefaultedTextly "10/3.0") (Right "3.3"))
         it "10.0/0.0" pending
