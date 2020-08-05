@@ -54,43 +54,22 @@ spec = do
           (shouldBe (stepDefaultedTextly "6 + 3 :: Integer") (Right "9")))
   describe
     "Defaulted single expressions"
-    (do it
-          "6"
-          (do
-              shouldBe (stepDefaultedTextly "6") (Right "6"))
-        it
-          "6 + 3"
-          (do
-              shouldBe (stepDefaultedTextly "6 + 3") (Right "9"))
-        it
-          "6 * 3"
-          (do
-              shouldBe (stepDefaultedTextly "6 * 3") (Right "18"))
-        it
-          "6 / 3"
-          (do
-              shouldBe (stepDefaultedTextly "6 / 3") (Right "2"))
-        it
-          "6 - 3"
-          (do
-              shouldBe (stepDefaultedTextly "6 - 3") (Right "3"))
-        it
-          "6 - 3 * 3"
-          (do
-              shouldBe (stepDefaultedTextly "6 - 3 * 3") (Right "-3"))
+    (do it "6" (shouldBe (stepDefaultedTextly "6") (Right "6"))
+        it "6 + 3" (shouldBe (stepDefaultedTextly "6 + 3") (Right "9"))
+        it "6 * 3" (shouldBe (stepDefaultedTextly "6 * 3") (Right "18"))
+        it "6 / 3" (shouldBe (stepDefaultedTextly "6 / 3") (Right "2"))
+        it "6 - 3" (shouldBe (stepDefaultedTextly "6 - 3") (Right "3"))
+        it "6 - 3 * 3" (shouldBe (stepDefaultedTextly "6 - 3 * 3") (Right "-3"))
         it
           "6.2 + 3.10"
-          (do
-              shouldBe (stepDefaultedTextly "6.2 + 3.10") (Right "9.30"))
+          (shouldBe (stepDefaultedTextly "6.2 + 3.10") (Right "9.30"))
         it
           "6.0 + 3.0"
-          (do
-              shouldBe (stepDefaultedTextly "6.2 + 3.1") (Right "9.3"))
+          (shouldBe (stepDefaultedTextly "6.2 + 3.1") (Right "9.3"))
         it
           "6.0 - 3.0 * 3.0 / 2.0"
-          (do
-              shouldBe (stepDefaultedTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5"))
+          (shouldBe (stepDefaultedTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5"))
         it
-          "6 + 3.10"
-          (do
-              shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10")))
+          "6.0 - 3 * 3.0 / 2.01"
+          (shouldBe (stepDefaultedTextly "6.0 - 3 * 3.0 / 2.01") (Right "1.53"))
+        it "6 + 3.10" (shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10")))
