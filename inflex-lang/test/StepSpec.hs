@@ -89,4 +89,8 @@ spec = do
         it
           "6.0 - 3.0 * 3.0 / 2.0"
           (do
-              shouldBe (stepDefaultedTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5")))
+              shouldBe (stepDefaultedTextly "6.0 - 3.0 * 3.0 / 2.0") (Right "1.5"))
+        it
+          "6 + 3.10"
+          (do
+              shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10")))

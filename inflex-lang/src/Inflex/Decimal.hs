@@ -34,6 +34,11 @@ deriving instance Show SomeFixed
 instance KnownNat n => HasResolution (Places n) where
   resolution _ = natVal (Proxy @n)
 
+-- | Convert an integer to a decimal of @places@.
+decimalFromInteger :: Integer -> Natural -> Decimal
+decimalFromInteger integer places =
+  Decimal {integer = integer * (10 ^ places), places}
+
 -- | Set the decimal precision to larger @p@.
 expandDecimalPrecision :: Natural -> Decimal -> Decimal
 expandDecimalPrecision new Decimal {integer, places = old} =

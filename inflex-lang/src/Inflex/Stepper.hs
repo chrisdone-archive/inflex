@@ -137,6 +137,22 @@ stepApply Apply {..} = do
               (LiteralExpression
                  (NumberLiteral
                     (Number {number = DecimalNumber decimal', typ = typ', ..})))
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromIntegerDecimalInstance supersetPlaces))})
+                              }
+          | LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
+                                                     , typ = typ'
+                                                     })) <- argument' -> do
+            pure
+              (LiteralExpression
+                 (NumberLiteral
+                    (Number
+                       { number =
+                           DecimalNumber
+                             (decimalFromInteger integer supersetPlaces)
+                       , typ = typ'
+                       , ..
+                       })))
         _ ->
           pure
             (ApplyExpression
@@ -295,5 +311,5 @@ fromDecimalStep fromDecimalInstance decimal =
                        thisSubsetPlaces
                        subsetPlaces))))
   where
-    Decimal {places = thisSubsetPlaces, integer} = decimal
+    Decimal {places = thisSubsetPlaces} = decimal
     FromDecimalInstance {supersetPlaces, subsetPlaces} = fromDecimalInstance
