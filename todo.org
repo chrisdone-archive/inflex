@@ -126,6 +126,7 @@ Use floating points but make partial results explicit too?
       https://github.com/purescript-halogen/purescript-halogen/issues/646
 * Supportive
 * Considerations
+** TODO Add iframe/deny to URIs by default?
 ** TODO WASM for client-side eval???
 ** TODO Brotli compression
    - Note taken on [2020-07-02 Thu 16:29] \\

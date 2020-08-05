@@ -85,9 +85,6 @@ stepTextDefaulted schemes values fp text = do
        (runReaderT (unStep (stepExpression expression)) values)
        Continue)
 
---------------------------------------------------------------------------------
--- Steppers
-
 stepExpression ::
      Expression Resolved
   -> Step (Expression Resolved)
@@ -105,6 +102,9 @@ stepExpression expression = do
         GlobalExpression {} -> pure expression
         LetExpression {} -> pure expression
 
+--------------------------------------------------------------------------------
+-- Function application
+
 stepApply :: Apply Resolved -> Step (Expression Resolved)
 stepApply Apply {..} = do
   function' <- stepExpression function
@@ -116,7 +116,9 @@ stepApply Apply {..} = do
         (ApplyExpression Apply {function = function', argument = argument', ..})
     Continue -> do
       case function' of
-        LambdaExpression lambda -> error "OK, lambda!"
+        LambdaExpression lambda -> do
+          body' <- betaReduce lambda argument'
+          stepExpression body'
         ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
                               , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
                               }
@@ -127,10 +129,8 @@ stepApply Apply {..} = do
             (ApplyExpression
                Apply {function = function', argument = argument', ..})
 
-
-betaReduce :: Lambda Resolved -> Expression Resolved -> Expression Resolved
-betaReduce Lambda {body} arg = go 0 body
-  where go depth = undefined
+--------------------------------------------------------------------------------
+-- Infix stepper
 
 stepInfix :: Infix Resolved -> Step (Expression Resolved)
 stepInfix Infix {..} = do
@@ -152,6 +152,9 @@ stepInfix Infix {..} = do
                               , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
                               } -> stepDecimalOp precision numericBinOp left' right'
         _ -> error ("stepInfix: " ++ show global')
+
+--------------------------------------------------------------------------------
+-- Numeric operations
 
 stepIntegerOp ::
      NumericBinOp
@@ -218,3 +221,38 @@ stepDecimalOp places numericBinOp left' right' =
                     , ..
                     }))
     _ -> Step (lift (lift (Left InvalidDecimalOpOperands)))
+
+--------------------------------------------------------------------------------
+-- Beta reduction
+
+betaReduce ::
+     Lambda Resolved -> Expression Resolved -> Step (Expression Resolved)
+betaReduce Lambda {body = body0} arg = go 0 body0
+  where
+    go :: DeBrujinNesting -> Expression Resolved -> Step (Expression Resolved)
+    go deBrujinNesting =
+      \case
+        e@(VariableExpression Variable {name})
+          | deBrujinIndexNesting name == deBrujinNesting -> pure arg
+          | otherwise -> pure e
+        LambdaExpression Lambda {..} -> do
+          body' <- go (deBrujinNesting + 1) body
+          pure (LambdaExpression Lambda {body = body', ..})
+        ApplyExpression Apply {..} -> do
+          argument' <- go deBrujinNesting argument
+          function' <- go deBrujinNesting function
+          pure
+            (ApplyExpression
+               Apply {argument = argument', function = function', ..})
+        InfixExpression Infix{..} -> do
+          left' <- go deBrujinNesting left
+          right' <- go deBrujinNesting right
+          global' <- go deBrujinNesting global
+          pure
+            (InfixExpression
+               Infix {left = left', right = right', global = global', ..})
+        LetExpression Let {..} -> do
+          body' <- go (deBrujinNesting + 1) body
+          pure (LetExpression Let {body = body', ..})
+        e@GlobalExpression {} -> pure e
+        e@LiteralExpression {} -> pure e
