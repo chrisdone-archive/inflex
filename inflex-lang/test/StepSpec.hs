@@ -72,4 +72,17 @@ spec = do
         it
           "6.0 - 3 * 3.0 / 2.01"
           (shouldBe (stepDefaultedTextly "6.0 - 3 * 3.0 / 2.01") (Right "1.53"))
-        it "6 + 3.10" (shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10")))
+        it "6 + 3.10" (shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10"))
+        it
+          "fromInteger (6 :: Integer) + 3.10 + (fromDecimal 3.1 :: Decimal 1)"
+          (shouldBe
+             (stepDefaultedTextly
+                "fromInteger (6 :: Integer) + 3.10 + (fromDecimal 3.1 :: Decimal 1)")
+             (Right "12.20")))
+  describe
+    "Sanity checks"
+    (do it
+          "0.1 + 0.1"
+          (shouldBe (stepDefaultedTextly "0.1 + 0.2") (Right "0.3"))
+        it "10/3" (shouldBe (stepDefaultedTextly "10/3") (Right "3"))
+        it "10/3.0" (shouldBe (stepDefaultedTextly "10/3.0") (Right "3.3")))
