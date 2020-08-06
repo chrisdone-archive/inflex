@@ -47,17 +47,21 @@ Please note that [Stripe](https://stripe.com/) provides our payment
 services and protects us against fraudulent payments to the best of
 their abilities. They are responsible for payment card processing,
 including the collection of billing details, the card number, CVV and
-the name on card. Stripe does not share the full card details with
-us. The only information we collect from Stripe is a unique Customer
-ID.
+the name on card. For each of our customers we receive from Stripe
+only a unique customer ID determined by them.
 
 Your email address is shared with Stripe for emails like payment
 invoice notifications, cancellation confirmations, trial expiration,
 etc. Stripe collects personal information like your address and
-postcode to process payments and for their own purposes. **Stripe’s
-own privacy policy will apply to your relations with them.** We do not
-ask Stripe for any of the data they collect about you and although we
-do have access to read it using Stripe’s service, we do not store it.
+postcode and card details to process payments and for their own
+purposes. **Stripe’s own privacy policy will apply to your relations
+with them.** Stripe gives us the ability to view a limited amount of
+their records about our customers. In particular this includes your
+name, the last four digits of your card number, the expiry date of the
+card and your post code. We do not routinely access this information
+but we may do so from time-to-time to ensure the relationship with
+each of our customers is properly and effectively managed. We do not
+retain this information ourselves.
 
 ## Personal information
 
