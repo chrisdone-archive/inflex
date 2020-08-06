@@ -74,9 +74,11 @@ spec = do
           (shouldBe (stepDefaultedTextly "6.0 - 3 * 3.0 / 2.01") (Right "1.53"))
         it "6 + 3.10" (shouldBe (stepDefaultedTextly "6 + 3.10") (Right "9.10"))
         it
+          "(2.0 :: Decimal 2)"
+          (shouldBe (stepDefaultedTextly "(2.0 :: Decimal 2)") (Right "2.00"))
+        it
           "(2 :: Decimal 3)"
-          (do pending -- The :: Decimal 3 on literals is bad.
-              shouldBe (stepDefaultedTextly "(2 :: Decimal 3)") (Right "2.000"))
+          (shouldBe (stepDefaultedTextly "(2 :: Decimal 3)") (Right "2.000"))
         it
           "fromInteger (6 :: Integer) + 3.10 + (fromDecimal 3.1 :: Decimal 1)"
           (shouldBe
