@@ -60,7 +60,7 @@ instance ToJSONKey SHA512
 instance FromJSON SHA512 where
   parseJSON (String val) = pure $ SHA512 $ fst $ Hex.decode $ T.encodeUtf8 val
   parseJSON value =
-    error $ "Expected JSON value of String, but instead got " <> show value
+    fail $ "Expected JSON value of String, but instead got " <> show value
 
 instance FromJSONKey SHA512
 
