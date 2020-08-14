@@ -80,8 +80,8 @@ import           Yesod.Lucid
 
 getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR slug =
-  withLogin
-    (\_ state@(LoginState {loginAccountId})
+  -- withLogin
+  --   (\_ state@(LoginState {loginAccountId})
        {-(documentId, initialDecs') <-
          do mdoc <-
               runDB
@@ -105,10 +105,10 @@ getAppEditorR slug =
                                 pure (UUID.toText uuid, dec))
                              decs)
                       fmap (documentId, ) (evaluateInputDocument decs'))-}
-      -> do
+      -- -> do
        htmlWithUrl
          (appTemplate
-            (Registered state)
+            NoSessionState-- (Registered state)
             ((do url <- ask
                  div_
                    [class_ "container-fluid"]
@@ -134,7 +134,8 @@ getAppEditorR slug =
                  -- script_
                  --   [type_ "text/javascript", src_ (url AppJsR)]
                  --   ""
-              ))))
+              -- ))))
+              )))
 
 -- getAppJsR :: Handler TypedContent
 -- getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
