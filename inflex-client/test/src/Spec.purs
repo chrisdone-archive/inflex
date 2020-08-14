@@ -6,10 +6,11 @@ import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe)
 import Effect (Effect)
 import Effect.Console (log)
 import Foreign.Generic (defaultOptions, genericEncodeJSON, genericDecodeJSON, SumEncoding, class Decode, class Encode, genericEncode, genericDecode)
-import Prelude
+import Prelude (class Show, Unit, bind, pure, unit)
 
 opts :: { fieldTransform :: String -> String , sumEncoding :: SumEncoding , unwrapSingleArguments :: Boolean , unwrapSingleConstructors :: Boolean}
 opts = defaultOptions { unwrapSingleConstructors = true }
@@ -20,7 +21,12 @@ instance showMyRecord :: Show MyRecord where show = genericShow
 instance decodeMyRecord :: Decode MyRecord where decode = genericDecode opts
 instance encodeMyRecord :: Encode MyRecord where encode = genericEncode opts
 
-data MyRecord2 = MyRecord2 { b :: Int, myrec :: MyRecord, arr :: Array MyRecord }
+data MyRecord2 = MyRecord2
+  { b :: Int
+  , myrec :: MyRecord
+  , mrec :: Maybe MyRecord
+  , arr :: Array MyRecord
+  }
 derive instance genericMyRecord2 :: Generic MyRecord2 _
 instance showMyRecord2 :: Show MyRecord2 where show = genericShow
 
