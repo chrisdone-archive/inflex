@@ -1,13 +1,20 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- |
 
 module Main where
 
-import System.Process.Typed
-import Test.Hspec
+import           Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as L8
+import           GHC.Generics
+import           System.Directory
+import           System.Process.Typed
+import           Test.Hspec
 
-main =
+main :: IO ()
+main = do
+  setCurrentDirectory "test"
   hspec
     (describe
        "Compile"
@@ -25,9 +32,9 @@ main =
                       "stack"
                       [ "exec"
                       , "--"
-                      , "purs"
-                      , "bundle"
-                      , "output/**/*.js"
+                      , "psc-bundle-fast"
+                      , "-i"
+                      , "output"
                       , "-m"
                       , "Spec"
                       , "--main"
@@ -37,8 +44,22 @@ main =
                       ]))
                 ())
            it
-             "node run: success"
-             (shouldReturn
-                (readProcessStdout_ (proc "node" ["app.js","{\"a\":1}"]))
-                "{\"a\":1}\n\
-                \(Right (MyRecord { a: 1 }))\n")))
+             "node run: bijection"
+             (do shouldReturn
+                   (readProcessStdout_ (proc "node" ["app.js", "print"]))
+                   "{\"a\":1}\n"
+                 shouldBe (decode "{\"a\":1}\n") (pure (MyRecord {a = 1}))
+                 shouldReturn
+                   (readProcessStdout_
+                      (proc
+                         "node"
+                         [ "app.js"
+                         , "parse"
+                         , L8.unpack (encode (MyRecord {a = 1}))
+                         ]))
+                   "(MyRecord { a: 1 })\n")))
+
+data MyRecord = MyRecord { a :: Int }
+ deriving (Generic, Show, Eq)
+instance FromJSON MyRecord
+instance ToJSON MyRecord

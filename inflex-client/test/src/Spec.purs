@@ -3,6 +3,7 @@
 module Spec where
 
 import Control.Monad.Except (runExcept)
+import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Effect (Effect)
@@ -24,7 +25,11 @@ instance showMyRecord :: Show MyRecord where show = genericShow
 main :: Effect Unit
 main = do
   args <- argv
-  log (genericEncodeJSON opts (MyRecord { a: 1 }))
   case args of
-    [_,_, x] -> log (show (runExcept (genericDecodeJSON opts x :: _ MyRecord)))
+    [_, _, "print"] ->
+      log (genericEncodeJSON opts (MyRecord {a: 1}))
+    [_, _, "parse", x] ->
+      case runExcept (genericDecodeJSON opts x :: _ MyRecord) of
+        Right r -> log (show r)
+        Left _ -> pure unit
     _ -> pure unit

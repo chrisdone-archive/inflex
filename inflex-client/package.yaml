@@ -17,6 +17,7 @@ dependencies:
 - bytestring
 - aeson
 - typed-process
+- directory
 
 ghc-options: -Wall
 
