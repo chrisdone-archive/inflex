@@ -5,8 +5,6 @@
   "depends": [
     "prelude",
     "console",
-    "foreign-generic",
-    "node-process",
-    "node-readline-aff"
+    "foreign-generic"
   ]
 }
