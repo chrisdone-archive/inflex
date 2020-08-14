@@ -9,7 +9,6 @@ import Data.Generic.Rep.Show (genericShow)
 import Effect (Effect)
 import Effect.Console (log)
 import Foreign.Generic (defaultOptions, genericEncodeJSON, genericDecodeJSON, SumEncoding, class Decode, class Encode, genericEncode, genericDecode)
-import Node.Process (argv)
 import Prelude
 
 opts :: { fieldTransform :: String -> String , sumEncoding :: SumEncoding , unwrapSingleArguments :: Boolean , unwrapSingleConstructors :: Boolean}
@@ -25,18 +24,21 @@ data MyRecord2 = MyRecord2 { b :: Int, myrec :: MyRecord, arr :: Array MyRecord 
 derive instance genericMyRecord2 :: Generic MyRecord2 _
 instance showMyRecord2 :: Show MyRecord2 where show = genericShow
 
+foreign import argv :: Effect (Array String)
+
 --------------------------------------------------------------------------------
 -- Main entry point
 
 main :: Effect Unit
 main = do
   args <- argv
+  -- log (show args)
   case args of
-    [_, _, "MyRecord", x] ->
+    [_, "MyRecord", x] ->
       case runExcept (genericDecodeJSON opts x :: _ MyRecord) of
         Right r -> log (genericEncodeJSON opts r)
         Left _ -> pure unit
-    [_, _, "MyRecord2", x] ->
+    [_, "MyRecord2", x] ->
       case runExcept (genericDecodeJSON opts x :: _ MyRecord2) of
         Right r -> log (genericEncodeJSON opts r)
         Left _ -> pure unit

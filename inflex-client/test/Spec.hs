@@ -56,7 +56,7 @@ main = do
                                decode
                                (readProcessStdout_
                                   (proc
-                                     "node"
+                                     "/home/chris/qjs"
                                      [ "app.js"
                                      , "MyRecord"
                                      , L8.unpack (encode r)
@@ -78,7 +78,7 @@ main = do
                                decode
                                (readProcessStdout_
                                   (proc
-                                     "node"
+                                     "/home/chris/qjs"
                                      [ "app.js"
                                      , "MyRecord2"
                                      , L8.unpack (encode r)

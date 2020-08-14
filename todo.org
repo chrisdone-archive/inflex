@@ -465,3 +465,45 @@ chris@precision:~$
     http://ropas.snu.ac.kr/lib/dock/He1993.pdf
   - Note taken on [2020-06-07 Sun 11:01] \\
     https://pchiusano.github.io/2018-02-13/typeclasses.html
+* Comments
+  - Note taken on [2020-08-14 Fri 14:44] \\
+    QuickJS
+
+    #+BEGIN_SRC
+    Compile
+      psc-package build: success
+      purs bundle: success
+      node run: roundtrip: MyRecord
+        +++ OK, passed 100 tests.
+      node run: roundtrip: MyRecord2
+        +++ OK, passed 100 tests.
+
+    Finished in 8.1165 seconds
+    4 examples, 0 failures
+    #+END_SRC
+  - Note taken on [2020-08-14 Fri 14:11] \\
+    Node vs d8
+
+    Node:
+
+    #+BEGIN_SRC
+    inflex-client> test (suite: inflex-client-test, args: --fail-fast --color)
+
+    Progress 1/2: inflex-client
+    Compile
+    Compiling Spec
+      psc-package build: success
+      purs bundle: success
+      node run: roundtrip: MyRecord
+        +++ OK, passed 100 tests.
+      node run: roundtrip: MyRecord2
+        +++ OK, passed 100 tests.
+
+    Finished in 69.0890 seconds
+    4 examples, 0 failures
+
+    inflex-client> Test suite inflex-client-test passed
+    Completed 2 action(s).
+    Success! Waiting for next file change.
+    Type help for available commands. Press enter to force a rebuild.
+    #+END_SRC
