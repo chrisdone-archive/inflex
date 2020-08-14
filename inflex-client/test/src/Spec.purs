@@ -26,10 +26,8 @@ main :: Effect Unit
 main = do
   args <- argv
   case args of
-    [_, _, "print"] ->
-      log (genericEncodeJSON opts (MyRecord {a: 1}))
-    [_, _, "parse", x] ->
+    [_, _, "parse-and-encode", x] ->
       case runExcept (genericDecodeJSON opts x :: _ MyRecord) of
-        Right r -> log (show r)
+        Right r -> log (genericEncodeJSON opts r)
         Left _ -> pure unit
     _ -> pure unit

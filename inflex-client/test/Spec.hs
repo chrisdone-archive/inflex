@@ -11,6 +11,7 @@ import           GHC.Generics
 import           System.Directory
 import           System.Process.Typed
 import           Test.Hspec
+import           Test.QuickCheck
 
 main :: IO ()
 main = do
@@ -44,20 +45,19 @@ main = do
                       ]))
                 ())
            it
-             "node run: bijection"
-             (do shouldReturn
-                   (readProcessStdout_ (proc "node" ["app.js", "print"]))
-                   "{\"a\":1}\n"
-                 shouldBe (decode "{\"a\":1}\n") (pure (MyRecord {a = 1}))
-                 shouldReturn
-                   (readProcessStdout_
-                      (proc
-                         "node"
-                         [ "app.js"
-                         , "parse"
-                         , L8.unpack (encode (MyRecord {a = 1}))
-                         ]))
-                   "(MyRecord { a: 1 })\n")))
+             "node run: roundtrip: MyRecord"
+             (do property
+                   (\i ->
+                      let r = MyRecord {a = i}
+                       in shouldReturn
+                            (readProcessStdout_
+                               (proc
+                                  "node"
+                                  [ "app.js"
+                                  , "parse-and-encode"
+                                  , L8.unpack (encode r)
+                                  ]))
+                            (encode r <> "\n")))))
 
 data MyRecord = MyRecord { a :: Int }
  deriving (Generic, Show, Eq)

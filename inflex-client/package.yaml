@@ -18,6 +18,7 @@ dependencies:
 - aeson
 - typed-process
 - directory
+- vector
 
 ghc-options: -Wall
 
