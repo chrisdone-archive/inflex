@@ -74,6 +74,45 @@ main = do
                            (proc
                               "/home/chris/qjs"
                               ["app.js", "MyRecord2", L8.unpack (encode r)])))
+                     (pure r)))
+           it
+             "node run: roundtrip: MyProductType1"
+             (forAllUnchecked
+                @MyProductType1
+                (\r ->
+                   shouldReturn
+                     (fmap
+                        decode
+                        (readProcessStdout_
+                           (proc
+                              "/home/chris/qjs"
+                              ["app.js", "MyProductType1", L8.unpack (encode r)])))
+                     (pure r)))
+           it
+             "node run: roundtrip: MyProductType2"
+             (forAllUnchecked
+                @MyProductType2
+                (\r ->
+                   shouldReturn
+                     (fmap
+                        decode
+                        (readProcessStdout_
+                           (proc
+                              "/home/chris/qjs"
+                              ["app.js", "MyProductType2", L8.unpack (encode r)])))
+                     (pure r)))
+           it
+             "node run: roundtrip: MyProductType3"
+             (forAllUnchecked
+                @MyProductType3
+                (\r ->
+                   shouldReturn
+                     (fmap
+                        decode
+                        (readProcessStdout_
+                           (proc
+                              "/home/chris/qjs"
+                              ["app.js", "MyProductType3", L8.unpack (encode r)])))
                      (pure r)))))
 
 data MyRecord = MyRecord
@@ -96,3 +135,30 @@ instance ToJSON MyRecord2
 instance GenValid MyRecord2
 instance Validity MyRecord2
 instance GenUnchecked MyRecord2
+
+data MyProductType1 = MyProductType1
+  Int
+   deriving (Generic, Show, Eq)
+instance FromJSON MyProductType1
+instance ToJSON MyProductType1
+instance GenValid MyProductType1
+instance Validity MyProductType1
+instance GenUnchecked MyProductType1
+
+data MyProductType2 = MyProductType2
+  Int Int
+   deriving (Generic, Show, Eq)
+instance FromJSON MyProductType2
+instance ToJSON MyProductType2
+instance GenValid MyProductType2
+instance Validity MyProductType2
+instance GenUnchecked MyProductType2
+
+data MyProductType3 = MyProductType3
+  Int MyProductType2
+   deriving (Generic, Show, Eq)
+instance FromJSON MyProductType3
+instance ToJSON MyProductType3
+instance GenValid MyProductType3
+instance Validity MyProductType3
+instance GenUnchecked MyProductType3

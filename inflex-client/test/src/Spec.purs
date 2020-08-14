@@ -30,10 +30,27 @@ data MyRecord2 = MyRecord2
 derive instance genericMyRecord2 :: Generic MyRecord2 _
 instance showMyRecord2 :: Show MyRecord2 where show = genericShow
 
-foreign import argv :: Effect (Array String)
+data MyProductType1 = MyProductType1
+  Int
+derive instance genericMyProductType1 :: Generic MyProductType1 _
+instance showMyProductType1 :: Show MyProductType1 where show = genericShow
+
+data MyProductType2 = MyProductType2
+  Int Int
+derive instance genericMyProductType2 :: Generic MyProductType2 _
+instance showMyProductType2 :: Show MyProductType2 where show = genericShow
+instance decodeMyProductType2 :: Decode MyProductType2 where decode = genericDecode opts
+instance encodeMyProductType2 :: Encode MyProductType2 where encode = genericEncode opts
+
+data MyProductType3 = MyProductType3
+  Int MyProductType2
+derive instance genericMyProductType3 :: Generic MyProductType3 _
+instance showMyProductType3 :: Show MyProductType3 where show = genericShow
 
 --------------------------------------------------------------------------------
 -- Main entry point
+
+foreign import argv :: Effect (Array String)
 
 main :: Effect Unit
 main = do
@@ -46,6 +63,18 @@ main = do
         Left _ -> pure unit
     [_, "MyRecord2", x] ->
       case runExcept (genericDecodeJSON opts x :: _ MyRecord2) of
+        Right r -> log (genericEncodeJSON opts r)
+        Left _ -> pure unit
+    [_, "MyProductType1", x] ->
+      case runExcept (genericDecodeJSON opts x :: _ MyProductType1) of
+        Right r -> log (genericEncodeJSON opts r)
+        Left _ -> pure unit
+    [_, "MyProductType2", x] ->
+      case runExcept (genericDecodeJSON opts x :: _ MyProductType2) of
+        Right r -> log (genericEncodeJSON opts r)
+        Left _ -> pure unit
+    [_, "MyProductType3", x] ->
+      case runExcept (genericDecodeJSON opts x :: _ MyProductType3) of
         Right r -> log (genericEncodeJSON opts r)
         Left _ -> pure unit
     _ -> pure unit
