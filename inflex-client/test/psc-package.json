@@ -1,11 +1,12 @@
 {
   "name": "template-psc-package",
-  "set": "psc-0.13.6-20200127",
-  "source": "https://github.com/purescript/package-sets.git",
+  "set": "psc-0.13.6-20200127-skyaboveio-2",
+  "source": "https://github.com/skyaboveio/package-sets.git",
   "depends": [
     "prelude",
     "console",
     "foreign-generic",
-    "node-process"
+    "node-process",
+    "node-readline-aff"
   ]
 }
