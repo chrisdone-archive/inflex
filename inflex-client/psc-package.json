@@ -9,6 +9,8 @@
     "affjax",
     "argonaut",
     "http-methods",
-    "ordered-collections"
+    "ordered-collections",
+    "foreign-generic",
+    "node-process"
   ]
 }

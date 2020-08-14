@@ -131,14 +131,14 @@ getAppEditorR slug =
                  --       toHtmlRaw "window['inflexDocumentId'] = "
                  --       toHtmlRaw (encode documentId)
                  --       ";")
-                 -- script_
-                 --   [type_ "text/javascript", src_ (url AppJsR)]
-                 --   ""
+                 script_
+                   [type_ "text/javascript", src_ (url AppJsR)]
+                   ""
               -- ))))
               )))
 
--- getAppJsR :: Handler TypedContent
--- getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
+getAppJsR :: Handler TypedContent
+getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
 
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
