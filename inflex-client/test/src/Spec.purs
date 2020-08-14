@@ -15,13 +15,13 @@ import Prelude
 opts :: { fieldTransform :: String -> String , sumEncoding :: SumEncoding , unwrapSingleArguments :: Boolean , unwrapSingleConstructors :: Boolean}
 opts = defaultOptions { unwrapSingleConstructors = true }
 
-newtype MyRecord = MyRecord { a :: Int }
+data MyRecord = MyRecord { a :: Int }
 derive instance genericMyRecord :: Generic MyRecord _
 instance showMyRecord :: Show MyRecord where show = genericShow
 instance decodeMyRecord :: Decode MyRecord where decode = genericDecode opts
 instance encodeMyRecord :: Encode MyRecord where encode = genericEncode opts
 
-newtype MyRecord2 = MyRecord2 { b :: Int, myrec :: MyRecord, arr :: Array MyRecord }
+data MyRecord2 = MyRecord2 { b :: Int, myrec :: MyRecord, arr :: Array MyRecord }
 derive instance genericMyRecord2 :: Generic MyRecord2 _
 instance showMyRecord2 :: Show MyRecord2 where show = genericShow
 
