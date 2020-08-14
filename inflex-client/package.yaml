@@ -9,6 +9,8 @@ dependencies:
 - validity
 - genvalidity-property
 - genvalidity-hspec
+- genvalidity-vector
+- genvalidity-text
 - text
 - mtl
 - transformers
