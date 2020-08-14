@@ -24,9 +24,12 @@ Now open `index.html` and look at the console.
 
 # Dev
 
-    $ stack exec purs ide server
     $ watchexec -p -w --exts js -w output -- bash bundle-fast.sh
 
 OR
 
     $ stack exec -- watchexec -w --exts purs -w src -- bash ./bundle-full.sh
+
+IDE:
+
+    stack exec purs ide server
