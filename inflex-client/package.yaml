@@ -20,6 +20,8 @@ dependencies:
 - directory
 - vector
 
+extra-source-files: test/src/Spec.purs
+
 ghc-options: -Wall
 
 # library:
