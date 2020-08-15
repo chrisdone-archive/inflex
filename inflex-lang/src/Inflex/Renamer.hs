@@ -25,6 +25,7 @@ import           Data.List
 import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Parser
@@ -44,7 +45,7 @@ renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
   first
     RenamerErrors
-    (let (result, mappings) =
+    (let (result, (mappings, unresolvedGlobals)) =
            runState
              (runValidateT
                 (runRenamer
@@ -52,7 +53,7 @@ renameText fp text = do
                       (Env {globals = wiredInGlobals, cursor = id, scope = mempty})
                       expression)))
              mempty
-      in fmap (\thing -> IsRenamed {thing, mappings}) result)
+      in fmap (\thing -> IsRenamed {thing, mappings, unresolvedGlobals}) result)
 
 --------------------------------------------------------------------------------
 -- Wired-in
@@ -102,8 +103,8 @@ renameLiteral env =
                          , name =
                              let Number {number = someNumber} = number'
                               in case someNumber of
-                                   IntegerNumber {} -> FromIntegerGlobal
-                                   DecimalNumber {} -> FromDecimalGlobal
+                                   IntegerNumber {} -> GlobalRef FromIntegerGlobal
+                                   DecimalNumber {} -> GlobalRef FromDecimalGlobal
                          , scheme = RenamedScheme
                          }
                  })
@@ -190,7 +191,7 @@ renameGlobal Env {cursor} Global {..} = do
       "-" -> op SubtractOp
       "/" -> op DivideOp
       _ -> Renamer (refute (pure (UnknownOperatorName name)))
-  pure Global {location = final, scheme = RenamedScheme, name = name'}
+  pure Global {location = final, scheme = RenamedScheme, name = GlobalRef name'}
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
 renameBind env@Env {cursor} Bind {param, value, location, typ} = do
@@ -221,16 +222,26 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
   case find
          (any (\Param {name = name'} -> name' == name) . bindingParam . snd)
          (zip [0 ..] scope) of
-    Nothing ->
+    Nothing -> do
+      final <- finalizeCursor cursor ExpressionCursor location
       case M.lookup name globals of
-        Nothing ->
-          Renamer (refute (pure (MissingVariable scope globals variable)))
-        Just globalRef -> do
-          final <- finalizeCursor cursor ExpressionCursor location
+        Nothing -> do
+          modify (over _2 (Set.insert name))
           pure
             (GlobalExpression
                (Global
-                  {location = final, name = globalRef, scheme = RenamedScheme}))
+                  { location = final
+                  , name = UnresolvedGlobal name
+                  , scheme = RenamedScheme
+                  }))
+        Just globalRef -> do
+          pure
+            (GlobalExpression
+               (Global
+                  { location = final
+                  , name = GlobalRef globalRef
+                  , scheme = RenamedScheme
+                  }))
     Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
@@ -298,6 +309,6 @@ renameTypeVariable Env{cursor} TypeVariable {..} = do
 
 finalizeCursor :: CursorBuilder -> Cursor -> StagedLocation Parsed -> Renamer Cursor
 finalizeCursor cursor finalCursor loc = do
-  modify (M.insert final loc)
+  modify (over _1 (M.insert final loc))
   pure final
   where final = cursor finalCursor

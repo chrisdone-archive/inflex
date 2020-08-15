@@ -39,6 +39,7 @@ globalType Global {scheme} =
   case scheme of
     ParsedScheme -> Nothing
     RenamedScheme -> Nothing
+    FilledScheme -> Nothing
     GeneratedScheme scheme' -> schemeType scheme'
     SolvedScheme scheme' -> schemeType scheme'
     GeneralisedScheme scheme' -> schemeType scheme'

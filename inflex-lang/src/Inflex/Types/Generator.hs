@@ -21,6 +21,7 @@ import           Inflex.Instances ()
 import           Inflex.Optics
 import qualified Inflex.Renamer as Renamer
 import           Inflex.Types
+import           Inflex.Types.Filler
 import           Numeric.Natural
 import           Optics
 
@@ -28,7 +29,7 @@ import           Optics
 -- Types
 
 data GenerateError
-  = MissingVariableG (Variable Renamed)
+  = MissingVariableG (Variable Filled)
   | MissingHashG Hash
   deriving (Show, Eq)
 
@@ -54,6 +55,7 @@ data Env = Env
 data RenameGenerateError
   = RenameGenerateError Renamer.ParseRenameError
   | GeneratorErrors (NonEmpty GenerateError)
+  | FillErrors (NonEmpty FillerError)
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints

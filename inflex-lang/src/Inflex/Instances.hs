@@ -171,6 +171,9 @@ deriving instance Ord (Variable Parsed)
 deriving instance Show (Variable Renamed)
 deriving instance Eq (Variable Renamed)
 deriving instance Ord (Variable Renamed)
+deriving instance Show (Variable Filled)
+deriving instance Eq (Variable Filled)
+deriving instance Ord (Variable Filled)
 deriving instance Eq (Variable Generated)
 deriving instance Ord (Variable Generated)
 deriving instance Show (Variable Generated)
@@ -391,6 +394,10 @@ deriving instance Ord (Binding Resolved)
 deriving instance Eq Cell
 deriving instance Ord Cell
 deriving instance Show Cell
+
+deriving instance Eq IncompleteGlobalRef
+deriving instance Ord IncompleteGlobalRef
+deriving instance Show IncompleteGlobalRef
 
 deriving instance Eq (Default Polymorphic)
 deriving instance Ord (Default Polymorphic)

@@ -75,6 +75,10 @@ data Global s = Global
   , scheme :: !(StagedScheme s)
   }
 
+data IncompleteGlobalRef
+  = GlobalRef (GlobalRef Renamed)
+  | UnresolvedGlobal Text
+
 data Lambda s = Lambda
   { location :: !(StagedLocation s)
   , param :: !(Param s)
@@ -158,6 +162,7 @@ data TypeApplication s = TypeApplication
 data StagedScheme s where
   ParsedScheme :: StagedScheme Parsed
   RenamedScheme :: StagedScheme Renamed
+  FilledScheme :: StagedScheme Filled
   GeneratedScheme :: Scheme Generated -> StagedScheme Generated
   SolvedScheme :: Scheme Solved -> StagedScheme Solved
   GeneralisedScheme :: Scheme Generalised -> StagedScheme Generalised
@@ -338,6 +343,7 @@ data NumericBinOp
 
 data Parsed
 data Renamed
+data Filled
 data Generated
 data Solved
 data Generalised
@@ -350,6 +356,7 @@ data Resolved
 type family StagedLocation s where
   StagedLocation Parsed = SourceLocation
   StagedLocation Renamed = Cursor
+  StagedLocation Filled = Cursor
   StagedLocation Generated = Cursor
   StagedLocation Solved = Cursor
   StagedLocation Generalised = Cursor
@@ -359,6 +366,7 @@ type family StagedLocation s where
 type family StagedTyVarLocation s where
   StagedTyVarLocation Parsed = SourceLocation
   StagedTyVarLocation Renamed = Cursor
+  StagedTyVarLocation Filled = Cursor
   StagedTyVarLocation Generated = Cursor
   StagedTyVarLocation Solved = Cursor
   StagedTyVarLocation Generalised = Cursor
@@ -368,6 +376,7 @@ type family StagedTyVarLocation s where
 type family StagedPrefix s where
   StagedPrefix Parsed = TypeVariablePrefix
   StagedPrefix Renamed = TypeVariablePrefix
+  StagedPrefix Filled = TypeVariablePrefix
   StagedPrefix Generated = TypeVariablePrefix
   StagedPrefix Solved = TypeVariablePrefix
   StagedPrefix Generalised = TypeVariablePrefix
@@ -377,6 +386,7 @@ type family StagedPrefix s where
 type family StagedType s where
   StagedType Parsed = Maybe (Type Parsed)
   StagedType Renamed = Maybe (Type Renamed)
+  StagedType Filled = Maybe (Type Renamed)
   StagedType Generated = Type Generated
   StagedType Solved = Type Solved
   StagedType Generalised = Type Generalised
@@ -386,6 +396,7 @@ type family StagedType s where
 type family StagedParamName s where
   StagedParamName Parsed = Text
   StagedParamName Renamed = ()
+  StagedParamName Filled = ()
   StagedParamName Generated = ()
   StagedParamName Solved = ()
   StagedParamName Generalised = ()
@@ -394,6 +405,7 @@ type family StagedParamName s where
 type family StagedVariableName s where
   StagedVariableName Parsed = Text
   StagedVariableName Renamed = DeBrujinIndex
+  StagedVariableName Filled = DeBrujinIndex
   StagedVariableName Generated = DeBrujinIndex
   StagedVariableName Solved = DeBrujinIndex
   StagedVariableName Generalised = DeBrujinIndex
@@ -401,7 +413,8 @@ type family StagedVariableName s where
 
 type family StagedGlobalName s where
   StagedGlobalName Parsed = Text
-  StagedGlobalName Renamed = GlobalRef Renamed
+  StagedGlobalName Renamed = IncompleteGlobalRef
+  StagedGlobalName Filled = GlobalRef Renamed
   StagedGlobalName Generated = GlobalRef Generated
   StagedGlobalName Solved = GlobalRef Solved
   StagedGlobalName Generalised = GlobalRef Generalised
@@ -410,6 +423,7 @@ type family StagedGlobalName s where
 type family StagedOp s where
   StagedOp Parsed = Global Parsed
   StagedOp Renamed = Global Renamed
+  StagedOp Filled = Global Filled
   StagedOp Generated = Global Generated
   StagedOp Solved = Global Solved
   StagedOp Generalised = Global Generalised

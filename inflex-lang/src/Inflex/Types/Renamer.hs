@@ -13,16 +13,17 @@
 
 module Inflex.Types.Renamer where
 
-import Control.Monad.State
-import Control.Monad.Validate
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map.Strict (Map)
-import Data.Text (Text)
-import Inflex.Instances ()
-import Inflex.Optics
-import Inflex.Parser
-import Inflex.Types
-import Optics
+import           Control.Monad.State
+import           Control.Monad.Validate
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import           Data.Set (Set)
+import           Data.Text (Text)
+import           Inflex.Instances ()
+import           Inflex.Optics
+import           Inflex.Parser
+import           Inflex.Types
+import           Optics
 
 data RenameError
   = MissingVariable [Binding Parsed]
@@ -32,10 +33,10 @@ data RenameError
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
-  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation)) a
+  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation, Set Text)) a
   } deriving ( Functor
              , Applicative
-             , MonadState (Map Cursor SourceLocation)
+             , MonadState (Map Cursor SourceLocation, Set Text)
              , Monad
              )
 
@@ -61,6 +62,7 @@ data Env = Env
 data IsRenamed a = IsRenamed
   { thing :: a
   , mappings :: Map Cursor SourceLocation
+  , unresolvedGlobals :: Set Text
   } deriving (Show, Eq)
 
 $(makeLensesWith (inflexRules ['cursor, 'scope]) ''Env)

@@ -24,11 +24,14 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
+import           Data.Validation
+import           Inflex.Filler
 import           Inflex.Instances ()
 import           Inflex.Location
 import qualified Inflex.Renamer as Renamer
 import           Inflex.Type
 import           Inflex.Types
+import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Optics
 
@@ -41,8 +44,9 @@ generateText ::
   -> Text
   -> Either RenameGenerateError (HasConstraints (Expression Generated))
 generateText globals fp text = do
-  Renamer.IsRenamed {thing = expression, mappings} <-
+  Renamer.IsRenamed {thing = expressionRenamed, mappings} <-
     first RenameGenerateError (Renamer.renameText fp text)
+  expression <- first FillErrors (toEither (runFiller (expressionFill mempty expressionRenamed)))
   first
     GeneratorErrors
     (let (result, GenerateState {equalityConstraints}) =
@@ -59,7 +63,7 @@ generateText globals fp text = do
 --------------------------------------------------------------------------------
 -- Generators
 
-expressionGenerator :: Expression Renamed -> Generate (Expression Generated)
+expressionGenerator :: Expression Filled -> Generate (Expression Generated)
 expressionGenerator =
   \case
     LiteralExpression literal ->
@@ -77,18 +81,18 @@ expressionGenerator =
     GlobalExpression global ->
       fmap GlobalExpression (globalGenerator global)
 
-literalGenerator :: Literal Renamed -> Generate (Literal Generated)
+literalGenerator :: Literal Filled -> Generate (Literal Generated)
 literalGenerator =
   \case
     NumberLiteral number -> fmap NumberLiteral (numberGenerator number)
 
-numberGenerator :: Number Renamed -> Generate (Number Generated)
+numberGenerator :: Number Filled -> Generate (Number Generated)
 numberGenerator Number {typ = _, ..} =
   pure Number {typ = someNumberType location number, ..}
 
 -- | Produce a immediately-known concrete type
 someNumberType ::
-     StagedLocation Renamed -> SomeNumber -> Type Generated
+     StagedLocation Filled -> SomeNumber -> Type Generated
 someNumberType location =
   \case
     IntegerNumber {} ->
@@ -104,7 +108,7 @@ someNumberType location =
           , ..
           }
 
-lambdaGenerator :: Lambda Renamed -> Generate (Lambda Generated)
+lambdaGenerator :: Lambda Filled -> Generate (Lambda Generated)
 lambdaGenerator Lambda {typ = _, ..} = do
   param' <- paramGenerator param
   body' <- local (over envScopeL (LambdaBinding param' :)) (expressionGenerator body)
@@ -133,7 +137,7 @@ lambdaGenerator Lambda {typ = _, ..} = do
       , ..
       }
 
-letGenerator :: Let Renamed -> Generate (Let Generated)
+letGenerator :: Let Filled -> Generate (Let Generated)
 letGenerator Let {typ = _, ..} = do
   binds' <- traverse bindGenerator binds
   body' <-
@@ -142,7 +146,7 @@ letGenerator Let {typ = _, ..} = do
       (expressionGenerator body)
   pure Let {body = body', binds = binds', typ = expressionType body', ..}
 
-infixGenerator :: Infix Renamed -> Generate (Infix Generated)
+infixGenerator :: Infix Filled -> Generate (Infix Generated)
 infixGenerator Infix {typ = _, ..} = do
   ty <- generateVariableType location InfixOutputPrefix TypeKind
   global' <- globalGenerator global
@@ -157,7 +161,7 @@ infixGenerator Infix {typ = _, ..} = do
       {type1 = globalType global', type2 = funcType location ty ty, ..}
   pure Infix {global = global', right = right', left = left', typ = ty, ..}
 
-bindGenerator :: Bind Renamed -> Generate (Bind Generated)
+bindGenerator :: Bind Filled -> Generate (Bind Generated)
 bindGenerator Bind {..} = do
   param' <- paramGenerator param
   value' <- expressionGenerator value
@@ -166,12 +170,12 @@ bindGenerator Bind {..} = do
       {type1 = paramType param', type2 = expressionType value', ..}
   pure Bind {param = param', value = value', typ = paramType param', ..}
 
-paramGenerator :: Param Renamed -> Generate (Param Generated)
+paramGenerator :: Param Filled -> Generate (Param Generated)
 paramGenerator Param {typ = _, ..} = do
   typ <- generateVariableType location LambdaParameterPrefix TypeKind
   pure Param {typ, ..}
 
-applyGenerator :: Apply Renamed -> Generate (Apply Generated)
+applyGenerator :: Apply Filled -> Generate (Apply Generated)
 applyGenerator Apply {..} = do
   function' <- expressionGenerator function
   argument' <- expressionGenerator argument
@@ -202,7 +206,7 @@ applyGenerator Apply {..} = do
       {type1 = expressionType function', type2 = functionTemplate, ..}
   pure Apply {function = function', argument = argument', typ = outputType, ..}
 
-variableGenerator :: Variable Renamed -> Generate (Variable Generated)
+variableGenerator :: Variable Filled -> Generate (Variable Generated)
 variableGenerator variable@Variable {typ = _, name = index, ..} = do
   Env {scope} <- ask
   case do binding <-
@@ -221,7 +225,7 @@ variableGenerator variable@Variable {typ = _, name = index, ..} = do
       addEqualityConstraint EqualityConstraint {type1, type2, ..}
       pure Variable {typ = type1, name = index, ..}
 
-globalGenerator :: Global Renamed -> Generate (Global Generated)
+globalGenerator :: Global Filled -> Generate (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
