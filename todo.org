@@ -265,6 +265,9 @@ https://www.quora.com/How-do-sites-prevent-vanity-URLs-from-colliding-with-futur
     - Note taken on [2020-03-04 Wed 10:31] \\
       https://github.com/myfreeweb/hs-duktape/commit/68b2ea59fb9c708362007acdc5cb35aca2b0d365
 * Competition
+** SPJ on spreadsheets
+Simon Peyton Jones - Elastic sheet-defined functions
+https://www.youtube.com/watch?v=jH2Je6wUvPs&feature=emb_title
 ** Lobstrs discussion
    - Note taken on [2020-06-18 Thu 14:11] \\
      Loglo https://lobste.rs/s/lrj6mh/loglo_spreadsheet_using_stack_language
