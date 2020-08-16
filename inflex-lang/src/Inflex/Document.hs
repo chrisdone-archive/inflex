@@ -24,10 +24,11 @@ data LoadError
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
-toplogicalSort ::
+-- | Sort the named cells in the document by reverse dependency order.
+topologicalSort ::
      [Named (Either ParseRenameError (IsRenamed a))]
   -> [Named (Either LoadError (IsRenamed a))]
-toplogicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
+topologicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
   where
     toNode named@Named {name, thing = result} =
       case result of
