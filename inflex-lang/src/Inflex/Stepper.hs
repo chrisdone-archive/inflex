@@ -48,12 +48,12 @@ data Stepped
   | Stepped
 
 newtype Step e a = Step
-  { unStep :: ReaderT (Map Hash (Either e (Expression Resolved))) (StateT Stepped (Either StepError)) a
+  { unStep :: ReaderT (Map Hash (Expression Resolved)) (StateT Stepped (Either StepError)) a
   } deriving ( Functor
              , Monad
              , Applicative
              , MonadState Stepped
-             , MonadReader (Map Hash (Either e (Expression Resolved)))
+             , MonadReader (Map Hash (Expression Resolved))
              )
 
 --------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ newtype Step e a = Step
 
 stepText ::
      Map Hash (Either e (Scheme Polymorphic))
-  -> Map Hash (Either e (Expression Resolved))
+  -> Map Hash (Expression Resolved)
   -> FilePath
   -> Text
   -> Either (ResolveStepError e) (Expression Resolved)
@@ -75,7 +75,7 @@ stepText schemes values fp text = do
 
 stepTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))
-  -> Map Hash (Either e (Expression Resolved))
+  -> Map Hash (Expression Resolved)
   -> FilePath
   -> Text
   -> Either (DefaultStepError e) (Expression Resolved)
@@ -84,7 +84,7 @@ stepTextDefaulted schemes values fp text = do
   stepDefaulted values cell
 
 stepDefaulted ::
-     Map Hash (Either e (Expression Resolved))
+     Map Hash (Expression Resolved)
   -> Cell
   -> Either (DefaultStepError e) (Expression Resolved)
 stepDefaulted values Cell{expression} = do
