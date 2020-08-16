@@ -5,7 +5,10 @@
 
 -- | Loading a document of cells.
 
-module Inflex.Document where
+module Inflex.Document
+  ( load
+  , LoadError(..)
+  ) where
 
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
@@ -25,8 +28,16 @@ data LoadError
   | DuplicateName
   deriving (Show, Eq)
 
+newtype Toposorted a = Toposorted {unToposorted :: a}
+
 --------------------------------------------------------------------------------
 -- Top-level entry points
+
+load :: [Named Text] -> [Named a]
+load = undefined
+
+--------------------------------------------------------------------------------
+-- Internal work
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
 independentLoad ::
@@ -47,14 +58,20 @@ independentLoad names =
          })
     names
 
---------------------------------------------------------------------------------
--- Internal work
+-- | Fill, generate, solve, generalize, resolve, default, step.
+--
+-- Must be done in order.
+dependentLoad ::
+     Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
+  -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
+dependentLoad = _ . unToposorted
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSort ::
      [Named (Either LoadError (IsRenamed a))]
-  -> [Named (Either LoadError (IsRenamed a))]
-topologicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
+  -> Toposorted [Named (Either LoadError (IsRenamed a))]
+topologicalSort =
+  Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode
   where
     toNode named@Named {name, thing = result} =
       case result of
