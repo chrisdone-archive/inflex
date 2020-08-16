@@ -48,6 +48,11 @@ data LoadError
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
   deriving (Functor, Traversable, Foldable, Show)
 
+data Context = Context
+  { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
+  , nameHashes :: Map Text (Either LoadError Hash)
+  }
+
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
@@ -79,11 +84,6 @@ independentLoadDocument names =
          , ..
          })
     names
-
-data Context = Context
-  { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
-  , nameHashes :: Map Text (Either LoadError Hash)
-  }
 
 -- | Fill, generate, solve, generalize, resolve, default, step.
 --
