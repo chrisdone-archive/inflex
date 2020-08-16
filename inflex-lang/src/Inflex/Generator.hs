@@ -46,21 +46,35 @@ generateText ::
   -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
 generateText globals fp text = do
   isrenamed <- first RenameGenerateError (Renamer.renameText fp text)
-  generateRenamed globals isrenamed
+  generateRenamed globals mempty isrenamed
 
 generateRenamed ::
      Map Hash (Either e (Scheme Polymorphic))
+  -> Map Text (Either e Hash)
   -> Renamer.IsRenamed (Expression Renamed)
   -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
-generateRenamed globals Renamer.IsRenamed {thing = expressionRenamed, mappings} = do
-  expression <- first FillErrors (toEither (runFiller (expressionFill mempty expressionRenamed)))
+generateRenamed globalTypes globalNames Renamer.IsRenamed { thing = expressionRenamed
+                                                          , mappings
+                                                          } = do
+  expression <-
+    first
+      FillErrors
+      (toEither (runFiller (expressionFill globalNames expressionRenamed)))
+  generateFilled globalTypes expression mappings
+
+generateFilled ::
+     Map Hash (Either e (Scheme Polymorphic))
+  -> Expression Filled
+  -> Map Cursor SourceLocation
+  -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
+generateFilled globalTypes expression mappings =
   first
     GeneratorErrors
     (let (result, GenerateState {equalityConstraints}) =
            runState
              (runReaderT
                 (runValidateT (runGenerator (expressionGenerator expression)))
-                (Env {globals, scope = mempty}))
+                (Env {globals = globalTypes, scope = mempty}))
              GenerateState {counter = 0, equalityConstraints = mempty}
       in fmap
            (\thing ->
