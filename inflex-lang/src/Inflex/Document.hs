@@ -15,10 +15,12 @@ module Inflex.Document
 
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.Graph
 import           Data.List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import           Data.Maybe
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -62,6 +64,29 @@ loadDocument ::
 loadDocument names =
   dependentLoadDocument
     (topologicalSortDocument (independentLoadDocument names))
+
+-- | Construct an evaluation environment.
+evalEnvironment ::
+     Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
+  -> Map Hash (Expression Resolved)
+evalEnvironment =
+  M.fromList .
+  mapMaybe
+    (\Named {thing = result} ->
+       case result of
+         Right IsResolved {thing} -> pure (hashExpression thing, thing)
+         Left {} -> Nothing) .
+  toList
+
+defaultDocument ::
+     Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
+  -> Toposorted (Named (Either LoadError Cell))
+defaultDocument =
+  fmap
+    (fmap
+       (\result -> do
+          expression <- result
+          first LoadDefaulterError (defaultResolvedExpression expression)))
 
 --------------------------------------------------------------------------------
 -- Document loading
