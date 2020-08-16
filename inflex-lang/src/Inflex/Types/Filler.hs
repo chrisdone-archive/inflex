@@ -11,10 +11,12 @@ import           Data.Text (Text)
 import           Data.Validation
 import           Inflex.Types
 
-data FillerError =
-  MissingGlobal (Map Text Hash)
-                Text
+data FillerError e
+  = MissingGlobal (Map Text (Either e Hash))
+                  Text
+  | OtherCellError Text e
   deriving (Eq, Show)
 
-newtype Filler a = Filler { runFiller :: Validation (NonEmpty FillerError) a }
-  deriving (Functor, Applicative)
+newtype Filler e a = Filler
+  { runFiller :: Validation (NonEmpty (FillerError e)) a
+  } deriving (Functor, Applicative)

@@ -55,7 +55,7 @@ data Env = Env
 data RenameGenerateError
   = RenameGenerateError Renamer.ParseRenameError
   | GeneratorErrors (NonEmpty GenerateError)
-  | FillErrors (NonEmpty FillerError)
+  | FillErrors (NonEmpty (FillerError ()))
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints

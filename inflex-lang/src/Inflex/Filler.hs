@@ -21,9 +21,9 @@ import           Inflex.Types.Filler
 -- Top-level entry points
 
 expressionFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Expression Renamed
-  -> Filler (Expression Filled)
+  -> Filler e (Expression Filled)
 expressionFill globals =
   \case
     LiteralExpression literal ->
@@ -44,38 +44,42 @@ expressionFill globals =
 --------------------------------------------------------------------------------
 -- Fillers
 
-globalFill :: Map Text Hash -> Global Renamed -> Filler (Global Filled)
+globalFill :: Map Text (Either e Hash) -> Global Renamed -> Filler e (Global Filled)
 globalFill globals Global {..} = do
   case name of
     UnresolvedGlobal textName ->
       case M.lookup textName globals of
         Nothing -> Filler (Failure (pure (MissingGlobal globals textName)))
-        Just globalRef -> do
-          pure Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
+        Just result -> do
+          case result of
+            Left e -> Filler (Failure (pure (OtherCellError textName e)))
+            Right globalRef ->
+              pure
+                Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
     GlobalRef globalRef ->
       pure Global {scheme = FilledScheme, name = globalRef, ..}
 
 lambdaFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Lambda Renamed
-  -> Filler (Lambda Filled)
+  -> Filler e (Lambda Filled)
 lambdaFill globals Lambda {..} = do
   body' <- expressionFill globals body
   pure Lambda {body = body', param = paramFill param, ..}
 
 letFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Let Renamed
-  -> Filler (Let Filled)
+  -> Filler e (Let Filled)
 letFill globals Let {..} = do
   binds' <- traverse (bindFill globals) binds
   body' <- expressionFill globals body
   pure Let {binds = binds', body = body', ..}
 
 infixFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Infix Renamed
-  -> Filler (Infix Filled)
+  -> Filler e (Infix Filled)
 infixFill globals Infix {..} = do
   left' <- expressionFill globals left
   right' <- expressionFill globals right
@@ -83,9 +87,9 @@ infixFill globals Infix {..} = do
   pure Infix {left = left', right = right', global = global', ..}
 
 bindFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Bind Renamed
-  -> Filler (Bind Filled)
+  -> Filler e (Bind Filled)
 bindFill globals Bind {..} = do
   value' <- expressionFill globals value
   pure
@@ -96,9 +100,9 @@ bindFill globals Bind {..} = do
       }
 
 applyFill ::
-     Map Text Hash
+     Map Text (Either e Hash)
   -> Apply Renamed
-  -> Filler (Apply Filled)
+  -> Filler e (Apply Filled)
 applyFill globals Apply {..} = do
   function' <- expressionFill globals function
   argument' <- expressionFill globals argument
