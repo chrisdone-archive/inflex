@@ -190,7 +190,7 @@ renameGlobal Env {cursor} Global {..} = do
       "+" -> op AddOp
       "-" -> op SubtractOp
       "/" -> op DivideOp
-      _ -> Renamer (refute (pure (UnknownOperatorName name)))
+      _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
   pure Global {location = final, scheme = RenamedScheme, name = GlobalRef name'}
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
@@ -253,7 +253,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
                    (\Param {name = name'} -> name' == name)
                    (toList params) of
               Nothing ->
-                Renamer (refute (pure (MissingVariable scope globals variable)))
+                Renamer (refute (pure (BUG_MissingVariable scope globals variable)))
               Just subIndex ->
                 pure
                   (DeBrujinIndexOfLet

@@ -26,10 +26,10 @@ import           Inflex.Types
 import           Optics
 
 data RenameError
-  = MissingVariable [Binding Parsed]
-                    (Map Text (GlobalRef Renamed))
-                    (Variable Parsed)
-  | UnknownOperatorName Text
+  = BUG_MissingVariable [Binding Parsed]
+                        (Map Text (GlobalRef Renamed))
+                        (Variable Parsed)
+  | BUG_UnknownOperatorName Text
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
