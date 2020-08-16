@@ -9,10 +9,10 @@ import           Inflex.Stepper
 import           RIO (textDisplay)
 import           Test.Hspec
 
-stepTextly :: Text -> Either ResolveStepError Text
+stepTextly :: Text -> Either (ResolveStepError ()) Text
 stepTextly text = fmap textDisplay (stepText mempty mempty "" text)
 
-stepDefaultedTextly :: Text -> Either DefaultStepError Text
+stepDefaultedTextly :: Text -> Either (DefaultStepError ()) Text
 stepDefaultedTextly text = fmap textDisplay (stepTextDefaulted mempty mempty "" text)
 
 spec :: SpecWith ()

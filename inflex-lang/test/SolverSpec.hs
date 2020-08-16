@@ -10,14 +10,23 @@
 module SolverSpec where
 
 import qualified Data.Map.Strict as M
+import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Types
 import           Test.Hspec
 
+solveText' :: (e ~ ()) =>
+     M.Map Hash (Either e (Scheme Polymorphic))
+  -> FilePath
+  -> Text
+  -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
+solveText' = solveText
+
 spec :: Spec
-spec = do describe "Fine-grained" fineGrained
-          describe "Coarse-grained" coarseGrained
+spec = do
+  describe "Fine-grained" fineGrained
+  describe "Coarse-grained" coarseGrained
 
 --------------------------------------------------------------------------------
 -- Coarse-grained tests
@@ -29,12 +38,12 @@ coarseGrained =
     (do it
           "123"
           (shouldBe
-             (solveText mempty "" "(123::Integer)")
+             (solveText' mempty "" "(123::Integer)")
              (Right (IsSolved {thing = LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}),(SignatureCursor TypeCursor,SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 14, name = ""}})]})))
         it
           "(\\x->x)123"
           (shouldBe
-             (solveText mempty "" "(\\x->x)(123::Integer)")
+             (solveText' mempty "" "(\\x->x)(123::Integer)")
              (Right (IsSolved {thing = ApplyExpression (Apply {location = ExpressionCursor, function = LambdaExpression (Lambda {location = ApplyFuncCursor ExpressionCursor, param = Param {location = ApplyFuncCursor LambdaParamCursor, name = (), typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})}, body = VariableExpression (Variable {location = ApplyFuncCursor (LambdaBodyCursor ExpressionCursor), name = DeBrujinIndex (DeBrujinNesting 0), typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})}), typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})}), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}),(ApplyFuncCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}),(ApplyFuncCursor (LambdaBodyCursor ExpressionCursor),SourceLocation {start = SourcePos {line = 1, column = 6, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}),(ApplyFuncCursor LambdaParamCursor,SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}),(ApplyArgCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}),(ApplyArgCursor (SignatureCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 14, name = ""}, end = SourcePos {line = 1, column = 21, name = ""}})]}))))
 
 

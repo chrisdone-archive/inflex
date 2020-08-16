@@ -66,9 +66,9 @@ data PrecisionMismatch = PrecisionMismatch
   , constraint :: !(ClassConstraint Polymorphic)
   } deriving (Show, Eq)
 
-data GeneraliseResolveError
+data GeneraliseResolveError e
   = ResolverErrors (NonEmpty ResolutionError)
-  | GeneraliserErrored SolveGeneraliseError
+  | GeneraliserErrored (SolveGeneraliseError e)
   deriving (Show, Eq)
 
 data IsResolved a = IsResolved
@@ -110,10 +110,10 @@ newtype Resolve a = Resolve
 -- Top-level
 
 resolveText ::
-     Map Hash (Scheme Polymorphic)
+     Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either GeneraliseResolveError (IsResolved (Expression Resolved))
+  -> Either (GeneraliseResolveError e) (IsResolved (Expression Resolved))
 resolveText globals fp text = do
   IsGeneralised {thing, polytype, mappings} <-
     first GeneraliserErrored (generaliseText globals fp text)

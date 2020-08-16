@@ -33,9 +33,9 @@ data SolveError
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 
-data GenerateSolveError
+data GenerateSolveError e
   = SolverErrors (NonEmpty SolveError)
-  | GeneratorErrored RenameGenerateError
+  | GeneratorErrored (RenameGenerateError e)
   deriving (Show, Eq)
 
 data IsSolved a = IsSolved
@@ -52,10 +52,10 @@ data Substitution = Substitution
 -- Top-level
 
 solveText ::
-     Map Hash (Scheme Polymorphic)
+     Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either GenerateSolveError (IsSolved (Expression Solved))
+  -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
 solveText globals fp text = do
   HasConstraints {thing = expression, mappings, equalities} <-
     first GeneratorErrored (generateText globals fp text)

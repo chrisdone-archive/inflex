@@ -24,13 +24,13 @@ import Numeric.Natural
 --------------------------------------------------------------------------------
 -- Types
 
-data ResolveStepError
-  = ResolverErrored GeneraliseResolveError
+data ResolveStepError e
+  = ResolverErrored (GeneraliseResolveError e)
   | StepError StepError
   deriving (Show, Eq)
 
-data DefaultStepError
-  = DefaulterErrored ResolverDefaulterError
+data DefaultStepError e
+  = DefaulterErrored (ResolverDefaulterError e)
   | StepError' StepError
   deriving (Show, Eq)
 
@@ -47,24 +47,24 @@ data Stepped
   = Continue
   | Stepped
 
-newtype Step a = Step
-  { unStep :: ReaderT (Map Hash (Expression Resolved)) (StateT Stepped (Either StepError)) a
+newtype Step e a = Step
+  { unStep :: ReaderT (Map Hash (Either e (Expression Resolved))) (StateT Stepped (Either StepError)) a
   } deriving ( Functor
              , Monad
              , Applicative
              , MonadState Stepped
-             , MonadReader (Map Hash (Expression Resolved))
+             , MonadReader (Map Hash (Either e (Expression Resolved)))
              )
 
 --------------------------------------------------------------------------------
 -- Main entry points
 
 stepText ::
-     Map Hash (Scheme Polymorphic)
-  -> Map Hash (Expression Resolved)
+     Map Hash (Either e (Scheme Polymorphic))
+  -> Map Hash (Either e (Expression Resolved))
   -> FilePath
   -> Text
-  -> Either ResolveStepError (Expression Resolved)
+  -> Either (ResolveStepError e) (Expression Resolved)
 stepText schemes values fp text = do
   IsResolved {thing} <- first ResolverErrored (resolveText schemes fp text)
   first
@@ -74,11 +74,11 @@ stepText schemes values fp text = do
        Continue)
 
 stepTextDefaulted ::
-     Map Hash (Scheme Polymorphic)
-  -> Map Hash (Expression Resolved)
+     Map Hash (Either e (Scheme Polymorphic))
+  -> Map Hash (Either e (Expression Resolved))
   -> FilePath
   -> Text
-  -> Either DefaultStepError (Expression Resolved)
+  -> Either (DefaultStepError e) (Expression Resolved)
 stepTextDefaulted schemes values fp text = do
   Cell{expression} <- first DefaulterErrored (defaultText schemes fp text)
   first
@@ -89,7 +89,7 @@ stepTextDefaulted schemes values fp text = do
 
 stepExpression ::
      Expression Resolved
-  -> Step (Expression Resolved)
+  -> Step e (Expression Resolved)
 stepExpression expression = do
   stepped <- get
   case stepped of
@@ -107,7 +107,7 @@ stepExpression expression = do
 --------------------------------------------------------------------------------
 -- Function application
 
-stepApply :: Apply Resolved -> Step (Expression Resolved)
+stepApply :: Apply Resolved -> Step e (Expression Resolved)
 stepApply Apply {..} = do
   function' <- stepExpression function
   argument' <- stepExpression argument
@@ -161,7 +161,7 @@ stepApply Apply {..} = do
 --------------------------------------------------------------------------------
 -- Infix stepper
 
-stepInfix :: Infix Resolved -> Step (Expression Resolved)
+stepInfix :: Infix Resolved -> Step e (Expression Resolved)
 stepInfix Infix {..} = do
   global' <- stepExpression global
   left' <- stepExpression left
@@ -189,7 +189,7 @@ stepIntegerOp ::
      NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
-  -> Step (Expression Resolved)
+  -> Step e (Expression Resolved)
 stepIntegerOp numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = IntegerNumber left, typ}), LiteralExpression (NumberLiteral Number {number = IntegerNumber right})) -> do
@@ -214,7 +214,7 @@ stepDecimalOp ::
   -> NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
-  -> Step (Expression Resolved)
+  -> Step e (Expression Resolved)
 stepDecimalOp places numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number { number = DecimalNumber (decimalToFixed -> left)
@@ -255,10 +255,10 @@ stepDecimalOp places numericBinOp left' right' =
 -- Beta reduction
 
 betaReduce ::
-     Lambda Resolved -> Expression Resolved -> Step (Expression Resolved)
+     Lambda Resolved -> Expression Resolved -> Step e (Expression Resolved)
 betaReduce Lambda {body = body0} arg = go 0 body0
   where
-    go :: DeBrujinNesting -> Expression Resolved -> Step (Expression Resolved)
+    go :: DeBrujinNesting -> Expression Resolved -> Step e (Expression Resolved)
     go deBrujinNesting =
       \case
         e@(VariableExpression Variable {name})
@@ -289,7 +289,7 @@ betaReduce Lambda {body = body0} arg = go 0 body0
 --------------------------------------------------------------------------------
 -- FromDecimal instance stepping
 
-fromDecimalStep :: FromDecimalInstance -> Decimal -> Step Decimal
+fromDecimalStep :: FromDecimalInstance -> Decimal -> Step e Decimal
 fromDecimalStep fromDecimalInstance decimal =
   if thisSubsetPlaces == subsetPlaces
     then if thisSubsetPlaces == supersetPlaces

@@ -28,9 +28,10 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Types
 
-data GenerateError
+data GenerateError e
   = MissingVariableG (Variable Filled)
   | MissingHashG Hash
+  | OtherCellErrorG (GlobalRef Renamed) e
   deriving (Show, Eq)
 
 data GenerateState = GenerateState
@@ -38,24 +39,24 @@ data GenerateState = GenerateState
   , equalityConstraints :: !(Seq EqualityConstraint)
   } deriving (Show)
 
-newtype Generate a = Generate
-  { runGenerator :: ValidateT (NonEmpty GenerateError) (ReaderT Env (State GenerateState)) a
+newtype Generate e a = Generate
+  { runGenerator :: ValidateT (NonEmpty (GenerateError e)) (ReaderT (Env e) (State GenerateState)) a
   } deriving ( Functor
              , Applicative
              , Monad
              , MonadState GenerateState
-             , MonadReader Env
+             , MonadReader (Env e)
              )
 
-data Env = Env
+data Env e = Env
   { scope :: ![Binding Generated]
-  , globals :: Map Hash (Scheme Polymorphic)
+  , globals :: Map Hash (Either e (Scheme Polymorphic))
   }
 
-data RenameGenerateError
+data RenameGenerateError e
   = RenameGenerateError Renamer.ParseRenameError
-  | GeneratorErrors (NonEmpty GenerateError)
-  | FillErrors (NonEmpty (FillerError ()))
+  | GeneratorErrors (NonEmpty (GenerateError e))
+  | FillErrors (NonEmpty (FillerError e))
   deriving (Show, Eq)
 
 data HasConstraints a = HasConstraints

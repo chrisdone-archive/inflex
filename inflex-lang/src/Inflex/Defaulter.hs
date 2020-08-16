@@ -44,15 +44,19 @@ data DefaulterError
   | DO
   deriving (Eq, Show)
 
-data ResolverDefaulterError
+data ResolverDefaulterError e
   = DefaulterError DefaulterError
-  | GeneraliseResolverError GeneraliseResolveError
+  | GeneraliseResolverError (GeneraliseResolveError e)
   deriving (Eq, Show)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
-defaultText :: Map Hash (Scheme Polymorphic) -> FilePath -> Text -> Either ResolverDefaulterError Cell
+defaultText ::
+     Map Hash (Either e (Scheme Polymorphic))
+  -> FilePath
+  -> Text
+  -> Either (ResolverDefaulterError e) Cell
 defaultText globals fp text = do
   resolved <- first GeneraliseResolverError (resolveText globals fp text)
   first DefaulterError (defaultResolvedExpression resolved)

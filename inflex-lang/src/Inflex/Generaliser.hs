@@ -29,9 +29,9 @@ data GeneraliseError
   | TypeMismatch EqualityConstraint
   deriving (Show, Eq)
 
-data SolveGeneraliseError
+data SolveGeneraliseError e
   = GeneraliserErrors (NonEmpty GeneraliseError)
-  | SolverErrored GenerateSolveError
+  | SolverErrored (GenerateSolveError e)
   deriving (Show, Eq)
 
 data IsGeneralised a = IsGeneralised
@@ -54,10 +54,10 @@ data GeneraliseState = GeneraliseState
 -- Top-level
 
 generaliseText ::
-     Map Hash (Scheme Polymorphic)
+     Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either SolveGeneraliseError (IsGeneralised (Expression Generalised))
+  -> Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised))
 generaliseText globals fp text = do
   IsSolved {thing, mappings} <- first SolverErrored (solveText globals fp text)
   let (polytype, substitions) = toPolymorphic (expressionType thing)
