@@ -19,4 +19,4 @@ hashResolved :: IsResolved (Expression Resolved) -> Hash
 hashResolved IsResolved {thing} = hashExpression thing
 
 hashCell :: Cell -> Hash
-hashCell Cell {expression} = hashExpression expression
+hashCell Cell {defaulted} = hashExpression defaulted

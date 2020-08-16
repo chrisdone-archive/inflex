@@ -88,7 +88,7 @@ defaultResolvedExpression IsResolved {scheme = scheme0, thing = expression} = do
       , scheme = scheme'
       , defaultedClassConstraints = defaults
       , ambiguousClassConstraints = mempty -- TODO: Provide this info.
-      , expression = applyDefaults originalConstraints defaults expression
+      , defaulted = applyDefaults originalConstraints defaults expression
       }
   where
     Scheme {constraints = originalConstraints, location} = scheme0

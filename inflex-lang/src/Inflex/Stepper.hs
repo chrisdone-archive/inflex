@@ -10,16 +10,17 @@
 
 module Inflex.Stepper where
 
-import Control.Monad.Reader
-import Control.Monad.State
-import Data.Bifunctor
-import Data.Map.Strict (Map)
-import Data.Text (Text)
-import Inflex.Decimal
-import Inflex.Defaulter
-import Inflex.Resolver
-import Inflex.Types
-import Numeric.Natural
+import           Control.Monad.Reader
+import           Control.Monad.State
+import           Data.Bifunctor
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import           Data.Text (Text)
+import           Inflex.Decimal
+import           Inflex.Defaulter
+import           Inflex.Resolver
+import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -87,11 +88,11 @@ stepDefaulted ::
      Map Hash (Expression Resolved)
   -> Cell
   -> Either (DefaultStepError e) (Expression Resolved)
-stepDefaulted values Cell{expression} = do
+stepDefaulted values Cell{defaulted} = do
   first
     StepError'
     (evalStateT
-       (runReaderT (unStep (stepExpression expression)) values)
+       (runReaderT (unStep (stepExpression defaulted)) values)
        Continue)
 
 stepExpression ::
@@ -105,11 +106,24 @@ stepExpression expression = do
       case expression of
         ApplyExpression apply -> stepApply apply
         InfixExpression infix' -> stepInfix infix'
+        GlobalExpression global -> stepGlobal global
         LiteralExpression {} -> pure expression
         LambdaExpression {} -> pure expression
         VariableExpression {} -> pure expression
-        GlobalExpression {} -> pure expression
         LetExpression {} -> pure expression
+
+--------------------------------------------------------------------------------
+-- Globals
+
+stepGlobal :: Global Resolved -> Step e (Expression Resolved)
+stepGlobal global@Global {name} = do
+  hashes <- ask
+  case name of
+    HashGlobal hash ->
+      case M.lookup hash hashes of
+        Just expre -> pure expre
+        Nothing -> Step (lift (lift (Left (NotInScope hash))))
+    _ -> pure (GlobalExpression global)
 
 --------------------------------------------------------------------------------
 -- Function application

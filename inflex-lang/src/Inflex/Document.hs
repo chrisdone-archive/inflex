@@ -9,6 +9,9 @@
 
 module Inflex.Document
   ( loadDocument
+  , evalDocument
+  , evalEnvironment
+  , defaultDocument
   , Toposorted(..)
   , LoadError(..)
   ) where
@@ -31,6 +34,7 @@ import           Inflex.Hash
 import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
+import           Inflex.Stepper
 import           Inflex.Types
 
 --------------------------------------------------------------------------------
@@ -45,10 +49,11 @@ data LoadError
   | LoadGeneraliseError (SolveGeneraliseError LoadError)
   | LoadResolveError (GeneraliseResolveError LoadError)
   | LoadDefaulterError DefaulterError
+  | LoadStepError (DefaultStepError LoadError)
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
-  deriving (Functor, Traversable, Foldable, Show)
+  deriving (Functor, Traversable, Foldable, Show, Eq, Ord)
 
 data Context = Context
   { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
@@ -58,12 +63,12 @@ data Context = Context
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
+-- | Load a document up to resolution.
 loadDocument ::
      [Named Text]
   -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
-loadDocument names =
-  dependentLoadDocument
-    (topologicalSortDocument (independentLoadDocument names))
+loadDocument =
+  dependentLoadDocument . topologicalSortDocument . independentLoadDocument
 
 -- | Construct an evaluation environment.
 evalEnvironment ::
@@ -78,6 +83,7 @@ evalEnvironment =
          Left {} -> Nothing) .
   toList
 
+-- | Default the expressions in a document to cells.
 defaultDocument ::
      Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
   -> Toposorted (Named (Either LoadError Cell))
@@ -87,6 +93,18 @@ defaultDocument =
        (\result -> do
           expression <- result
           first LoadDefaulterError (defaultResolvedExpression expression)))
+
+-- | Evaluate the cells in a document. The expression will be changed.
+evalDocument ::
+     Map Hash (Expression Resolved)
+  -> Toposorted (Named (Either LoadError Cell))
+  -> Toposorted (Named (Either LoadError (Expression Resolved)))
+evalDocument env =
+  fmap
+    (fmap
+       (\result -> do
+          cell <- result
+          first LoadStepError (stepDefaulted env cell)))
 
 --------------------------------------------------------------------------------
 -- Document loading

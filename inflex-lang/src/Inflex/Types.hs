@@ -62,7 +62,7 @@ instance Show Uuid where
 -- constraints, some of which may have been defaulted.
 data Cell = Cell
   { location :: !Cursor
-  , expression :: !(Expression Resolved)
+  , defaulted :: !(Expression Resolved)
   , scheme :: !(Scheme Polymorphic)
   , defaultedClassConstraints :: !(Seq (Default Polymorphic))
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
