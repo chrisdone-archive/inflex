@@ -28,7 +28,6 @@ data LoadError
 -- Top-level entry points
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
--- TODO: Detect duplicate names.
 independentLoad ::
      [Named Text] -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
 independentLoad names =
