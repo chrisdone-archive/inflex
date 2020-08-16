@@ -9,12 +9,13 @@
 
 module Inflex.Types where
 
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Sequence (Seq)
-import           Data.Text (Text)
-import           GHC.Generics
-import           Inflex.Types.SHA512
-import           Numeric.Natural
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Sequence (Seq)
+import Data.Text (Text)
+import Data.UUID (UUID)
+import GHC.Generics
+import Inflex.Types.SHA512
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -42,6 +43,13 @@ data Let s = Let
   , body :: !(Expression s)
   , typ :: !(StagedType s)
   }
+
+-- | A thing named in the document.
+data Named a = Named
+  { uuid :: UUID
+  , name :: Text
+  , thing :: a
+  } deriving (Show, Eq, Ord)
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
 -- in the document. Cells are polymorphic and have type-class

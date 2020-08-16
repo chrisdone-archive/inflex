@@ -31,6 +31,7 @@ dependencies:
 - th-orphans
 - attoparsec
 - rio
+- uuid
 
 ghc-options: -Wall
 

@@ -152,7 +152,8 @@ resolveChain = go operatorPrecedence
         [Left _op] -> Reparsec.failWith (liftError MissingOpRhs)
         _ -> Reparsec.failWith (liftError OddNumberOfExpressions)
     go (name:os) es =
-      let parts = splitWhen ((== Left name) . first thing) es
+      let parts =
+            splitWhen ((== Left name) . first (\Located {thing} -> thing)) es
        in case NE.nonEmpty parts of
             Nothing -> Reparsec.failWith (liftError EmptyOperand)
             Just parts1 -> do
