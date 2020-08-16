@@ -25,8 +25,8 @@ data LoadError
 -- Top-level entry points
 
 toplogicalSort ::
-     [Named (Either ParseRenameError (IsRenamed (Expression Renamed)))]
-  -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
+     [Named (Either ParseRenameError (IsRenamed a))]
+  -> [Named (Either LoadError (IsRenamed a))]
 toplogicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
   where
     toNode named@Named {name, thing = result} =
@@ -34,11 +34,6 @@ toplogicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
         Right IsRenamed {unresolvedGlobals} ->
           (named, name, Set.toList unresolvedGlobals)
         Left {} -> (named, name, mempty)
-    cycleCheck ::
-         SCC ( Named (Either ParseRenameError (IsRenamed (Expression Renamed)))
-             , Text
-             , [Text])
-      -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
     cycleCheck =
       \case
         AcyclicSCC (named, _, _) -> [fmap (first RenameLoadError) named]
@@ -46,7 +41,6 @@ toplogicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
           fmap
             (\(named, _, _) ->
                fmap
-                 (const
-                    (Left (CycleError (map (\(_, name, _) -> name) nameds))))
+                 (const (Left (CycleError (map (\(_, name, _) -> name) nameds))))
                  named)
             nameds
