@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
@@ -7,7 +8,8 @@
 -- | Loading a document of cells.
 
 module Inflex.Document
-  ( load
+  ( loadDocument
+  , Toposorted(..)
   , LoadError(..)
   ) where
 
@@ -43,14 +45,16 @@ data LoadError
   | LoadDefaulterError DefaulterError
   deriving (Show, Eq)
 
-newtype Toposorted a = Toposorted {unToposorted :: a}
-  deriving (Functor)
+newtype Toposorted a = Toposorted {unToposorted :: [a]}
+  deriving (Functor, Traversable, Foldable)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
-load :: [Named Text] -> [Named a]
-load = undefined
+loadDocument :: [Named Text] -> Toposorted (Named (Either LoadError Cell))
+loadDocument names =
+  dependentLoadDocument
+    (topologicalSortDocument (independentLoadDocument names))
 
 --------------------------------------------------------------------------------
 -- Document loading
@@ -78,9 +82,9 @@ independentLoadDocument names =
 --
 -- Must be done in order.
 dependentLoadDocument ::
-     Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-  -> Toposorted [Named (Either LoadError Cell)]
-dependentLoadDocument = fmap (snd . mapAccumL loadCell mempty)
+     Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
+  -> Toposorted (Named (Either LoadError Cell))
+dependentLoadDocument = snd . mapAccumL loadCell mempty
   where
     loadCell ::
          Map Hash (Either LoadError Cell)
@@ -102,7 +106,7 @@ dependentLoadDocument = fmap (snd . mapAccumL loadCell mempty)
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
      [Named (Either LoadError (IsRenamed a))]
-  -> Toposorted [Named (Either LoadError (IsRenamed a))]
+  -> Toposorted (Named (Either LoadError (IsRenamed a)))
 topologicalSortDocument =
   Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode
   where
