@@ -13,13 +13,16 @@ module Inflex.Document
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Graph
+import           Data.List
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Defaulter
 import           Inflex.Generaliser
 import           Inflex.Generator
+import           Inflex.Hash
 import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
@@ -74,8 +77,25 @@ independentLoadDocument names =
 -- Must be done in order.
 dependentLoadDocument ::
      Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-  -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-dependentLoadDocument = undefined . unToposorted
+  -> [Named (Either LoadError Cell)]
+dependentLoadDocument = snd . mapAccumL loadCell mempty . unToposorted
+  where
+    loadCell ::
+         Map Hash (Either LoadError Cell)
+      -> Named (Either LoadError (IsRenamed (Expression Renamed)))
+      -> (Map Hash (Either LoadError Cell), Named (Either LoadError Cell))
+    loadCell hashedCells result = (hashedCells', namedMaybeCell)
+      where
+        namedMaybeCell =
+          fmap
+            (>>= loadRenamedCell
+                   (fmap (fmap (\Cell {scheme} -> scheme)) hashedCells))
+            result
+        hashedCells' =
+          case namedMaybeCell of
+            Named {thing = Left {}} -> hashedCells
+            Named {thing = Right cell} ->
+              M.insert (hashCell cell) (Right cell) hashedCells
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
