@@ -40,9 +40,9 @@ load = undefined
 -- Internal work
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
-independentLoad ::
+independentLoadDocument ::
      [Named Text] -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-independentLoad names =
+independentLoadDocument names =
   parMap
     rseq
     (\Named {..} ->
@@ -61,16 +61,22 @@ independentLoad names =
 -- | Fill, generate, solve, generalize, resolve, default, step.
 --
 -- Must be done in order.
-dependentLoad ::
+dependentLoadDocument ::
      Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
   -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-dependentLoad = undefined . unToposorted
+dependentLoadDocument = undefined . unToposorted
+
+-- | Load a renamed cell.
+loadRenamedCell ::
+     Named (IsRenamed (Expression Renamed))
+  -> Named (Either LoadError (IsRenamed (Expression Renamed)))
+loadRenamedCell = undefined
 
 -- | Sort the named cells in the document by reverse dependency order.
-topologicalSort ::
+topologicalSortDocument ::
      [Named (Either LoadError (IsRenamed a))]
   -> Toposorted [Named (Either LoadError (IsRenamed a))]
-topologicalSort =
+topologicalSortDocument =
   Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode
   where
     toNode named@Named {name, thing = result} =
