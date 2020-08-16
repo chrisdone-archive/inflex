@@ -47,10 +47,15 @@ data Let s = Let
 
 -- | A thing named in the document.
 data Named a = Named
-  { uuid :: UUID
+  { uuid :: Uuid
   , name :: Text
   , thing :: a
   } deriving (Show, Eq, Ord, Functor)
+
+newtype Uuid = Uuid UUID
+ deriving (Eq, Ord)
+instance Show Uuid where
+  show (Uuid x) = "(Uuid " <> show (show x) <> ")"
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
 -- in the document. Cells are polymorphic and have type-class

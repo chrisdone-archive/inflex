@@ -46,12 +46,14 @@ data LoadError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
-  deriving (Functor, Traversable, Foldable)
+  deriving (Functor, Traversable, Foldable, Show)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
-loadDocument :: [Named Text] -> Toposorted (Named (Either LoadError Cell))
+loadDocument ::
+     [Named Text]
+  -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
 loadDocument names =
   dependentLoadDocument
     (topologicalSortDocument (independentLoadDocument names))
@@ -78,30 +80,37 @@ independentLoadDocument names =
          })
     names
 
+data Context = Context
+  { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
+  , nameHashes :: Map Text (Either LoadError Hash)
+  }
+
 -- | Fill, generate, solve, generalize, resolve, default, step.
 --
 -- Must be done in order.
 dependentLoadDocument ::
      Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
-  -> Toposorted (Named (Either LoadError Cell))
-dependentLoadDocument = snd . mapAccumL loadCell mempty
+  -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
+dependentLoadDocument = snd . mapAccumL loadCell (Context mempty mempty)
   where
     loadCell ::
-         Map Hash (Either LoadError Cell)
+         Context
       -> Named (Either LoadError (IsRenamed (Expression Renamed)))
-      -> (Map Hash (Either LoadError Cell), Named (Either LoadError Cell))
-    loadCell hashedCells result = (hashedCells', namedMaybeCell)
+      -> (Context, Named (Either LoadError (IsResolved (Expression Resolved))))
+    loadCell Context {hashedCells, nameHashes} result =
+      ( Context {hashedCells = hashedCells', nameHashes = nameHashes'}
+      , namedMaybeCell)
       where
         namedMaybeCell =
-          fmap
-            (>>= loadRenamedCell
-                   (fmap (fmap (\Cell {scheme} -> scheme)) hashedCells))
-            result
+          fmap (>>= resolveRenamedCell hashedCells nameHashes) result
+        nameHashes' = M.insert name (fmap hashResolved thing) nameHashes
+          where
+            Named {name, thing} = namedMaybeCell
         hashedCells' =
           case namedMaybeCell of
             Named {thing = Left {}} -> hashedCells
             Named {thing = Right cell} ->
-              M.insert (hashCell cell) (Right cell) hashedCells
+              M.insert (hashResolved cell) (Right cell) hashedCells
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
@@ -130,14 +139,20 @@ topologicalSortDocument =
 -- Individual cell loading
 
 -- | Load a renamed cell.
-loadRenamedCell ::
-     Map Hash (Either LoadError (Scheme Polymorphic))
+resolveRenamedCell ::
+     Map Hash (Either LoadError (IsResolved (Expression Resolved)))
+  -> Map Text (Either LoadError Hash)
   -> IsRenamed (Expression Renamed)
-  -> Either LoadError Cell
-loadRenamedCell globals isRenamed = do
-  hasConstraints <- first LoadGenerateError (generateRenamed globals isRenamed)
+  -> Either LoadError (IsResolved (Expression Resolved))
+resolveRenamedCell globalTypes globalHashes isRenamed = do
+  hasConstraints <-
+    first
+      LoadGenerateError
+      (generateRenamed
+         (fmap (fmap (\IsResolved {scheme} -> scheme)) globalTypes)
+         globalHashes
+         isRenamed)
   isSolved <- first LoadSolveError (solveGenerated hasConstraints)
   isGeneralised <- first LoadGeneraliseError (generaliseSolved isSolved)
   isResolved <- first LoadResolveError (resolveGeneralised isGeneralised)
-  cell <- first LoadDefaulterError (defaultResolvedExpression isResolved)
-  pure cell
+  pure isResolved
