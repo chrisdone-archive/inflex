@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -10,8 +11,9 @@ import           Data.Bifunctor
 import           Data.Graph
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import qualified Data.Text as T
+import           Inflex.Renamer
 import           Inflex.Types
-import           Inflex.Types.Renamer
 
 --------------------------------------------------------------------------------
 -- Types
@@ -19,14 +21,37 @@ import           Inflex.Types.Renamer
 data LoadError
   = CycleError [Text]
   | RenameLoadError ParseRenameError
+  | DuplicateName
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
+-- | Lex, parse, rename -- can all be done per cell in parallel.
+-- TODO: Detect duplicate names.
+independentLoad ::
+     [Named Text] -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
+independentLoad names =
+  map
+    (\Named {..} ->
+       Named
+         { thing =
+             if any
+                  (\Named {uuid = uuid', name = name'} ->
+                     uuid' /= uuid && name == name')
+                  names -- TODO: Fix this O(n^2) operation
+               then Left DuplicateName
+               else first RenameLoadError (renameText (T.unpack name) thing)
+         , ..
+         })
+    names
+
+--------------------------------------------------------------------------------
+-- Internal work
+
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSort ::
-     [Named (Either ParseRenameError (IsRenamed a))]
+     [Named (Either LoadError (IsRenamed a))]
   -> [Named (Either LoadError (IsRenamed a))]
 topologicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
   where
@@ -37,7 +62,7 @@ topologicalSort = concatMap cycleCheck . stronglyConnCompR . map toNode
         Left {} -> (named, name, mempty)
     cycleCheck =
       \case
-        AcyclicSCC (named, _, _) -> [fmap (first RenameLoadError) named]
+        AcyclicSCC (named, _, _) -> [named]
         CyclicSCC nameds ->
           fmap
             (\(named, _, _) ->
