@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE GADTs #-}
@@ -49,7 +50,7 @@ data Named a = Named
   { uuid :: UUID
   , name :: Text
   , thing :: a
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Functor)
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
 -- in the document. Cells are polymorphic and have type-class
