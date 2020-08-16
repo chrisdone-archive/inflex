@@ -13,10 +13,16 @@ module Inflex.Document
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Graph
+import           Data.Map.Strict (Map)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Inflex.Defaulter
+import           Inflex.Generaliser
+import           Inflex.Generator
 import           Inflex.Renamer
+import           Inflex.Resolver
+import           Inflex.Solver
 import           Inflex.Types
 
 --------------------------------------------------------------------------------
@@ -26,6 +32,11 @@ data LoadError
   = CycleError [Text]
   | RenameLoadError ParseRenameError
   | DuplicateName
+  | LoadGenerateError (RenameGenerateError LoadError)
+  | LoadSolveError (GenerateSolveError LoadError)
+  | LoadGeneraliseError (SolveGeneraliseError LoadError)
+  | LoadResolveError (GeneraliseResolveError LoadError)
+  | LoadDefaulterError DefaulterError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: a}
@@ -37,7 +48,7 @@ load :: [Named Text] -> [Named a]
 load = undefined
 
 --------------------------------------------------------------------------------
--- Internal work
+-- Document loading
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
 independentLoadDocument ::
@@ -66,12 +77,6 @@ dependentLoadDocument ::
   -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
 dependentLoadDocument = undefined . unToposorted
 
--- | Load a renamed cell.
-loadRenamedCell ::
-     Named (IsRenamed (Expression Renamed))
-  -> Named (Either LoadError (IsRenamed (Expression Renamed)))
-loadRenamedCell = undefined
-
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
      [Named (Either LoadError (IsRenamed a))]
@@ -94,3 +99,19 @@ topologicalSortDocument =
                  (const (Left (CycleError (map (\(_, name, _) -> name) nameds))))
                  named)
             nameds
+
+--------------------------------------------------------------------------------
+-- Individual cell loading
+
+-- | Load a renamed cell.
+loadRenamedCell ::
+     Map Hash (Either LoadError (Scheme Polymorphic))
+  -> IsRenamed (Expression Renamed)
+  -> Either LoadError Cell
+loadRenamedCell globals isRenamed = do
+  hasConstraints <- first LoadGenerateError (generateRenamed globals isRenamed)
+  isSolved <- first LoadSolveError (solveGenerated hasConstraints)
+  isGeneralised <- first LoadGeneraliseError (generaliseSolved isSolved)
+  isResolved <- first LoadResolveError (resolveGeneralised isGeneralised)
+  cell <- first LoadDefaulterError (defaultResolvedExpression isResolved)
+  pure cell

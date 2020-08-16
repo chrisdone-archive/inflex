@@ -9,6 +9,7 @@
 
 module Inflex.Defaulter
   ( defaultText
+  , defaultResolvedExpression
   , DefaulterError(..)
   , ResolverDefaulterError(..)
   ) where

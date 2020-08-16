@@ -10,6 +10,7 @@
 
 module Inflex.Generator
   ( generateText
+  , generateRenamed
   , RenameGenerateError(..)
   , HasConstraints(..)
   , hasConstraintsMappingsL
