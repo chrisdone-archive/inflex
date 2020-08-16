@@ -7,6 +7,7 @@
 
 module Inflex.Document where
 
+import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Graph
 import qualified Data.Set as Set
@@ -31,7 +32,8 @@ data LoadError
 independentLoad ::
      [Named Text] -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
 independentLoad names =
-  map
+  parMap
+    rseq
     (\Named {..} ->
        Named
          { thing =
