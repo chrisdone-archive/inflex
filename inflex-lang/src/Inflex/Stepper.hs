@@ -80,7 +80,14 @@ stepTextDefaulted ::
   -> Text
   -> Either (DefaultStepError e) (Expression Resolved)
 stepTextDefaulted schemes values fp text = do
-  Cell{expression} <- first DefaulterErrored (defaultText schemes fp text)
+  cell <- first DefaulterErrored (defaultText schemes fp text)
+  stepDefaulted values cell
+
+stepDefaulted ::
+     Map Hash (Either e (Expression Resolved))
+  -> Cell
+  -> Either (DefaultStepError e) (Expression Resolved)
+stepDefaulted values Cell{expression} = do
   first
     StepError'
     (evalStateT

@@ -59,14 +59,17 @@ generaliseText ::
   -> Text
   -> Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised))
 generaliseText globals fp text = do
-  IsSolved {thing, mappings} <- first SolverErrored (solveText globals fp text)
+  solved <- first SolverErrored (solveText globals fp text)
+  generaliseSolved solved
+
+generaliseSolved ::
+     IsSolved (Expression Solved)
+  -> Either (SolveGeneraliseError e)  (IsGeneralised (Expression Generalised))
+generaliseSolved IsSolved {thing, mappings} = do
   let (polytype, substitions) = toPolymorphic (expressionType thing)
   pure
     IsGeneralised
-      { mappings
-      , thing = expressionGeneralise substitions thing
-      , polytype
-      }
+      {mappings, thing = expressionGeneralise substitions thing, polytype}
 
 --------------------------------------------------------------------------------
 -- Polymorphise a type

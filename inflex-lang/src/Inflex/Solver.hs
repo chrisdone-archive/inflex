@@ -57,8 +57,13 @@ solveText ::
   -> Text
   -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
 solveText globals fp text = do
-  HasConstraints {thing = expression, mappings, equalities} <-
-    first GeneratorErrored (generateText globals fp text)
+  generated <- first GeneratorErrored (generateText globals fp text)
+  solveGenerated generated
+
+solveGenerated ::
+     HasConstraints (Expression Generated)
+  -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
+solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   first
     SolverErrors
     (do substitutions <- unifyConstraints equalities

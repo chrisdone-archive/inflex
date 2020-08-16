@@ -64,7 +64,7 @@ independentLoad names =
 dependentLoad ::
      Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
   -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-dependentLoad = _ . unToposorted
+dependentLoad = undefined . unToposorted
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSort ::

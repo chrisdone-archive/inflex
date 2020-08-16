@@ -115,8 +115,14 @@ resolveText ::
   -> Text
   -> Either (GeneraliseResolveError e) (IsResolved (Expression Resolved))
 resolveText globals fp text = do
-  IsGeneralised {thing, polytype, mappings} <-
+  generalised <-
     first GeneraliserErrored (generaliseText globals fp text)
+  resolveGeneralised generalised
+
+resolveGeneralised ::
+     IsGeneralised (Expression Generalised)
+  -> Either (GeneraliseResolveError e) (IsResolved (Expression Resolved))
+resolveGeneralised IsGeneralised {thing, polytype, mappings} = do
   (expression, ResolveState {implicits}) <-
     first
       ResolverErrors
@@ -132,11 +138,12 @@ resolveText globals fp text = do
       , scheme =
           Scheme
             { location = expressionLocation thing
-            -- The reverse is intentional. See documentation of ResolveState.
+              -- The reverse is intentional. See documentation of ResolveState.
             , constraints = reverse (toList implicits)
             , typ = polytype
             }
       }
+
 
 --------------------------------------------------------------------------------
 -- Resolving expression tree
