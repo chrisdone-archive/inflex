@@ -41,7 +41,6 @@ import           Numeric.Natural
 data DefaulterError
   = ResolutionError ResolutionError
   | DefaultingNoInstanceFound (ClassConstraint Polymorphic)
-  | DO
   deriving (Eq, Show)
 
 data ResolverDefaulterError e
