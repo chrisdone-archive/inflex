@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -43,6 +44,7 @@ data LoadError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: a}
+  deriving (Functor)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -77,8 +79,8 @@ independentLoadDocument names =
 -- Must be done in order.
 dependentLoadDocument ::
      Toposorted [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-  -> [Named (Either LoadError Cell)]
-dependentLoadDocument = snd . mapAccumL loadCell mempty . unToposorted
+  -> Toposorted [Named (Either LoadError Cell)]
+dependentLoadDocument = fmap (snd . mapAccumL loadCell mempty)
   where
     loadCell ::
          Map Hash (Either LoadError Cell)
