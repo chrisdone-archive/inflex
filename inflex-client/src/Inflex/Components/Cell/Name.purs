@@ -4,13 +4,8 @@ module Inflex.Components.Cell.Name
   ( component
   ) where
 
-import Data.Foldable (for_)
-import Data.Functor (void)
-import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
-import Data.Nullable
-import Data.String
-import Data.Symbol (SProxy(..))
+import Data.Nullable (Nullable, toMaybe)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
@@ -21,15 +16,12 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Prelude
-import Prelude (Unit, pure, (<<<))
-import Unsafe.Coerce
+import Prelude (Unit, bind, discard, pure, unit, void, (<<<))
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (focus, fromElement)
 import Web.UIEvent.KeyboardEvent as K
-import Web.UIEvent.MouseEvent (toEvent)
 
 --------------------------------------------------------------------------------
 -- Component types

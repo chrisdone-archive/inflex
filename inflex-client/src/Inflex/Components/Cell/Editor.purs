@@ -6,19 +6,9 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
-import Data.Array as A
 import Data.Foldable (for_)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Map (Map)
-import Data.Map as M
 import Data.Maybe (Maybe(..))
-import Data.Set (Set)
-import Data.Set as Set
-import Data.String (joinWith)
-import Data.Symbol (SProxy(..))
-import Data.Tuple (Tuple(..))
 import Effect.Class (class MonadEffect)
-import Effect (Effect)
 import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -27,11 +17,11 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
+import Prelude (Unit, bind, discard, pure, unit, (<<<), (<>))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.HTMLElement (focus, fromElement, HTMLElement)
+import Web.HTML.HTMLElement (focus, fromElement)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
