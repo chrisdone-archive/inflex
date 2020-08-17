@@ -46,6 +46,7 @@ import           Data.Typeable
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import qualified Data.Vector as V
+import           Database.Persist.Sql
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
@@ -110,27 +111,11 @@ getAppEditorR slug =
          (appTemplate
             NoSessionState-- (Registered state)
             ((do url <- ask
-                 div_
-                   [class_ "container-fluid"]
-                   (div_
-                      [class_ "row"]
-                      (div_ [class_ "col"] (p_ "Coming soon! We're working on this right now. Check back in a week or two.")))
-                 -- script_
-                 --   [ src_
-                 --       "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"
-                 --   , integrity_
-                 --       "sha256-R4pqcOYV8lt7snxMQO/HSbVCFRPMdrhAFMH+vr9giYI="
-                 --   , crossorigin_ "anonymous"
-                 --   ]
-                 --   ""
-                 -- script_
-                 --   [type_ "text/javascript"]
-                 --   (do toHtmlRaw "window['inflexDocument'] = "
-                 --       toHtmlRaw (encode initialDecs')
-                 --       ";"
-                 --       toHtmlRaw "window['inflexDocumentId'] = "
-                 --       toHtmlRaw (encode documentId)
-                 --       ";")
+                 script_
+                   [type_ "text/javascript"]
+                   (do toHtmlRaw "window['inflexDocumentId'] = "
+                       toHtmlRaw (encode documentId)
+                       ";")
                  script_
                    [type_ "text/javascript", src_ (url AppJsR)]
                    ""
@@ -299,3 +284,9 @@ getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
 
 -- getViewDocumentR :: Username -> DocumentSlug -> Handler ()
 -- getViewDocumentR _ _ = pure ()
+
+--------------------------------------------------------------------------------
+-- Testing
+
+documentId :: DocumentId
+documentId = toSqlKey 1234 :: DocumentId
