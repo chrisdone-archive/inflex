@@ -4,6 +4,7 @@ module Inflex.Components.Doc
   ( component
   ) where
 
+import Inflex.Shared
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat

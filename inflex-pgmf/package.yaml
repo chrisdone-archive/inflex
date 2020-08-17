@@ -1,0 +1,16 @@
+name:                inflex-pgmf
+version:             0
+
+dependencies:
+- base >= 4.7 && < 5
+- text
+
+ghc-options: -Wall
+
+library:
+  source-dirs: .
+
+executables:
+  inflex-pgmf:
+    main: Main.hs
+    source-dirs: app

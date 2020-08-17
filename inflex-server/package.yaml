@@ -67,6 +67,7 @@ dependencies:
 - resource-pool
 - yesod-persistent
 - persistent
+- inflex-shared
 
 flags:
  debug:
