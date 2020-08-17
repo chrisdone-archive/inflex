@@ -10,6 +10,7 @@ import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.Except (runExcept)
 import Control.Monad.State (class MonadState)
 import Data.Argonaut.Core as J
+import Data.Argonaut.Parser as J
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -147,29 +148,28 @@ eval =
 refresh _cells = do
   pure unit
 
+-- TODO: Fix the double encoding and double decoding here.
 load = do
   documentId <- H.liftEffect getDocumentId
   let endpoint = "/rpc"
   log ("POST " <> endpoint)
-  pure unit
-  result <-
-    H.liftAff
-      (AX.post
-         ResponseFormat.string
-         endpoint
-         (Just
-            (RequestBody.string
-               (genericEncodeJSON opts (LoadDocument (DocumentId documentId))))))
-  case result of
-    Left err ->
-      error
-        ("POST " <> endpoint <> " response failed to decode:" <>
-         AX.printError err)
-    Right response -> do
-      log $
-        "POST " <> endpoint <> " response:" <>
-        (response . body)
-      case runExcept (genericDecodeJSON opts (response . body) :: _ Document) of
-        Right r -> log "OK, decoded!"
-        Left _ -> log "Nope."
-      -- H.modify_ (\s -> s {cells = ?cells})
+  case J.jsonParser
+         (genericEncodeJSON opts (LoadDocument (DocumentId documentId))) of
+    Left e -> error ("Own JSON was invalid! " <> e)
+    Right json -> do
+      result <-
+        H.liftAff
+          (AX.post ResponseFormat.json endpoint (Just (RequestBody.json json)))
+      case result of
+        Left err ->
+          error
+            ("POST " <> endpoint <> " response failed to decode:" <>
+             AX.printError err)
+        Right response -> do
+          log $
+            "POST " <> endpoint <> " response:" <>
+            (J.stringify (response . body))
+          case runExcept
+                 (genericDecodeJSON opts (J.stringify (response . body))) of
+            Right (r :: Document) -> log ("OK, decoded: " <> show r)
+            Left e -> log ("Failed to decode: " <> show e)
