@@ -10,6 +10,10 @@ dependencies:
 
 ghc-options: -Wall
 
+extra-source-files:
+- templates/Shared.hs
+- templates/Shared.purs
+
 library:
   source-dirs: src
   exposed-modules: Inflex.Shared.Schema

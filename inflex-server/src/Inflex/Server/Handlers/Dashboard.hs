@@ -20,6 +20,7 @@ import Inflex.Server.App
 import Inflex.Server.Session
 import Inflex.Server.Types
 import Inflex.Server.View.Shop
+import qualified Inflex.Shared as Shared
 import Lucid
 import Yesod hiding (Html, toHtml)
 import Yesod.Lucid
@@ -97,7 +98,7 @@ postNewDocumentR =
                  insert
                    Document
                      { documentName = DocumentSlug mempty
-                     , documentContent = DocumentDecs mempty
+                     , documentContent = Shared.Document mempty
                      , documentCreated = now
                      , documentAccount = fromAccountID loginAccountId
                      }

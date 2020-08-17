@@ -33,6 +33,7 @@ import qualified Forge.Verify as Forge
 import           Inflex.Backend
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
+import qualified Inflex.Shared as Shared
 import           Yesod hiding (Html, Field)
 import           Yesod.Lucid
 
@@ -48,8 +49,6 @@ instance YesodPersist App where
     runDB action = do
         App{appPool=pool} <- getYesod
         runSqlPool action pool
-
-
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]

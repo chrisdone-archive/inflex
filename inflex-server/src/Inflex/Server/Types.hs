@@ -122,10 +122,6 @@ instance FromJSON DecIn where
     o <- parseJSON j
     DecIn <$> o .: "name" <*> o .: "rhs"
 
-newtype DocumentDecs =
-  DocumentDecs (Vector DecIn)
-  deriving (Show, FromJSON, ToJSON)
-
 data SessionState
   = Unregistered RegistrationState
   | Registered LoginState
@@ -209,5 +205,4 @@ $(makePrisms ''RegistrationState)
 $(makePrisms ''SessionState)
 
 $(derivePersistFieldJSON "SessionState")
-$(derivePersistFieldJSON "DocumentDecs")
 $(derivePersistFieldJSON "RegistrationState")

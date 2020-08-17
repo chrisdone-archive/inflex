@@ -61,6 +61,7 @@ dependencies:
 - directory
 - file-embed
 - time
+- persistent-template
 - email-validate
 - forge
 - transformers

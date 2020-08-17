@@ -109,15 +109,22 @@ handleEnterDetailsR = withRegistrationState _EnterDetails go
         NotSubmitted v -> htmlWithUrl (registerView state v)
         Submitted parse -> do
           Forge.Generated {generatedView = v, generatedValue = result} <-
-                runDB parse
+            runDB parse
           case result of
             Failure _errors -> htmlWithUrl (registerView state v)
             Success registrationDetails -> do
               runDB
                 (updateSession
                    sessionId
-                   (Unregistered (CreateCheckout registrationDetails)))
-              redirect CheckoutCreateR
+                   (Unregistered
+                      ((if False -- TODO: FIXME
+                          then CreateCheckout
+                          else CheckoutSucceeded)
+                         registrationDetails)))
+              if False -- TODO: FIXME:
+                 then redirect CheckoutCreateR
+                 else redirect CheckoutSuccessR
+
 
 registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =

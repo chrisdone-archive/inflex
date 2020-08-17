@@ -4,7 +4,6 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Inflex.Shared
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -35,6 +34,8 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
+import Inflex.Json
+import Inflex.Shared
 import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit)
 import Prelude (class Show, Unit, bind, pure, unit)
 
@@ -148,19 +149,27 @@ refresh _cells = do
 
 load = do
   documentId <- H.liftEffect getDocumentId
-  let endpoint = "/app/api/load/" <> show documentId
+  let endpoint = "/rpc"
   log ("POST " <> endpoint)
   pure unit
-  -- result <-
-  --   H.liftAff
-  --     (AX.post ResponseFormat.json endpoint (Just (RequestBody.json ?json)))
-  -- case result of
-  --   Left err ->
-  --     error
-  --       ("POST " <> endpoint <> " response failed to decode:" <>
-  --        AX.printError err)
-  --   Right response -> do
-  --     log $
-  --       "POST " <> endpoint <> " response:" <>
-  --       J.stringify (response . body)
-  --     H.modify_ (\s -> s {cells = ?cells})
+  result <-
+    H.liftAff
+      (AX.post
+         ResponseFormat.string
+         endpoint
+         (Just
+            (RequestBody.string
+               (genericEncodeJSON opts (LoadDocument (DocumentId documentId))))))
+  case result of
+    Left err ->
+      error
+        ("POST " <> endpoint <> " response failed to decode:" <>
+         AX.printError err)
+    Right response -> do
+      log $
+        "POST " <> endpoint <> " response:" <>
+        (response . body)
+      case runExcept (genericDecodeJSON opts (response . body) :: _ Document) of
+        Right r -> log "OK, decoded!"
+        Left _ -> log "Nope."
+      -- H.modify_ (\s -> s {cells = ?cells})

@@ -25,7 +25,7 @@
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
--- /app/api/refresh/#DocumentId AppRefreshR POST
+/rpc AppRpcR POST
 /app/js AppJsR GET
 /app/css AppCssR GET
 
