@@ -7,6 +7,7 @@ output
 client_session_key.aes
 inflex-lang/*.cabal
 inflex-client/*.cabal
-
+inflex-pgmf/*.cabal
+inflex-shared/*.cabal
 inflex-client/src/Inflex/Shared.purs
 inflex-server/src/Inflex/Shared.hs
