@@ -9,36 +9,35 @@ import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.Except (runExcept)
 import Control.Monad.State (class MonadState)
-import Data.Argonaut.Core as J
-import Data.Argonaut.Parser as J
+import Data.Argonaut.Core (stringify) as J
+import Data.Argonaut.Parser (jsonParser) as J
 import Data.Either (Either(..))
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+
+
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Maybe (Maybe)
-import Data.String (Replacement(..), Pattern(..), replaceAll)
+
 import Data.Symbol (SProxy(..))
-import Data.Traversable (traverse)
+
 import Data.Tuple (Tuple(..))
-import Data.UUID (UUID(..), uuidToString, genUUIDV4)
+import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log, error)
-import Foreign.Generic (defaultOptions, genericEncodeJSON, genericDecodeJSON, SumEncoding, class Decode, class Encode, genericEncode, genericDecode)
-import Foreign.Object as Foreign
+import Foreign.Generic (genericDecodeJSON, genericEncodeJSON)
+
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Json
+import Inflex.Json (opts)
 import Inflex.Shared
-import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit)
-import Prelude (class Show, Unit, bind, pure, unit)
+import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit, Unit, bind, const, discard, map, mempty, pure, show, unit, ($), (<>))
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -123,9 +122,9 @@ eval =
             M.insert
               uuid
               (Cell.Cell
-                 { name: "x_" <> replaceAll (Pattern "-") (Replacement "_") (uuidToString uuid)
-                 , rhs: "_"
-                 , result: Left "New celll"
+                 { name: "" -- "x_" <> replaceAll (Pattern "-") (Replacement "_") (uuidToString uuid)
+                 , rhs: ""
+                 , result: Left "..."
                  , new: true
                  })
               (s . cells)
@@ -145,7 +144,8 @@ eval =
 --------------------------------------------------------------------------------
 -- API calls
 
-refresh _cells = do
+refresh cells = do
+  H.modify_ (\s -> s {cells = cells})
   pure unit
 
 -- TODO: Fix the double encoding and double decoding here.
