@@ -1,32 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE PackageImports #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE Strict #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
 
--- -- |
+-- | RPC handlers.
 
 module Inflex.Server.Handlers.Rpc where
---   ( postAppRefreshR
---   , getAppCssR
---   , getAppJsR
---   , getAppEditorR
---   , postRefreshR
---   , getViewDocumentR
---   ) where
 
 import           Database.Persist.Sql
 import           Inflex.Server.App
