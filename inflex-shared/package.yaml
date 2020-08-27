@@ -6,14 +6,18 @@ dependencies:
 - aeson
 - text
 - vector
-- inflex-pgmf
+- template-haskell
+- async
 
 ghc-options: -Wall
 
 extra-source-files:
 - templates/Shared.hs
 - templates/Shared.purs
+- config/rpc
+- config/schema
 
 library:
   source-dirs: src
-  exposed-modules: Inflex.Shared.Schema
+  exposed-modules: Inflex.Shared.Gen
+  other-modules: Inflex.Shared.TH

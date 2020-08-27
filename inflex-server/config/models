@@ -16,7 +16,7 @@ Session
 Document
   account AccountId
   name DocumentSlug
-  content Shared.Document
+  content Shared.InputDocument
   created UTCTime
   UniqueAccountDocument account name
   deriving Show

@@ -98,7 +98,7 @@ postNewDocumentR =
                  insert
                    Document
                      { documentName = DocumentSlug mempty
-                     , documentContent = Shared.Document mempty
+                     , documentContent = Shared.InputDocument mempty
                      , documentCreated = now
                      , documentAccount = fromAccountID loginAccountId
                      }

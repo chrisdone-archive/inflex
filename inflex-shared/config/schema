@@ -1,0 +1,18 @@
+newtype DocumentId =
+  DocumentId Int
+
+data OutputDocument = OutputDocument
+  { cells :: Vector OutputCell
+  }
+
+data InputDocument = InputDocument
+  { cells :: Vector InputCell
+  }
+
+data OutputCell = OutputCell
+  { uuid :: UUID
+  }
+
+data InputCell = InputCell
+  { uuid :: UUID
+  }

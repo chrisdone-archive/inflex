@@ -2,7 +2,7 @@
 
 -- | Write out the schema files.
 
-module Inflex.Shared.Schema where
+module Inflex.Shared.Gen where
 
 import Inflex.Shared.TH
 

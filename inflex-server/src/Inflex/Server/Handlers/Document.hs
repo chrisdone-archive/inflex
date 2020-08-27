@@ -107,17 +107,15 @@ rpcHandler :: HandlerFor App Value
 rpcHandler =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       cmd :: Shared.Command <- requireCheckJsonBody
-       case cmd of
-         Shared.LoadDocument (Shared.DocumentId documentId) -> do
-           mdoc <-
-             runDB
-               (selectFirst
-                  [ DocumentAccount ==. fromAccountID loginAccountId
-                  , DocumentId ==. toSqlKey (fromIntegral documentId)
-                  ]
-                  [])
-           case mdoc of
-             Nothing -> notFound
-             Just (Entity _ Document {documentContent = document}) ->
-               pure (toJSON document))
+       documentId :: Shared.DocumentId <- requireCheckJsonBody
+       mdoc <-
+         runDB
+           (selectFirst
+              [ DocumentAccount ==. fromAccountID loginAccountId
+              , DocumentId ==. toSqlKey (fromIntegral documentId)
+              ]
+              [])
+       case mdoc of
+         Nothing -> notFound
+         Just (Entity _ Document {documentContent = document}) ->
+           pure (toJSON document))

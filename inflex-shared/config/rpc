@@ -1,0 +1,6 @@
+load-document:
+  input: None
+  output: LoadedDocument
+refresh-document:
+  input: InputDocument
+  output: LoadedDocument
