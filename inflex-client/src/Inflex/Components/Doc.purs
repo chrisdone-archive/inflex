@@ -115,7 +115,8 @@ eval :: forall m. MonadState State m => MonadEffect m => MonadAff m => Command -
 eval =
   case _ of
     Initialize -> do
-      _ <- rpcLoadDocument
+      documentId <- H.liftEffect getDocumentId
+      _ <- rpcLoadDocument documentId
       pure unit
     NewCell -> do
       uuid <- H.liftEffect genUUIDV4
@@ -151,87 +152,5 @@ refresh cells = do
   H.modify_ (\s -> s {cells = cells})
   pure unit
 
--- TODO: Fix the double encoding and double decoding here.
-rpcLoadDocument :: forall m. MonadAff m => m (Either String OutputDocument)
-rpcLoadDocument =
-  H.liftAff
-    (do documentId <- H.liftEffect getDocumentId
-        let endpoint = "/rpc"
-        log ("POST " <> endpoint)
-        case J.jsonParser (genericEncodeJSON opts (DocumentId documentId)) of
-          Left e -> do
-            error ("Own JSON was invalid! " <> e)
-            pure (Left e)
-          Right json -> do
-            result <-
-              H.liftAff
-                (AX.post
-                   ResponseFormat.json
-                   endpoint
-                   (Just (RequestBody.json json)))
-            case result of
-              Left err -> do
-                error
-                  ("POST " <> endpoint <>
-                   " response failed to decode:" <>
-                   AX.printError err)
-                pure (Left (AX.printError err))
-              Right response -> do
-                log $
-                  "POST " <> endpoint <> " response:" <>
-                  (J.stringify (response . body))
-                case runExcept
-                       (genericDecodeJSON opts (J.stringify (response . body))) of
-                  Right (r :: OutputDocument) -> do
-                    log ("OK, decoded:" <> show r)
-                    pure (Right r)
-                  Left e -> do
-                    error ("Failed to decode:" <> show e)
-                    pure (Left (show e)))
-
--- TODO: Fix the double encoding and double decoding here.
-rpcCall
-  :: forall m input output
-  .  MonadAff m
-  => GenericEncode input
-  => GenericDecode output
-  => Generic input input
-  => Generic output output
-  => Show output
-  => String
-  -> input
-  -> m (Either String output)
-rpcCall endpoint input =
-  H.liftAff
-    (do documentId <- H.liftEffect getDocumentId
-        log ("POST " <> endpoint)
-        case J.jsonParser (genericEncodeJSON opts input) of
-          Left e -> do
-            error ("Own JSON was invalid! " <> e)
-            pure (Left e)
-          Right json -> do
-            result <-
-              H.liftAff
-                (AX.post
-                   ResponseFormat.json
-                   endpoint
-                   (Just (RequestBody.json json)))
-            case result of
-              Left err -> do
-                error
-                  ("POST " <> endpoint <>
-                   " response failed to decode:" <>
-                   AX.printError err)
-                pure (Left (AX.printError err))
-              Right response -> do
-                log $
-                  "POST " <> endpoint <> " response:" <>
-                  (J.stringify (response . body))
-                case runExcept
-                       (genericDecodeJSON opts (J.stringify (response . body))) of
-                  Right r -> do
-                    log ("OK, decoded:" <> show r)
-                    pure (Right r)
-                  Left e -> do
-                    error ("Failed to decode:" <> show e)
-                    pure (Left (show e)))
+rpcLoadDocument :: forall m. MonadAff m => Int -> m (Either String OutputDocument)
+rpcLoadDocument documentId = rpcCall "loadDocument" (DocumentId documentId)

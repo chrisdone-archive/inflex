@@ -30,6 +30,7 @@ module Inflex.Server.Handlers.Document where
 
 import           Control.Monad.Reader
 import           Data.Aeson
+import           Data.Text (Text)
 import           Database.Persist.Sql
 import           Inflex.Server.App
 import           Inflex.Server.Session
@@ -97,25 +98,34 @@ getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
 
-postAppRpcR :: Handler TypedContent
-postAppRpcR = selectRep (provideRep rpcHandler)
+postAppRpcR :: Text -> Handler TypedContent
+postAppRpcR name = selectRep (provideRep (rpcHandler name))
 
 --------------------------------------------------------------------------------
 -- Refresh handler
 
-rpcHandler :: HandlerFor App Value
-rpcHandler =
+rpcHandler :: Text -> Handler Value
+rpcHandler name =
+  case name of
+    "loadDocument" -> do
+      input <- requireCheckJsonBody
+      output <- rpcLoadDocument input
+      pure (toJSON output)
+    _ -> error "Invalid RPC function."
+
+rpcLoadDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
+rpcLoadDocument docId =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       documentId :: Shared.DocumentId <- requireCheckJsonBody
        mdoc <-
          runDB
            (selectFirst
               [ DocumentAccount ==. fromAccountID loginAccountId
-              , DocumentId ==. toSqlKey (fromIntegral documentId)
+              , DocumentId ==. toSqlKey (fromIntegral docId)
               ]
               [])
        case mdoc of
          Nothing -> notFound
          Just (Entity _ Document {documentContent = document}) ->
-           pure (toJSON document))
+           pure (Shared.OutputDocument mempty) -- TODO: Fill it.
+     )

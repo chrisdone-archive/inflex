@@ -3,6 +3,7 @@
 
 -- Stripe
 /api/v1/stripe StripeR POST
+/api/rpc/#Text AppRpcR POST
 
 -- General
 /favicon.png FaviconR GET
@@ -25,7 +26,6 @@
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
-/rpc AppRpcR POST
 /app/js AppJsR GET
 /app/css AppCssR GET
 
