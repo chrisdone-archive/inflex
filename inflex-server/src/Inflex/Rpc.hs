@@ -31,7 +31,7 @@ rpcHandler name =
 
     "RefreshDocument" -> do
       input <- requireCheckJsonBody
-      output <- rpcRefreshDocument (input :: InputDocument)
+      output <- rpcRefreshDocument (input :: RefreshDocument)
       pure (toJSON (output :: OutputDocument))
 
 

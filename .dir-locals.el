@@ -2,4 +2,4 @@
 ;;; For more information see (info "(emacs) Directory Variables")
 
 ((haskell-mode
-  (intero-targets "inflex-shared:lib")))
+  (intero-targets "inflex-lang:lib" "inflex-shared:lib")))

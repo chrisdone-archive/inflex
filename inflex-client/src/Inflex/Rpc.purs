@@ -42,7 +42,7 @@ import Inflex.Schema
 rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
 rpcLoadDocument = rpcCall "LoadDocument"
 
-rpcRefreshDocument :: forall m. MonadAff m => InputDocument -> m (Either String OutputDocument)
+rpcRefreshDocument :: forall m. MonadAff m => RefreshDocument -> m (Either String OutputDocument)
 rpcRefreshDocument = rpcCall "RefreshDocument"
 
 

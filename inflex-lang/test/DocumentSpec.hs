@@ -6,6 +6,8 @@ module DocumentSpec where
 
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
+import           Data.Text (Text)
+import           Data.UUID as UUID
 import           Data.UUID.V4
 import           Inflex.Document
 import           Inflex.Instances ()
@@ -24,7 +26,7 @@ errors :: SpecWith ()
 errors = do
   it
     "x = x"
-    (do u1 <- nextRandom
+    (do u1 <- nextRandom'
         shouldBe
           (let loaded =
                  loadDocument [Named {uuid = Uuid u1, name = "x", thing = "x"}]
@@ -40,7 +42,7 @@ errors = do
              }))
   it
     "x = y"
-    (do u1 <- nextRandom
+    (do u1 <- nextRandom'
         shouldBe
           (let loaded =
                  loadDocument [Named {uuid = Uuid u1, name = "x", thing = "y"}]
@@ -60,8 +62,8 @@ errors = do
              }))
   it
     "y = 1; x = y y"
-    (do u1 <- nextRandom
-        u2 <- nextRandom
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
         shouldBe
           (let loaded =
                  loadDocument
@@ -113,9 +115,9 @@ success :: SpecWith ()
 success = do
   it
     "x = y + 2; z = 2; y = z * 3.1"
-    (do u1 <- nextRandom
-        u2 <- nextRandom
-        u3 <- nextRandom
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
+        u3 <- nextRandom'
         shouldBe
           (let loaded =
                  loadDocument
@@ -188,9 +190,9 @@ success = do
              }))
   it
     "double = \\x -> x * 2; a = double 1; b = double 2.2"
-    (do u1 <- nextRandom
-        u2 <- nextRandom
-        u3 <- nextRandom
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
+        u3 <- nextRandom'
         shouldBe
           (let loaded =
                  loadDocument
@@ -630,3 +632,6 @@ success = do
                      }
                  ]
              }))
+
+nextRandom' :: IO Text
+nextRandom' = fmap UUID.toText nextRandom

@@ -4,42 +4,24 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Affjax as AX
-import Affjax.RequestBody as RequestBody
-import Affjax.ResponseFormat as ResponseFormat
-import Control.Monad.Except (runExcept)
 import Control.Monad.State (class MonadState)
-import Data.Argonaut.Core (stringify) as J
-import Data.Argonaut.Parser (jsonParser) as J
+import Data.Array (filter)
 import Data.Either (Either(..))
-import Data.Generic.Rep
-
-import Data.Map (Map)
-import Data.Map as M
-import Data.Maybe (Maybe(..))
-import Data.Maybe (Maybe)
-
 import Data.Symbol (SProxy(..))
-
-import Data.Tuple (Tuple(..))
 import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log, error)
-import Foreign.Generic (genericDecodeJSON, genericEncodeJSON, class GenericDecode, class GenericEncode)
-import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
-
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Json (opts)
-import Inflex.Schema
-import Inflex.Rpc
-import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit, Unit, bind, const, discard, map, mempty, pure, show, unit, ($), (<>), class Show)
+import Inflex.Schema (DocumentId(..), InputCell(..), InputDocument(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
+import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
+import Prelude
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -51,13 +33,12 @@ foreign import getDocumentId :: Effect Int
 
 data Command
   = Initialize
-  | UpdateCell UUID
-              Cell.Cell
+  | UpdateCell UUID {name :: String, code :: String}
   | NewCell
   | DeleteCell UUID
 
 type State = {
-  cells :: Map UUID Cell.Cell
+  cells :: Array OutputCell
  }
 
 type Input = Unit
@@ -81,7 +62,7 @@ component =
 -- Render
 
 render :: forall q state keys m. MonadEffect m =>
-   { cells :: Map UUID Cell.Cell | state }
+   { cells :: Array OutputCell | state }
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot q Cell.Output String | keys) m Command) Command
 render state =
   HH.div
@@ -97,16 +78,18 @@ render state =
     , HH.div
         [HP.class_ (HH.ClassName "row")]
         (map
-           (\(Tuple uuid cell) ->
+           (\cell@(OutputCell {uuid}) ->
               HH.slot
                 (SProxy :: SProxy "Cell")
                 (uuidToString uuid)
                 Cell.component
                 cell
-                (\cell' -> pure (case cell' of
-                                  Cell.CelllUpdate d -> UpdateCell uuid d
-                                  Cell.DeleteCelll -> DeleteCell uuid)))
-           (M.toUnfoldable (state . cells)))
+                (\update ->
+                   pure
+                     (case update of
+                        Cell.CellUpdate update' -> UpdateCell uuid update'
+                        Cell.RemoveCell -> DeleteCell uuid)))
+           (state . cells))
     ]
 
 --------------------------------------------------------------------------------
@@ -117,38 +100,78 @@ eval =
   case _ of
     Initialize -> do
       documentId <- H.liftEffect getDocumentId
-      _ <- rpcLoadDocument (DocumentId documentId)
-      pure unit
+      log "Loading document ..."
+      result <- rpcLoadDocument (DocumentId documentId)
+      case result of
+        Left err -> do
+          error err -- TODO:Display this to the user properly.
+        Right outputDocument -> setOutputDocument outputDocument
     NewCell -> do
       uuid <- H.liftEffect genUUIDV4
-      H.liftEffect (log "Asking server for an update...")
       s <- H.get
       let cells' =
-            M.insert
-              uuid
-              (Cell.Cell
-                 { name: "" -- "x_" <> replaceAll (Pattern "-") (Replacement "_") (uuidToString uuid)
-                 , rhs: ""
-                 , result: Left "..."
-                 , new: true
-                 })
-              (s . cells)
+            [ InputCell
+                { uuid: uuid
+                , name: "x"
+                , code: ""
+                }
+            ] <>
+            map toInputCell (s . cells)
+      H.liftEffect (log "New cell, refreshing ...")
       refresh cells'
     UpdateCell uuid cell -> do
-      H.liftEffect (log "Asking server for an update...")
-      s <- H.get
-      let cells' = M.insert uuid cell (s . cells)
-      refresh cells'
+      state <- H.get
+      H.liftEffect (log "Cell updated, refreshing ...")
+      refresh
+        (map
+           (\original@(InputCell {uuid: uuid'}) ->
+              if uuid' == uuid
+                then InputCell
+                       { uuid
+                       , code: cell . code
+                       , name: cell . name
+                       }
+                else original)
+           (map toInputCell (state . cells)))
     DeleteCell uuid -> do
-      H.liftEffect (log "Asking server for an update...")
-      s <- H.get
-      let cells' = M.delete uuid (s . cells)
+      state <- H.get
+      H.liftEffect (log "Cell deleted, refreshing ...")
       documentId <- H.liftEffect getDocumentId
-      refresh cells'
+      refresh
+        (map
+           toInputCell
+           (filter
+              (\(OutputCell {uuid: uuid'}) -> uuid' /= uuid)
+              (state . cells)))
 
 --------------------------------------------------------------------------------
 -- API calls
 
 refresh cells = do
+  documentId <- H.liftEffect getDocumentId
+  result <-
+    rpcRefreshDocument
+      (RefreshDocument
+         { documentId: DocumentId documentId
+         , document: InputDocument {cells: cells}
+         })
+  case result of
+    Left err -> do
+      error err -- TODO:Display this to the user properly.
+    Right outputDocument -> setOutputDocument outputDocument
+
+--------------------------------------------------------------------------------
+-- Internal state helpers
+
+setOutputDocument :: forall t11 t14.
+  MonadState
+    { cells :: Array OutputCell
+    | t14
+    }
+    t11
+   => OutputDocument -> t11 Unit
+setOutputDocument (OutputDocument {cells}) =
   H.modify_ (\s -> s {cells = cells})
-  pure unit
+
+toInputCell :: OutputCell -> InputCell
+toInputCell (OutputCell {uuid, name, code}) = InputCell {uuid, name, code}

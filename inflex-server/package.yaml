@@ -69,6 +69,7 @@ dependencies:
 - yesod-persistent
 - persistent
 - inflex-shared
+- inflex-lang
 
 flags:
  debug:

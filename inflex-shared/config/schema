@@ -8,14 +8,28 @@ data OutputDocument = OutputDocument
   { cells :: Vector OutputCell
   }
 
+data RefreshDocument = RefreshDocument
+  { document :: InputDocument
+  , documentId :: DocumentId
+  }
+
 data InputDocument = InputDocument
   { cells :: Vector InputCell
   }
 
 data OutputCell = OutputCell
   { uuid :: UUID
+  , name :: Text
+  , code :: Text
+  , result :: Result
   }
 
 data InputCell = InputCell
   { uuid :: UUID
+  , name :: Text
+  , code :: Text
   }
+
+data Result
+  = ResultError Text
+  | ResultOk Text

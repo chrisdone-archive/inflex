@@ -54,17 +54,31 @@ data OutputDocument = OutputDocument
   { cells :: Vector OutputCell
   }
 
+data RefreshDocument = RefreshDocument
+  { document :: InputDocument
+  , documentId :: DocumentId
+  }
+
 data InputDocument = InputDocument
   { cells :: Vector InputCell
   }
 
 data OutputCell = OutputCell
   { uuid :: UUID
+  , name :: Text
+  , code :: Text
+  , result :: Result
   }
 
 data InputCell = InputCell
   { uuid :: UUID
+  , name :: Text
+  , code :: Text
   }
+
+data Result
+  = ResultError Text
+  | ResultOk Text
 
 
 --------------------------------------------------------------------------------
@@ -75,10 +89,20 @@ instance showNone :: Show None where show = genericShow
 instance decodeNone :: Decode None where decode = genericDecode opts
 instance encodeNone :: Encode None where encode = genericEncode opts
 
+derive instance genericResult :: Generic Result _
+instance showResult :: Show Result where show = genericShow
+instance decodeResult :: Decode Result where decode = genericDecode opts
+instance encodeResult :: Encode Result where encode = genericEncode opts
+
 derive instance genericInputDocument :: Generic InputDocument _
 instance showInputDocument :: Show InputDocument where show = genericShow
 instance decodeInputDocument :: Decode InputDocument where decode = genericDecode opts
 instance encodeInputDocument :: Encode InputDocument where encode = genericEncode opts
+
+derive instance genericRefreshDocument :: Generic RefreshDocument _
+instance showRefreshDocument :: Show RefreshDocument where show = genericShow
+instance decodeRefreshDocument :: Decode RefreshDocument where decode = genericDecode opts
+instance encodeRefreshDocument :: Encode RefreshDocument where encode = genericEncode opts
 
 derive instance genericOutputDocument :: Generic OutputDocument _
 instance showOutputDocument :: Show OutputDocument where show = genericShow

@@ -36,7 +36,7 @@ import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.App
-import qualified Inflex.Shared as Shared
+import qualified Inflex.Schema as Shared
 import           Lucid
 import           Sendfile
 import           Shakespearean

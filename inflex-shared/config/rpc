@@ -2,5 +2,5 @@ LoadDocument:
   input: DocumentId
   output: OutputDocument
 RefreshDocument:
-  input: InputDocument
+  input: RefreshDocument
   output: OutputDocument

@@ -13,7 +13,6 @@ module Inflex.Types where
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
 import Data.Text (Text)
-import Data.UUID (UUID)
 import GHC.Generics
 import Inflex.Types.SHA512
 import Numeric.Natural
@@ -52,10 +51,9 @@ data Named a = Named
   , thing :: a
   } deriving (Show, Eq, Ord, Functor)
 
-newtype Uuid = Uuid UUID
- deriving (Eq, Ord)
-instance Show Uuid where
-  show (Uuid x) = "(Uuid " <> show (show x) <> ")"
+newtype Uuid = Uuid Text
+ deriving (Eq, Ord, Show)
+
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
 -- in the document. Cells are polymorphic and have type-class

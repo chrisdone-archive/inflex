@@ -33,7 +33,7 @@ import qualified Forge.Verify as Forge
 import           Inflex.Backend
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
-import qualified Inflex.Shared as Shared
+import qualified Inflex.Schema as Shared
 import           Yesod hiding (Html, Field)
 import           Yesod.Lucid
 

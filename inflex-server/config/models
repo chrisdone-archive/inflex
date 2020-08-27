@@ -18,5 +18,6 @@ Document
   name DocumentSlug
   content Shared.InputDocument
   created UTCTime
+  updated UTCTime
   UniqueAccountDocument account name
   deriving Show

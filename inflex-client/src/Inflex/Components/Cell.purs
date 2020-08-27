@@ -6,7 +6,7 @@ module Inflex.Components.Cell
   , Output(..)
   ) where
 
-import Data.Either (Either, either)
+import Data.Either (Either(..), either)
 import Data.Map (Map)
 import Data.Set (Set)
 import Data.Symbol (SProxy(..))
@@ -16,35 +16,37 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Inflex.Components.Cell.Name as Name
 import Inflex.Components.Cell.Editor as Editor
-import Prelude
+import Inflex.Components.Cell.Name as Name
+import Inflex.Schema as Shared
+import Prelude (Unit, discard, identity, pure, unit, (<<<))
 
 --------------------------------------------------------------------------------
 -- Component types
 
-type Input = Cell
+type Input = Shared.OutputCell
 
-data Output = CelllUpdate Cell | DeleteCelll
+data Output
+  = CellUpdate { name :: String, code :: String}
+  | RemoveCell
 
 data State = State
-  { dec :: Cell
+  { cell :: Cell
   , display :: Display
   }
 
 data Command
   = SetCell Cell
   | CodeUpdate Cell
-  | DeleteCelllaration
+  | DeleteCell
 
 --------------------------------------------------------------------------------
 -- Internal types
 
 data Cell = Cell
   { name :: String
-  , rhs :: String
+  , code :: String
   , result :: Either String Editor.Editor
-  , new :: Boolean
   }
 
 data Display
@@ -59,10 +61,29 @@ component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\dec -> State {dec, display: DisplayResult})
+        (\cell ->
+           State
+             { cell: outputCellToCell cell
+             , display: DisplayResult
+             })
     , render
     , eval:
-        H.mkEval H.defaultEval {handleAction = eval, receive = pure <<< SetCell}
+        H.mkEval
+          H.defaultEval
+            { handleAction = eval
+            , receive = pure <<< SetCell <<< outputCellToCell
+            }
+    }
+
+outputCellToCell :: Shared.OutputCell -> Cell
+outputCellToCell (Shared.OutputCell {name, code, result}) =
+  Cell
+    { name
+    , code
+    , result:
+        case result of
+          Shared.ResultError e -> Left e
+          Shared.ResultOk output -> Right (Editor.MiscE output)
     }
 
 --------------------------------------------------------------------------------
@@ -71,11 +92,11 @@ component =
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
-    CodeUpdate dec -> do
+    CodeUpdate (Cell {name, code}) -> do
       H.liftEffect (log "Inflex.Cell:CodeUpdate, raising ...")
-      H.raise (CelllUpdate dec)
-    SetCell dec -> H.put (State {dec, display: DisplayResult})
-    DeleteCelllaration -> H.raise DeleteCelll
+      H.raise (CellUpdate {name, code})
+    SetCell cell -> H.put (State {cell, display: DisplayResult})
+    DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------
 -- Render
@@ -84,7 +105,7 @@ render :: forall keys q m. MonadEffect m =>
           State
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit, declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {dec: Cell {name, rhs, result}, display}) =
+render (State {cell: Cell {name, code, result}, display}) =
   HH.div
     [HP.class_ (HH.ClassName "card mt-3 declaration ml-3 mb-3")]
     [ HH.div
@@ -100,12 +121,11 @@ render (State {dec: Cell {name, rhs, result}, display}) =
                     (Cell
                        { name: name'
                        , result
-                       , rhs
-                       , new: false
+                       , code
                        })))
         , HH.button
             [ HP.class_ (HH.ClassName "btn btn-danger")
-            , HE.onClick (\_ -> pure DeleteCelllaration)
+            , HE.onClick (\_ -> pure DeleteCell)
             ]
             [HH.text "X"]
         ]
@@ -117,16 +137,15 @@ render (State {dec: Cell {name, rhs, result}, display}) =
             Editor.component
             (Editor.EditorAndCode
                { editor: either Editor.MiscE identity result
-               , code: rhs
+               , code: code
                })
-            (\rhs' ->
+            (\code' ->
                pure
                  (CodeUpdate
                     (Cell
                        { name
                        , result
-                       , rhs: rhs'
-                       , new: false
+                       , code: code'
                        })))
         ]
     ]
