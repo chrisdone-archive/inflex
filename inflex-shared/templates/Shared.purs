@@ -21,20 +21,25 @@ $types
 --------------------------------------------------------------------------------
 -- Derivings
 
-derive instance genericCommand :: Generic Command _
-instance showCommand :: Show Command where show = genericShow
-instance decodeCommand :: Decode Command where decode = genericDecode opts
-instance encodeCommand :: Encode Command where encode = genericEncode opts
+derive instance genericInputDocument :: Generic InputDocument _
+instance showInputDocument :: Show InputDocument where show = genericShow
+instance decodeInputDocument :: Decode InputDocument where decode = genericDecode opts
+instance encodeInputDocument :: Encode InputDocument where encode = genericEncode opts
 
-derive instance genericDocument :: Generic Document _
-instance showDocument :: Show Document where show = genericShow
-instance decodeDocument :: Decode Document where decode = genericDecode opts
-instance encodeDocument :: Encode Document where encode = genericEncode opts
+derive instance genericOutputDocument :: Generic OutputDocument _
+instance showOutputDocument :: Show OutputDocument where show = genericShow
+instance decodeOutputDocument :: Decode OutputDocument where decode = genericDecode opts
+instance encodeOutputDocument :: Encode OutputDocument where encode = genericEncode opts
 
-derive instance genericCell :: Generic Cell _
-instance showCell :: Show Cell where show = genericShow
-instance decodeCell :: Decode Cell where decode = genericDecode opts
-instance encodeCell :: Encode Cell where encode = genericEncode opts
+derive instance genericInputCell :: Generic InputCell _
+instance showInputCell :: Show InputCell where show = genericShow
+instance decodeInputCell :: Decode InputCell where decode = genericDecode opts
+instance encodeInputCell :: Encode InputCell where encode = genericEncode opts
+
+derive instance genericOutputCell :: Generic OutputCell _
+instance showOutputCell :: Show OutputCell where show = genericShow
+instance decodeOutputCell :: Decode OutputCell where decode = genericDecode opts
+instance encodeOutputCell :: Encode OutputCell where encode = genericEncode opts
 
 derive instance genericDocumentId :: Generic DocumentId _
 instance showDocumentId :: Show DocumentId where show = genericShow

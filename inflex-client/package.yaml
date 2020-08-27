@@ -22,7 +22,10 @@ dependencies:
 - directory
 - vector
 
-extra-source-files: test/src/Spec.purs
+extra-source-files:
+  - test/src/Spec.purs
+  - src/*.purs
+  - src/**/*.purs
 
 ghc-options: -Wall
 
