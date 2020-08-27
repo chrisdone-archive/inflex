@@ -1,3 +1,6 @@
+data None =
+  None
+
 newtype DocumentId =
   DocumentId Int
 

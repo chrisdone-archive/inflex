@@ -49,6 +49,11 @@ $types
 --------------------------------------------------------------------------------
 -- Derivings
 
+derive instance genericNone :: Generic None _
+instance showNone :: Show None where show = genericShow
+instance decodeNone :: Decode None where decode = genericDecode opts
+instance encodeNone :: Encode None where encode = genericEncode opts
+
 derive instance genericInputDocument :: Generic InputDocument _
 instance showInputDocument :: Show InputDocument where show = genericShow
 instance decodeInputDocument :: Decode InputDocument where decode = genericDecode opts

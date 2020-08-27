@@ -8,6 +8,8 @@ dependencies:
 - vector
 - template-haskell
 - async
+- yaml
+- containers
 
 ghc-options: -Wall
 

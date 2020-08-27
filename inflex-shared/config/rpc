@@ -1,6 +1,6 @@
-loadDocument:
-  input: None
-  output: LoadedDocument
-refreshDocument:
+LoadDocument:
+  input: DocumentId
+  output: OutputDocument
+RefreshDocument:
   input: InputDocument
-  output: LoadedDocument
+  output: OutputDocument

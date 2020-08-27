@@ -30,6 +30,11 @@ opts = defaultOptions
 --------------------------------------------------------------------------------
 -- Derivings
 
+deriving instance Generic None
+deriving instance Show None
+instance ToJSON None
+instance FromJSON None
+
 deriving instance Generic InputDocument
 deriving instance Show InputDocument
 instance ToJSON InputDocument

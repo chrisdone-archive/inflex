@@ -38,6 +38,7 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Json (opts)
 import Inflex.Schema
+import Inflex.Rpc
 import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit, Unit, bind, const, discard, map, mempty, pure, show, unit, ($), (<>), class Show)
 
 --------------------------------------------------------------------------------
@@ -116,7 +117,7 @@ eval =
   case _ of
     Initialize -> do
       documentId <- H.liftEffect getDocumentId
-      _ <- rpcLoadDocument documentId
+      _ <- rpcLoadDocument (DocumentId documentId)
       pure unit
     NewCell -> do
       uuid <- H.liftEffect genUUIDV4
@@ -151,6 +152,3 @@ eval =
 refresh cells = do
   H.modify_ (\s -> s {cells = cells})
   pure unit
-
-rpcLoadDocument :: forall m. MonadAff m => Int -> m (Either String OutputDocument)
-rpcLoadDocument documentId = pure (Left "TODO") {-rpcCall "loadDocument" (DocumentId documentId)-}

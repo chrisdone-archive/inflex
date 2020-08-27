@@ -39,7 +39,13 @@ import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 
 import Inflex.Schema
 
-$calls
+rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
+rpcLoadDocument = rpcCall "LoadDocument"
+
+rpcRefreshDocument :: forall m. MonadAff m => InputDocument -> m (Either String OutputDocument)
+rpcRefreshDocument = rpcCall "RefreshDocument"
+
+
 
 -- TODO: Fix the double encoding and double decoding here.
 rpcCall

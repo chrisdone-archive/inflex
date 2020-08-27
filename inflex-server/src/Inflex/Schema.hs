@@ -19,6 +19,9 @@ import GHC.Generics
 newtype UUID = UUID Text
  deriving (Eq, Ord, FromJSON, ToJSON, Show)
 
+data None =
+  None
+
 newtype DocumentId =
   DocumentId Int
 
@@ -47,6 +50,11 @@ opts = defaultOptions
 
 --------------------------------------------------------------------------------
 -- Derivings
+
+deriving instance Generic None
+deriving instance Show None
+instance ToJSON None
+instance FromJSON None
 
 deriving instance Generic InputDocument
 deriving instance Show InputDocument
