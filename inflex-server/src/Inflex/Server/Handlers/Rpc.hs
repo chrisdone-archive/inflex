@@ -19,7 +19,7 @@
 
 -- -- |
 
-module Inflex.Server.Handlers.Document where
+module Inflex.Server.Handlers.Rpc where
 --   ( postAppRefreshR
 --   , getAppCssR
 --   , getAppJsR
@@ -44,35 +44,31 @@ import           Text.Lucius
 import           Yesod hiding (Html)
 import           Yesod.Lucid
 
-getAppEditorR :: DocumentSlug -> Handler (Html ())
-getAppEditorR slug =
+postAppRpcR :: Text -> Handler TypedContent
+postAppRpcR name = selectRep (provideRep (rpcHandler name))
+
+rpcHandler :: Text -> Handler Value
+rpcHandler name =
+  case name of
+    "loadDocument" -> do
+      input <- requireCheckJsonBody
+      output <- rpcLoadDocument input
+      pure (toJSON output)
+    _ -> error "Invalid RPC function."
+
+rpcLoadDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
+rpcLoadDocument docId =
   withLogin
-    (\_ state@(LoginState {loginAccountId}) -> do
-       documentId <-
-         do mdoc <-
-              runDB
-                (selectFirst
-                   [ DocumentAccount ==. fromAccountID loginAccountId
-                   , DocumentName ==. slug
-                   ]
-                   [])
-            case mdoc of
-              Nothing -> notFound
-              Just (Entity documentId _) -> pure (documentId)
-       htmlWithUrl
-         (appTemplate
-            (Registered state)
-            ((do url <- ask
-                 script_
-                   [type_ "text/javascript"]
-                   (do toHtmlRaw "window['inflexDocumentId'] = "
-                       toHtmlRaw (encode documentId)
-                       ";")
-                 script_ [type_ "text/javascript", src_ (url AppJsR)] ""))))
-
-
-getAppJsR :: Handler TypedContent
-getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
-
-getAppCssR :: Handler Css
-getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
+    (\_ (LoginState {loginAccountId}) -> do
+       mdoc <-
+         runDB
+           (selectFirst
+              [ DocumentAccount ==. fromAccountID loginAccountId
+              , DocumentId ==. toSqlKey (fromIntegral docId)
+              ]
+              [])
+       case mdoc of
+         Nothing -> notFound
+         Just (Entity _ Document {documentContent = document}) ->
+           pure (Shared.OutputDocument mempty) -- TODO: Fill it.
+     )
