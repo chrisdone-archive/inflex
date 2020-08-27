@@ -37,7 +37,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Json (opts)
-import Inflex.Shared
+import Inflex.Schema
 import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit, Unit, bind, const, discard, map, mempty, pure, show, unit, ($), (<>), class Show)
 
 --------------------------------------------------------------------------------
@@ -153,4 +153,4 @@ refresh cells = do
   pure unit
 
 rpcLoadDocument :: forall m. MonadAff m => Int -> m (Either String OutputDocument)
-rpcLoadDocument documentId = rpcCall "loadDocument" (DocumentId documentId)
+rpcLoadDocument documentId = pure (Left "TODO") {-rpcCall "loadDocument" (DocumentId documentId)-}

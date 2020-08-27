@@ -5,7 +5,7 @@
 
 -- | Shared data types.
 
-module Inflex.Shared where
+module Inflex.Schema where
 
 import Data.Aeson
 import Data.Text (Text)
@@ -19,7 +19,25 @@ import GHC.Generics
 newtype UUID = UUID Text
  deriving (Eq, Ord, FromJSON, ToJSON, Show)
 
-$types
+newtype DocumentId =
+  DocumentId Int
+
+data OutputDocument = OutputDocument
+  { cells :: Vector OutputCell
+  }
+
+data InputDocument = InputDocument
+  { cells :: Vector InputCell
+  }
+
+data OutputCell = OutputCell
+  { uuid :: UUID
+  }
+
+data InputCell = InputCell
+  { uuid :: UUID
+  }
+
 
 --------------------------------------------------------------------------------
 -- Decoding options

@@ -12,8 +12,8 @@ dependencies:
 ghc-options: -Wall
 
 extra-source-files:
-- templates/Shared.hs
-- templates/Shared.purs
+- templates/Schema.hs
+- templates/Schema.purs
 - config/rpc
 - config/schema
 

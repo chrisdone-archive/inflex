@@ -1,6 +1,6 @@
 -- | Shared data types.
 
-module Inflex.Shared where
+module Inflex.Schema where
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
