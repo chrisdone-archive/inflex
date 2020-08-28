@@ -56,12 +56,7 @@ data Command
 data Editor
   = IntegerE String
   | MiscE String
-
-editorCode :: Editor -> String
-editorCode =
-  case _ of
-    IntegerE s -> s
-    MiscE s -> s
+  | ErrorE String
 
 data Display
   = DisplayEditor
@@ -72,11 +67,7 @@ data EditorAndCode = EditorAndCode
   , code :: String
   }
 
-type Slots i = (editor::H.Slot i String Int)
-
-data Edit
-  = OverIndex Int Edit
-  | SetCode String
+type Slots i = (editor :: H.Slot i String Int)
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -177,3 +168,5 @@ renderEditor editor =
   case editor of
     IntegerE i -> [HH.text i]
     MiscE t -> [HH.text t]
+    ErrorE msg ->
+      [HH.div [HP.class_ (HH.ClassName "error-message")] [HH.text msg]]

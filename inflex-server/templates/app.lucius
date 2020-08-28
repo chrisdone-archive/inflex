@@ -65,6 +65,10 @@ body {
     .cell-header {
       display: flex;
     }
+    .error-message {
+      background: red;
+      color: white;
+    }
   }
 }
 

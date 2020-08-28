@@ -135,7 +135,7 @@ render (State {cell: Cell {name, code, result}, display}) =
             unit
             Editor.component
             (Editor.EditorAndCode
-               { editor: either Editor.MiscE identity result
+               { editor: either Editor.ErrorE identity result
                , code: code
                })
             (\code' ->
