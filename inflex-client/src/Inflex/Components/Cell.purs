@@ -46,7 +46,7 @@ data Command
 data Cell = Cell
   { name :: String
   , code :: String
-  , result :: Either String Editor.Editor
+  , result :: Either Shared.CellError Editor.Editor
   }
 
 data Display

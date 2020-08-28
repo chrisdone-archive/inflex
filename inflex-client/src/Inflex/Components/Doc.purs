@@ -147,6 +147,13 @@ eval =
 --------------------------------------------------------------------------------
 -- API calls
 
+refresh :: forall t60 t74.
+  Bind t60 => MonadEffect t60 => MonadAff t60 => MonadState
+                                                   { cells :: Array OutputCell
+                                                   | t74
+                                                   }
+                                                   t60
+                                                  => Array InputCell -> t60 Unit
 refresh cells = do
   documentId <- H.liftEffect getDocumentId
   result <-

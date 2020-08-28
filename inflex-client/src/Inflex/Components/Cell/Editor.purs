@@ -8,7 +8,7 @@ module Inflex.Components.Cell.Editor
 
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
-import Data.String (trim)
+import Data.String (joinWith, trim)
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
 import Halogen as H
@@ -18,6 +18,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
+import Inflex.Schema (CellError(..), FillError(..))
 import Prelude
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
@@ -56,7 +57,7 @@ data Command
 data Editor
   = IntegerE String
   | MiscE String
-  | ErrorE String
+  | ErrorE CellError
 
 data Display
   = DisplayEditor
@@ -169,4 +170,25 @@ renderEditor editor =
     IntegerE i -> [HH.text i]
     MiscE t -> [HH.text t]
     ErrorE msg ->
-      [HH.div [HP.class_ (HH.ClassName "error-message")] [HH.text msg]]
+      [ HH.div
+          [HP.class_ (HH.ClassName "error-message")]
+          [ HH.text
+              (case msg of
+                 FillErrors fillErrors ->
+                   joinWith ", " (map fromFillError fillErrors)
+                   where fromFillError =
+                           case _ of
+                             NoSuchGlobal name ->
+                               "missing name “" <> name <> "”"
+                             OtherCellProblem name ->
+                               "other cell “" <> name <> "” has a problem"
+                 CyclicCells names ->
+                   "cells refer to eachother in a loop:" <> " " <>
+                   joinWith ", " names
+                 DuplicateCellName -> "this name is used twice"
+                 CellRenameErrors -> "internal bug; please report!" -- TODO:make this automatic.
+                 CellTypeError -> "types of values don't match up"
+                 CellStepEror -> "error while evaluating formula"
+                 SyntaxError -> "syntax error, did you mistype something?")
+          ]
+      ]

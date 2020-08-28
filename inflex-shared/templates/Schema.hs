@@ -40,6 +40,16 @@ deriving instance Show Result
 instance ToJSON Result
 instance FromJSON Result
 
+deriving instance Generic CellError
+deriving instance Show CellError
+instance ToJSON CellError
+instance FromJSON CellError
+
+deriving instance Generic FillError
+deriving instance Show FillError
+instance ToJSON FillError
+instance FromJSON FillError
+
 deriving instance Generic InputDocument
 deriving instance Show InputDocument
 instance ToJSON InputDocument

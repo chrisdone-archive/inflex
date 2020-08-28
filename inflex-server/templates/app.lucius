@@ -34,7 +34,6 @@ body {
   background: #e4e9ec;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 .navbar {
@@ -61,6 +60,9 @@ body {
     width: 17eh;
   }
 
+  .canvas {
+    display: flex;
+  }
   .cell {
     .cell-header {
       display: flex;

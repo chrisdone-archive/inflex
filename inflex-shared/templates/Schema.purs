@@ -59,6 +59,16 @@ instance showResult :: Show Result where show = genericShow
 instance decodeResult :: Decode Result where decode = genericDecode opts
 instance encodeResult :: Encode Result where encode = genericEncode opts
 
+derive instance genericCellError :: Generic CellError _
+instance showCellError :: Show CellError where show = genericShow
+instance decodeCellError :: Decode CellError where decode = genericDecode opts
+instance encodeCellError :: Encode CellError where encode = genericEncode opts
+
+derive instance genericFillError :: Generic FillError _
+instance showFillError :: Show FillError where show = genericShow
+instance decodeFillError :: Decode FillError where decode = genericDecode opts
+instance encodeFillError :: Encode FillError where encode = genericEncode opts
+
 derive instance genericInputDocument :: Generic InputDocument _
 instance showInputDocument :: Show InputDocument where show = genericShow
 instance decodeInputDocument :: Decode InputDocument where decode = genericDecode opts
