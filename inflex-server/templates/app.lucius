@@ -29,3 +29,52 @@
 .declaration {
   display: inline-block;
 }
+
+body {
+  background: #e4e9ec;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.navbar {
+  display: flex;
+  .nav-logo {
+    display: block;
+    padding: 5px;
+  }
+  .nav-logo svg {
+    height: 30px;
+  }
+  .navbar-controls {
+    order: 2;
+    margin-left: auto;
+    .logout {
+      background: inherit;
+    }
+  }
+}
+
+.ide {
+  display: flex;
+  .sidebar {
+    width: 17eh;
+  }
+
+  .cell {
+    .cell-header {
+      display: flex;
+    }
+  }
+}
+
+.cell-name, .delete-cell, .logout, .navbar, .sidebar, .sidebar-button, .cell, .cell-header, .cell-body {
+  border: 1px dashed black;
+  margin: 5px;
+  padding: 5px;
+  background: inherit;
+}
+
+.logout, .delete-cell {
+  display: inline-block;
+}

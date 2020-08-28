@@ -28,27 +28,18 @@ appTemplate state body = do
                 , content_
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
-              link_
-                [ rel_ "stylesheet noreferer"
-                , type_ "text/css"
-                , href_
-                    "https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-                , crossorigin_ "anonymous"
-                , integrity_
-                    "sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-                ]
               link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
         body_
           [class_ "app"]
           (do header_
-                [class_ "navbar navbar-light bg-light"]
+                [class_ "navbar"]
                 (do a_
-                      [class_ "navbar-brand mr-0 mr-md-2 logo-svg", href_ (url HomeR)]
+                      [href_ (url HomeR), class_ "nav-logo"]
                       (toHtmlRaw
                          $(wrapStackRoot "inflex-server/svg/inflex-logo.svg" >>=
                            embedFile))
                     div_
-                      [class_ "navbar-nav ml-md-auto"]
+                      [class_ "navbar-controls"]
                       (case state of
                          NoSessionState -> a_ [href_ (url LoginR)] "Login"
                          Registered loginState -> do
@@ -58,6 +49,6 @@ appTemplate state body = do
                                  " ")
                            form_
                              [action_ (url LogoutR), method_ "post"]
-                             (button_ [class_ "btn-primary btn"] "Logout")
-                         Unregistered {} -> a_ [href_ (url LoginR)] "Login"))
+                             (button_ [class_ "logout"] "Logout")
+                         Unregistered {} -> mempty))
               body))

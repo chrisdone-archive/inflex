@@ -107,30 +107,29 @@ render :: forall keys q m. MonadEffect m =>
                   Command
 render (State {cell: Cell {name, code, result}, display}) =
   HH.div
-    [HP.class_ (HH.ClassName "card mt-3 declaration ml-3 mb-3")]
+    [HP.class_ (HH.ClassName "cell")]
     [ HH.div
-        [HP.class_ (HH.ClassName "card-header")]
-        [ HH.slot
-            (SProxy :: SProxy "declname")
-            unit
-            Name.component
-            name
-            (\name' ->
-               pure
-                 (CodeUpdate
-                    (Cell
-                       { name: name'
-                       , result
-                       , code
-                       })))
+        [HP.class_ (HH.ClassName "cell-header")]
+        [ HH.div
+            [HP.class_ (HH.ClassName "cell-name")]
+            [ HH.slot
+                (SProxy :: SProxy "declname")
+                unit
+                Name.component
+                name
+                (\name' ->
+                   pure
+                     (CodeUpdate
+                        (Cell {name: name', result, code})))
+            ]
         , HH.button
-            [ HP.class_ (HH.ClassName "btn btn-danger")
+            [ HP.class_ (HH.ClassName "delete-cell")
             , HE.onClick (\_ -> pure DeleteCell)
             ]
             [HH.text "X"]
         ]
     , HH.div
-        [HP.class_ (HH.ClassName "card-body")]
+        [HP.class_ (HH.ClassName "cell-body")]
         [ HH.slot
             (SProxy :: SProxy "editor")
             unit
@@ -141,11 +140,6 @@ render (State {cell: Cell {name, code, result}, display}) =
                })
             (\code' ->
                pure
-                 (CodeUpdate
-                    (Cell
-                       { name
-                       , result
-                       , code: code'
-                       })))
+                 (CodeUpdate (Cell {name, result, code: code'})))
         ]
     ]

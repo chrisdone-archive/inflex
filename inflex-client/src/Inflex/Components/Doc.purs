@@ -66,17 +66,17 @@ render :: forall q state keys m. MonadEffect m =>
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot q Cell.Output String | keys) m Command) Command
 render state =
   HH.div
-    [HP.class_ (HH.ClassName "container-fluid")]
+    [HP.class_ (HH.ClassName "ide")]
     [ HH.div
-        [HP.class_ (HH.ClassName "row")]
+        [HP.class_ (HH.ClassName "sidebar")]
         [ HH.button
-            [ HP.class_ (HH.ClassName "mt-3 ml-3 mr-3 btn-primary btn")
+            [ HP.class_ (HH.ClassName "sidebar-button")
             , HE.onClick (\e -> pure NewCell)
             ]
             [HH.text "New Cell"]
         ]
     , HH.div
-        [HP.class_ (HH.ClassName "row")]
+        [HP.class_ (HH.ClassName "canvas")]
         (map
            (\cell@(OutputCell {uuid}) ->
               HH.slot
