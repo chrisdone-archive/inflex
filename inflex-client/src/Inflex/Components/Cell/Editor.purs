@@ -8,6 +8,7 @@ module Inflex.Components.Cell.Editor
 
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
+import Data.String (trim)
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
 import Halogen as H
@@ -17,7 +18,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Prelude (Unit, bind, discard, pure, unit, (<<<), (<>))
+import Prelude
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -140,23 +141,26 @@ eval =
 render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
 render (State {display, code, editor}) =
   case display of
-    DisplayCode ->
-      wrapper
-        [ HH.input
-            [ HP.value code
-            , HP.class_ (HH.ClassName "form-control")
-            , manage InputElementChanged
-            , HE.onKeyUp
-                (\k ->
-                   case K.code k of
-                     "Enter" -> Just (FinishEditing code)
-                     _code -> Just Autoresize)
-            , HE.onValueChange (\i -> pure (SetInput i))
-            , HE.onClick (\e -> pure (PreventDefault (toEvent e) NoOp))
-            ]
-        ]
-    DisplayEditor -> wrapper (renderEditor editor)
+    DisplayCode -> wrapper renderControl
+    DisplayEditor ->
+      if trim code == ""
+        then wrapper (renderControl)
+        else wrapper (renderEditor editor)
   where
+    renderControl =
+      [ HH.input
+          [ HP.value code
+          , HP.class_ (HH.ClassName "form-control")
+          , manage InputElementChanged
+          , HE.onKeyUp
+              (\k ->
+                 case K.code k of
+                   "Enter" -> Just (FinishEditing code)
+                   _code -> Just Autoresize)
+          , HE.onValueChange (\i -> pure (SetInput i))
+          , HE.onClick (\e -> pure (PreventDefault (toEvent e) NoOp))
+          ]
+      ]
     wrapper inner =
       case display of
         DisplayCode -> HH.div [] inner
