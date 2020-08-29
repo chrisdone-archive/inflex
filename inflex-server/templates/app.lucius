@@ -62,6 +62,7 @@ body {
 
   .canvas {
     display: flex;
+    position: relative;
   }
   .cell {
     .cell-header {
