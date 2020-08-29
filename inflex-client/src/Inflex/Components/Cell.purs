@@ -110,18 +110,14 @@ render (State {cell: Cell {name, code, result}, display}) =
     [HP.class_ (HH.ClassName "cell")]
     [ HH.div
         [HP.class_ (HH.ClassName "cell-header")]
-        [ HH.div
-            [HP.class_ (HH.ClassName "cell-name")]
-            [ HH.slot
-                (SProxy :: SProxy "declname")
-                unit
-                Name.component
-                name
-                (\name' ->
-                   pure
-                     (CodeUpdate
-                        (Cell {name: name', result, code})))
-            ]
+        [ HH.slot
+            (SProxy :: SProxy "declname")
+            unit
+            Name.component
+            name
+            (\name' ->
+               pure
+                 (CodeUpdate (Cell {name: name', result, code})))
         , HH.button
             [ HP.class_ (HH.ClassName "delete-cell")
             , HE.onClick (\_ -> pure DeleteCell)

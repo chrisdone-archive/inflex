@@ -6,6 +6,7 @@ module Inflex.Components.Cell.Name
 
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
+import Data.String
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
@@ -16,7 +17,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Prelude (Unit, bind, discard, pure, unit, void, (<<<))
+import Prelude
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -88,7 +89,7 @@ eval =
             Just htmlelement -> do
               H.liftEffect (log "OK, got element.")
               mvalue <- H.liftEffect (getValue htmlelement)
-              case toMaybe mvalue of
+              case toMaybe mvalue >>= cleanName of
                 Nothing -> H.liftEffect (log "No value...")
                 Just value -> do
                   H.raise value
@@ -128,11 +129,19 @@ render :: forall keys q m. MonadEffect m =>
                   Command
 render (State {display, name}) =
   case display of
-    DisplayResult -> HH.div [HE.onClick (\e -> pure StartEditor)] [HH.text name]
+    DisplayResult ->
+      HH.div
+        [ HP.class_ (HH.ClassName "cell-name")
+        , HE.onClick (\e -> pure StartEditor)
+        ]
+        [ case cleanName name of
+            Nothing -> HH.text "(unnamed)"
+            Just x -> HH.text x
+        ]
     DisplayEditor ->
       HH.input
         [ HP.class_ (HH.ClassName "form-control")
-        , HP.placeholder "Name"
+        , HP.placeholder "Type name here"
         , manage InputElementChanged
         , HP.value name
         , HE.onKeyDown
@@ -144,6 +153,13 @@ render (State {display, name}) =
             (\e ->
                case K.code e of
                  "Enter" ->
-                   Just (StopPropagation (K.toEvent e) (CodeUpdate (K.toEvent e)))
+                   Just
+                     (StopPropagation (K.toEvent e) (CodeUpdate (K.toEvent e)))
                  code -> Just (StopPropagation (K.toEvent e) (PrintCode code)))
         ]
+
+cleanName :: String -> Maybe String
+cleanName x =
+  if trim x == ""
+    then Nothing
+    else Just (trim x)

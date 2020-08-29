@@ -112,7 +112,7 @@ eval =
       let cells' =
             [ InputCell
                 { uuid: uuid
-                , name: "x"
+                , name: ""
                 , code: ""
                 }
             ] <>
