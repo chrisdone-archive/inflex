@@ -6,7 +6,7 @@ module Inflex.Components.Cell.Name
 
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
-import Data.String
+import Data.String (trim)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
