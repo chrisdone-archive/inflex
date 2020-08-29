@@ -31,7 +31,7 @@
 }
 
 body {
-  background: #e4e9ec;
+  background: #fff;
   margin: 0;
   padding: 0;
 }
@@ -74,8 +74,10 @@ body {
   }
 }
 
+button { border: 0; }
+
 .cell-name, .delete-cell, .logout, .navbar, .sidebar, .sidebar-button, .cell, .cell-header, .cell-body {
-  border: 1px dashed black;
+  border: 1px dashed #555;
   margin: 5px;
   padding: 5px;
   background: inherit;

@@ -126,7 +126,7 @@ render (State {cell: Cell {name, code, result}, display}) =
             [ HP.class_ (HH.ClassName "delete-cell")
             , HE.onClick (\_ -> pure DeleteCell)
             ]
-            [HH.text "X"]
+            [HH.text "×"]
         ]
     , HH.div
         [HP.class_ (HH.ClassName "cell-body")]
