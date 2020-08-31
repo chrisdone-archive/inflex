@@ -121,6 +121,7 @@ header.navbar {
     border-radius: 3px;
     padding: 0;
     color: #374048;
+    margin: 0;
 }
 
 .cell-header {border: none;margin: 0;padding: 0;/* border-top-left-radius: 3px; */}

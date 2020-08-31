@@ -1,7 +1,7 @@
 -- | A declaration in a document.
 
 module Inflex.Components.Cell.Name
-  ( component
+  ( component, Output(..), manage
   ) where
 
 import Data.Maybe (Maybe(..))
@@ -21,6 +21,7 @@ import Prelude
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
+import Web.UIEvent.MouseEvent as ME
 import Web.HTML.HTMLElement (focus, fromElement)
 import Web.UIEvent.KeyboardEvent as K
 
@@ -29,12 +30,20 @@ import Web.UIEvent.KeyboardEvent as K
 
 type Input = String
 
-type Output = String
+data Output
+  = NewName String
+  | NewOffset Int Int
 
 data State = State
   { name :: String
   , display :: Display
+  , mode :: UiMode
   }
+
+data UiMode
+  = Normal
+  | Holding ME.MouseEvent
+  | Dragging ME.MouseEvent
 
 data Command
   = CodeUpdate Event
@@ -44,9 +53,13 @@ data Command
   | PreventDefault Event
                    Command
   | StopPropagation Event
-                   Command
+                    Command
   | NoOp
   | PrintCode String
+  | SetHolding ME.MouseEvent
+  | MouseMoveTrigger ME.MouseEvent
+  | MouseUpTrigger
+  | StopDragging
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -65,7 +78,7 @@ component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\name -> State {name, display: DisplayResult})
+        (\name -> State {name, display: DisplayResult, mode: Normal})
     , render
     , eval:
         H.mkEval H.defaultEval {handleAction = eval, receive = pure <<< SetInput}
@@ -79,6 +92,34 @@ foreign import getValue :: Element -> Effect (Nullable String)
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
+    SetHolding mouseEvent -> do
+      H.liftEffect (log "Holding")
+      H.modify_ (\(State s) -> State (s {mode = Holding mouseEvent}))
+    StopDragging -> do
+      H.liftEffect (log "Stop drag")
+      H.modify_ (\(State s) -> State (s {mode = Normal}))
+    MouseUpTrigger -> do
+      State s <- H.get
+      case s . mode of
+        Dragging mouseEvent0 -> do
+          H.liftEffect (log "Stop dragging")
+          H.modify_ (\(State s') -> State (s' {mode = Normal}))
+        _ -> do
+          H.liftEffect (log "Normal, starting editor")
+          H.modify_ (\(State s') -> State (s' {mode = Normal}))
+          eval StartEditor
+    MouseMoveTrigger mouseEvent -> do
+      State s <- H.get
+      case s . mode of
+        Holding mouseEvent0 -> do
+          H.liftEffect (log "Starting drag!")
+          H.modify_ (\(State s') -> State (s' {mode = Dragging mouseEvent0}))
+        Dragging mouseEvent0 -> do
+          let x = ME.screenX mouseEvent - ME.screenX mouseEvent0
+              y = ME.screenY mouseEvent - ME.screenY mouseEvent0
+          H.raise (NewOffset x y)
+          H.modify_ (\(State s') -> State (s' {mode = Dragging mouseEvent}))
+        _ -> pure unit
     PrintCode string -> H.liftEffect (log string)
     CodeUpdate event -> do
       H.liftEffect (log "Ok, go!")
@@ -92,10 +133,10 @@ eval =
               case toMaybe mvalue >>= cleanName of
                 Nothing -> H.liftEffect (log "No value...")
                 Just value -> do
-                  H.raise value
+                  H.raise (NewName value)
                   eval (SetInput value)
             Nothing -> pure unit
-    StartEditor ->
+    StartEditor -> do
       void (H.modify (\(State s) -> State (s {display = DisplayEditor})))
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {name = i, display = DisplayResult}))
@@ -110,13 +151,15 @@ eval =
       H.liftEffect
             -- log "Preventing default and propagation ..."
         (do preventDefault e
-            stopPropagation e) {-log "Triggering"-}
+            stopPropagation e {-log "Triggering"-}
+         )
       eval c
     StopPropagation e c -> do
       H.liftEffect
             -- log "Preventing default and propagation ..."
         (do preventDefault e
-            stopPropagation e) {-log "Triggering"-}
+            stopPropagation e {-log "Triggering"-}
+         )
       eval c
     NoOp -> pure unit
 
@@ -132,7 +175,10 @@ render (State {display, name}) =
     DisplayResult ->
       HH.div
         [ HP.class_ (HH.ClassName "cell-name")
-        , HE.onClick (\e -> pure StartEditor)
+        , HE.onMouseDown (\e -> Just (StopPropagation (ME.toEvent e) (SetHolding e)))
+        , HE.onMouseUp (\e -> Just (StopPropagation (ME.toEvent e) MouseUpTrigger))
+        , HE.onMouseMove (\e -> Just (StopPropagation (ME.toEvent e) (MouseMoveTrigger e)))
+        , HE.onMouseLeave (\e -> Just (StopPropagation (ME.toEvent e) StopDragging))
         ]
         [ case cleanName name of
             Nothing -> HH.text "(unnamed)"
