@@ -36,10 +36,6 @@ data RefreshDocument = RefreshDocument
   , documentId :: DocumentId
   }
 
-data InputDocument = InputDocument
-  { cells :: Vector InputCell
-  }
-
 data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
@@ -59,12 +55,6 @@ data InputCell1 = InputCell1
   , order :: Int
   }
 
-data InputCell = InputCell
-  { uuid :: UUID
-  , name :: Text
-  , code :: Text
-  }
-
 data Result
   = ResultError CellError
   | ResultOk Text
@@ -81,6 +71,22 @@ data CellError
 data FillError
   = NoSuchGlobal Text
   | OtherCellProblem Text
+
+
+--------------------------------------------------------------------------------
+-- Deprecated
+
+{-# DEPRECATED InputDocument "Use InputDocument1" #-}
+data InputDocument = InputDocument
+  { cells :: Vector InputCell
+  }
+
+{-# DEPRECATED InputCell "Use InputCell1" #-}
+data InputCell = InputCell
+  { uuid :: UUID
+  , name :: Text
+  , code :: Text
+  }
 
 
 --------------------------------------------------------------------------------
