@@ -8,7 +8,7 @@
 module Inflex.Server.Compute where
 
 import           Data.Foldable
-import           Data.Maybe
+import           Data.List
 import qualified Data.Vector as V
 import           Inflex.Display ()
 import           Inflex.Document
@@ -24,21 +24,23 @@ loadInputDocument :: Shared.InputDocument1 -> Shared.OutputDocument
 loadInputDocument (Shared.InputDocument1 {cells}) =
   Shared.OutputDocument
     (V.fromList
-       (fmap
-          (\Named {uuid = Uuid uuid, name, thing, order, code} ->
-             Shared.OutputCell
-               { uuid = Shared.UUID uuid
-               , result =
-                   either
-                     (Shared.ResultError . toCellError)
-                     (Shared.ResultOk . textDisplay)
-                     thing
-               , code
-               , name
-               , order
-               })
-          (unToposorted
-             (evalDocument (evalEnvironment loaded) (defaultDocument loaded)))))
+       (sortBy
+          (comparing (\Shared.OutputCell {order} -> order))
+          ((fmap
+              (\Named {uuid = Uuid uuid, name, thing, order, code} ->
+                 Shared.OutputCell
+                   { uuid = Shared.UUID uuid
+                   , result =
+                       either
+                         (Shared.ResultError . toCellError)
+                         (Shared.ResultOk . textDisplay)
+                         thing
+                   , code
+                   , name
+                   , order
+                   })
+              (unToposorted
+                 (evalDocument (evalEnvironment loaded) (defaultDocument loaded)))))))
   where
     loaded =
       loadDocument

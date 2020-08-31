@@ -23,7 +23,7 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
 import Inflex.Schema (DocumentId(..), InputCell(..), InputDocument(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, (/=), (<>), (==))
+import Prelude
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -116,7 +116,7 @@ eval =
                 { uuid: uuid
                 , name: ""
                 , code: ""
-                , order: fromMaybe 0 (maximum (map (\(OutputCell {order}) -> order) (s.cells)))
+                , order: fromMaybe 0 (maximum (map (\(OutputCell {order}) -> order) (s.cells))) + 1
                 }
             ] <>
             map toInputCell (s . cells)

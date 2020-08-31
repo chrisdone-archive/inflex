@@ -102,18 +102,14 @@ header.navbar {
     }
 
 .sidebar {
-    display: none;
-    height: 100%;
-    background: #285a84;
+    /* display: none; */
     margin :0;
-    height: 800px;
     border: 0;
 }
 .sidebar-button {
     border : none;
     border-left: 2px solid #e9eef2;
     margin-left: 0;
-    color: #e9eef2;
 }
 
 .cell {
@@ -129,7 +125,7 @@ header.navbar {
 
 .cell-header {border: none;margin: 0;padding: 0;/* border-top-left-radius: 3px; */}
 .cell-name {border: none;padding: 5px;margin-left: 0;margin: 0;font-family: sans-serif;}
-.delete-cell {border: none;display: none;}
+.delete-cell {border: none;}
 .cell-body {border: none;margin: 0;padding: 0;background: #f9f9fa;border-bottom-right-radius: 3px;border-bottom-left-radius: 3px;color: black;font-family: ubuntu,monospace;}
 
 .cell-body input {
