@@ -1,17 +1,19 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric, NamedFieldPuns, RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 
 -- | Shared data types.
 
 module Inflex.Schema where
 
-import Data.Aeson (FromJSON, Options, ToJSON, defaultOptions)
-import Data.Text (Text)
-import Data.Vector (Vector)
-import Database.Persist.TH
-import GHC.Generics
+import           Control.Applicative
+import           Data.Aeson (FromJSON(..), Options, ToJSON, defaultOptions, (.:), withObject)
+import           Data.Text (Text)
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
+import           Database.Persist.TH
+import           GHC.Generics
 
 --------------------------------------------------------------------------------
 -- Types
@@ -30,12 +32,16 @@ data OutputDocument = OutputDocument
   }
 
 data RefreshDocument = RefreshDocument
-  { document :: InputDocument
+  { document :: InputDocument1
   , documentId :: DocumentId
   }
 
 data InputDocument = InputDocument
   { cells :: Vector InputCell
+  }
+
+data InputDocument1 = InputDocument1
+  { cells :: Vector InputCell1
   }
 
 data OutputCell = OutputCell
@@ -46,11 +52,17 @@ data OutputCell = OutputCell
   , order :: Int
   }
 
-data InputCell = InputCell
+data InputCell1 = InputCell1
   { uuid :: UUID
   , name :: Text
   , code :: Text
   , order :: Int
+  }
+
+data InputCell = InputCell
+  { uuid :: UUID
+  , name :: Text
+  , code :: Text
   }
 
 data Result
@@ -105,6 +117,24 @@ deriving instance Show InputDocument
 instance ToJSON InputDocument
 instance FromJSON InputDocument
 
+deriving instance Generic InputDocument1
+deriving instance Show InputDocument1
+instance ToJSON InputDocument1
+instance FromJSON InputDocument1 where
+  parseJSON =
+    withObject
+      "InputDocument1"
+      (\o -> do
+         cells <- o .: "cells" <|> fmap migrateV1 (o .: "cells")
+         pure InputDocument1 {cells})
+    where migrateV1 :: Vector InputCell -> Vector InputCell1
+          migrateV1 = V.imap (\order InputCell{..} -> InputCell1 {order,  ..})
+
+deriving instance Generic InputCell1
+deriving instance Show InputCell1
+instance ToJSON InputCell1
+instance FromJSON InputCell1
+
 deriving instance Generic RefreshDocument
 deriving instance Show RefreshDocument
 instance ToJSON RefreshDocument
@@ -140,3 +170,6 @@ $(derivePersistFieldJSON "InputDocument")
 $(derivePersistFieldJSON "OutputDocument")
 $(derivePersistFieldJSON "InputCell")
 $(derivePersistFieldJSON "OutputCell")
+
+$(derivePersistFieldJSON "InputDocument1")
+$(derivePersistFieldJSON "InputCell1")

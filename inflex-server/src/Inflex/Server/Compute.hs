@@ -20,8 +20,8 @@ import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           RIO
 
-loadInputDocument :: Shared.InputDocument -> Shared.OutputDocument
-loadInputDocument (Shared.InputDocument {cells}) =
+loadInputDocument :: Shared.InputDocument1 -> Shared.OutputDocument
+loadInputDocument (Shared.InputDocument1 {cells}) =
   Shared.OutputDocument
     (V.fromList
        (fmap
@@ -43,7 +43,7 @@ loadInputDocument (Shared.InputDocument {cells}) =
     loaded =
       loadDocument
         (map
-           (\Shared.InputCell {uuid = Shared.UUID uuid, name, code, order} ->
+           (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
               Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
 

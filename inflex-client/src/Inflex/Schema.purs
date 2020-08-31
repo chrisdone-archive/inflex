@@ -39,12 +39,16 @@ data OutputDocument = OutputDocument
   }
 
 data RefreshDocument = RefreshDocument
-  { document :: InputDocument
+  { document :: InputDocument1
   , documentId :: DocumentId
   }
 
 data InputDocument = InputDocument
   { cells :: Vector InputCell
+  }
+
+data InputDocument1 = InputDocument1
+  { cells :: Vector InputCell1
   }
 
 data OutputCell = OutputCell
@@ -55,11 +59,17 @@ data OutputCell = OutputCell
   , order :: Int
   }
 
-data InputCell = InputCell
+data InputCell1 = InputCell1
   { uuid :: UUID
   , name :: Text
   , code :: Text
   , order :: Int
+  }
+
+data InputCell = InputCell
+  { uuid :: UUID
+  , name :: Text
+  , code :: Text
   }
 
 data Result

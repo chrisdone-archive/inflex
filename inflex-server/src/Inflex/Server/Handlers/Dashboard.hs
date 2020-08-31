@@ -93,14 +93,14 @@ postNewDocumentR =
     (\_ LoginState {loginAccountId} -> do
        slug <-
          runDB
-           (do now <- liftIO getCurrentTime
+           (do now' <- liftIO getCurrentTime
                key <-
                  insert
                    Document
                      { documentName = DocumentSlug mempty
-                     , documentContent = Shared.InputDocument {cells = mempty}
-                     , documentCreated = now
-                     , documentUpdated = now
+                     , documentContent = Shared.InputDocument1 {cells = mempty}
+                     , documentCreated = now'
+                     , documentUpdated = now'
                      , documentAccount = fromAccountID loginAccountId
                      }
                let slug =
