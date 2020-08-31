@@ -7,6 +7,8 @@ module Inflex.Components.Doc
 import Control.Monad.State (class MonadState)
 import Data.Array (filter)
 import Data.Either (Either(..))
+import Data.Foldable (maximum)
+import Data.Maybe (fromMaybe)
 import Data.Symbol (SProxy(..))
 import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect (Effect)
@@ -19,9 +21,9 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Schema (DocumentId(..), InputCell(..), InputDocument(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
-import Prelude
+import Inflex.Schema (DocumentId(..), InputCell(..), InputDocument(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, (/=), (<>), (==))
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -114,6 +116,7 @@ eval =
                 { uuid: uuid
                 , name: ""
                 , code: ""
+                , order: fromMaybe 0 (maximum (map (\(OutputCell {order}) -> order) (s.cells)))
                 }
             ] <>
             map toInputCell (s . cells)
@@ -124,12 +127,13 @@ eval =
       H.liftEffect (log "Cell updated, refreshing ...")
       refresh
         (map
-           (\original@(InputCell {uuid: uuid'}) ->
+           (\original@(InputCell {uuid: uuid', order}) ->
               if uuid' == uuid
                 then InputCell
                        { uuid
                        , code: cell . code
                        , name: cell . name
+                       , order
                        }
                 else original)
            (map toInputCell (state . cells)))
@@ -181,4 +185,4 @@ setOutputDocument (OutputDocument {cells}) =
   H.modify_ (\s -> s {cells = cells})
 
 toInputCell :: OutputCell -> InputCell
-toInputCell (OutputCell {uuid, name, code}) = InputCell {uuid, name, code}
+toInputCell (OutputCell {uuid, name, code, order}) = InputCell {uuid, name, code, order}

@@ -22,12 +22,14 @@ data OutputCell = OutputCell
   , name :: Text
   , code :: Text
   , result :: Result
+  , order :: Int
   }
 
 data InputCell = InputCell
   { uuid :: UUID
   , name :: Text
   , code :: Text
+  , order :: Int
   }
 
 data Result

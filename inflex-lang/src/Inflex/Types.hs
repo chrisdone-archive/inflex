@@ -48,6 +48,8 @@ data Let s = Let
 data Named a = Named
   { uuid :: Uuid
   , name :: Text
+  , order :: Int
+  , code :: Text
   , thing :: a
   } deriving (Show, Eq, Ord, Functor)
 

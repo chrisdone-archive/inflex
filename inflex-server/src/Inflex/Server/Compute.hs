@@ -25,24 +25,17 @@ loadInputDocument (Shared.InputDocument {cells}) =
   Shared.OutputDocument
     (V.fromList
        (fmap
-          (\Named {uuid = Uuid uuid, name, thing} ->
+          (\Named {uuid = Uuid uuid, name, thing, order, code} ->
              Shared.OutputCell
-               { code =
-                   fromMaybe -- TODO: Thread the code through the document?
-                     ""
-                     (listToMaybe
-                        (mapMaybe
-                           (\Shared.InputCell {uuid = uuid', code} -> do
-                              guard (Shared.UUID uuid == uuid')
-                              pure code)
-                           (toList cells)))
-               , uuid = Shared.UUID uuid
-               , name
+               { uuid = Shared.UUID uuid
                , result =
                    either
                      (Shared.ResultError . toCellError)
                      (Shared.ResultOk . textDisplay)
                      thing
+               , code
+               , name
+               , order
                })
           (unToposorted
              (evalDocument (evalEnvironment loaded) (defaultDocument loaded)))))
@@ -50,8 +43,8 @@ loadInputDocument (Shared.InputDocument {cells}) =
     loaded =
       loadDocument
         (map
-           (\Shared.InputCell {uuid = Shared.UUID uuid, name, code} ->
-              Named {uuid = Uuid uuid, name, thing = code})
+           (\Shared.InputCell {uuid = Shared.UUID uuid, name, code, order} ->
+              Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
 
 toCellError :: LoadError -> Shared.CellError
