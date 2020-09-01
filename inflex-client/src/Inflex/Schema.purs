@@ -124,6 +124,11 @@ instance showInputDocument :: Show InputDocument where show = genericShow
 instance decodeInputDocument :: Decode InputDocument where decode = genericDecode opts
 instance encodeInputDocument :: Encode InputDocument where encode = genericEncode opts
 
+derive instance genericInputDocument1 :: Generic InputDocument1 _
+instance showInputDocument1 :: Show InputDocument1 where show = genericShow
+instance decodeInputDocument1 :: Decode InputDocument1 where decode = genericDecode opts
+instance encodeInputDocument1 :: Encode InputDocument1 where encode = genericEncode opts
+
 derive instance genericRefreshDocument :: Generic RefreshDocument _
 instance showRefreshDocument :: Show RefreshDocument where show = genericShow
 instance decodeRefreshDocument :: Decode RefreshDocument where decode = genericDecode opts
@@ -138,6 +143,11 @@ derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow
 instance decodeInputCell :: Decode InputCell where decode = genericDecode opts
 instance encodeInputCell :: Encode InputCell where encode = genericEncode opts
+
+derive instance genericInputCell1 :: Generic InputCell1 _
+instance showInputCell1 :: Show InputCell1 where show = genericShow
+instance decodeInputCell1 :: Decode InputCell1 where decode = genericDecode opts
+instance encodeInputCell1 :: Encode InputCell1 where encode = genericEncode opts
 
 derive instance genericOutputCell :: Generic OutputCell _
 instance showOutputCell :: Show OutputCell where show = genericShow
