@@ -22,7 +22,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
-import Inflex.Schema (DocumentId(..), InputCell(..), InputDocument(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
+import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
 import Prelude
 
 --------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ eval =
       uuid <- H.liftEffect genUUIDV4
       s <- H.get
       let cells' =
-            [ InputCell
+            [ InputCell1
                 { uuid: uuid
                 , name: ""
                 , code: ""
@@ -127,9 +127,9 @@ eval =
       H.liftEffect (log "Cell updated, refreshing ...")
       refresh
         (map
-           (\original@(InputCell {uuid: uuid', order}) ->
+           (\original@(InputCell1 {uuid: uuid', order}) ->
               if uuid' == uuid
-                then InputCell
+                then InputCell1
                        { uuid
                        , code: cell . code
                        , name: cell . name
@@ -157,14 +157,14 @@ refresh :: forall t60 t74.
                                                    | t74
                                                    }
                                                    t60
-                                                  => Array InputCell -> t60 Unit
+                                                  => Array InputCell1 -> t60 Unit
 refresh cells = do
   documentId <- H.liftEffect getDocumentId
   result <-
     rpcRefreshDocument
       (RefreshDocument
          { documentId: DocumentId documentId
-         , document: InputDocument {cells: cells}
+         , document: InputDocument1 {cells: cells}
          })
   case result of
     Left err -> do
@@ -184,5 +184,5 @@ setOutputDocument :: forall t11 t14.
 setOutputDocument (OutputDocument {cells}) =
   H.modify_ (\s -> s {cells = cells})
 
-toInputCell :: OutputCell -> InputCell
-toInputCell (OutputCell {uuid, name, code, order}) = InputCell {uuid, name, code, order}
+toInputCell :: OutputCell -> InputCell1
+toInputCell (OutputCell {uuid, name, code, order}) = InputCell1 {uuid, name, code, order}
