@@ -2,10 +2,6 @@
 
 module Inflex.Schema where
 
-import Data.Generic.Rep.Show (genericShow)
-import Data.UUID (UUID)
-import Inflex.Json (opts)
-import Prelude (class Show, bind, discard, pure, show, ($), (<>))
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -13,13 +9,18 @@ import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (stringify) as J
 import Data.Argonaut.Parser (jsonParser) as J
 import Data.Either (Either(..))
-import Data.Generic.Rep
-import Halogen as H
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
+import Data.UUID (UUID)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log, error)
-import Foreign.Generic (class Decode, class Encode, genericDecode, genericDecodeJSON, genericEncode, genericEncodeJSON)
+import Foreign (F, Foreign, ForeignError(..), fail)
+import Foreign.Generic (class Decode, class Encode, genericDecode, genericDecodeJSON, genericEncode, genericEncodeJSON, decode, encode)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
+import Halogen as H
+import Inflex.Json (opts)
+import Prelude
 
 --------------------------------------------------------------------------------
 -- Types
@@ -142,3 +143,30 @@ rpcCall endpoint0 input =
                     error ("Failed to decode:" <> show e)
                     pure (Left (show e)))
   where endpoint = "/api/rpc/" <> endpoint0
+
+--------------------------------------------------------------------------------
+-- Version infra
+
+parseVersion :: forall v. Version v => Foreign -> F v
+parseVersion j = do
+  i <- decode j
+  if i == versionNumber (versionRefl :: v)
+    then pure (versionRefl :: v)
+    else fail
+           (TypeMismatch
+              ("Version" <> show (versionNumber (versionRefl :: v)))
+              ("Version" <> show i))
+
+versionToJSON :: forall v. Version v => v -> Foreign
+versionToJSON v = encode (versionNumber v)
+
+--------------------------------------------------------------------------------
+-- Versions
+
+instance versionVersion1 :: Version Version1 where
+  versionNumber _ = 1
+  versionRefl = Version1
+derive instance genericVersion1 :: Generic Version1 _
+instance showVersion1 :: Show Version1 where show = genericShow
+instance decodeVersion1 :: Decode Version1 where decode = parseVersion
+instance encodeVersion1 :: Encode Version1 where encode = versionToJSON

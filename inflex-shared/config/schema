@@ -1,3 +1,9 @@
+class Version v where
+  versionNumber :: v -> Int
+  versionRefl :: v
+
+data Version1 = Version1
+
 data None =
   None
 
@@ -30,6 +36,7 @@ data InputCell1 = InputCell1
   , name :: Text
   , code :: Text
   , order :: Int
+  , version :: Version1
   }
 
 data Result

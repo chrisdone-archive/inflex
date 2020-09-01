@@ -22,8 +22,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
-import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..))
-import Prelude
+import Inflex.Schema
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, (+), (/=), (<>), (==))
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -117,6 +117,7 @@ eval =
                 , name: ""
                 , code: ""
                 , order: fromMaybe 0 (maximum (map (\(OutputCell {order}) -> order) (s.cells))) + 1
+                , version: versionRefl
                 }
             ] <>
             map toInputCell (s . cells)
@@ -127,13 +128,14 @@ eval =
       H.liftEffect (log "Cell updated, refreshing ...")
       refresh
         (map
-           (\original@(InputCell1 {uuid: uuid', order}) ->
+           (\original@(InputCell1 {uuid: uuid', order, version}) ->
               if uuid' == uuid
                 then InputCell1
                        { uuid
                        , code: cell . code
                        , name: cell . name
                        , order
+                       , version
                        }
                 else original)
            (map toInputCell (state . cells)))
@@ -185,4 +187,5 @@ setOutputDocument (OutputDocument {cells}) =
   H.modify_ (\s -> s {cells = cells})
 
 toInputCell :: OutputCell -> InputCell1
-toInputCell (OutputCell {uuid, name, code, order}) = InputCell1 {uuid, name, code, order}
+toInputCell (OutputCell {uuid, name, code, order}) =
+  InputCell1 {uuid, name, code, order, version: versionRefl}
