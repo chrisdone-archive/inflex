@@ -60,6 +60,10 @@ instance FromJSON InputDocument
 deriving instance Generic InputDocument1
 deriving instance Show InputDocument1
 instance ToJSON InputDocument1
+-- TODO:
+-- This migrateV1 code is a nice idea, but it's not guaranteed because
+-- the tag is not paid attention to on a single-constructor type. We
+-- should force that, somehow.
 instance FromJSON InputDocument1 where
   parseJSON =
     withObject
