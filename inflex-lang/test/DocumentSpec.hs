@@ -29,7 +29,15 @@ errors = do
     (do u1 <- nextRandom'
         shouldBe
           (let loaded =
-                 loadDocument [Named {uuid = Uuid u1, name = "x", thing = "x"}]
+                 loadDocument
+                   [ Named
+                       { uuid = Uuid u1
+                       , name = "x"
+                       , thing = "x"
+                       , order = 0
+                       , code = "x"
+                       }
+                   ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted
              { unToposorted =
@@ -37,6 +45,8 @@ errors = do
                      { uuid = (Uuid u1)
                      , name = "x"
                      , thing = Left (CycleError ["x"])
+                     , order = 0
+                     , code = "x"
                      }
                  ]
              }))
@@ -45,7 +55,15 @@ errors = do
     (do u1 <- nextRandom'
         shouldBe
           (let loaded =
-                 loadDocument [Named {uuid = Uuid u1, name = "x", thing = "y"}]
+                 loadDocument
+                   [ Named
+                       { uuid = Uuid u1
+                       , name = "x"
+                       , thing = "y"
+                       , code = "y"
+                       , order = 0
+                       }
+                   ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted
              { unToposorted =
@@ -57,6 +75,8 @@ errors = do
                            (LoadGenerateError
                               (FillErrors
                                  (MissingGlobal (M.fromList []) "y" :| [])))
+                     , code = "y"
+                     , order = 0
                      }
                  ]
              }))
@@ -67,8 +87,20 @@ errors = do
         shouldBe
           (let loaded =
                  loadDocument
-                   [ Named {uuid = Uuid u1, name = "x", thing = "y y"}
-                   , Named {uuid = Uuid u2, name = "y", thing = "1"}
+                   [ Named
+                       { uuid = Uuid u1
+                       , name = "x"
+                       , thing = "y y"
+                       , code = "y y"
+                       , order = 0
+                       }
+                   , Named
+                       { uuid = Uuid u2
+                       , name = "y"
+                       , thing = "1"
+                       , code = "1"
+                       , order = 1
+                       }
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted
@@ -90,6 +122,8 @@ errors = do
                                              , name = IntegerTypeName
                                              })
                                     })))
+                     , order = 1
+                     , code = "1"
                      }
                  , Named
                      { uuid = (Uuid u1)
@@ -107,6 +141,8 @@ errors = do
                                        , kind = TypeKind
                                        }) :|
                                   [])))
+                     , order = 0
+                     , code = "y y"
                      }
                  ]
              }))
@@ -121,16 +157,36 @@ success = do
         shouldBe
           (let loaded =
                  loadDocument
-                   [ Named {uuid = Uuid u1, name = "x", thing = "y + 2"}
-                   , Named {uuid = Uuid u2, name = "y", thing = "z * 3.1"}
-                   , Named {uuid = Uuid u3, name = "z", thing = "2"}
+                   [ Named
+                       { uuid = Uuid u1
+                       , name = "x"
+                       , thing = "y + 2"
+                       , code = "y + 2"
+                       , order = 0
+                       }
+                   , Named
+                       { uuid = Uuid u2
+                       , name = "y"
+                       , thing = "z * 3.1"
+                       , code = "z * 3.1"
+                       , order = 1
+                       }
+                   , Named
+                       { uuid = Uuid u3
+                       , name = "z"
+                       , thing = "2"
+                       , code = "2"
+                       , order = 2
+                       }
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted
              { unToposorted =
                  [ Named
-                     { uuid = (Uuid u3)
+                     { uuid = Uuid u3
                      , name = "z"
+                     , order = 2
+                     , code = "2"
                      , thing =
                          Right
                            (LiteralExpression
@@ -147,8 +203,10 @@ success = do
                                     })))
                      }
                  , Named
-                     { uuid = (Uuid u2)
+                     { uuid = Uuid u2
                      , name = "y"
+                     , order = 1
+                     , code = "z * 3.1"
                      , thing =
                          Right
                            (LiteralExpression
@@ -167,8 +225,10 @@ success = do
                                     })))
                      }
                  , Named
-                     { uuid = (Uuid u1)
+                     { uuid = Uuid u1
                      , name = "x"
+                     , order = 0
+                     , code = "y + 2"
                      , thing =
                          Right
                            (LiteralExpression
@@ -197,9 +257,26 @@ success = do
           (let loaded =
                  loadDocument
                    [ Named
-                       {uuid = Uuid u1, name = "double", thing = "\\x -> x * 2"}
-                   , Named {uuid = Uuid u2, name = "a", thing = "double 1"}
-                   , Named {uuid = Uuid u3, name = "b", thing = "double 2.2"}
+                       { uuid = Uuid u1
+                       , name = "double"
+                       , thing = "\\x -> x * 2"
+                       , code = "\\x -> x * 2"
+                       , order = 0
+                       }
+                   , Named
+                       { uuid = Uuid u2
+                       , name = "a"
+                       , thing = "double 1"
+                       , code = "double 1"
+                       , order = 1
+                       }
+                   , Named
+                       { uuid = Uuid u3
+                       , name = "b"
+                       , thing = "double 2.2"
+                       , code = "double 2.2"
+                       , order = 2
+                       }
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted
@@ -207,6 +284,8 @@ success = do
                  [ Named
                      { uuid = (Uuid u1)
                      , name = "double"
+                     , code = "\\x -> x * 2"
+                     , order = 0
                      , thing =
                          Right
                            (LambdaExpression
@@ -577,6 +656,8 @@ success = do
                  , Named
                      { uuid = (Uuid u3)
                      , name = "b"
+                     , order = 2
+                     , code = "double 2.2"
                      , thing =
                          Right
                            (LiteralExpression
@@ -614,6 +695,8 @@ success = do
                  , Named
                      { uuid = (Uuid u2)
                      , name = "a"
+                     , order = 1
+                     , code = "double 1"
                      , thing =
                          Right
                            (LiteralExpression
