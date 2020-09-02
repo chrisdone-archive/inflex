@@ -122,7 +122,7 @@ tokensLexer =
     lowerWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)
-            cs <- Mega.takeWhileP Nothing isAlpha
+            cs <- Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
             let text = (c <> cs)
             case text of
               "let" -> pure LetToken
@@ -131,7 +131,7 @@ tokensLexer =
     upperWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isUpper)
-            cs <- Mega.takeWhileP Nothing isAlpha
+            cs <- Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
             pure (UpperWordToken (c <> cs)))
     integer =
       Mega.try
