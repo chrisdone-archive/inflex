@@ -4,10 +4,8 @@
 
 exports.clearDragImage = function(ev) {
   return function(){
-    var element = document.createElement('p');
-    document.body.appendChild(element);
-    // var img = new Image();
-    ev.dataTransfer.setDragImage(element, 0, 0);
+    var img = new Image();
+    ev.dataTransfer.setDragImage(img, 10, 10);
   }
 }
 

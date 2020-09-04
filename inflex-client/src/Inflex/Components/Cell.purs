@@ -187,7 +187,6 @@ render (State {cell: Cell {name, code, result}, display, pos}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
     , HP.draggable true
-
     , HE.onDragStart (Just <<< DragStarted)
     , HE.onMouseDown (Just <<< MouseDown)
     , HP.prop
