@@ -159,7 +159,6 @@ header.navbar {
   padding-top: 5px;
   padding-left: 5px;
   width: 100%;
-  background: red;
 }
 
 
