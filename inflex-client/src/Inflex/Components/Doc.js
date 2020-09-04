@@ -5,3 +5,7 @@
 exports.getDocumentId = function() {
   return window['inflexDocumentId'];
 }
+
+exports.dragEventToMouseEvent = function(e){
+  return e;
+}
