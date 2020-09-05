@@ -6,8 +6,6 @@
 module Inflex.Server.View.App where
 
 import Control.Monad.Reader
-import Data.FileEmbed
-import Data.FileEmbed.Stack
 import Inflex.Server.App
 import Inflex.Server.Types
 import Lucid
@@ -29,26 +27,29 @@ appTemplate state body = do
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
               link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
-        body_
-          [class_ "app"]
-          (do header_
-                [class_ "navbar"]
-                (do a_
-                      [href_ (url HomeR), class_ "nav-logo"]
-                      (toHtmlRaw
-                         $(wrapStackRoot "inflex-server/svg/inflex-logo.svg" >>=
-                           embedFile))
-                    div_
-                      [class_ "navbar-controls"]
-                      (case state of
-                         NoSessionState -> a_ [href_ (url LoginR)] "Login"
-                         Registered loginState -> do
-                           when
-                             False
-                             (do a_ [] (toHtml (loginUsername loginState))
-                                 " ")
-                           form_
-                             [action_ (url LogoutR), method_ "post"]
-                             (button_ [class_ "logout"] "Logout")
-                         Unregistered {} -> mempty))
-              body))
+        body_ [] body)
+
+-- div_
+--   [class_ "wrapper"]
+--   (do header_
+--         [class_ "navbar"]
+--         (do a_
+--               [href_ (url HomeR), class_ "nav-logo"]
+--               (toHtmlRaw
+--                  $(wrapStackRoot
+--                      "inflex-server/svg/inflex-logo.svg" >>=
+--                    embedFile))
+--             div_
+--               [class_ "navbar-controls"]
+--               (case state of
+--                  NoSessionState -> a_ [href_ (url LoginR)] "Login"
+--                  Registered loginState -> do
+--                    when
+--                      False
+--                      (do a_ [] (toHtml (loginUsername loginState))
+--                          " ")
+--                    form_
+--                      [action_ (url LogoutR), method_ "post"]
+--                      (button_ [class_ "logout"] "Logout")
+--                  Unregistered {} -> mempty))
+--       )

@@ -1,130 +1,68 @@
 /********************************************************************************
- * Navigation
+ * Body/wrapper
  */
 
-.logo-svg svg {
-  width: 100px;
-}
-
-/* .navbar-light .navbar-brand svg { */
-/*   path, ellipse { */
-/*     fill: #333 !important; */
-/*   } */
-/* } */
-
-/* .navbar-dark .navbar-brand svg { */
-/*   path, ellipse { */
-/*     fill: #eee !important; */
-/*   } */
-/* } */
-
-/********************************************************************************
- * Document
- */
-
-html, body {
+html, body, .wrapper {
   height: 100%;
 }
 body {
   overflow: hidden;
-}
-
-.document {
-  cursor: crosshair;
-}
-
-.declaration {
-  display: inline-block;
-}
-
-body {
-  background: #eceeef;
   margin: 0;
   padding: 0;
 }
 
+/********************************************************************************
+ * Wrapper
+ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/********************************************************************************
+ * Nav
+ */
+
 .navbar {
-  display: flex;
-  .nav-logo {
-    display: block;
-    padding: 5px;
-  }
-  .nav-logo svg {
-    height: 30px;
-  }
-  .navbar-controls {
-    order: 2;
-    margin-left: auto;
-    .logout {
-      background: inherit;
-    }
-  }
-}
-
-.ide {
-  display: flex;
-  height: 100%;
-  .sidebar {
-    width: 17eh;
-  }
-
-  .canvas {
-    position: relative;
-    overflow: visible;
-    height: 100%;
-  }
-  .cell {
-    .cell-header {
-      display: flex;
-    }
-    .error-message {
-      background: red;
-      color: white;
-    }
-  }
-}
-
-button { border: 0; }
-
-.cell-name, .delete-cell, .logout, .navbar, .sidebar, .sidebar-button, .cell, .cell-header, .cell-body {
-  border: 1px dashed #555;
-  margin: 5px;
-  padding: 5px;
-  background: inherit;
-}
-
-.logout, .delete-cell {
-  display: inline-block;
-}
-
-body.app {}
-
-header.navbar {
-  /* display: none; */
   background: #15263b;
-  border: 0;
-  margin: 0;
+  height: 50px;
+  display: flex;
+  justify-content: right;
+
+  .logo {
+    display: block;
+    background: url(@{LogoR}) no-repeat center;
+    height: 40px;
+    margin: 5px;
+    width: 100px;
+  }
+  .rhs-nav {
+    margin-left: auto;
+  }
 }
 
-.logout {
-  display:none
+/********************************************************************************
+ * Canvas
+ */
+
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background: #eceeef;
+  padding-top: 5px;
+  padding-left: 5px;
 }
 
-.sidebar {
-  /* display: none; */
-  margin :0;
-  border: 0;
-}
-.sidebar-button {
-  border : none;
-  border-left: 2px solid #e9eef2;
-  margin-left: 0;
-}
+/********************************************************************************
+ * Cells
+ */
 
 .cell-wrapper {
   display: inline-block;
   -khtml-user-drag: element;
-
   .cell {
     display: inline-block;
     background: #e9eef2;
@@ -134,35 +72,49 @@ header.navbar {
     padding: 0;
     color: #374048;
   }
-}
+  .cell-header {
+    display: flex;
+  }
+  .error-message {
+    background: red;
+    color: white;
+  }
+  .cell-header {
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+  .cell-name {
+    border: none;
+    padding: 5px;
+    margin-left: 0;
+    margin: 0;
+    font-family: sans-serif;
+  }
+  .delete-cell {
+    border: none;
+  }
+  .cell-body {
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: #f9f9fa;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    color: black;
+    font-family: ubuntu,monospace;
 
-.cell-header {border: none;margin: 0;padding: 0;/* border-top-left-radius: 3px; */}
-.cell-name {border: none;padding: 5px;margin-left: 0;margin: 0;font-family: sans-serif;}
-.delete-cell {border: none;}
-.cell-body {border: none;margin: 0;padding: 0;background: #f9f9fa;border-bottom-right-radius: 3px;border-bottom-left-radius: 3px;color: black;font-family: ubuntu,monospace;}
-
-.cell-body input {
-  background: #f9f9fa;
-  border: 0px;
-  outline: none;
-  width: 100%;
-  height: 1.5em;
-  border-bottom-right-radius: 3px;
-  border-bottom-left-radius: 3px;
-}
-.cell-body input:focus {
-  border: 1px solid #6a8daa;
-}
-
-.canvas {
-  background: #eceeef;
-  padding-top: 5px;
-  padding-left: 5px;
-  width: 100%;
-}
-
-
-
-.cell-body > div {
-  padding: 5px;
+  }
+  .cell-body input {
+    background: #f9f9fa;
+    border: 0px;
+    outline: none;
+    width: 100%;
+    height: 1.5em;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+  }
+  .cell-body input:focus {
+    border: 1px solid #6a8daa;
+  }
 }

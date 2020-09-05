@@ -30,13 +30,11 @@ module Inflex.Server.Handlers.Document where
 
 import           Control.Monad.Reader
 import           Data.Aeson
-import           Data.Text (Text)
 import           Database.Persist.Sql
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.App
-import qualified Inflex.Schema as Shared
 import           Lucid
 import           Sendfile
 import           Shakespearean
@@ -62,17 +60,21 @@ getAppEditorR slug =
        htmlWithUrl
          (appTemplate
             (Registered state)
-            ((do url <- ask
-                 script_
-                   [type_ "text/javascript"]
-                   (do toHtmlRaw "window['inflexDocumentId'] = "
-                       toHtmlRaw (encode documentId)
-                       ";")
-                 script_ [type_ "text/javascript", src_ (url AppJsR)] ""))))
-
+            (do url <- ask
+                script_
+                  [type_ "text/javascript"]
+                  (do toHtmlRaw "window['inflexMetadata'] = "
+                      toHtmlRaw
+                        (encode
+                           (object
+                              ["documentId" .= documentId, "logout" .= url LogoutR])))
+                script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
+
+getLogoR :: Handler TypedContent
+getLogoR = $(sendFileFrom "image/svg+xml" "inflex-server/svg/inflex-logo.svg")
 
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")

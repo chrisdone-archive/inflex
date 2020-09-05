@@ -2,9 +2,7 @@
 
 // module Inflex.Doc
 
-exports.getDocumentId = function() {
-  return window['inflexDocumentId'];
-}
+exports.meta = window['inflexMetadata'];
 
 exports.dragEventToMouseEvent = function(e){
   return e;

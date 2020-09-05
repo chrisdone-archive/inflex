@@ -8,12 +8,10 @@ import Control.Monad.State (class MonadState)
 import Data.Array (filter)
 import Data.Either (Either(..))
 import Data.Foldable (maximum)
-import Data.Maybe
-import Data.Maybe (fromMaybe)
-import Data.MediaType
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.MediaType (MediaType(..))
 import Data.Symbol (SProxy(..))
 import Data.UUID (UUID, genUUIDV4, uuidToString)
-import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
@@ -24,17 +22,17 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
-import Inflex.Schema
-import Prelude
-import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
-import Web.HTML.Event.DataTransfer as DT
+import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
+import Web.Event.Event (preventDefault)
+
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
 --------------------------------------------------------------------------------
 -- Foreign
 
-foreign import getDocumentId :: Effect Int
+foreign import meta :: { documentId :: Int, logout :: String }
 
 foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
 
@@ -75,19 +73,29 @@ component =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall q state keys m. MonadEffect m =>
+render :: forall state keys m. MonadEffect m =>
    { cells :: Array OutputCell | state }
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot Cell.Query Cell.Output String | keys) m Command) Command
 render state =
   HH.div
-    [HP.class_ (HH.ClassName "ide")]
+    [HP.class_ (HH.ClassName "wrapper")]
     [ HH.div
-        [HP.class_ (HH.ClassName "sidebar")]
-        [ HH.button
-            [ HP.class_ (HH.ClassName "sidebar-button")
-            , HE.onClick (\e -> pure NewCell)
+        [HP.class_ (HH.ClassName "navbar")]
+        [ HH.div [HP.class_ (HH.ClassName "logo")] []
+        , HH.div
+            [HP.class_ (HH.ClassName "rhs-nav")]
+            [ HH.button
+                [ HP.class_ (HH.ClassName "new-cell")
+                , HE.onClick (\e -> pure NewCell)
+                ]
+                [HH.text "New Cell"]
+            , HH.form
+                [HP.action (meta . logout), HP.method HP.POST]
+                [ HH.button
+                    [HP.class_ (HH.ClassName "logout")]
+                    [HH.text "Logout"]
+                ]
             ]
-            [HH.text "New Cell"]
         ]
     , HH.div
         [ HP.class_ (HH.ClassName "canvas")
@@ -113,6 +121,7 @@ render state =
 --------------------------------------------------------------------------------
 -- Eval
 
+mediaType :: MediaType
 mediaType = (MediaType "text/plain")
 
 
@@ -152,9 +161,8 @@ eval =
               (Cell.SetXY {x, y})
           pure unit
     Initialize -> do
-      documentId <- H.liftEffect getDocumentId
       log "Loading document ..."
-      result <- rpcLoadDocument (DocumentId documentId)
+      result <- rpcLoadDocument (DocumentId (meta.documentId))
       case result of
         Left err -> do
           error err -- TODO:Display this to the user properly.
@@ -198,7 +206,6 @@ eval =
     DeleteCell uuid -> do
       state <- H.get
       H.liftEffect (log "Cell deleted, refreshing ...")
-      documentId <- H.liftEffect getDocumentId
       refresh
         (map
            toInputCell
@@ -217,11 +224,10 @@ refresh :: forall t60 t74.
                                                    t60
                                                   => Array InputCell1 -> t60 Unit
 refresh cells = do
-  documentId <- H.liftEffect getDocumentId
   result <-
     rpcRefreshDocument
       (RefreshDocument
-         { documentId: DocumentId documentId
+         { documentId: DocumentId (meta.documentId)
          , document: InputDocument1 {cells: cells}
          })
   case result of
