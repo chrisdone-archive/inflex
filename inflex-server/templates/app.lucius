@@ -52,6 +52,10 @@ body {
       background: #15263b;
       color: #fff;
     }
+    .full-button:hover {
+      background: #224064;
+      cursor: pointer;
+    }
   }
 }
 
