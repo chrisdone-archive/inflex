@@ -85,14 +85,14 @@ render state =
         , HH.div
             [HP.class_ (HH.ClassName "rhs-nav")]
             [ HH.button
-                [ HP.class_ (HH.ClassName "new-cell")
+                [ HP.class_ (HH.ClassName "new-cell full-button")
                 , HE.onClick (\e -> pure NewCell)
                 ]
                 [HH.text "New Cell"]
             , HH.form
                 [HP.action (meta . logout), HP.method HP.POST]
                 [ HH.button
-                    [HP.class_ (HH.ClassName "logout")]
+                    [HP.class_ (HH.ClassName "logout full-button")]
                     [HH.text "Logout"]
                 ]
             ]
