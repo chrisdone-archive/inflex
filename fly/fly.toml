@@ -1,0 +1,19 @@
+# fly.toml file generated for lbtest on 2020-07-31T16:52:32+01:00
+
+app = "inflex-dev"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [services.concurrency]
+    hard_limit = 1
+    soft_limit = 1
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = "443"
+
+  [[services.tcp_checks]]
+    interval = 10000
+    timeout = 2000
