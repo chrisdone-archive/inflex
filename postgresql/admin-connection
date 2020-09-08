@@ -1,0 +1,3 @@
+echo enter password
+read password
+psql "host=prod-inflex-db.postgres.database.azure.com port=5432 dbname=postgres user=proddbadmin@prod-inflex-db password=$password sslmode=require"
