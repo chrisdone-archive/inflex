@@ -5,7 +5,7 @@ metadata:
   labels:
     app: inflex-server
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: inflex-server
@@ -14,60 +14,36 @@ spec:
       labels:
         app: inflex-server
     spec:
+      volumes:
+      - name: config-yml
+        secret:
+          secretName: inflex-server-config
       imagePullSecrets:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        image: registry.gitlab.com/sky-above/inflex:pipeline-135004786
-        command:
-          - inflex-server
+        image: "registry.gitlab.com/sky-above/inflex/prod@sha256:3728cf2b7110619cda58dc0f19fb95d736350a17b681df7c621f2c889109ae4c"
         env:
           - name: PORT
             value: "80"
+          - name: CONFIG
+            value: "/etc/inflex/config.yml"
         imagePullPolicy: Always
+        volumeMounts:
+        - name: config-yml
+          mountPath: "/etc/inflex/"
+          readOnly: true
         readinessProbe:
           httpGet:
-            path: "/health"
+            path: "/"
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
         livenessProbe:
           httpGet:
-            path: "/health"
+            path: "/"
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 15
         ports:
           - containerPort: 80
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: london-lb15
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-name: "london-lb15"
-    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "ac5300c5-cb18-4699-8bf1-df91d8dd98ba"
-    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
-    service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https: "true"
-    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
-    service.beta.kubernetes.io/do-loadbalancer-hostname: "inflex.io"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
-    service.beta.kubernetes.io/do-loadbalancer-algorithm: "least_connections"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "8"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "6"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
-spec:
-  type: LoadBalancer
-  selector:
-    app: inflex-server
-  externalTrafficPolicy: Local
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: https
-      protocol: TCP
-      port: 443
-      targetPort: 80

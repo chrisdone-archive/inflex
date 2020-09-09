@@ -2,4 +2,4 @@ stripeConfig:
   publishableApiKey: ""
   planId: ""
   secretApiKey: ""
-databaseConn: "/tmp/inflex/debug.sqlite3"
+databaseConn: ":memory:"
