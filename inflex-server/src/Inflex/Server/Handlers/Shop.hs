@@ -61,7 +61,9 @@ getHomeR = do
                 (do url <- ask
                     case state of
                       NoSessionState {} -> do
-                        p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+                        if False
+                          then p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+                          else p_ "You need to register."
                       Unregistered {} ->
                         p_
                           (a_
