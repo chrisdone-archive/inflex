@@ -21,6 +21,7 @@ spec :: Spec
 spec = do
   describe "Errors" errors
   describe "Success" success
+  describe "Regression tests" regression
 
 errors :: SpecWith ()
 errors = do
@@ -718,3 +719,31 @@ success = do
 
 nextRandom' :: IO Text
 nextRandom' = fmap UUID.toText nextRandom
+
+regression :: Spec
+regression = do error_while_evaluating_with_annotation
+
+error_while_evaluating_with_annotation :: SpecWith ()
+error_while_evaluating_with_annotation =
+  it
+    "Error while evaluating with annotation"
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
+        let _loaded =
+              loadDocument
+                [ Named
+                    { uuid = Uuid u1
+                    , name = "x"
+                    , thing = "193 :: Decimal 2"
+                    , code = "193 :: Decimal 2"
+                    , order = 0
+                    }
+                , Named
+                    { uuid = Uuid u2
+                    , name = "z"
+                    , thing = "x+2"
+                    , code = "x+2"
+                    , order = 1
+                    }
+                ]
+        pendingWith "Need to fix the evaluator") -- TODO: Fix this!
