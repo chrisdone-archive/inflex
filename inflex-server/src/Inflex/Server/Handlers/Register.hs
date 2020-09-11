@@ -56,7 +56,7 @@ registerRedirect state =
         (shopTemplate
            (Unregistered state)
            (containedColumn_
-              (do url <- ask
+              (do _url <- ask
                   h1_
                     (do "Wrong page!"
                         noscript_ (code_ (toHtml (show state))))
@@ -151,7 +151,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             , cancelUrl = render CheckoutCancelR
             , customerEmail = unEmail (registerEmail registrationDetails)
             , trialFromPlan = True
-            , clientReferenceId = UUID.toText (unSessionUUID (sessionUuid session))
+            , clientReferenceId = maybe "" (UUID.toText . unNonceUUID) (sessionNonce session)
             }
       case result of
         Left err -> error (show err) -- TODO: handle this properly.

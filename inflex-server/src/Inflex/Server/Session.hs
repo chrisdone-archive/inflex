@@ -83,8 +83,8 @@ querySession sessionUuid = do
       pure ok
 
 queryNonceSession :: NonceUUID -> YesodDB App (Maybe (Entity Session))
-queryNonceSession sessionUuid = do
-  result <- try (selectFirst [SessionNonce ==. Just sessionUuid] [])
+queryNonceSession nonce = do
+  result <- try (selectFirst [SessionNonce ==. Just nonce] [])
   case result of
     Left (_ :: PersistException) -> pure Nothing
     Right ok -> do
