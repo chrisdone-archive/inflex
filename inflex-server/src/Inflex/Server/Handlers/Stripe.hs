@@ -6,6 +6,7 @@
 
 module Inflex.Server.Handlers.Stripe where
 
+import           Control.Monad
 import           Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import           Data.Text (Text)
@@ -37,16 +38,19 @@ instance FromJSON Event where
       (\o -> do
          typ <- o .: "type"
          case typ of
-           "checkout.session.completed" -> withObject "data" (withObject "object" (\o' -> do
-               clientReferenceId <-
-                 do client_reference_id :: Text <-
-                      o' .: "client_reference_id"
-                    case UUID.fromText client_reference_id of
-                      Nothing ->
-                        fail
-                          ("invalid session UUID in client_reference_id: " <>
-                           show client_reference_id)
-                      Just uuid -> pure (SessionUUID uuid)
-               customerRef <- o' .: "customer"
-               pure (CheckoutSessionCompleted clientReferenceId customerRef)) . Object) (Object o)
+           "checkout.session.completed" -> do
+             clientReferenceId <-
+               do client_reference_id :: Text <-
+                    ((.: "data") >=>
+                     (.: "object") >=> (.: "client_reference_id"))
+                      o
+                  case UUID.fromText client_reference_id of
+                    Nothing ->
+                      fail
+                        ("invalid session UUID in client_reference_id: " <>
+                         show client_reference_id)
+                    Just uuid -> pure (SessionUUID uuid)
+             customerRef <-
+               ((.: "data") >=> (.: "object") >=> (.: "customer")) o
+             pure (CheckoutSessionCompleted clientReferenceId customerRef)
            _ -> pure (UnknownEvent typ o))
