@@ -117,14 +117,9 @@ handleEnterDetailsR = withRegistrationState _EnterDetails go
                 (updateSession
                    sessionId
                    (Unregistered
-                      ((if False -- TODO: FIXME
-                          then CreateCheckout
-                          else CheckoutSucceeded)
+                      (CreateCheckout
                          registrationDetails)))
-              if False -- TODO: FIXME:
-                 then redirect CheckoutCreateR
-                 else redirect CheckoutSuccessR
-
+              redirect CheckoutCreateR
 
 registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =
