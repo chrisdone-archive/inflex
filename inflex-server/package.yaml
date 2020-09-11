@@ -103,10 +103,8 @@ library:
   - condition: flag(release)
     then:
       source-dirs: src/release
-      ghc-options: -O2
     else:
       source-dirs: src/debug
-      ghc-options: -O0
   - condition: flag(postgresql)
     then:
       source-dirs: src/postgresql

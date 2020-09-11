@@ -3,7 +3,7 @@ allow-newer: true
 ghc-options:
   purescript: '-j4 -O2'
   psc-package: '-j4 -O2'
-  inflex-server: '-j4 -dppr-user-length=0 -dppr-cols=10000'
+  inflex-server: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
   inflex-client: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
   inflex-engine: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
   inflex-lang: '-j4 -O0 -dppr-user-length=0 -dppr-cols=10000'
