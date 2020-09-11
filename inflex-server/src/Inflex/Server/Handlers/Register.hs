@@ -205,7 +205,9 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
               (do refresh_ 5
                   h1_ "Waiting for Stripe"
                   p_ "We're waiting for the Stripe payment service to tell us whether payment succeeded..."
-                  spinner_)))
+                  spinner_
+                  url <- ask
+                  p_ (a_ [href_ (url CheckoutCancelR)] "Cancel"))))
 
 --------------------------------------------------------------------------------
 -- Checkout cancel page
