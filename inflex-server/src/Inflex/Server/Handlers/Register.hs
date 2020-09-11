@@ -151,8 +151,6 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
       render <- getUrlRender
       Config {stripeConfig} <- fmap appConfig getYesod
       -- TODO: Set sessionId from _sessionId
-      -- TODO: https://stripe.com/docs/payments/checkout/subscriptions/starting#prefilling-customer-data
-      -- TODO: Set Trial flag https://stripe.com/docs/payments/checkout/subscriptions/starting#handling-checkout-trials
       result <-
         createSession
           StripeSession
@@ -163,7 +161,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             , trialFromPlan = True
             }
       case result of
-        Left err -> error (show err) -- TODO:
+        Left err -> error (show err) -- TODO: handle this properly.
         Right CreateSessionResponse {checkoutSessionId} -> do
           runDB
             (updateSession
@@ -174,18 +172,17 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
                state
                (containedColumn_
                 (do script_ [src_ "https://js.stripe.com/v3/"] ("" :: Text)
-                    h1_ "Redirecting you to Stripe"
+                    h1_ "Redirecting you to secure payment"
                     noscript_
                       "Please enable JavaScript so that we can securely send you to Stripe."
                     p_ "Redirecting you to Stripe ..."
                     spinner_
-                    if False -- TODO: Remove or make debug/release.
-                      then redirect_ 3 CheckoutWaitingR
-                      else julius_
-                             (stripeJavaScript
-                                (publishableApiKey stripeConfig)
-                                checkoutSessionId))))
+                    julius_
+                      (stripeJavaScript
+                         (publishableApiKey stripeConfig)
+                         checkoutSessionId))))
 
+-- TODO: display error messsage to the user (see JS comment below).
 stripeJavaScript :: PublishableApiKey -> CheckoutSessionId -> JavascriptUrl (Route App)
 stripeJavaScript stripePublishableKey checkoutSessionId = [julius|
 var stripe = Stripe(#{stripePublishableKey});
@@ -195,7 +192,7 @@ stripe.redirectToCheckout({
 }).then(function (result) {
   // If `redirectToCheckout` fails due to a browser or network
   // error, display the localized error message to your customer
-  // using `result.error.message`. -- TODO: display this to the user.
+  // using `result.error.message`.
   console.log(result);
 });
 }, 1000);
