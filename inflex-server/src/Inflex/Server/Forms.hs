@@ -22,6 +22,7 @@
 
 module Inflex.Server.Forms where
 
+import           Data.Functor
 import qualified Forge.Internal.Types as Forge
 import           Inflex.Server.App
 import           Inflex.Server.Forge
@@ -62,18 +63,20 @@ instance ShowError LoginError where
 
 registerForm :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails
 registerForm mregistrationDetails = do
-  registerUsername <-
-    formGroup
-      "Username"
-      (Forge.ParseForm
-         parseUniqueUsername
-         (Forge.MapErrorForm
-            RegisterError
-            (Forge.FieldForm
-               (Forge.StaticFieldName "username")
-               Forge.RequiredField
-               (fmap registerUsername mregistrationDetails)
-               UsernameField)))
+  _registerUsername <-
+    if False
+       then void (formGroup
+               "Username"
+               (Forge.ParseForm
+                  parseUniqueUsername
+                  (Forge.MapErrorForm
+                     RegisterError
+                     (Forge.FieldForm
+                        (Forge.StaticFieldName "username")
+                        Forge.RequiredField
+                        Forge.noDefault
+                        UsernameField))))
+       else pure ()
   registerEmail <-
     formGroup
       "Email"
@@ -125,7 +128,7 @@ loginForm =
 
 parseUniqueUsername :: Username -> YesodDB App (Either RegisterError Username)
 parseUniqueUsername username = do
-  result <- selectFirst [AccountUsername ==. username] []
+  result <- selectFirst [AccountUsername ==. Just username] []
   case result of
     Nothing -> pure (pure username)
     Just {} -> pure (Left UsernameTaken)

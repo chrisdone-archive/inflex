@@ -132,7 +132,7 @@ instance ToJSON SessionState
 
 data LoginState = LoginState
   { loginEmail :: Email
-  , loginUsername :: Username
+  , loginUsername :: Maybe Username
   , loginAccountId :: AccountID
   }deriving (Show, Generic)
 instance FromJSON LoginState
@@ -146,7 +146,6 @@ instance ToJSON AccountID
 data RegistrationDetails = RegistrationDetails
   { registerEmail :: !Email
   , registerPassword :: !Password
-  , registerUsername :: !Username
   } deriving (Show, Generic)
 instance FromJSON RegistrationDetails
 instance ToJSON RegistrationDetails

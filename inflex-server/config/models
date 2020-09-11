@@ -1,10 +1,9 @@
 Account
-  username Username
+  username Username Maybe
   email Email
   password Password -- TODO: use hash with salt
   -- TODO: customerId CustomerId
-  UniqueUsername username
-  UniqueEmail username
+  UniqueEmailAddress email
   deriving Show
 
 Session

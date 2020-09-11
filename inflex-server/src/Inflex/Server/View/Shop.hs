@@ -29,11 +29,7 @@ shopTemplate state body = do
                 , content_
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
-              link_
-                [ rel_ "icon"
-                , type_ "image/png"
-                , href_ (url FaviconR)
-                ]
+              link_ [rel_ "icon", type_ "image/png", href_ (url FaviconR)]
               link_
                 [ rel_ "stylesheet noreferer"
                 , type_ "text/css"
@@ -59,11 +55,7 @@ shopTemplate state body = do
                       [class_ "navbar-nav ml-md-auto"]
                       (case state of
                          NoSessionState -> a_ [href_ (url LoginR)] "Login"
-                         Registered loginState -> do
-                           when
-                             False
-                             (do a_ [] (toHtml (loginUsername loginState))
-                                 " ")
+                         Registered _loginState -> do
                            form_
                              [action_ (url LogoutR), method_ "post"]
                              (button_ [class_ "btn-primary btn"] "Logout")

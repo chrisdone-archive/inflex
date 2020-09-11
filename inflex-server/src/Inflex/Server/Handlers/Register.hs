@@ -253,7 +253,7 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
           (do entity <-
                 insertBy
                   Account
-                    { accountUsername = registerUsername
+                    { accountUsername = Nothing
                     , accountPassword = registerPassword
                     , accountEmail = registerEmail
                     }
@@ -262,7 +262,7 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
                 (Registered
                    LoginState
                      { loginEmail = registerEmail
-                     , loginUsername = registerUsername
+                     , loginUsername = Nothing
                      , loginAccountId =
                          fromAccountId (either entityKey id entity)
                      }))
