@@ -229,9 +229,9 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 --------------------------------------------------------------------------------
 -- Checkout success page
 
-getCheckoutSessionCompletedR :: SessionUUID -> CustomerId -> HandlerFor App ()
-getCheckoutSessionCompletedR sessionUUID customerId = do
-  msession <- runDB (querySession sessionUUID)
+getCheckoutSessionCompletedR :: NonceUUID -> CustomerId -> HandlerFor App ()
+getCheckoutSessionCompletedR nonceUUID customerId = do
+  msession <- runDB (queryNonceSession nonceUUID)
   case msession of
     Nothing -> error "Invalid session -- do not retry."
     Just (Entity sessionId Session {sessionState}) ->
@@ -243,7 +243,8 @@ getCheckoutSessionCompletedR sessionUUID customerId = do
             WaitingForStripe RegistrationDetails {..} ->
               void
                 (runDB
-                   (do entity <-
+                   (do resetSessionNonce sessionId
+                       entity <-
                          insertBy
                            Account
                              { accountUsername = Nothing

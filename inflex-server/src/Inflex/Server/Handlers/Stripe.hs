@@ -17,7 +17,7 @@ import           Inflex.Server.Types
 import           Yesod
 
 data Event
-  = CheckoutSessionCompleted SessionUUID CustomerId
+  = CheckoutSessionCompleted NonceUUID CustomerId
   | UnknownEvent Text Object
    deriving (Show)
 
@@ -28,8 +28,8 @@ postStripeR = do
   liftIO (S8.putStrLn (S8.pack (show event)))
   case event of
     UnknownEvent {} -> pure ()
-    CheckoutSessionCompleted sessionUUID customerId ->
-      getCheckoutSessionCompletedR sessionUUID customerId
+    CheckoutSessionCompleted nonce customerId ->
+      getCheckoutSessionCompletedR nonce customerId
 
 instance FromJSON Event where
   parseJSON =
@@ -49,7 +49,7 @@ instance FromJSON Event where
                       fail
                         ("invalid session UUID in client_reference_id: " <>
                          show client_reference_id)
-                    Just uuid -> pure (SessionUUID uuid)
+                    Just uuid -> pure (NonceUUID uuid)
              customerRef <-
                ((.: "data") >=> (.: "object") >=> (.: "customer")) o
              pure (CheckoutSessionCompleted clientReferenceId customerRef)

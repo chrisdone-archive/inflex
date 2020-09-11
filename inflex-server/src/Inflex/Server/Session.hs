@@ -13,7 +13,8 @@ module Inflex.Server.Session
   , deleteSession
   , assumeSession
   , withLogin
-  , querySession
+  , queryNonceSession
+  , resetSessionNonce
   ) where
 
 import           RIO (try)
@@ -51,6 +52,10 @@ updateSession :: SessionId -> SessionState -> YesodDB App ()
 updateSession sessionId state =
   update sessionId [SessionState =. state]
 
+resetSessionNonce :: SessionId -> YesodDB App ()
+resetSessionNonce sessionId  =
+  update sessionId [SessionNonce =. Nothing]
+
 requireSession :: Route App -> Handler (Entity Session)
 requireSession route = do
   result <- lookupSession
@@ -77,13 +82,28 @@ querySession sessionUuid = do
       liftIO (print ok)
       pure ok
 
+queryNonceSession :: NonceUUID -> YesodDB App (Maybe (Entity Session))
+queryNonceSession sessionUuid = do
+  result <- try (selectFirst [SessionNonce ==. Just sessionUuid] [])
+  case result of
+    Left (_ :: PersistException) -> pure Nothing
+    Right ok -> do
+      liftIO (print ok)
+      pure ok
+
 generateSession :: SessionState -> YesodDB App (Entity Session)
 generateSession sessionState = loop
   where
     loop = do
       uuid <- liftIO UUID.nextRandom
+      nonce <- liftIO UUID.nextRandom
       let sessionUuid = SessionUUID uuid
-          session = Session {sessionUuid, sessionState = sessionState}
+          session =
+            Session
+              { sessionUuid
+              , sessionState = sessionState
+              , sessionNonce = Just (NonceUUID nonce)
+              }
       result <- insertUnique session
       case result of
         Nothing -> loop

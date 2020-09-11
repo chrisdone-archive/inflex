@@ -9,6 +9,7 @@ Account
 Session
   uuid SessionUUID
   state SessionState
+  nonce NonceUUID Maybe
   UniqueUUID uuid
   deriving Show
 

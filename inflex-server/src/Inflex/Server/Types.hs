@@ -115,6 +115,9 @@ newtype Email = Email
 newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
   deriving (Show, PersistField, PersistFieldSql)
 
+newtype NonceUUID = NonceUUID {unNonceUUID :: UUID}
+  deriving (Show, PersistField, PersistFieldSql)
+
 newtype CustomerId = CustomerId {unCustomerId :: Text}
   deriving (Show, PersistField, PersistFieldSql, FromJSON)
 
