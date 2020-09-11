@@ -143,7 +143,7 @@ parseUniqueEmail email = do
 parseValidLogin :: (Email, Password) -> YesodDB App (Either LoginError (Entity Account))
 parseValidLogin (email, password) = do
   maccount <-
-    selectFirst [AccountEmail ==. email, AccountPassword ==. password] []
+    selectFirst [AccountEmail ==. email, AccountPassword ==. sha256Password password] []
   case maccount of
     Nothing -> pure (Left InvalidLogin) -- TODO: Update max attempts for this IP and per hour.
     Just entity -> pure (Right entity)

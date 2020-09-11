@@ -13,6 +13,7 @@ module Inflex.Server.Session
   , deleteSession
   , assumeSession
   , withLogin
+  , querySession
   ) where
 
 import           RIO (try)

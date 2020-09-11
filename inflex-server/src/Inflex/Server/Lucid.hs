@@ -16,6 +16,11 @@ redirect_ i route =
      meta_ [httpEquiv_ "refresh", content_ (fromString (show i) <> ";url=" <> url route)]
      pure ()
 
+refresh_ :: Int -> Lucid App ()
+refresh_ i = do
+  meta_ [httpEquiv_ "refresh", content_ (fromString (show i))]
+  pure ()
+
 spinner_ :: Lucid App ()
 spinner_ =
   div_

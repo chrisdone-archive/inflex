@@ -17,8 +17,8 @@ module Inflex.Server.Handlers.Register
   ( handleEnterDetailsR
   , getCheckoutCreateR
   , getCheckoutCancelR
-  , getCheckoutSuccessR
   , getCheckoutWaitingR
+  , getCheckoutSessionCompletedR
   ) where
 
 import           Control.Monad.Reader
@@ -50,7 +50,6 @@ registerRedirect state =
     CreateCheckout {} -> redirect' CheckoutCreateR
     EnterDetails {} -> redirect' EnterDetailsR
     WaitingForStripe {} -> redirect' CheckoutWaitingR
-    CheckoutSucceeded {} -> redirect' CheckoutSuccessR
   where
     redirect' route =
       htmlWithUrl -- TODO: Fix the below for real-world use.
@@ -58,14 +57,11 @@ registerRedirect state =
            (Unregistered state)
            (containedColumn_
               (do url <- ask
-                  p_
-                    (do "Wrong state constructor: "
-                        code_ (toHtml (show state)))
-                  p_
-                    (a_
-                       [href_ (url route)]
-                       (do "Redirect to "
-                           toHtml (url route))))))
+                  h1_
+                    (do "Wrong page!"
+                        noscript_ (code_ (toHtml (show state))))
+                  p_ "Taking you to the right one ..."
+                  redirect_ 2 route)))
 
 withRegistrationState ::
      Prism' RegistrationState a
@@ -85,9 +81,9 @@ withRegistrationState theCons cont = do
             (shopTemplate
                state
                (containedColumn_
-                  (do h1_ "Already registered!"
+                  (do h1_ "Registered!"
                       p_
-                        "You are already registered! Taking you to the dashboard..."
+                        "You are registered! Taking you to the dashboard..."
                       spinner_
                       redirect_ 2 AppDashboardR)))
         NoSessionState {} -> do
@@ -201,16 +197,12 @@ stripe.redirectToCheckout({
 getCheckoutWaitingR :: Handler (Html ())
 getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
   where
-    go state sessionId registrationDetails = do
-      runDB -- TODO: Actually check Stripe confirmation.
-        (updateSession
-           sessionId
-           (Unregistered (CheckoutSucceeded registrationDetails)))
+    go state _sessionId _registrationDetails = do
       htmlWithUrl
         (shopTemplate
-           state -- TODO: Only redirect on stripe confirmation.
+           state
            (containedColumn_
-              (do redirect_ 5 CheckoutSuccessR
+              (do refresh_ 5
                   h1_ "Waiting for Stripe"
                   p_ "We're waiting for the Stripe payment service to tell us whether payment succeeded..."
                   spinner_)))
@@ -237,35 +229,38 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
 --------------------------------------------------------------------------------
 -- Checkout success page
 
-getCheckoutSuccessR :: Handler (Html ())
-getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
-  where
-    go state sessionId RegistrationDetails {..} = do
-      _ <-
-        runDB
-              -- TODO: This check needs to happen sooner rather than later.
-          (do entity <-
-                insertBy
-                  Account
-                    { accountUsername = Nothing
-                    , accountPassword = sha256Password registerPassword
-                    , accountEmail = registerEmail
-                    }
-              updateSession
-                sessionId
-                (Registered
-                   LoginState
-                     { loginEmail = registerEmail
-                     , loginUsername = Nothing
-                     , loginAccountId =
-                         fromAccountId (either entityKey id entity)
-                     }))
-      htmlWithUrl
-        (shopTemplate
-           state
-           (containedColumn_
-            (do h1_ "Checkout succeeded!"
-                p_ "Great success!"
-                p_ "Going to the dashboard..."
-                spinner_
-                redirect_ 2 AppDashboardR)))
+getCheckoutSessionCompletedR :: SessionUUID -> CustomerId -> HandlerFor App ()
+getCheckoutSessionCompletedR sessionUUID customerId = do
+  msession <- runDB (querySession sessionUUID)
+  case msession of
+    Nothing -> error "Invalid session -- do not retry."
+    Just (Entity sessionId Session {sessionState}) ->
+      case sessionState of
+        NoSessionState {} -> error "Session has no state -- do not retry."
+        Registered {} -> error "Already registered. Bug?"
+        Unregistered unregisteredState ->
+          case unregisteredState of
+            WaitingForStripe RegistrationDetails {..} ->
+              void
+                (runDB
+                   (do entity <-
+                         insertBy
+                           Account
+                             { accountUsername = Nothing
+                             , accountPassword = sha256Password registerPassword
+                             , accountEmail = registerEmail
+                             , accountCustomerId = customerId
+                             }
+                       updateSession
+                         sessionId
+                         (Registered
+                            LoginState
+                              { loginEmail = registerEmail
+                              , loginUsername = Nothing
+                              , loginAccountId =
+                                  fromAccountId (either entityKey id entity)
+                              })))
+            _ ->
+              error
+                ("Not expecting stripe at this point: " <>
+                 show unregisteredState)

@@ -115,6 +115,9 @@ newtype Email = Email
 newtype SessionUUID = SessionUUID {unSessionUUID :: UUID}
   deriving (Show, PersistField, PersistFieldSql)
 
+newtype CustomerId = CustomerId {unCustomerId :: Text}
+  deriving (Show, PersistField, PersistFieldSql, FromJSON)
+
 data DecIn = DecIn
   { name :: Text
   , rhs :: Text
@@ -158,7 +161,6 @@ data RegistrationState
   = EnterDetails (Maybe RegistrationDetails)
   | CreateCheckout RegistrationDetails
   | WaitingForStripe RegistrationDetails
-  | CheckoutSucceeded RegistrationDetails
   deriving (Show, Generic)
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState
