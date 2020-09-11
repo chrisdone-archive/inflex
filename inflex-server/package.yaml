@@ -75,6 +75,7 @@ dependencies:
 - base16-bytestring
 - th-orphans
 - cryptonite
+- string-quote
 
 flags:
  release:

@@ -23,11 +23,9 @@ module Inflex.Server.Types where
 import           Control.Monad
 import           Data.Char
 import           Data.Int
-import           Data.Map.Strict (Map)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
-import           Data.Vector (Vector)
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
@@ -91,8 +89,12 @@ parsePassword txt =
     then pure (Password (txt))
     else Nothing
 
-sha256Password :: Password -> Sha256
-sha256Password (Password t) = sha256Text t
+sha256Password :: Salt -> Password -> Sha256
+sha256Password (Salt s) (Password t) = sha256Text (s <> t)
+
+newtype Salt =
+  Salt Text
+  deriving (Eq, Ord, PersistFieldSql, PersistField, Show)
 
 instance PersistFieldSql UUID where
   sqlType _ = SqlString
@@ -167,47 +169,6 @@ data RegistrationState
   deriving (Show, Generic)
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState
-
-
-data Editor
-  = IntegerE Integer
-  | ArrayE (Vector Editor)
-  | RowE (Map Text Editor)
-  | ConsE Text Editor
-  -- | RationalE Rational
-  -- | TextE Text
-  -- | RecordE (HashMap Text Editor)
-  -- | TableE (Vector Text) (Vector (HashMap Text Editor))
-  | MiscE Text
-  deriving (Show)
-instance ToJSON Editor where
-  toJSON =
-    \case
-      IntegerE integer ->
-        object ["type" .= "integer", "integer" .= T.pack (show integer)]
-      ArrayE es -> object ["type" .= "array", "array" .= toJSON es]
-      RowE es -> object ["type" .= "row", "row" .= toJSON es]
-      MiscE t -> object ["type" .= "misc", "misc" .= t]
-      ConsE name t -> object ["type" .= "cons", "slot" .= t, "name" .= name]
-
-data DecOut = DecOut
-  { name :: Text
-  , rhs :: Text
-  , result :: Either Text Editor
-  } deriving (Show)
-instance ToJSON DecOut where
-  toJSON DecOut {name, rhs, result} =
-    object
-      [ "name" .= name
-      , "rhs" .= rhs
-      , "result" .=
-        case result of
-          Left {} -> "error" :: Text
-          Right {} -> "success"
-      , case result of
-          Left e -> "error" .= e
-          Right d -> "editor" .= d
-      ]
 
 $(makePrisms ''RegistrationState)
 $(makePrisms ''SessionState)

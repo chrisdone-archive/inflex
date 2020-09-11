@@ -2,15 +2,14 @@ Account
   username Username Maybe
   email Email
   password Sha256
+  salt Salt
   customerId CustomerId
-  UniqueEmailAddress email
   deriving Show
 
 Session
   uuid SessionUUID
   state SessionState
   nonce NonceUUID Maybe
-  UniqueUUID uuid
   deriving Show
 
 Document
@@ -19,5 +18,4 @@ Document
   content Shared.InputDocument1
   created UTCTime
   updated UTCTime
-  UniqueAccountDocument account name
   deriving Show

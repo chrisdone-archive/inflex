@@ -11,5 +11,4 @@ import           Database.Persist.Sqlite as X
 
 withBackendPool string = withSqlitePool (T.decodeUtf8 string)
 
-manualMigration :: Applicative f => f ()
-manualMigration = pure ()
+manualMigration = runMigration

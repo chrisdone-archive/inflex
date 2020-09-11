@@ -139,6 +139,13 @@ packages:
       sha256: 4b4b230d2e61aae0c265d315de99a4f88a04b1b35eb9fd94749802a46b77bf08
   original:
     url: https://github.com/chrisdone/safe-decimal/archive/7d12d7b326d7ca544306e2b3244b5e3bfd9b856b.tar.gz
+- completed:
+    hackage: string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
+    pantry-tree:
+      size: 273
+      sha256: d291028785ad39f8d05cde91594f6b313e35ff76af66c0452ab599b1f1f59e5f
+  original:
+    hackage: string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
 snapshots:
 - completed:
     size: 524154

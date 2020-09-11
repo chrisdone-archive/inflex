@@ -24,6 +24,7 @@ module Inflex.Server.Handlers.Register
 import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as UUID
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
@@ -246,11 +247,13 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
               void
                 (runDB
                    (do resetSessionNonce sessionId
-                       entity <-
-                         insertBy
+                       salt <- fmap (Salt . UUID.toText) (liftIO UUID.nextRandom)
+                       key <-
+                         insert
                            Account
                              { accountUsername = Nothing
-                             , accountPassword = sha256Password registerPassword
+                             , accountPassword = sha256Password salt registerPassword
+                             , accountSalt = salt
                              , accountEmail = registerEmail
                              , accountCustomerId = customerId
                              }
@@ -261,7 +264,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                               { loginEmail = registerEmail
                               , loginUsername = Nothing
                               , loginAccountId =
-                                  fromAccountId (either entityKey id entity)
+                                  fromAccountId key
                               })))
             _ ->
               error

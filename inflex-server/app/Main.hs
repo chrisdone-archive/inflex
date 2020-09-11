@@ -28,14 +28,14 @@ main = do
   fp <- getEnv "CONFIG"
   config <- decodeFileEither fp >>= either throwIO return
   port <- fmap read (getEnv "PORT")
-  withDBPool config
+  withDBPool
+    config
     (\pool -> do
        withResource
          pool
          (runReaderT
-            (do runMigration migrateAll
-                manualMigration))
-       app <- liftIO (toWaiApp {-Plain-} App {appPool = pool, appConfig = config})
+            (manualMigration migrateAll))
+       app <- liftIO (toWaiApp App {appPool = pool, appConfig = config}) {-Plain-}
        -- Not important for local dev, but will be important when deploying online.
        -- TODO: Middleware for password-protecting the site
        --    <https://hackage.haskell.org/package/wai-extra-3.0.29.1/docs/Network-Wai-Middleware-HttpAuth.html>
