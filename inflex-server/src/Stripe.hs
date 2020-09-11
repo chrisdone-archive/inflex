@@ -47,6 +47,7 @@ data StripeSession = StripeSession
   , cancelUrl :: Text
   , customerEmail :: Text
   , trialFromPlan :: Bool
+  , clientReferenceId :: Text
   }
 
 newtype CheckoutSessionId = CheckoutSessionId
@@ -81,6 +82,7 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
                             , cancelUrl
                             , customerEmail
                             , trialFromPlan
+                            , clientReferenceId
                             } = do
   request <-
     fmap hydrate (parseRequest "https://api.stripe.com/v1/checkout/sessions")
@@ -102,4 +104,5 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
           , if trialFromPlan
               then "true"
               else "false")
+        , ("client_reference_id", T.encodeUtf8 clientReferenceId)
         ]

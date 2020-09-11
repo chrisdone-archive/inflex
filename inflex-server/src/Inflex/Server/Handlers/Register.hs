@@ -23,12 +23,13 @@ module Inflex.Server.Handlers.Register
 
 import           Control.Monad.Reader
 import           Data.Text (Text)
+import qualified Data.UUID as UUID
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
-import           Inflex.Server.Lucid
 import           Inflex.Server.App
 import           Inflex.Server.Forms
+import           Inflex.Server.Lucid
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
@@ -143,9 +144,9 @@ getCheckoutCreateR :: Handler (Html ())
 getCheckoutCreateR = withRegistrationState _CreateCheckout go
   where
     go state sessionId registrationDetails = do
+      session <- runDB (get404 sessionId)
       render <- getUrlRender
       Config {stripeConfig} <- fmap appConfig getYesod
-      -- TODO: Set sessionId from _sessionId
       result <-
         createSession
           StripeSession
@@ -154,6 +155,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             , cancelUrl = render CheckoutCancelR
             , customerEmail = unEmail (registerEmail registrationDetails)
             , trialFromPlan = True
+            , clientReferenceId = UUID.toText (unSessionUUID (sessionUuid session))
             }
       case result of
         Left err -> error (show err) -- TODO: handle this properly.
