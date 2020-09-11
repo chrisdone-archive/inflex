@@ -72,10 +72,10 @@ dependencies:
 - inflex-lang
 
 flags:
- debug:
+ release:
    manual: True
    default: False
- sqlite:
+ postgresql:
    manual: True
    default: False
 
@@ -94,16 +94,18 @@ library:
     - Inflex.Server.App
     - Inflex.Server.Dispatch
   when:
-  - condition: flag(debug)
+  - condition: flag(release)
     then:
-      source-dirs: src/debug
-    else:
       source-dirs: src/release
-  - condition: flag(sqlite)
-    then:
-      source-dirs: src/sqlite
+      ghc-options: -O2
     else:
+      source-dirs: src/debug
+      ghc-options: -O0
+  - condition: flag(postgresql)
+    then:
       source-dirs: src/postgresql
+    else:
+      source-dirs: src/sqlite
 
 executables:
   inflex-server:
