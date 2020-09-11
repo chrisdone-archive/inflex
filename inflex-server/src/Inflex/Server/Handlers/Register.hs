@@ -248,7 +248,7 @@ getCheckoutSuccessR = withRegistrationState _CheckoutSucceeded go
                 insertBy
                   Account
                     { accountUsername = Nothing
-                    , accountPassword = registerPassword
+                    , accountPassword = sha256Password registerPassword
                     , accountEmail = registerEmail
                     }
               updateSession

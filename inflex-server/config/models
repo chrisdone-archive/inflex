@@ -1,8 +1,7 @@
 Account
   username Username Maybe
   email Email
-  password Password -- TODO: use hash with salt
-  -- TODO: customerId CustomerId
+  password Sha256
   UniqueEmailAddress email
   deriving Show
 

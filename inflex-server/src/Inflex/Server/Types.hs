@@ -31,6 +31,7 @@ import           Data.Vector (Vector)
 import           Database.Persist
 import           Database.Persist.Sql
 import           GHC.Generics
+import           Inflex.Server.Types.Sha256
 import           Lucid
 import           Optics.TH
 import           Stripe
@@ -87,8 +88,11 @@ parsePassword :: Text -> Maybe Password
 parsePassword txt =
   -- TODO: Add more restrictions?
   if T.length txt >= 16
-    then pure (Password txt)
+    then pure (Password (txt))
     else Nothing
+
+sha256Password :: Password -> Sha256
+sha256Password (Password t) = sha256Text t
 
 instance PersistFieldSql UUID where
   sqlType _ = SqlString

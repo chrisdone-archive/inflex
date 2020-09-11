@@ -31,9 +31,10 @@ import           Database.Persist.Quasi
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
+import qualified Inflex.Schema as Shared
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
-import qualified Inflex.Schema as Shared
+import           Inflex.Server.Types.Sha256
 import           Yesod hiding (Html, Field)
 import           Yesod.Lucid
 

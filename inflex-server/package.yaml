@@ -70,6 +70,11 @@ dependencies:
 - persistent
 - inflex-shared
 - inflex-lang
+- attoparsec
+- memory
+- base16-bytestring
+- th-orphans
+- cryptonite
 
 flags:
  release:
