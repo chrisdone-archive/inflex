@@ -28,24 +28,26 @@ module Inflex.Server.Handlers.Document where
 --   , getViewDocumentR
 --   ) where
 
-import           Control.Monad.Reader
-import           Data.Aeson
-import           Database.Persist.Sql
-import           Inflex.Server.App
-import           Inflex.Server.Session
-import           Inflex.Server.Types
-import           Inflex.Server.View.App
-import           Lucid
-import           Sendfile
-import           Shakespearean
-import           Text.Lucius
-import           Yesod hiding (Html)
-import           Yesod.Lucid
+import Control.Monad.Reader
+import Data.Aeson
+import Database.Persist.Sql
+import GA
+import Inflex.Server.App
+import Inflex.Server.Session
+import Inflex.Server.Types
+import Inflex.Server.View.App
+import Lucid
+import Sendfile
+import Shakespearean
+import Text.Lucius
+import Yesod hiding (Html)
+import Yesod.Lucid
 
 getAppEditorR :: DocumentSlug -> Handler (Html ())
 getAppEditorR slug =
   withLogin
     (\_ state@(LoginState {loginAccountId}) -> do
+       submitGA
        documentId <-
          do mdoc <-
               runDB

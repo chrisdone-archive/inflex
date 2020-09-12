@@ -28,6 +28,7 @@ import qualified Data.UUID.V4 as UUID
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
+import           GA
 import           Inflex.Server.App
 import           Inflex.Server.Forms
 import           Inflex.Server.Lucid
@@ -69,6 +70,7 @@ withRegistrationState ::
   -> (SessionState -> SessionId -> a -> Handler (Html ()))
   -> Handler (Html ())
 withRegistrationState theCons cont = do
+  submitGA
   session <- assumeSession registerStart
   case session of
     (Entity sessionId Session {sessionState = state}) ->

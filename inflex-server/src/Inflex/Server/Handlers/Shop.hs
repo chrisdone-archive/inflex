@@ -28,15 +28,16 @@ module Inflex.Server.Handlers.Shop
   , getFaviconR
   ) where
 
-import           Sendfile
 import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           GA
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
+import           Sendfile
 import           Shakespearean
 import           Text.Lucius
 import           Yesod hiding (Html, Field, lookupSession)
@@ -49,6 +50,7 @@ getHomeR :: Handler (Html ())
 getHomeR = do
   msession <- lookupSession
   let state = maybe NoSessionState (sessionState . entityVal) msession
+  submitGA
   htmlWithUrl
     (shopTemplate
        state

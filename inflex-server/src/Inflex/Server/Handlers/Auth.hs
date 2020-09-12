@@ -8,9 +8,10 @@ module Inflex.Server.Handlers.Auth where
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
+import           GA
 import           Inflex.Server.App
-import           Inflex.Server.Lucid
 import           Inflex.Server.Forms
+import           Inflex.Server.Lucid
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
@@ -21,6 +22,7 @@ import           Yesod.Lucid
 
 handleLoginR :: Handler (Html ())
 handleLoginR = do
+  submitGA
   session <- assumeSession NoSessionState
   let state = sessionState (entityVal session)
       sessionId = entityKey session
@@ -60,6 +62,7 @@ loginView state formView =
 
 postLogoutR :: Handler ()
 postLogoutR = do
+  submitGA
   session <- lookupSession
   case session of
     Just (Entity sessionId Session {sessionState = Registered {}}) ->

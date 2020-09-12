@@ -9,26 +9,28 @@ module Inflex.Server.Handlers.Dashboard
   , postNewDocumentR
   ) where
 
-import Control.Monad.Reader
-import Data.Foldable
-import Data.String
-import Data.Time
-import Database.Persist.Sql
-import Formatting
-import Formatting.Time
-import Inflex.Server.App
-import Inflex.Server.Session
-import Inflex.Server.Types
-import Inflex.Server.View.Shop
+import           Control.Monad.Reader
+import           Data.Foldable
+import           Data.String
+import           Data.Time
+import           Database.Persist.Sql
+import           Formatting
+import           Formatting.Time
+import           GA
 import qualified Inflex.Schema as Shared
-import Lucid
-import Yesod hiding (Html, toHtml)
-import Yesod.Lucid
+import           Inflex.Server.App
+import           Inflex.Server.Session
+import           Inflex.Server.Types
+import           Inflex.Server.View.Shop
+import           Lucid
+import           Yesod hiding (Html, toHtml)
+import           Yesod.Lucid
 
 getAppDashboardR :: Handler (Html ())
 getAppDashboardR =
   withLogin
     (\_ state@LoginState {loginAccountId} -> do
+       submitGA
        documents <-
          runDB
            (selectList
@@ -91,6 +93,7 @@ postNewDocumentR :: Handler ()
 postNewDocumentR =
   withLogin
     (\_ LoginState {loginAccountId} -> do
+       submitGA
        slug <-
          runDB
            (do now' <- liftIO getCurrentTime

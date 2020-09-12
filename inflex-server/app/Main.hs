@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Main (main) where
 
+import           Control.Concurrent
 import           Control.Exception
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
@@ -35,7 +36,8 @@ main = do
          pool
          (runReaderT
             (manualMigration migrateAll))
-       app <- liftIO (toWaiApp App {appPool = pool, appConfig = config}) {-Plain-}
+       lock <- liftIO (newMVar ())
+       app <- liftIO (toWaiApp App {appPool = pool, appConfig = config, appGALock = lock}) {-Plain-}
        -- Not important for local dev, but will be important when deploying online.
        -- TODO: Middleware for password-protecting the site
        --    <https://hackage.haskell.org/package/wai-extra-3.0.29.1/docs/Network-Wai-Middleware-HttpAuth.html>

@@ -15,6 +15,10 @@ spec:
     http:
       paths:
       - backend:
+          serviceName: lbtest
+          servicePort: 80
+        path: /lbtest
+      - backend:
           serviceName: inflex-server
           servicePort: 80
         path: /

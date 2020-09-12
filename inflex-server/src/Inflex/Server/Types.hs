@@ -38,8 +38,15 @@ import           Yesod hiding (Html)
 data Config = Config
   { stripeConfig :: StripeConfig
   , databaseConn :: Text
+  , gaUa :: GA_UA
   } deriving (Generic)
 instance FromJSON Config
+
+newtype GA_UA = GA_UA { unGA_UA :: Text }
+  deriving (Show, FromJSON)
+
+newtype GA_UID = GA_UID { unGA_UID :: Sha256 }
+  deriving (Show)
 
 -- | TODO: Implement manual PathPiece
 -- | TODO: Stricter FromJSON
