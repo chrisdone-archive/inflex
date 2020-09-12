@@ -24,7 +24,8 @@ spec:
       - name: inflex-server
         # image: "registry.gitlab.com/sky-above/inflex/prod@sha256:3728cf2b7110619cda58dc0f19fb95d736350a17b681df7c621f2c889109ae4c"
         # image: "registry.gitlab.com/sky-above/inflex/prod@sha256:0ce6effd74c36a87b16f98f7d810a11068755fda22ae0418c4aaa53568e33ee1"
-        image: "registry.gitlab.com/sky-above/inflex/prod@sha256:5ff10ab38961fec5a0720ec11a870886f38988e2c74df1b5b5bd1b9c19b1bbcc"
+        # image: "registry.gitlab.com/sky-above/inflex/prod@sha256:5ff10ab38961fec5a0720ec11a870886f38988e2c74df1b5b5bd1b9c19b1bbcc"
+        image: "registry.gitlab.com/sky-above/inflex/prod@sha256:37baae6d481e0e38a37fabf9bc80bd46d86095813ce9a2b363d2b25ce57d6741"
         env:
           - name: PORT
             value: "80"

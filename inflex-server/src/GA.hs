@@ -25,6 +25,7 @@ import           Yesod
 -- | Submit the current page to GA.
 submitGA :: Handler ()
 submitGA = do
+  liftIO (S8.putStrLn "Should GA")
   mroute <- getCurrentRoute
   lock <- fmap appGALock getYesod
   Config{gaUa} <- fmap appConfig getYesod
@@ -37,11 +38,12 @@ send uid gaUa route = flip withMVar (const (sendIt uid gaUa route))
 
 sendIt :: GA_UID ->  GA_UA -> Route App -> IO ()
 sendIt uid gaUa route = do
+  S8.putStrLn "Queue to send GA."
   case renderRouteForGA route of
     Just rendered -> do
       request <- fmap hydrate (parseRequest endpoint)
       _response <- httpNoBody request
-      S8.putStrLn "Send GA."
+      S8.putStrLn "Sent GA!"
       pure ()
       where hydrate =
               setRequestMethod "POST" .
