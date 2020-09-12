@@ -29,7 +29,7 @@ shopTemplate state body = do
                 [ async_ ""
                 , defer_ ""
                 , makeAttribute "data-domain" "inflex.io"
-                , src_ "https://plausible.io/js/plausible.js"
+                , src_ "https://plausible.inflex.io/js/index.js"
                 ]
                 ("" :: Text)
               meta_ [name_ "charset", content_ "utf-8"]
