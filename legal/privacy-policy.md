@@ -96,8 +96,8 @@ experience or improve our products and services. However, if we
 combine or connect Aggregated Data with your personal data so that it
 can directly or indirectly identify you, we treat the combined data as
 personal data which will be used in accordance with this privacy
-policy. That Aggregated Data (non-personal) will be shared with Google
-Analytics or other analytics third parties.
+policy. That Aggregated Data (non-personal) will be shared with
+analytics third parties.
 
 We do not collect any special categories of personal data about you
 (this includes details about your race or ethnicity, religious or
