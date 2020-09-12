@@ -11,6 +11,7 @@
 module GA (submitGA) where
 
 import           Control.Concurrent
+import           Control.Monad
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -26,16 +27,16 @@ import           Yesod
 
 -- | Submit the current page to GA.
 submitGA :: Handler ()
-submitGA = do
-  liftIO (S8.putStrLn "Should GA")
-  mroute <- getCurrentRoute
-  lock <- fmap appGALock getYesod
-  Config{gaUa} <- fmap appConfig getYesod
-  uid <- makeGaUid
-  ip <- lookupHeader "x-real-ip"
-  mua <- lookupHeader "user-agent"
-  mref <- lookupHeader "referer"
-  maybe (pure ()) (liftIO . void . forkIO . flip (send mref mua ip uid gaUa) lock) mroute
+submitGA = when False (do
+   liftIO (S8.putStrLn "Should GA")
+   mroute <- getCurrentRoute
+   lock <- fmap appGALock getYesod
+   Config{gaUa} <- fmap appConfig getYesod
+   uid <- makeGaUid
+   ip <- lookupHeader "x-real-ip"
+   mua <- lookupHeader "user-agent"
+   mref <- lookupHeader "referer"
+   maybe (pure ()) (liftIO . void . forkIO . flip (send mref mua ip uid gaUa) lock) mroute)
 
 -- | Send to GA.
 send :: Maybe ByteString -> Maybe ByteString ->  Maybe ByteString ->   GA_UID -> GA_UA -> Route App -> MVar () -> IO ()
