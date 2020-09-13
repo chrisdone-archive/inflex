@@ -18,7 +18,7 @@ patch:
   script:
     - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
     - IMAGE="${CI_REGISTRY_IMAGE}/patch:${CI_PIPELINE_ID}"
-    - docker image build . -f sky-above/inflex/patch.Dockerfile -t "$IMAGE"
+    - docker image build . -f docker/sky-above/inflex/patch.Dockerfile -t "$IMAGE"
     - docker push "$IMAGE"
 
 # stages:
