@@ -19,3 +19,9 @@ RUN stack build \
     --flag inflex-server:release \
     --copy-bins \
     --local-bin-path=/bin/
+
+FROM registry.gitlab.com/sky-above/inflex/runtime:2020-09-13
+
+COPY --from=0 /bin/inflex-server /bin/inflex-server
+
+CMD ["/bin/inflex-server"]

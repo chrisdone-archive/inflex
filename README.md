@@ -10,3 +10,7 @@ docker image build docker -f docker/sky-above/inflex/base.Dockerfile -t registry
 ```
 
 Gitlab builds the rest (patch, release, etc.).
+
+```
+docker push registry.gitlab.com/sky-above/inflex/runtime:2020-09-13
+```
