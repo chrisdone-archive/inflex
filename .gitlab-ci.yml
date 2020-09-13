@@ -16,7 +16,6 @@ patch:
   services:
     - docker:dind
   script:
-    - sed -i.bak "s/git@gitlab.com:/https:\/\/gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com\//" stack.yaml
     - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
     - IMAGE="${CI_REGISTRY_IMAGE}/patch:${CI_PIPELINE_ID}"
     - docker image build . -f sky-above/inflex/patch.Dockerfile -t "$IMAGE"
