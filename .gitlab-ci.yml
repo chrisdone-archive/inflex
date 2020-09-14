@@ -3,6 +3,7 @@ variables:
 
 stages:
   - build
+  - deploy
 
 workflow:
   rules:
@@ -33,3 +34,12 @@ prod:
     - IMAGE="${CI_REGISTRY_IMAGE}/prod:${CI_PIPELINE_ID}"
     - docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
     - docker push "$IMAGE"
+
+deploy-prod:
+  stage: deploy
+  image: docker:stable
+  services:
+    - docker:dind
+  when: manual
+  script:
+    - az login --service-principal --username "$AZ_SP_ID" --password "$AZ_SP_SECRET" --tenant "$AZ_TENANT_ID"
