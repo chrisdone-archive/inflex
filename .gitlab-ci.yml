@@ -2,6 +2,7 @@ variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
 
 stages:
+  - env
   - build
   - deploy
 
@@ -11,7 +12,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH == 'master'      # Execute jobs when a new commit is pushed to master branch
 
 patch:
-  stage: build
+  stage: env
   image: docker:stable
   when: manual
   services:
