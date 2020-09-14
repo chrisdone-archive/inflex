@@ -41,6 +41,4 @@ deploy-prod:
   image: "remmeier/azure-cli-kubectl@sha256:c3fd038e755c995249585d9bfda963f99931a5693c6679dd834d8ddd9921683e"
   when: manual
   script:
-    - az -v
-    - kubectl -v
     - az login --service-principal --username "$AZ_SP_ID" --password "$AZ_SP_SECRET" --tenant "$AZ_TENANT_ID"
