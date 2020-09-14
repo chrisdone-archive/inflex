@@ -42,3 +42,5 @@ deploy-prod:
   when: manual
   script:
     - az login --service-principal --username "$AZ_SP_ID" --password "$AZ_SP_SECRET" --tenant "$AZ_TENANT_ID"
+    - az aks get-credentials --resource-group inflex-prod --name prod-inflex-k8s
+    - kubectl apply -f kube/inflex-server.yaml --namespace ingress-basic
