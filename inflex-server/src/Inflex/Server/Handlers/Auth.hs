@@ -22,28 +22,23 @@ import           Yesod.Lucid
 
 handleLoginR :: Handler (Html ())
 handleLoginR = do
-  submitGA
-  session <- assumeSession NoSessionState
-  let state = sessionState (entityVal session)
-      sessionId = entityKey session
   submission <- generateForm verifiedLoginForm
   case submission of
-    NotSubmitted v -> htmlWithUrl (loginView state v)
+    NotSubmitted v -> htmlWithUrl (loginView NoSessionState v)
     Submitted parse -> do
       Forge.Generated {generatedView = v, generatedValue = generatedResult} <-
         runDB parse
       case generatedResult of
-        Failure _errors -> htmlWithUrl (loginView state v)
+        Failure _errors -> htmlWithUrl (loginView NoSessionState v)
         Success (Entity key account) -> do
-          runDB
-            (updateSession
-               sessionId
-               (Registered
-                  LoginState
-                    { loginEmail = accountEmail account
-                    , loginUsername = accountUsername account
-                    , loginAccountId = fromAccountId key
-                    }))
+          _ <-
+            assumeSession
+              (Registered
+                 LoginState
+                   { loginEmail = accountEmail account
+                   , loginUsername = accountUsername account
+                   , loginAccountId = fromAccountId key
+                   })
           redirect AppDashboardR
 
 verifiedLoginForm :: VerifiedForm LoginError (Entity Account)
