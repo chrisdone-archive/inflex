@@ -64,7 +64,9 @@ requireSession route = do
     Just session -> pure session
 
 deleteSession :: SessionId -> YesodDB App ()
-deleteSession = delete
+deleteSession sid = do
+  delete sid
+  addHeader "Set-Cookie" ("SESSION_UUID=; Path=/; Max-Age=-1")
 
 lookupSession :: Handler (Maybe (Entity Session))
 lookupSession = do
