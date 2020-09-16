@@ -25,6 +25,7 @@
 -- App
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
+/dashboard/del/#DocumentId DeleteDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
 /app/js AppJsR GET
 /app/css AppCssR GET

@@ -7,10 +7,10 @@ module Inflex.Server.Handlers.Dashboard
   ( postAppDashboardR
   , getAppDashboardR
   , postNewDocumentR
+  , postDeleteDocumentR
   ) where
 
 import           Control.Monad.Reader
-import           Data.Foldable
 import           Data.String
 import           Data.Time
 import           Database.Persist.Sql
@@ -36,7 +36,7 @@ getAppDashboardR =
            (selectList
               [DocumentAccount ==. fromAccountID loginAccountId]
               [Desc DocumentCreated])
-       now <- liftIO getCurrentTime
+       now' <- liftIO getCurrentTime
        htmlWithUrl
          (shopTemplate
             (Registered state)
@@ -63,7 +63,7 @@ getAppDashboardR =
                                  [class_ "card-deck"]
                                  (forM_
                                     documents
-                                    (\(Entity _documentId Document {..}) ->
+                                    (\(Entity documentId Document {..}) ->
                                        div_
                                          [class_ "card"]
                                          (do img_ []
@@ -77,14 +77,17 @@ getAppDashboardR =
                                                         (toHtml documentName))
                                                    p_
                                                      [class_ "card-text"]
-                                                     "Example description here...")
+                                                     "Example description here..."
+                                                   form_
+                                                     [action_ (url (DeleteDocumentR documentId)), method_ "post"]
+                                                     (button_ [class_ "btn-primary btn"] "Delete"))
                                              div_
                                                [class_ "card-footer"]
                                                (small_
                                                   [class_ "text-muted"]
                                                   (do "Created "
                                                       toHtml (format (diff True)
-                                                                     (diffUTCTime documentCreated now))))))))))))))
+                                                                     (diffUTCTime documentCreated now'))))))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())
@@ -112,3 +115,12 @@ postNewDocumentR =
                update key [DocumentName =. slug] -- TODO: Check uniqueness
                pure slug)
        redirect (AppEditorR slug))
+
+postDeleteDocumentR :: DocumentId -> Handler ()
+postDeleteDocumentR documentId =
+  withLogin
+    (\_ LoginState {loginAccountId=AccountID accountId} -> do
+       runDB
+         (deleteWhere
+            [DocumentId ==. documentId, DocumentAccount ==. toSqlKey accountId])
+       redirect AppDashboardR)
