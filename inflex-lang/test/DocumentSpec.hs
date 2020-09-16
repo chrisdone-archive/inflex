@@ -721,7 +721,9 @@ nextRandom' :: IO Text
 nextRandom' = fmap UUID.toText nextRandom
 
 regression :: Spec
-regression = do error_while_evaluating_with_annotation
+regression = do
+  error_while_evaluating_with_annotation
+  duplicate_empty_names_ok
 
 error_while_evaluating_with_annotation :: SpecWith ()
 error_while_evaluating_with_annotation =
@@ -747,3 +749,31 @@ error_while_evaluating_with_annotation =
                     }
                 ]
         pendingWith "Need to fix the evaluator") -- TODO: Fix this!
+
+duplicate_empty_names_ok :: Spec
+duplicate_empty_names_ok =
+  it
+    "Duplicate empty string names should be ok"
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
+        let loaded =
+              loadDocument
+                [ Named
+                    { uuid = Uuid u1
+                    , name = ""
+                    , thing = "193"
+                    , code = "193"
+                    , order = 0
+                    }
+                , Named
+                    { uuid = Uuid u2
+                    , name = ""
+                    , thing = "x+2"
+                    , code = "x+2"
+                    , order = 1
+                    }
+                ]
+        pendingWith "Need to fix Document.hs"
+        shouldBe
+          (evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+          (Toposorted {unToposorted = []}))
