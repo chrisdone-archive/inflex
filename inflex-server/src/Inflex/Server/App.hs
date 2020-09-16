@@ -44,7 +44,8 @@ data App = App
   , appGALock :: MVar ()
   }
 
-instance Yesod App
+instance Yesod App where
+  makeSessionBackend _  = pure Nothing
 
 instance YesodPersist App where
     type YesodPersistBackend App = SqlBackend
