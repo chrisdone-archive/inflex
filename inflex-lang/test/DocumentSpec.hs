@@ -768,12 +768,56 @@ duplicate_empty_names_ok =
                 , Named
                     { uuid = Uuid u2
                     , name = ""
-                    , thing = "x+2"
-                    , code = "x+2"
+                    , thing = "2+3"
+                    , code = "2+3"
                     , order = 1
                     }
                 ]
-        pendingWith "Need to fix Document.hs"
         shouldBe
           (evalDocument (evalEnvironment loaded) (defaultDocument loaded))
-          (Toposorted {unToposorted = []}))
+          (Toposorted
+             { unToposorted =
+                 [ Named
+                     { uuid = Uuid u2
+                     , name = ""
+                     , order = 1
+                     , code = "2+3"
+                     , thing =
+                         Right
+                           (LiteralExpression
+                              (NumberLiteral
+                                 (Number
+                                    { location = SteppedCursor
+                                    , number = IntegerNumber 5
+                                    , typ =
+                                        ConstantType
+                                          (TypeConstant
+                                             { location =
+                                                 InfixLeftCursor
+                                                   ExpressionCursor
+                                             , name = IntegerTypeName
+                                             })
+                                    })))
+                     }
+                 , Named
+                     { uuid = Uuid u1
+                     , name = ""
+                     , order = 0
+                     , code = "193"
+                     , thing =
+                         Right
+                           (LiteralExpression
+                              (NumberLiteral
+                                 (Number
+                                    { location = ExpressionCursor
+                                    , number = IntegerNumber 193
+                                    , typ =
+                                        ConstantType
+                                          (TypeConstant
+                                             { location = ExpressionCursor
+                                             , name = IntegerTypeName
+                                             })
+                                    })))
+                     }
+                 ]
+             }))

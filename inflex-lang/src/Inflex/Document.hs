@@ -118,7 +118,8 @@ independentLoadDocument names =
     (\Named {..} ->
        Named
          { thing =
-             if any
+             if not (T.null (T.strip name)) &&
+                any
                   (\Named {uuid = uuid', name = name'} ->
                      uuid' /= uuid && name == name')
                   names -- TODO: Fix this O(n^2) operation
