@@ -276,12 +276,13 @@ constraintedTypeVariables Scheme {constraints} =
     typeVariables :: Type Polymorphic -> Set (TypeVariable Polymorphic)
     typeVariables =
       \case
+        RecordType t -> typeVariables t
         VariableType typeVariable -> Set.singleton typeVariable
         ApplyType TypeApplication {function, argument} ->
           typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
-        RowType TypeRow {typeVariable, fields} ->
-          maybe mempty Set.singleton typeVariable <>
+        RowType TypeRow {typeVariable = _, fields} ->
+          -- maybe mempty Set.singleton typeVariable <> -- TODO: Check this is fine.
           foldMap (\Field{typ} -> typeVariables typ) fields
 
 --------------------------------------------------------------------------------
@@ -306,6 +307,7 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
   where
     typeVariables =
       \case
+        RecordType t -> typeVariables t
         VariableType typeVariable -> Set.singleton typeVariable
         ApplyType TypeApplication {function, argument} ->
           case function of
@@ -337,6 +339,7 @@ substituteType substitutions = go
   where
     go =
       \case
+        RecordType t -> RecordType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType

@@ -127,7 +127,7 @@ recordGenerator Record {..} = do
                      Field {typ = expressionType expression, location = l, ..})
                   fields'
             }
-  pure Record {typ = rowType, fields = fields', ..}
+  pure Record {typ = RecordType rowType, fields = fields', ..}
 
 propGenerator :: Prop Filled -> Generate e (Prop Generated)
 propGenerator Prop {..} = do
@@ -142,7 +142,8 @@ propGenerator Prop {..} = do
             , ..
             }
   addEqualityConstraint
-    EqualityConstraint {type1 = rowType, type2 = expressionType expression', ..}
+    EqualityConstraint
+      {type1 = RecordType rowType, type2 = expressionType expression', ..}
   pure Prop {typ = fieldType, expression = expression', ..}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
@@ -459,6 +460,7 @@ funcType location inp out =
 renamedToGenerated :: Type Renamed -> Type Generated
 renamedToGenerated =
   \case
+    RecordType t -> RecordType (renamedToGenerated t)
     VariableType TypeVariable {..} -> VariableType TypeVariable {..}
     RowType TypeRow {..} ->
       RowType
@@ -505,6 +507,7 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
       -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) (Generate e) (Type Generated)
     rewriteType =
       \case
+        RecordType t -> fmap RecordType (rewriteType t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
           typeVariable' <- traverse rewriteTypeVar typeVariable

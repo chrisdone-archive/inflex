@@ -448,6 +448,7 @@ constrainPolymorphic = go
   where
     go =
       \case
+        RecordType t -> fmap RecordType (go t)
         VariableType typeVariable -> Left typeVariable
         ApplyType TypeApplication {function, argument, location, kind} -> do
           function' <- go function

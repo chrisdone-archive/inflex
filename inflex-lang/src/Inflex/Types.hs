@@ -187,6 +187,7 @@ data Type s where
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
   RowType :: TypeRow s -> Type s
+  RecordType :: Type s -> Type s
 
 -- | A row type.
 data TypeRow s = TypeRow

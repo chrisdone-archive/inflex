@@ -82,6 +82,7 @@ toPolymorphic =
   where
     go =
       \case
+        RecordType t -> fmap RecordType (go t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
           typeVariable' <- traverse polymorphizeTypeVar typeVariable
@@ -128,6 +129,7 @@ generaliseType substitutions = go
   where
     go =
       \case
+        RecordType t -> RecordType (go t)
         VariableType typeVariable@TypeVariable {..} ->
           case M.lookup typeVariable substitutions of
             Nothing -> VariableType TypeVariable {..}

@@ -109,6 +109,7 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
     (ConstantType TypeConstant {name = typeConstant1}, ConstantType TypeConstant {name = typeConstant2})
       | typeConstant1 == typeConstant2 -> pure mempty
     (RowType x, RowType y) -> unifyRows x y
+    (RecordType r1, RecordType r2) -> unifyRecords r1 r2
     _ -> Left (pure (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
@@ -132,6 +133,11 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
      -- <https://www.youtube.com/watch?v=rdVqQUOvxSU>
     TypeApplication {function = function2, argument = argument2} =
       typeApplication2
+
+-- | Unify records -- must contain row types inside.
+unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyRecords (RowType x) (RowType y) = unifyRows x y
+unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
 
 unifyRows ::
      TypeRow Generated
@@ -231,6 +237,7 @@ occursIn typeVariable =
     ApplyType TypeApplication {function, argument} ->
       occursIn typeVariable function || occursIn typeVariable argument
     ConstantType {} -> False
+    RecordType x -> occursIn typeVariable x
     RowType TypeRow{typeVariable=mtypeVariable, fields} ->
       maybe False (occursIn typeVariable . VariableType) mtypeVariable ||
       any (\Field{typ} -> occursIn typeVariable typ) fields
@@ -271,6 +278,7 @@ substituteType substitutions = go
   where
     go =
       \case
+        RecordType t -> RecordType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
@@ -319,6 +327,7 @@ solveType substitutions = go . substituteType substitutions
   where
     go =
       \case
+        RecordType t -> RecordType (go t)
         VariableType TypeVariable {..} -> VariableType TypeVariable {..}
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType

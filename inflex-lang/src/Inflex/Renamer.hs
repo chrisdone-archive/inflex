@@ -318,6 +318,7 @@ renameType env =
     ConstantType typeConstant ->
       fmap ConstantType (renameTypeConstant env typeConstant)
     RowType typeRow -> fmap RowType (renameTypeRow env typeRow)
+    RecordType typeRow -> fmap RecordType (renameType env typeRow)
 
 renameTypeConstant :: Env -> TypeConstant Parsed -> Renamer (TypeConstant Renamed)
 renameTypeConstant Env{cursor} TypeConstant {..} = do
