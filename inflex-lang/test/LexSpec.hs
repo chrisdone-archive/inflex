@@ -15,7 +15,7 @@ spec =
   it
     "Tokens"
     (shouldBe
-       (lexText "" "ab d_ex_f 123 456.1 123.456 12.000 ( )[]")
+       (lexText "" "ab d_ex_f 123 456.1 123.456 12.000 ( )[] {:,}")
        (Right
           (Seq.fromList
              [ Located
@@ -97,5 +97,37 @@ spec =
                        , end = SourcePos {line = 1, column = 41, name = ""}
                        }
                  , thing = CloseSquareToken
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 42, name = ""}
+                       , end = SourcePos {line = 1, column = 43, name = ""}
+                       }
+                 , thing = OpenCurlyToken
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 43, name = ""}
+                       , end = SourcePos {line = 1, column = 44, name = ""}
+                       }
+                 , thing = ColonToken
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 44, name = ""}
+                       , end = SourcePos {line = 1, column = 45, name = ""}
+                       }
+                 , thing = CommaToken
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 45, name = ""}
+                       , end = SourcePos {line = 1, column = 46, name = ""}
+                       }
+                 , thing = CloseCurlyToken
                  }
              ])))

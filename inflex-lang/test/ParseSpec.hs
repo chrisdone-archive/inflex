@@ -20,6 +20,7 @@ spec = do
   globals
   lambda
   apply
+  records
   it
     "Let"
     (shouldBe
@@ -1168,3 +1169,205 @@ sigs =
                                   , kind = TypeKind
                                   }))
                       })))))
+
+records :: SpecWith ()
+records =
+  it
+    "Record"
+    (shouldBe
+       (parseText "" "{a: 123+3/k, b: 452.2}")
+       (Right
+          (RecordExpression
+             (Record
+                { fields =
+                    [ FieldE
+                        { name = FieldName {unFieldName = "a"}
+                        , expression =
+                            InfixExpression
+                              (Infix
+                                 { location =
+                                     SourceLocation
+                                       { start =
+                                           SourcePos
+                                             {line = 1, column = 5, name = ""}
+                                       , end =
+                                           SourcePos
+                                             {line = 1, column = 12, name = ""}
+                                       }
+                                 , global =
+                                     Global
+                                       { location =
+                                           SourceLocation
+                                             { start =
+                                                 SourcePos
+                                                   { line = 1
+                                                   , column = 5
+                                                   , name = ""
+                                                   }
+                                             , end =
+                                                 SourcePos
+                                                   { line = 1
+                                                   , column = 12
+                                                   , name = ""
+                                                   }
+                                             }
+                                       , name = "+"
+                                       , scheme = ParsedScheme
+                                       }
+                                 , left =
+                                     LiteralExpression
+                                       (NumberLiteral
+                                          (Number
+                                             { location =
+                                                 SourceLocation
+                                                   { start =
+                                                       SourcePos
+                                                         { line = 1
+                                                         , column = 5
+                                                         , name = ""
+                                                         }
+                                                   , end =
+                                                       SourcePos
+                                                         { line = 1
+                                                         , column = 8
+                                                         , name = ""
+                                                         }
+                                                   }
+                                             , number = IntegerNumber 123
+                                             , typ = Nothing
+                                             }))
+                                 , right =
+                                     InfixExpression
+                                       (Infix
+                                          { location =
+                                              SourceLocation
+                                                { start =
+                                                    SourcePos
+                                                      { line = 1
+                                                      , column = 9
+                                                      , name = ""
+                                                      }
+                                                , end =
+                                                    SourcePos
+                                                      { line = 1
+                                                      , column = 12
+                                                      , name = ""
+                                                      }
+                                                }
+                                          , global =
+                                              Global
+                                                { location =
+                                                    SourceLocation
+                                                      { start =
+                                                          SourcePos
+                                                            { line = 1
+                                                            , column = 9
+                                                            , name = ""
+                                                            }
+                                                      , end =
+                                                          SourcePos
+                                                            { line = 1
+                                                            , column = 12
+                                                            , name = ""
+                                                            }
+                                                      }
+                                                , name = "/"
+                                                , scheme = ParsedScheme
+                                                }
+                                          , left =
+                                              LiteralExpression
+                                                (NumberLiteral
+                                                   (Number
+                                                      { location =
+                                                          SourceLocation
+                                                            { start =
+                                                                SourcePos
+                                                                  { line = 1
+                                                                  , column = 9
+                                                                  , name = ""
+                                                                  }
+                                                            , end =
+                                                                SourcePos
+                                                                  { line = 1
+                                                                  , column = 10
+                                                                  , name = ""
+                                                                  }
+                                                            }
+                                                      , number = IntegerNumber 3
+                                                      , typ = Nothing
+                                                      }))
+                                          , right =
+                                              VariableExpression
+                                                (Variable
+                                                   { location =
+                                                       SourceLocation
+                                                         { start =
+                                                             SourcePos
+                                                               { line = 1
+                                                               , column = 11
+                                                               , name = ""
+                                                               }
+                                                         , end =
+                                                             SourcePos
+                                                               { line = 1
+                                                               , column = 12
+                                                               , name = ""
+                                                               }
+                                                         }
+                                                   , name = "k"
+                                                   , typ = Nothing
+                                                   })
+                                          , typ = Nothing
+                                          })
+                                 , typ = Nothing
+                                 })
+                        , location =
+                            SourceLocation
+                              { start =
+                                  SourcePos {line = 1, column = 3, name = ""}
+                              , end =
+                                  SourcePos {line = 1, column = 4, name = ""}
+                              }
+                        }
+                    , FieldE
+                        { name = FieldName {unFieldName = "b"}
+                        , expression =
+                            LiteralExpression
+                              (NumberLiteral
+                                 (Number
+                                    { location =
+                                        SourceLocation
+                                          { start =
+                                              SourcePos
+                                                { line = 1
+                                                , column = 17
+                                                , name = ""
+                                                }
+                                          , end =
+                                              SourcePos
+                                                { line = 1
+                                                , column = 22
+                                                , name = ""
+                                                }
+                                          }
+                                    , number =
+                                        DecimalNumber
+                                          (Decimal {places = 1, integer = 4522})
+                                    , typ = Nothing
+                                    }))
+                        , location =
+                            SourceLocation
+                              { start =
+                                  SourcePos {line = 1, column = 15, name = ""}
+                              , end =
+                                  SourcePos {line = 1, column = 16, name = ""}
+                              }
+                        }
+                    ]
+                , location =
+                    SourceLocation
+                      { start = SourcePos {line = 1, column = 1, name = ""}
+                      , end = SourcePos {line = 1, column = 23, name = ""}
+                      }
+                , typ = Nothing
+                }))))

@@ -210,16 +210,15 @@ recordParser = do
     let loop = do
           name <- fieldNameParser
           Located {location, thing = ()} <-
-            token ExpectedContinuation (preview _SemiColonToken)
+            token ExpectedContinuation (preview _ColonToken)
           expression <- expressionParser
           comma <-
-            fmap
-              (const True)
-              (token_ ExpectedComma (preview _CommaToken)) <>
+            fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
             pure False
-          rest <- if comma
-                     then loop
-                     else pure []
+          rest <-
+            if comma
+              then loop
+              else pure []
           let field = FieldE {name, expression, location}
           pure (field : rest)
      in loop
