@@ -280,6 +280,9 @@ constraintedTypeVariables Scheme {constraints} =
         ApplyType TypeApplication {function, argument} ->
           typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
+        RowType TypeRow {typeVariable, fields} ->
+          maybe mempty Set.singleton typeVariable <>
+          foldMap (\Field{typ} -> typeVariables typ) fields
 
 --------------------------------------------------------------------------------
 -- Find type variables which can be defaulted
@@ -310,6 +313,9 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
               mempty -- We ignore the whole function.
             _ -> typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
+        -- Below: we don't default row types.
+        RowType TypeRow {typeVariable = _, fields} ->
+          foldMap (\Field {typ=t} -> typeVariables t) fields
 
 --------------------------------------------------------------------------------
 -- Substitution
@@ -335,9 +341,12 @@ substituteType substitutions = go
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
             TypeApplication {function = go function, argument = go argument, ..}
+        RowType TypeRow {..} ->
+          RowType TypeRow {fields = map fieldSub fields, ..}
         typ@(VariableType typeVariable :: Type Polymorphic) ->
           case find
                  (\Substitution {before} -> before == typeVariable)
                  substitutions of
             Just Substitution {after} -> after
             Nothing -> typ
+    fieldSub Field {..} = Field {typ = substituteType substitutions typ, ..}

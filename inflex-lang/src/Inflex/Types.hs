@@ -155,6 +155,11 @@ data Decimal = Decimal
 --------------------------------------------------------------------------------
 -- Type system types
 
+-- Note: the reason the Record (row :: Row) is nice in PureScript is
+-- because type variables can have kind :: RowKind, so only those can
+-- unify. Whereas a Record x :: Type -- forall a. a -> a would unify
+-- with the record, but not the row variable.
+
 data Type s where
   VariableType :: TypeVariable s -> Type s
   PolyType :: TypeVariable Polymorphic -> Type Generalised

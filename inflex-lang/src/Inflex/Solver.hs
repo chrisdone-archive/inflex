@@ -15,6 +15,7 @@ module Inflex.Solver where
 
 import Control.Monad
 import Data.Bifunctor
+import Data.Function
 import Data.List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (Map)
@@ -145,6 +146,9 @@ occursIn typeVariable =
     ApplyType TypeApplication {function, argument} ->
       occursIn typeVariable function || occursIn typeVariable argument
     ConstantType {} -> False
+    RowType TypeRow{typeVariable=mtypeVariable, fields} ->
+      maybe False (occursIn typeVariable . VariableType) mtypeVariable ||
+      any (\Field{typ} -> occursIn typeVariable typ) fields
 
 --------------------------------------------------------------------------------
 -- Extension
@@ -190,8 +194,36 @@ substituteType substitutions = go
           case find
                  (\Substitution {before} -> before == typeVariable)
                  substitutions of
-            Just Substitution {after} -> after
+            Just substitution@Substitution {after}
+              | substitutionKind substitution == typeVariableKind typeVariable ->
+                after
+              | otherwise -> typ -- TODO: error/signal problem.
             Nothing -> typ
+        RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
+          | Just substitution@Substitution {after} <-
+             find
+               (\Substitution {before} -> before == typeVariable)
+               substitutions
+          , substitutionKind substitution == RowKind
+          , RowType TypeRow {typeVariable = newVariable, fields = ys} <- after ->
+            RowType -- Here we merge the two field sets with shadowing.
+              (TypeRow
+                 { typeVariable = newVariable
+                 , fields = shadowFields ys xs
+                 , .. -- TODO: Merge locations? And type variable locations?
+                 })
+        -- The row variables differ, so we can just substitute within the fields.
+        RowType TypeRow {..} ->
+          RowType TypeRow {fields = map substituteField fields, ..}
+    substituteField Field {..} =
+      Field {typ = substituteType substitutions typ, ..}
+
+-- | Extend a record, shadowing existing fields.
+shadowFields ::
+     [Field Generated] -- ^ New fields
+  -> [Field Generated] -- ^ Old fields
+  -> [Field Generated] -- ^ Union of the two rows
+shadowFields = unionBy (on (==) (\Field{name} -> name))
 
 --------------------------------------------------------------------------------
 -- Solving (i.e. substitution, but we also change the type from
@@ -207,6 +239,15 @@ solveType substitutions = go . substituteType substitutions
           ApplyType
             TypeApplication {function = go function, argument = go argument, ..}
         ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
+        RowType TypeRow {..} ->
+          RowType
+            TypeRow
+              { fields = fmap fieldSolve fields
+              , typeVariable = fmap typeVarSolve typeVariable
+              , ..
+              }
+    fieldSolve Field {..} = Field {typ = solveType substitutions typ, ..}
+    typeVarSolve TypeVariable {..} = TypeVariable {..}
 
 expressionSolve :: Seq Substitution -> Expression Generated -> Expression Solved
 expressionSolve substitutions =
@@ -313,3 +354,6 @@ numberSolve substitutions Number {..} =
 paramSolve :: Seq Substitution -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
+
+substitutionKind :: Substitution -> Kind
+substitutionKind Substitution {before} = typeVariableKind before

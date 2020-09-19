@@ -437,6 +437,18 @@ constrainPolymorphic = go
             (ApplyType
                TypeApplication
                  {function = function', argument = argument', location, kind})
-        ConstantType TypeConstant {..} ->
-          pure (ConstantType TypeConstant {..})
+        ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
         PolyType typeVariable -> pure (VariableType typeVariable)
+        RowType TypeRow {..} -> do
+          typeVariable' <- maybe (pure Nothing) Left typeVariable
+          fields' <- traverse fieldSolve fields
+          pure
+            (RowType
+               TypeRow
+                 { fields = fields'
+                 , typeVariable = typeVariable'
+                 , ..
+                 })
+    fieldSolve Field {..} = do
+      typ' <- constrainPolymorphic typ
+      pure Field {typ = typ', ..}

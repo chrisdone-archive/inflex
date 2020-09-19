@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -81,21 +82,14 @@ toPolymorphic =
   where
     go =
       \case
-        VariableType typeVariable@TypeVariable {kind} -> do
-          replacements <- gets replacements
-          case M.lookup typeVariable replacements of
-            Nothing -> do
-              index <- gets counter
-              let typeVariable' =
-                    TypeVariable {index, prefix = (), location = (), kind}
-              put
-                (GeneraliseState
-                   { counter = index + 1
-                   , replacements =
-                       M.insert typeVariable typeVariable' replacements
-                   })
-              pure (VariableType typeVariable')
-            Just replacement -> pure (VariableType replacement)
+        RowType TypeRow {..} -> do
+          fields' <- traverse rewriteField fields
+          typeVariable' <- traverse polymorphizeTypeVar typeVariable
+          pure
+            (RowType
+               TypeRow {fields = fields', typeVariable = typeVariable', ..})
+        VariableType typeVariable ->
+          fmap VariableType (polymorphizeTypeVar typeVariable)
         ApplyType TypeApplication {function, argument, location, kind} -> do
           function' <- go function
           argument' <- go argument
@@ -103,8 +97,24 @@ toPolymorphic =
             (ApplyType
                TypeApplication
                  {function = function', argument = argument', location, kind})
-        ConstantType TypeConstant {..} ->
-          pure (ConstantType TypeConstant {..})
+        ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
+    rewriteField Field {..} = do
+      typ' <- go typ
+      pure Field {typ = typ', ..}
+    polymorphizeTypeVar typeVariable@TypeVariable {kind} = do
+      replacements <- gets replacements
+      case M.lookup typeVariable replacements of
+        Nothing -> do
+          index <- gets counter
+          let typeVariable' =
+                TypeVariable {index, prefix = (), location = (), kind}
+          put
+            (GeneraliseState
+               { counter = index + 1
+               , replacements = M.insert typeVariable typeVariable' replacements
+               })
+          pure (typeVariable')
+        Just replacement -> pure (replacement)
 
 --------------------------------------------------------------------------------
 -- Generalising (i.e. substitution, but we also change the type from
@@ -126,6 +136,15 @@ generaliseType substitutions = go
           ApplyType
             TypeApplication {function = go function, argument = go argument, ..}
         ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
+        RowType TypeRow {..} ->
+          RowType
+            TypeRow
+              { fields = fmap fieldSolve fields
+              , typeVariable = fmap typeVarSolve typeVariable
+              , ..
+              }
+    fieldSolve Field {..} = Field {typ = generaliseType substitutions typ, ..}
+    typeVarSolve TypeVariable {..} = TypeVariable {..}
 
 expressionGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)
