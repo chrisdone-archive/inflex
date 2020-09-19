@@ -160,6 +160,23 @@ data Type s where
   PolyType :: TypeVariable Polymorphic -> Type Generalised
   ApplyType :: TypeApplication s -> Type s
   ConstantType :: TypeConstant s -> Type s
+  RowType :: TypeRow s -> Type s
+
+-- | A row type.
+data TypeRow s = TypeRow
+  { typeVariable :: !(Maybe (TypeVariable s))
+  , fields :: ![Field s]
+  }
+
+-- | A field is a name/type pair with additional metadata.
+data Field s = Field
+  { name :: !FieldName
+  , typ :: !(Type s)
+  }
+
+newtype FieldName = FieldName
+  { unFieldName :: Text
+  } deriving (Eq, Ord, Generic, Show)
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
