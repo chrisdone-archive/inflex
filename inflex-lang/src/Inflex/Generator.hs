@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ApplicativeDo #-}
@@ -417,11 +419,24 @@ renamedToGenerated :: Type Renamed -> Type Generated
 renamedToGenerated =
   \case
     VariableType TypeVariable {..} -> VariableType TypeVariable {..}
+    RowType TypeRow {..} ->
+      RowType
+        TypeRow
+          { fields = fmap fieldToGen fields
+          , typeVariable = fmap typeVarToGen typeVariable
+          , ..
+          }
     ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
     ApplyType TypeApplication {..} ->
       ApplyType
         TypeApplication
-          {function = renamedToGenerated function, argument = renamedToGenerated argument, ..}
+          { function = renamedToGenerated function
+          , argument = renamedToGenerated argument
+          , ..
+          }
+  where
+    fieldToGen Field {..} = Field {typ = renamedToGenerated typ, ..}
+    typeVarToGen TypeVariable {..} = TypeVariable {..}
 
 --------------------------------------------------------------------------------
 -- Convert a polymorphic scheme to a generated scheme
@@ -449,6 +464,12 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
       -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) (Generate e) (Type Generated)
     rewriteType =
       \case
+        RowType TypeRow {..} -> do
+          fields' <- traverse rewriteField fields
+          typeVariable' <- traverse rewriteTypeVar typeVariable
+          pure
+            (RowType
+               TypeRow {fields = fields', typeVariable = typeVariable', ..})
         ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
         ApplyType TypeApplication {..} -> do
           function' <- rewriteType function
@@ -456,12 +477,24 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
           pure
             (ApplyType
                TypeApplication {function = function', argument = argument', ..})
-        VariableType typeVariable@TypeVariable {..} -> do
-          scope <- get
-          case M.lookup typeVariable scope of
-            Just typeVariable' -> pure (VariableType typeVariable')
-            Nothing -> do
-              generatedTypeVariable <-
-                lift (generateTypeVariable location0 PolyPrefix kind)
-              modify (M.insert typeVariable generatedTypeVariable)
-              pure (VariableType generatedTypeVariable)
+        VariableType typeVariable -> do
+          generatedTypeVariable <- rewriteTypeVar typeVariable
+          pure (VariableType generatedTypeVariable)
+    rewriteField ::
+         Field Polymorphic
+      -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) (Generate e) (Field Generated)
+    rewriteField Field {..} = do
+      typ' <- rewriteType typ
+      pure Field {typ = typ', ..}
+    rewriteTypeVar ::
+         TypeVariable Polymorphic
+      -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) (Generate e) (TypeVariable Generated)
+    rewriteTypeVar typeVariable@TypeVariable {..} = do
+      scope <- get
+      case M.lookup typeVariable scope of
+        Just typeVariable' -> pure typeVariable'
+        Nothing -> do
+          generatedTypeVariable <-
+            lift (generateTypeVariable location0 PolyPrefix kind)
+          modify (M.insert typeVariable generatedTypeVariable)
+          pure generatedTypeVariable
