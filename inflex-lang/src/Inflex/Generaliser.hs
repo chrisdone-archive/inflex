@@ -154,6 +154,10 @@ expressionGeneralise substitutions =
   \case
     LiteralExpression literal ->
       LiteralExpression (literalGeneralise substitutions literal)
+    PropExpression prop ->
+      PropExpression (propGeneralise substitutions prop)
+    RecordExpression record ->
+      RecordExpression (recordGeneralise substitutions record)
     LambdaExpression lambda ->
       LambdaExpression (lambdaGeneralise substitutions lambda)
     LetExpression let' ->
@@ -196,6 +200,36 @@ generaliseClassConstraint ::
   -> ClassConstraint Generalised
 generaliseClassConstraint substitutions ClassConstraint {..} =
   ClassConstraint {typ = fmap (generaliseType substitutions) typ, ..}
+
+recordGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Record Solved
+  -> Record Generalised
+recordGeneralise substitutions Record {..} =
+  Record
+    { fields =
+        map
+          (\FieldE {location = l, ..} ->
+             FieldE
+               { expression = expressionGeneralise substitutions expression
+               , location = l
+               , ..
+               })
+          fields
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+propGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Prop Solved
+  -> Prop Generalised
+propGeneralise substitutions Prop {..} =
+  Prop
+    { expression = expressionGeneralise substitutions expression
+    , typ = generaliseType substitutions typ
+    , ..
+    }
 
 lambdaGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)

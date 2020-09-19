@@ -153,6 +153,10 @@ expressionResolver nesting =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (pure (literalResolver literal))
+    RecordExpression record ->
+      fmap RecordExpression (recordResolver nesting record)
+    PropExpression prop ->
+      fmap PropExpression (propResolver nesting prop)
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda ->
@@ -185,6 +189,21 @@ applyResolver nesting Apply {..} = do
   function' <- expressionResolver nesting function
   argument' <- expressionResolver nesting argument
   pure Apply {function = function', argument = argument', ..}
+
+recordResolver :: DeBrujinNesting -> Record Generalised -> Resolve (Record Resolved)
+recordResolver nesting Record {..} = do
+  fields' <-
+    traverse
+      (\FieldE {location = l, ..} -> do
+         e' <- expressionResolver nesting expression
+         pure FieldE {location = l, expression = e', ..})
+      fields
+  pure Record {fields = fields', ..}
+
+propResolver :: DeBrujinNesting -> Prop Generalised -> Resolve (Prop Resolved)
+propResolver nesting Prop {..} = do
+  expression' <- expressionResolver nesting expression
+  pure Prop {expression = expression', ..}
 
 variableResolver :: Variable Generalised -> Variable Resolved
 variableResolver Variable {..} = Variable {..}

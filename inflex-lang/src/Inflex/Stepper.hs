@@ -13,6 +13,7 @@ module Inflex.Stepper where
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Bifunctor
+import           Data.List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
@@ -42,6 +43,8 @@ data StepError
   | MismatchingPrecisionsInOp
   | MismatchingPrecisionsInFromDecimal Natural Natural
   | CannotShrinkADecimalFromTo Natural Natural
+  | NotARecord
+  | MissingRecordKey FieldName
   deriving (Show, Eq)
 
 data Stepped
@@ -105,12 +108,41 @@ stepExpression expression = do
     Continue ->
       case expression of
         ApplyExpression apply -> stepApply apply
+        PropExpression prop -> stepProp prop
+        RecordExpression record -> stepRecord record
         InfixExpression infix' -> stepInfix infix'
         GlobalExpression global -> stepGlobal global
         LiteralExpression {} -> pure expression
         LambdaExpression {} -> pure expression
         VariableExpression {} -> pure expression
         LetExpression {} -> pure expression
+
+--------------------------------------------------------------------------------
+-- Records
+
+stepRecord :: Record Resolved -> Step e (Expression Resolved)
+stepRecord Record {..} = do
+  fields' <-
+    traverse
+      (\FieldE {location = l, ..} -> do
+         e' <- stepExpression expression
+         pure FieldE {location = l, expression = e', ..})
+      fields
+  pure (RecordExpression (Record {fields = fields', ..}))
+
+stepProp :: Prop Resolved -> Step e (Expression Resolved)
+stepProp Prop {..} = do
+  expression' <- stepExpression expression
+  stepped <- get
+  case stepped of
+    Stepped -> pure (PropExpression Prop {expression = expression', ..})
+    Continue ->
+      case expression' of
+        RecordExpression Record {fields} ->
+          case find (\FieldE {name = name'} -> name' == name) fields of
+            Nothing -> Step (lift (lift (Left (MissingRecordKey name))))
+            Just FieldE{expression = v} -> stepExpression v
+        _ -> Step (lift (lift (Left NotARecord)))
 
 --------------------------------------------------------------------------------
 -- Globals
@@ -294,7 +326,18 @@ betaReduce Lambda {body = body0} arg = go 0 body0
           pure
             (ApplyExpression
                Apply {argument = argument', function = function', ..})
-        InfixExpression Infix{..} -> do
+        PropExpression Prop {..} -> do
+          expression' <- go deBrujinNesting expression
+          pure (PropExpression Prop {expression = expression', ..})
+        RecordExpression Record {..} -> do
+          fields' <-
+            traverse
+              (\FieldE {location = l, ..} -> do
+                 e <- go deBrujinNesting expression
+                 pure FieldE {location = l, expression = e, ..})
+              fields
+          pure (RecordExpression Record {fields = fields', ..})
+        InfixExpression Infix {..} -> do
           left' <- go deBrujinNesting left
           right' <- go deBrujinNesting right
           global' <- go deBrujinNesting global

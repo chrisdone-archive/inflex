@@ -339,6 +339,10 @@ expressionSolve substitutions =
   \case
     LiteralExpression literal ->
       LiteralExpression (literalSolve substitutions literal)
+    PropExpression prop ->
+      PropExpression (propSolve substitutions prop)
+    RecordExpression record ->
+      RecordExpression (recordSolve substitutions record)
     LambdaExpression lambda ->
       LambdaExpression (lambdaSolve substitutions lambda)
     LetExpression let' ->
@@ -358,6 +362,29 @@ lambdaSolve substitutions Lambda {..} =
     { param = paramSolve substitutions param
     , body = expressionSolve substitutions body
     , typ = solveType substitutions typ
+    , ..
+    }
+
+propSolve :: Seq Substitution -> Prop Generated -> Prop Solved
+propSolve substitutions Prop {..} =
+  Prop
+    { expression = expressionSolve substitutions expression
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+recordSolve :: Seq Substitution -> Record Generated -> Record Solved
+recordSolve substitutions Record {..} =
+  Record
+    { fields = map (fieldESolve substitutions) fields
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+fieldESolve :: Seq Substitution -> FieldE Generated -> FieldE Solved
+fieldESolve substitutions FieldE {..} =
+  FieldE
+    { expression = expressionSolve substitutions expression
     , ..
     }
 
