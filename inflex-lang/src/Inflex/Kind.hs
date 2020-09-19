@@ -17,6 +17,7 @@ typeKind =
     ApplyType typeApplication -> typeApplicationKind typeApplication
     ConstantType typeConstant -> typeConstantKind typeConstant
     PolyType typePoly -> typeVariableKind typePoly
+    RowType {} -> RowKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind

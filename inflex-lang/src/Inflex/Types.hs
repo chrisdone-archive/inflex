@@ -164,13 +164,15 @@ data Type s where
 
 -- | A row type.
 data TypeRow s = TypeRow
-  { typeVariable :: !(Maybe (TypeVariable s))
+  { location :: !(StagedLocation s)
+  , typeVariable :: !(Maybe (TypeVariable s))
   , fields :: ![Field s]
   }
 
 -- | A field is a name/type pair with additional metadata.
 data Field s = Field
-  { name :: !FieldName
+  { location :: !(StagedLocation s)
+  , name :: !FieldName
   , typ :: !(Type s)
   }
 
@@ -210,6 +212,7 @@ data Kind
   | FunKind Kind
             Kind
   | NatKind
+  | RowKind
   deriving (Show, Eq, Ord)
 
 data TypePoly = TypePoly
@@ -319,6 +322,8 @@ data Cursor
   | AutoInsertedForDefaulterCursor
   | DefaultedCursor
   | SteppedCursor
+  | RowFieldCursor Cursor
+  | RowFieldType Cursor
   deriving (Show, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.

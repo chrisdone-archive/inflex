@@ -284,11 +284,30 @@ renameType env =
       fmap ApplyType (renameTypeApplication env typeApplication)
     ConstantType typeConstant ->
       fmap ConstantType (renameTypeConstant env typeConstant)
+    RowType typeRow -> fmap RowType (renameTypeRow env typeRow)
 
 renameTypeConstant :: Env -> TypeConstant Parsed -> Renamer (TypeConstant Renamed)
 renameTypeConstant Env{cursor} TypeConstant {..} = do
   final <- finalizeCursor cursor TypeCursor location
   pure TypeConstant {location = final, ..}
+
+renameTypeRow :: Env -> TypeRow Parsed -> Renamer (TypeRow Renamed)
+renameTypeRow env@Env {cursor} TypeRow {..} = do
+  final <- finalizeCursor cursor TypeCursor location
+  fields' <-
+    traverse (renameField (over envCursorL (. RowFieldCursor) env)) fields
+  mtypeVariable <-
+    case typeVariable of
+      Nothing -> pure Nothing
+      Just typeVariable' -> fmap pure (renameTypeVariable env typeVariable')
+  pure
+    TypeRow {location = final, fields = fields', typeVariable = mtypeVariable}
+
+renameField :: Env -> Field Parsed -> Renamer (Field Renamed)
+renameField env@Env{cursor} Field {..} = do
+  final <- finalizeCursor cursor TypeCursor location
+  typ' <- renameType (over envCursorL (. RowFieldType) env) typ
+  pure Field {location = final, typ = typ', ..}
 
 renameTypeApplication :: Env -> TypeApplication Parsed -> Renamer (TypeApplication Renamed)
 renameTypeApplication env@Env {cursor} TypeApplication {function, argument, ..} = do
