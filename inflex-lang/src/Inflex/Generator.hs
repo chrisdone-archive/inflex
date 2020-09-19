@@ -91,6 +91,8 @@ expressionGenerator =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (literalGenerator literal)
+    PropExpression prop ->
+      fmap PropExpression (propGenerator prop)
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaGenerator lambda)
     LetExpression let' ->
@@ -103,6 +105,22 @@ expressionGenerator =
       fmap VariableExpression (variableGenerator variable)
     GlobalExpression global ->
       fmap GlobalExpression (globalGenerator global)
+
+propGenerator :: Prop Filled -> Generate e (Prop Generated)
+propGenerator Prop {..} = do
+  rowVariable <- generateTypeVariable location RowVarPrefix RowKind
+  expression' <- expressionGenerator expression
+  fieldType <- generateVariableType location FieldTypePrefix TypeKind
+  let rowType =
+        RowType
+          TypeRow
+            { typeVariable = pure rowVariable
+            , fields = [Field {location, name, typ = fieldType}]
+            , ..
+            }
+  addEqualityConstraint
+    EqualityConstraint {type1 = rowType, type2 = expressionType expression', ..}
+  pure Prop {typ = fieldType, expression = expression', ..}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =

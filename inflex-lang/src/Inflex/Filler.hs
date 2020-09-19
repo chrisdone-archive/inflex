@@ -26,6 +26,10 @@ expressionFill ::
   -> Filler e (Expression Filled)
 expressionFill globals =
   \case
+    RecordExpression record ->
+      fmap RecordExpression (recordFill globals record)
+    PropExpression prop ->
+      fmap PropExpression (propFill globals prop)
     LiteralExpression literal ->
       pure (LiteralExpression (literalFill literal))
     LambdaExpression lambda ->
@@ -43,6 +47,20 @@ expressionFill globals =
 
 --------------------------------------------------------------------------------
 -- Fillers
+
+propFill :: Map Text (Either e Hash) -> Prop Renamed -> Filler e (Prop Filled)
+propFill globals Prop {..} = do
+  expression' <- expressionFill globals expression
+  pure Prop {expression = expression', ..}
+
+recordFill :: Map Text (Either e Hash) -> Record Renamed -> Filler e (Record Filled)
+recordFill globals Record {..} = do
+  fields' <- traverse fieldFill fields
+  pure Record {fields = fields', ..}
+  where
+    fieldFill FieldE {location = l, ..} = do
+      expression' <- expressionFill globals expression
+      pure FieldE {expression = expression', location = l, ..}
 
 globalFill :: Map Text (Either e Hash) -> Global Renamed -> Filler e (Global Filled)
 globalFill globals Global {..} = do

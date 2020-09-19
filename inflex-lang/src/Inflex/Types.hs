@@ -28,6 +28,27 @@ data Expression s where
   GlobalExpression :: !(Global s) -> Expression s
   LetExpression :: !(Let s) -> Expression s
   InfixExpression :: !(Infix s) -> Expression s
+  RecordExpression :: !(Record s) -> Expression s
+  PropExpression :: !(Prop s) -> Expression s
+
+data Prop s = Prop
+  { expression :: !(Expression s)
+  , name :: !FieldName
+  , typ :: !(StagedType s)
+  , location :: !(StagedLocation s)
+  }
+
+data Record s = Record
+  { fields :: ![FieldE s]
+  , location :: !(StagedLocation s)
+  , typ :: !(StagedType s)
+  }
+
+data FieldE s = FieldE
+  { name :: !FieldName
+  , expression :: !(Expression s)
+  , location :: !(StagedLocation s)
+  }
 
 data Infix s = Infix
   { location :: !(StagedLocation s)
@@ -241,6 +262,8 @@ data TypeVariablePrefix
   | NatPrefix
   | InfixOutputPrefix
   | PolyPrefix
+  | RowVarPrefix
+  | FieldTypePrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -329,6 +352,9 @@ data Cursor
   | SteppedCursor
   | RowFieldCursor Cursor
   | RowFieldType Cursor
+  | RecordFieldCursor FieldName Cursor
+  | RowFieldExpression Cursor
+  | PropExpressionCursor Cursor
   deriving (Show, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.

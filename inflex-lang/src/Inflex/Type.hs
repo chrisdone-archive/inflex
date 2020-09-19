@@ -33,6 +33,14 @@ expressionType =
     ApplyExpression apply -> applyType apply
     VariableExpression variable -> variableType variable
     GlobalExpression global -> globalType global
+    RecordExpression record -> recordType record
+    PropExpression prop -> propType prop
+
+recordType :: Record s -> StagedType s
+recordType Record {typ} = typ
+
+propType :: Prop s -> StagedType s
+propType Prop {typ} = typ
 
 globalType :: Global s -> StagedType s
 globalType Global {scheme} =

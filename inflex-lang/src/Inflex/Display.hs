@@ -12,6 +12,7 @@
 module Inflex.Display where
 
 import Data.Coerce
+import Data.List
 import Inflex.Decimal
 import Inflex.Types
 import RIO
@@ -19,6 +20,8 @@ import RIO
 instance Display (Expression Resolved) where
   display =
     \case
+      RecordExpression record -> display record
+      PropExpression prop -> display prop
       LiteralExpression literal -> display literal
       LambdaExpression lambda -> display lambda
       ApplyExpression apply -> display apply
@@ -26,6 +29,25 @@ instance Display (Expression Resolved) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Prop Resolved) where
+  display (Prop {expression, name}) =
+    display expression <> "." <> display name -- TODO: Manage parens.
+
+instance Display (Record Resolved) where
+  display (Record {fields}) =
+    "{" <>
+    mconcat
+      (intersperse
+         ", "
+         (map
+            (\FieldE {name, expression} ->
+               display name <> ": " <> display expression)
+            fields)) <>
+    "}"
+
+instance Display FieldName where
+  display (FieldName t) = display t
 
 instance Display (Infix Resolved) where
   display (Infix {left, global, right}) =

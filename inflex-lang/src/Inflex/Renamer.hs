@@ -71,6 +71,8 @@ renameExpression env =
   \case
     LiteralExpression literal -> renameLiteral env literal
     LambdaExpression lambda -> fmap LambdaExpression (renameLambda env lambda)
+    RecordExpression record -> fmap RecordExpression (renameRecord env record)
+    PropExpression prop -> fmap PropExpression (renameProp env prop)
     LetExpression let' -> fmap LetExpression (renameLet env let')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
@@ -138,6 +140,37 @@ renameLambda env@Env {cursor} Lambda {..} = do
       body
   typ' <- renameSignature env typ
   pure Lambda {body = body', location = final, param = param', typ = typ', ..}
+
+renameRecord :: Env -> Record Parsed -> Renamer (Record Renamed)
+renameRecord env@Env {cursor} Record {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  fields' <-
+    traverse
+      (\field@FieldE {name} ->
+         renameFieldE (over envCursorL (. RecordFieldCursor name) env) field)
+      fields
+  typ' <- renameSignature env typ
+  pure Record {fields = fields', location = final, typ = typ'}
+
+renameProp :: Env -> Prop Parsed -> Renamer (Prop Renamed)
+renameProp env@Env {cursor} Prop {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  expression' <- renameExpression (over envCursorL (. PropExpressionCursor) env) expression
+  typ' <- renameSignature env typ
+  pure
+    Prop
+      { expression = expression'
+      , location = final
+      , typ = typ'
+      , ..
+      }
+
+renameFieldE :: Env -> FieldE Parsed -> Renamer (FieldE Renamed)
+renameFieldE env@Env {cursor} FieldE {..} = do
+  final <- finalizeCursor cursor TypeCursor location
+  expression' <-
+    renameExpression (over envCursorL (. RowFieldExpression) env) expression
+  pure FieldE {location = final, expression = expression', ..}
 
 -- TODO: Disable duplicate names in bind list.
 renameLet :: Env -> Let Parsed -> Renamer (Let Renamed)

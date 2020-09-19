@@ -12,6 +12,8 @@ expressionLocation :: Expression s -> StagedLocation s
 expressionLocation =
   \case
     LiteralExpression literal -> literalLocation literal
+    RecordExpression record -> recordLocation record
+    PropExpression prop -> propLocation prop
     LambdaExpression lambda -> lambdaLocation lambda
     LetExpression let' -> letLocation let'
     InfixExpression infix' -> infixLocation infix'
@@ -21,6 +23,12 @@ expressionLocation =
 
 lambdaLocation :: Lambda s -> StagedLocation s
 lambdaLocation Lambda {location} = location
+
+recordLocation :: Record s -> StagedLocation s
+recordLocation Record {location} = location
+
+propLocation :: Prop s -> StagedLocation s
+propLocation Prop {location} = location
 
 paramLocation :: Param s -> StagedLocation s
 paramLocation Param {location} = location
