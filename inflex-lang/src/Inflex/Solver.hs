@@ -13,17 +13,19 @@
 
 module Inflex.Solver where
 
-import Control.Monad
-import Data.Bifunctor
-import Data.Function
-import Data.List
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map.Strict (Map)
-import Data.Sequence (Seq)
-import Data.Text (Text)
-import Inflex.Generator
-import Inflex.Kind
-import Inflex.Types
+import           Control.Monad
+import           Data.Bifunctor
+import           Data.Function
+import           Data.List
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import           Data.Maybe
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
+import           Data.Text (Text)
+import           Inflex.Generator
+import           Inflex.Kind
+import           Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Solver types
@@ -32,6 +34,7 @@ data SolveError
   = OccursCheckFail (TypeVariable Generated) (Type Generated)
   | KindMismatch (TypeVariable Generated) (Type Generated)
   | TypeMismatch EqualityConstraint
+  | RowMismatch (TypeRow Generated) (TypeRow Generated)
   deriving (Show, Eq)
 
 data GenerateSolveError e
@@ -105,6 +108,7 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
     (typ, VariableType typeVariable) -> bindTypeVariable typeVariable typ
     (ConstantType TypeConstant {name = typeConstant1}, ConstantType TypeConstant {name = typeConstant2})
       | typeConstant1 == typeConstant2 -> pure mempty
+    (RowType x, RowType y) -> unifyRows x y
     _ -> Left (pure (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
@@ -128,6 +132,87 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
      -- <https://www.youtube.com/watch?v=rdVqQUOvxSU>
     TypeApplication {function = function2, argument = argument2} =
       typeApplication2
+
+unifyRows ::
+     TypeRow Generated
+  -> TypeRow Generated
+  -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
+                                                                             , fields = fs2
+                                                                             }) = do
+  constraints <-
+    case (fs1, v1, fs2, v2) of
+      ([], Nothing, [], Nothing) -> pure []
+      -- Below: Just unify a row variable with no fields with any other row.
+      ([], Just u, sd, r) ->
+        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
+      (sd, r, [], Just u) ->
+        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
+      -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
+      -- forming { p: s, f: t }, provided the open row is a subset
+      -- of the closed row.
+      (sd1, Nothing, sd2, Just u2)
+        | sd2 `rowIsSubset` sd1 -> do
+          pure
+            [ (,)
+                u2
+                (RowType
+                   (TypeRow
+                      { typeVariable = Nothing
+                      , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
+                      , .. -- TODO: Merge locs, vars
+                      }))
+            ]
+       -- Below: Same as above, but flipped.
+      (sd1, Just u1, sd2, Nothing)
+        | sd1 `rowIsSubset` sd2 -> do
+          pure
+            [ (,)
+                u1
+                (RowType
+                   TypeRow
+                     { typeVariable = Nothing
+                     , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
+                     , .. -- TODO: Merge locs, vars
+                     })
+            ]
+      -- Below: Two open records, their fields must unify and we
+      -- produce a union row type of both.
+      (_, Just {}, _, Just {}) -> do
+        pure []
+      _ -> Left (pure (RowMismatch row1 row2))
+  let common = intersect (map fieldName fs1) (map fieldName fs2)
+      -- You have to make sure that the types of all the fields match
+      -- up, obviously.
+      fieldsToUnify =
+        mapMaybe
+          (\name -> do
+             f1 <- find ((== name) . fieldName) fs1
+             f2 <- find ((== name) . fieldName) fs2
+             pure
+               EqualityConstraint
+                 { type1 = fieldType f1
+                 , type2 = fieldType f2
+                 , .. -- TODO: clever location.
+                 })
+          common
+      -- These are essentially substitutions -- replacing one of the
+      -- rows with something else.
+      constraintsToUnify =
+        map
+          (\(tyvar, t) ->
+             EqualityConstraint
+               { type1 = VariableType tyvar
+               , type2 = t
+               , .. -- TODO: clever location.
+               })
+          constraints
+  -- TODO: confirm that unifyConstraints is the right function to use.
+  unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
+  where
+    rowIsSubset sub sup = all (`elem` map fieldName sup) (map fieldName sub)
+    fieldName Field {name} = name
+    fieldType Field {typ} = typ
 
 --------------------------------------------------------------------------------
 -- Binding
