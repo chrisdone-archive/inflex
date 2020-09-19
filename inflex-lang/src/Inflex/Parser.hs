@@ -58,9 +58,13 @@ data ParseError
   | ExpectedSignature
   | ExpectedEndOfInput
   | ExpectedLet
+  | ExpectedCurly
+  | ExpectedCloseCurly
+  | ExpectedPeriod
   | ExpectedIn
   | ExpectedEquals
   | ExpectedContinuation
+  | ExpectedComma
   | ExpectedOperator
   | EmptyOperand
   | MissingOpRhs
@@ -188,13 +192,53 @@ unchainedExpressionParser :: Parser (Expression Parsed)
 unchainedExpressionParser =
   fold1
     (NE.fromList
-       [ LetExpression <$> letParser
+       [ RecordExpression <$> recordParser
+       , LetExpression <$> letParser
        , ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
+       , PropExpression <$> propParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
+
+recordParser :: Parser (Record Parsed)
+recordParser = do
+  Located {location = SourceLocation {start}} <-
+    token ExpectedCurly (preview _OpenCurlyToken)
+  fields <-
+    let loop = do
+          name <- fieldNameParser
+          Located {location, thing = ()} <-
+            token ExpectedContinuation (preview _SemiColonToken)
+          expression <- expressionParser
+          comma <-
+            fmap
+              (const True)
+              (token_ ExpectedComma (preview _CommaToken)) <>
+            pure False
+          rest <- if comma
+                     then loop
+                     else pure []
+          let field = FieldE {name, expression, location}
+          pure (field : rest)
+     in loop
+  Located {location = SourceLocation {end}} <-
+    token ExpectedCloseCurly (preview _CloseCurlyToken)
+  pure Record {fields, typ = Nothing, location = SourceLocation {start, end}}
+
+propParser :: Parser (Prop Parsed)
+propParser = do
+  expression <- VariableExpression <$> variableParser
+  Located {location} <- token ExpectedPeriod (preview _PeriodToken)
+  name <- fieldNameParser
+  pure Prop {typ=Nothing, ..}
+
+fieldNameParser :: Parser FieldName
+fieldNameParser = do
+  Located {thing = name} <-
+    token ExpectedVariable (preview _LowerWordToken)
+  pure (FieldName name)
 
 letParser :: Parser (Let Parsed)
 letParser = do

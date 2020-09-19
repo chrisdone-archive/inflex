@@ -36,6 +36,8 @@ module Inflex.Lexer
   , _SemiColonToken
   , _EqualsToken
   , _OperatorToken
+  , _PeriodToken
+  , _CommaToken
   ) where
 
 import           Data.Bifunctor
@@ -75,6 +77,8 @@ data Token
   | RightArrowToken
   | DoubleColonToken
   | SemiColonToken
+  | CommaToken
+  | PeriodToken
   | EqualsToken
   | LetToken
   | InToken
@@ -167,6 +171,8 @@ tokensLexer =
            , BackslashToken <$ Mega.char '\\'
            , DoubleColonToken <$ Mega.try (Mega.string "::")
            , SemiColonToken <$ Mega.try (Mega.string ";")
+           , CommaToken <$ Mega.try (Mega.string ",")
+           , PeriodToken <$ Mega.try (Mega.string ".")
            ])
 
 -- | Retain location information for a token.
