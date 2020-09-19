@@ -93,6 +93,8 @@ expressionGenerator =
       fmap LiteralExpression (literalGenerator literal)
     PropExpression prop ->
       fmap PropExpression (propGenerator prop)
+    RecordExpression record ->
+      fmap RecordExpression (recordGenerator record)
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaGenerator lambda)
     LetExpression let' ->
@@ -105,6 +107,27 @@ expressionGenerator =
       fmap VariableExpression (variableGenerator variable)
     GlobalExpression global ->
       fmap GlobalExpression (globalGenerator global)
+
+recordGenerator :: Record Filled -> Generate e (Record Generated)
+recordGenerator Record {..} = do
+  fields' <-
+    traverse
+      (\FieldE {location = l, ..} -> do
+         expression' <- expressionGenerator expression
+         pure FieldE {expression = expression', location = l, ..})
+      fields
+  let rowType =
+        RowType
+          TypeRow
+            { location
+            , typeVariable = Nothing
+            , fields =
+                map
+                  (\FieldE {location = l, ..} ->
+                     Field {typ = expressionType expression, location = l, ..})
+                  fields'
+            }
+  pure Record {typ = rowType, fields = fields', ..}
 
 propGenerator :: Prop Filled -> Generate e (Prop Generated)
 propGenerator Prop {..} = do
