@@ -26,6 +26,8 @@ module Inflex.Server.Handlers.Shop
   , getHealthR
   , getHomeR
   , getFaviconR
+  , getFuturaR
+  , getFutura2R
   ) where
 
 import           Control.Monad.Reader
@@ -54,25 +56,19 @@ getHomeR = do
   htmlWithUrl
     (shopTemplate
        state
-       (div_
-          [class_ "container-fluid"]
-          (div_
-             [class_ "row"]
-             (div_
-                [class_ "col"]
-                (do url <- ask
-                    case state of
-                      NoSessionState {} -> do
-                        if False
-                          then p_ (a_ [href_ (url EnterDetailsR)] "Register now")
-                          else p_ "You need to register."
-                      Unregistered {} ->
-                        p_
-                          (a_
-                             [href_ (url EnterDetailsR)]
-                             "Continue registration")
-                      Registered {} ->
-                        p_ (a_ [href_ (url AppDashboardR)] "Go to dashboard"))))))
+       (do url <- ask
+           case state of
+             NoSessionState {} -> do
+               if False
+                 then p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+                 else p_ "You need to register."
+             Unregistered {} ->
+               p_
+                 (a_
+                    [href_ (url EnterDetailsR)]
+                    "Continue registration")
+             Registered {} ->
+               p_ (a_ [href_ (url AppDashboardR)] "Go to dashboard")))
 
 --------------------------------------------------------------------------------
 -- Account
@@ -98,4 +94,10 @@ getShopCssR :: Handler Css
 getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")
 
 getFaviconR :: Handler TypedContent
-getFaviconR = $(sendFileFrom "application/javascript" "inflex-server/img/favicon.png")
+getFaviconR = $(sendFileFrom "image/png" "inflex-server/img/favicon.png")
+
+getFuturaR :: Handler TypedContent
+getFuturaR = $(sendFileFrom "font/woff" "inflex-server/fonts/futura.woff")
+
+getFutura2R :: Handler TypedContent
+getFutura2R = $(sendFileFrom "font/woff2" "inflex-server/fonts/futura2.woff2")

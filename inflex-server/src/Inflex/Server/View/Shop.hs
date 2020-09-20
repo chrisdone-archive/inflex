@@ -64,17 +64,16 @@ shopTemplate state body = do
                                  form_
                                    [action_ (url LoginR), method_ "get"]
                                    (button_ [class_ "login full-button"] "Login")))
+                    div_
+                      [class_ "hero"]
+                      (do div_
+                            [class_ "lhs"]
+                            (do h1_
+                                  [class_ "tagline"]
+                                  "It's time to go off grid"
+                                h2_
+                                  [class_ "small-tag"]
+                                  "Online spreadsheets reinvented")
+                          div_ [class_ "rhs"]
+                               (pure ()))
                     body)))
-
-
--- header_
---   [class_ "navbar navbar-light bg-light"]
---   (do a_
---         [ class_ "navbar-brand mr-0 mr-md-2 logo-svg"
---         , href_ (url HomeR)
---         ]
---         (toHtmlRaw
---            $(wrapStackRoot "inflex-server/svg/inflex-logo.svg" >>=
---              embedFile))
---       div_
---         [class_ "navbar-nav ml-md-auto"]

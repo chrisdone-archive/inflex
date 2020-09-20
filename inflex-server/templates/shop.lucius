@@ -1,3 +1,8 @@
+@font-face {
+  font-family:"Futura Round W01 Light";
+  src:url("@{Futura2R}") format("woff2"),url("@{FuturaR}") format("woff");
+}
+
 /********************************************************************************
  * Forms
  */
@@ -73,6 +78,8 @@ body {
 
     .logout, .login {
       height: 100%;
+      font-family: "Futura Round W01 Light";
+      font-size: 20px;
     }
     .full-button {
       border: 0;
@@ -83,5 +90,29 @@ body {
       background: #224064;
       cursor: pointer;
     }
+  }
+}
+
+/********************************************************************************
+ * Hero
+ */
+
+.hero {
+  background: #15263b;
+  display: flex;
+  color: #fff;
+  font-family: sans-serif;
+  flex-direction: row;
+
+  .lhs {
+    width: 50%;
+  }
+
+  .tagline {
+    font-size: 70px;
+    font-family: "Futura Round W01 Light";
+  }
+  .small-tag {
+    font-family: "Futura Round W01 Light";
   }
 }
