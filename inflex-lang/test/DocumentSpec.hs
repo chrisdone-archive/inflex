@@ -1,12 +1,15 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
 
 -- | Document loading spec.
 
 module DocumentSpec where
 
+import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.UUID as UUID
 import           Data.UUID.V4
 import           Inflex.Document
@@ -716,184 +719,22 @@ success = do
                      }
                  ]
              }))
-  records
+  describe "Records" records
 
 records :: Spec
 records = do
-  it
-    "x = {a:1}; y = x.a"
-    (do u1 <- nextRandom'
-        u2 <- nextRandom'
-        shouldBe
-          (let loaded =
-                 loadDocument
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "{a:1}"
-                       , code = "{a:1}"
-                       , order = 0
-                       }
-                   , Named
-                       { uuid = Uuid u2
-                       , name = "y"
-                       , thing = "x.a"
-                       , code = "x.a"
-                       , order = 1
-                       }
-                   ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = Uuid u1
-                     , name = "x"
-                     , order = 0
-                     , code = "{a:1}"
-                     , thing =
-                         Right
-                           (RecordExpression
-                              (Record
-                                 { fields =
-                                     [ FieldE
-                                         { name = FieldName {unFieldName = "a"}
-                                         , expression =
-                                             LiteralExpression
-                                               (NumberLiteral
-                                                  (Number
-                                                     { location =
-                                                         RecordFieldCursor
-                                                           (FieldName
-                                                              { unFieldName =
-                                                                  "a"
-                                                              })
-                                                           (RowFieldExpression
-                                                              ExpressionCursor)
-                                                     , number = IntegerNumber 1
-                                                     , typ =
-                                                         ConstantType
-                                                           (TypeConstant
-                                                              { location =
-                                                                  RecordFieldCursor
-                                                                    (FieldName
-                                                                       { unFieldName =
-                                                                           "a"
-                                                                       })
-                                                                    (RowFieldExpression
-                                                                       ExpressionCursor)
-                                                              , name =
-                                                                  IntegerTypeName
-                                                              })
-                                                     }))
-                                         , location =
-                                             RecordFieldCursor
-                                               (FieldName {unFieldName = "a"})
-                                               TypeCursor
-                                         }
-                                     ]
-                                 , location = ExpressionCursor
-                                 , typ =
-                                     RecordType
-                                       (RowType
-                                          (TypeRow
-                                             { location = ExpressionCursor
-                                             , typeVariable = Nothing
-                                             , fields =
-                                                 [ Field
-                                                     { location =
-                                                         RecordFieldCursor
-                                                           (FieldName
-                                                              { unFieldName =
-                                                                  "a"
-                                                              })
-                                                           TypeCursor
-                                                     , name =
-                                                         FieldName
-                                                           {unFieldName = "a"}
-                                                     , typ =
-                                                         PolyType
-                                                           (TypeVariable
-                                                              { location = ()
-                                                              , prefix = ()
-                                                              , index = 0
-                                                              , kind = TypeKind
-                                                              })
-                                                     }
-                                                 ]
-                                             }))
-                                 }))
-                     }
-                 , Named
-                     { uuid = Uuid u2
-                     , name = "y"
-                     , order = 1
-                     , code = "x.a"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location =
-                                        RecordFieldCursor
-                                          (FieldName {unFieldName = "a"})
-                                          (RowFieldExpression ExpressionCursor)
-                                    , number = IntegerNumber 1
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location =
-                                                 RecordFieldCursor
-                                                   (FieldName
-                                                      {unFieldName = "a"})
-                                                   (RowFieldExpression
-                                                      ExpressionCursor)
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 ]
-             }))
-  it
-    "x = {a:1, b:8*2}; y = x.a; z = { k: y+b }"
-    (do u1 <- nextRandom'
-        u2 <- nextRandom'
-        u3 <- nextRandom'
-        -- TODO:
-        pendingWith "Addition doesn't seem to be reduced in the stepper (even with sigs) over records\
-                    \And defaulting or resolution isn't working with records"
-        shouldBe
-          (let loaded =
-                 loadDocument
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "{a:1 :: Integer, b:8 :: Integer}"
-                       , code = "{a:1 :: Integer, b:8 :: Integer}"
-                       , order = 0
-                       }
-                   , Named
-                       { uuid = Uuid u2
-                       , name = "y"
-                       , thing = "x.a + 1 :: Integer"
-                       , code = "x.a + 1"
-                       , order = 1
-                       }
-                   , Named
-                       { uuid = Uuid u3
-                       , name = "z"
-                       , thing = "{ k: y }"
-                       , code = "{ k: y }"
-                       , order = 2
-                       }
-                   ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
-          (Toposorted
-             { unToposorted =
-                 []
-             }))
-
-nextRandom' :: IO Text
-nextRandom' = fmap UUID.toText nextRandom
+  eval_it
+    [("x","{a:3*2}")]
+    (\[u1] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:3*2}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 6, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression (InfixLeftCursor ExpressionCursor)), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]}))}))}])
+  eval_it
+    [("x","{a:666}")
+    ,("y","x.a * 2")]
+    (\[u1,u2] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:666}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 666, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]}))}))},Named {uuid = Uuid u2, name = "y", order = 1, code = "x.a * 2", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 1332, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})))}])
+  eval_it_pending
+    [("x","{a:1, b:8}")
+    ,("y","x.a")]
+    (\[_u1,_u2] -> [])
+    "Results in NoInstanceAndMono when we have the `b' field present."
 
 regression :: Spec
 regression = do
@@ -996,3 +837,56 @@ duplicate_empty_names_ok =
                      }
                  ]
              }))
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+eval_it ::
+     [(Text, Text)]
+  -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
+  -> SpecWith ()
+eval_it xs result = eval_it_with xs result (pure ())
+
+eval_it_pending ::
+     [(Text, Text)]
+  -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
+  -> String
+  -> SpecWith ()
+eval_it_pending xs result t = eval_it_with xs result (pendingWith t)
+
+eval_it_with ::
+     [(Text, Text)]
+  -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
+  -> IO ()
+  -> SpecWith ()
+eval_it_with xs result io =
+  it
+    (intercalate
+       "; "
+       (map (\(name, val) -> T.unpack name <> " = " <> T.unpack val) xs))
+    (do io
+        xs' <-
+          mapM
+            (\x -> do
+               u <- nextRandom'
+               pure (u, x))
+            xs
+        shouldBe
+          (let loaded =
+                 loadDocument
+                   (zipWith
+                      (\i (uuid, (name, thing)) ->
+                         Named
+                           { uuid = Uuid uuid
+                           , name
+                           , thing
+                           , code = thing
+                           , order = i
+                           })
+                      [0 ..]
+                      xs')
+            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+          (Toposorted (result (map fst xs'))))
+
+nextRandom' :: IO Text
+nextRandom' = fmap UUID.toText nextRandom
