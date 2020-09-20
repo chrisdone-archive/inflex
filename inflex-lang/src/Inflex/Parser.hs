@@ -192,12 +192,12 @@ unchainedExpressionParser :: Parser (Expression Parsed)
 unchainedExpressionParser =
   fold1
     (NE.fromList
-       [ RecordExpression <$> recordParser
+       [ PropExpression <$> propParser
+       , RecordExpression <$> recordParser
        , LetExpression <$> letParser
        , ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
-       , PropExpression <$> propParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
@@ -228,7 +228,7 @@ recordParser = do
 
 propParser :: Parser (Prop Parsed)
 propParser = do
-  expression <- VariableExpression <$> variableParser
+  expression <- (RecordExpression <$> recordParser) <> (VariableExpression <$> variableParser)
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   name <- fieldNameParser
   pure Prop {typ=Nothing, ..}
