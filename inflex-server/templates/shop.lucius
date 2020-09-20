@@ -1,42 +1,87 @@
 /********************************************************************************
- * Navigation
- */
-
-.logo-svg svg {
-  width: 100px;
-}
-
-/* .navbar-light .navbar-brand svg { */
-/*   path, ellipse { */
-/*     fill: #333 !important; */
-/*   } */
-/* } */
-
-/* .navbar-dark .navbar-brand svg { */
-/*   path, ellipse { */
-/*     fill: #eee !important; */
-/*   } */
-/* } */
-
-/* .navbar-light .navbar-brand:hover svg { */
-/*   path, ellipse { */
-/*     fill: #007bff !important; */
-/*     transition: 0.7s; */
-/*   } */
-/* } */
-
-/* .navbar-dark .navbar-brand:hover svg { */
-/*   path, ellipse { */
-/*     fill: #007bff !important; */
-/*     transition: 0.7s; */
-/*   } */
-/* } */
-
-/********************************************************************************
  * Forms
  */
 
 .invalid-feedback.invalid-feedback-visible {
   display: block;
   font-size: 20px;
+}
+
+/* Reboot */
+
+body {
+  font-family:
+  /* Safari for OS X and iOS (San Francisco) */
+  -apple-system,
+  /* Chrome < 56 for OS X (San Francisco) */
+  BlinkMacSystemFont,
+  /* Windows */
+  "Segoe UI",
+  /* Android */
+  "Roboto",
+  /* Basic web fallback */
+  "Helvetica Neue", Arial, sans-serif,
+  /* Emoji fonts */
+  "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+}
+
+/********************************************************************************
+ * Body/wrapper
+ */
+
+html, body, .wrapper {
+  height: 100%;
+}
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+/********************************************************************************
+ * Wrapper
+ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/********************************************************************************
+ * Nav
+ */
+
+.navbar {
+  background: #15263b;
+  height: 50px;
+  display: flex;
+  justify-content: right;
+
+  .logo {
+    display: block;
+    background: url(@{LogoR}) no-repeat center;
+    height: 40px;
+    margin: 5px;
+    width: 100px;
+  }
+  .rhs-nav {
+    margin-left: auto;
+    display: flex;
+    flex-direction: row;
+
+    .logout, .login {
+      height: 100%;
+    }
+    .full-button {
+      border: 0;
+      background: #15263b;
+      color: #fff;
+    }
+    .full-button:hover {
+      background: #224064;
+      cursor: pointer;
+    }
+  }
 }

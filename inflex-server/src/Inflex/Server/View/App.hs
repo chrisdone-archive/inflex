@@ -26,30 +26,6 @@ appTemplate state body = do
                 , content_
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
+              link_ [rel_ "icon", type_ "image/png", href_ (url FaviconR)]
               link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
         body_ [] body)
-
--- div_
---   [class_ "wrapper"]
---   (do header_
---         [class_ "navbar"]
---         (do a_
---               [href_ (url HomeR), class_ "nav-logo"]
---               (toHtmlRaw
---                  $(wrapStackRoot
---                      "inflex-server/svg/inflex-logo.svg" >>=
---                    embedFile))
---             div_
---               [class_ "navbar-controls"]
---               (case state of
---                  NoSessionState -> a_ [href_ (url LoginR)] "Login"
---                  Registered loginState -> do
---                    when
---                      False
---                      (do a_ [] (toHtml (loginUsername loginState))
---                          " ")
---                    form_
---                      [action_ (url LogoutR), method_ "post"]
---                      (button_ [class_ "logout"] "Logout")
---                  Unregistered {} -> mempty))
---       )
