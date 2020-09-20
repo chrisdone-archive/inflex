@@ -46,7 +46,7 @@ data ResolutionSuccess
 data ResolutionError
   = LiteralDecimalPrecisionMismatch PrecisionMismatch
   | UnsupportedInstanceHead
-  | NoInstanceAndMono (TypeVariable Generalised)
+  | NoInstanceAndMono ClassName (TypeVariable Generalised)
   | NoInstanceForType ClassName (Type Polymorphic)
   deriving (Show, Eq)
 
@@ -436,7 +436,7 @@ classConstraintPoly ::
   -> Either ResolutionError (ClassConstraint Polymorphic)
 classConstraintPoly ClassConstraint {typ, ..} =
   case traverse constrainPolymorphic typ of
-    Left typeVariables -> Left (NoInstanceAndMono typeVariables)
+    Left typeVariables -> Left (NoInstanceAndMono className typeVariables)
     Right polyTypes -> pure ClassConstraint {typ = polyTypes, ..}
 
 -- | Constraint the type to remove monomorphic variables into a

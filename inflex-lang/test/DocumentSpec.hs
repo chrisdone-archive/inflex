@@ -136,7 +136,7 @@ errors = do
                          Left
                            (LoadResolveError
                               (ResolverErrors
-                                 (NoInstanceAndMono
+                                 (NoInstanceAndMono FromIntegerClassName
                                     (TypeVariable
                                        { location =
                                            ApplyArgCursor ExpressionCursor
@@ -734,7 +734,13 @@ records = do
     [("x","{a:1, b:8}")
     ,("y","x.a")]
     (\[_u1,_u2] -> [])
-    "Results in NoInstanceAndMono when we have the `b' field present."
+    "Results in NoInstanceAndMono FromIntegerClassName when we have the `b' field present."
+  -- This example demonstrates that if the `b' field has a type
+  -- annotation, then there is no class inference issue.
+  eval_it
+    [("x","{a:1, b:8 :: Integer}")
+    ,("y","x.a")]
+    (\[u1,u2] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:1, b:8 :: Integer}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor},FieldE {name = FieldName {unFieldName = "b"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 8, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})},Field {location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor, name = FieldName {unFieldName = "b"}, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})}]}))}))},Named {uuid = Uuid u2, name = "y", order = 1, code = "x.a", thing = Right (LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})))}])
 
 regression :: Spec
 regression = do
