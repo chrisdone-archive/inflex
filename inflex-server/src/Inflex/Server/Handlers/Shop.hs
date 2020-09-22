@@ -48,27 +48,28 @@ import           Yesod.Lucid
 --------------------------------------------------------------------------------
 -- Home
 
-getHomeR :: Handler (Html ())
+-- getHomeR :: Handler (Html ())
+getHomeR :: Handler TypedContent
 getHomeR = do
-  msession <- lookupSession
-  let state = maybe NoSessionState (sessionState . entityVal) msession
-  submitGA
-  htmlWithUrl
-    (shopTemplate
-       state
-       (do url <- ask
-           case state of
-             NoSessionState {} -> do
-               if False
-                 then p_ (a_ [href_ (url EnterDetailsR)] "Register now")
-                 else p_ "You need to register."
-             Unregistered {} ->
-               p_
-                 (a_
-                    [href_ (url EnterDetailsR)]
-                    "Continue registration")
-             Registered {} ->
-               p_ (a_ [href_ (url AppDashboardR)] "Go to dashboard")))
+  {-when
+    False
+    (do msession <- lookupSession
+        let state = maybe NoSessionState (sessionState . entityVal) msession
+        submitGA
+        htmlWithUrl
+          (shopTemplate
+             state
+             (do url <- ask
+                 case state of
+                   NoSessionState {} -> do
+                     if False
+                       then p_ (a_ [href_ (url EnterDetailsR)] "Register now")
+                       else p_ "You need to register."
+                   Unregistered {} ->
+                     p_ (a_ [href_ (url EnterDetailsR)] "Continue registration")
+                   Registered {} ->
+                     p_ (a_ [href_ (url AppDashboardR)] "Go to dashboard"))))-}
+  $(sendFileFrom "text/html" "inflex-server/html/frame.html")
 
 --------------------------------------------------------------------------------
 -- Account

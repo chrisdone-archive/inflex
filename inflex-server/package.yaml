@@ -12,6 +12,7 @@ extra-source-files:
 - config/*
 - templates/*.lucius
 - svg/*.svg
+- html/*.html
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
