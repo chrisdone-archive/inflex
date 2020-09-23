@@ -430,6 +430,13 @@ resolveFromDecimal TypeConstant {name = natural} numericType constraint =
 --------------------------------------------------------------------------------
 -- Polymorphization
 
+-- Here is where we could do defaulting.
+--
+-- A key factor is making sure that 2.3 + 3.45 defaults to Decimal 2,
+-- not Decimal 1.
+--
+-- So we should re-use the logic from Inflex.Defaulter.
+
 -- | Make sure the class constraint is polymorphic.
 classConstraintPoly ::
      ClassConstraint Generalised

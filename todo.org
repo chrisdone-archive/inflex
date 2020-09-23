@@ -282,6 +282,8 @@ https://www.youtube.com/watch?v=jH2Je6wUvPs&feature=emb_title
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
 * Research
+  - Note taken on [2020-09-28 Mon 13:54] \\
+    found fpsheet https://github.com/RKlompUU/fpsheet
   - Note taken on [2020-06-23 Tue 11:36] \\
     Graphs: https://vega.github.io/vega-lite/
     Charts: https://www.chartjs.org/
