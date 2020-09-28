@@ -12,7 +12,6 @@
 module Inflex.Defaulter
   ( defaultText
   , defaultResolvedExpression
-  , suggestTypeConstant
   , DefaulterError(..)
   , ResolverDefaulterError(..)
   ) where
@@ -22,35 +21,20 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Writer
 import           Data.Bifunctor
 import           Data.Foldable
-import           Data.List
-import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Maybe
-import           Data.Ord
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Inflex.Defaulter.Suggest
 import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
-import           Numeric.Natural
-
---------------------------------------------------------------------------------
--- Types
-
-data DefaulterError
-  = ResolutionError ResolutionError
-  | DefaultingNoInstanceFound (ClassConstraint Polymorphic)
-  deriving (Eq, Show)
-
-data ResolverDefaulterError e
-  = DefaulterError DefaulterError
-  | GeneraliseResolverError (GeneraliseResolveError e)
-  deriving (Eq, Show)
+import           Inflex.Types.Defaulter
+import           Inflex.Types.Resolver
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -198,66 +182,6 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
           {classConstraintOriginal, classConstraintDefaulted, instanceName}
     NoInstanceButPoly noInstanceConstraint ->
       Left (DefaultingNoInstanceFound noInstanceConstraint)
-
---------------------------------------------------------------------------------
--- Infer an appropriate defaulted type for a set of constraints
-
--- | Given a set of constraints that are for a SINGLE type variable
--- (and @FromDecimal 2 n@ counts, or @FromInteger n@), produce an
--- appropriate constant type, for each, if possible. So we will have a
--- set of type constants. At the end, choose the most appropriate type
--- based on priority (see below).
---
--- It's not the responsibility of this function to determine validity
--- of instances. Just to produce a type @Integer@ or @Decimal n@.
---
--- Order of priority: FromDecimal x > FromDecimal y > FromInteger,
--- such that x > y.
-suggestTypeConstant ::
-     forall s. (StagedLocation s ~ Cursor)
-  => NonEmpty (ClassConstraint s)
-     -- ^ All of them must only refer to THE SAME, SINGLE type
-     -- variable.
-  -> Either DefaulterError (Maybe (Type Polymorphic))
-suggestTypeConstant =
-  fmap (listToMaybe . map snd . sortBy (flip (comparing fst)) . catMaybes) .
-  traverse suggestedConstant . toList
-  where
-    suggestedConstant ::
-         ClassConstraint s
-      -> Either DefaulterError (Maybe (Natural, Type Polymorphic))
-    suggestedConstant =
-      \case
-        ClassConstraint {className = FromIntegerClassName} ->
-          pure
-            (pure
-               ( 0
-               , ConstantType
-                   TypeConstant
-                     {location = DefaultedCursor, name = IntegerTypeName}))
-        ClassConstraint {className = FromDecimalClassName, typ = params} ->
-          case params of
-            ConstantType TypeConstant {name = NatTypeName places, location} :| [_] ->
-              pure
-                (pure
-                   ( places
-                   , ApplyType
-                       TypeApplication
-                         { location = DefaultedCursor
-                         , kind = TypeKind
-                         , function =
-                             ConstantType
-                               TypeConstant
-                                 { location = DefaultedCursor
-                                 , name = DecimalTypeName
-                                 }
-                         , argument =
-                             ConstantType
-                               TypeConstant
-                                 {location, name = NatTypeName places}
-                         }))
-            _ -> pure Nothing
-        _ -> pure Nothing
 
 --------------------------------------------------------------------------------
 -- Type variables mentioned in the class constraints

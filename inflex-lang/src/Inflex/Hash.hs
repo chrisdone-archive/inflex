@@ -7,8 +7,8 @@
 module Inflex.Hash where
 
 import Inflex.Instances ()
-import Inflex.Resolver
 import Inflex.Types
+import Inflex.Types.Resolver
 import Inflex.Types.SHA512
 
 -- TODO: Swap the use of show for something more structured (and faster).
