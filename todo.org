@@ -282,6 +282,16 @@ https://www.youtube.com/watch?v=jH2Je6wUvPs&feature=emb_title
      Pain Points, Needs, and Design Opportunities
      https://web.eecs.utk.edu/~azh/pubs/Chattopadhyay2020CHI_NotebookPainpoints.pdf
 * Research
+  - Note taken on [2020-09-28 Mon 17:24] \\
+    liquid haskell/lh
+
+    could translate to core for a checker:
+
+    https://github.com/ucsd-progsys/liquidhaskell/issues/1768#issuecomment-700121493
+  - Note taken on [2020-09-28 Mon 17:23] \\
+    sbv/smt: could use assertions:
+
+    https://github.com/LeventErkok/sbv/issues/343#issuecomment-700125716
   - Note taken on [2020-09-28 Mon 13:54] \\
     found fpsheet https://github.com/RKlompUU/fpsheet
   - Note taken on [2020-06-23 Tue 11:36] \\
