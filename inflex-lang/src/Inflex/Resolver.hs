@@ -12,20 +12,22 @@
 
 module Inflex.Resolver where
 
-import Control.Monad.State
-import Control.Monad.Validate
-import Data.Bifunctor
-import Data.Foldable
-import Data.List
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map.Strict (Map)
-import Data.Sequence (Seq(..))
-import Data.Text (Text)
-import Inflex.Generaliser
-import Inflex.Location
-import Inflex.Type (expressionType, instanceNameType, typeOutput)
-import Inflex.Types
-import Numeric.Natural
+import           Control.Monad.State
+import           Control.Monad.Validate
+import           Data.Bifunctor
+import           Data.Foldable
+import           Data.List
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import           Data.Sequence (Seq(..))
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Text (Text)
+import           Inflex.Generaliser
+import           Inflex.Location
+import           Inflex.Type (expressionType, instanceNameType, typeOutput)
+import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Types
@@ -479,3 +481,51 @@ constrainPolymorphic = go
     fieldSolve Field {..} = do
       typ' <- constrainPolymorphic typ
       pure Field {typ = typ', ..}
+
+--------------------------------------------------------------------------------
+-- Collect constraints
+
+expressionCollect :: Expression Generalised -> Set (ClassConstraint Generalised)
+expressionCollect =
+  \case
+    LiteralExpression {} -> mempty
+    PropExpression prop -> propCollect prop
+    RecordExpression record -> recordCollect record
+    LambdaExpression lambda -> lambdaCollect lambda
+    LetExpression let' -> letCollect let'
+    InfixExpression infix' -> infixCollect infix'
+    ApplyExpression apply -> applyCollect apply
+    VariableExpression {} -> mempty
+    GlobalExpression global -> globalCollect global
+
+globalCollect :: Global Generalised -> Set (ClassConstraint Generalised)
+globalCollect Global {scheme = GeneralisedScheme scheme, ..} =
+  collectScheme scheme
+
+collectScheme :: Scheme Generalised -> Set (ClassConstraint Generalised)
+collectScheme Scheme {..} = Set.fromList constraints
+
+recordCollect :: Record Generalised -> Set (ClassConstraint Generalised)
+recordCollect Record {..} =
+  mconcat (map (\FieldE {expression} -> expressionCollect expression) fields)
+
+propCollect :: Prop Generalised -> Set (ClassConstraint Generalised)
+propCollect Prop {..} = expressionCollect expression
+
+lambdaCollect :: Lambda Generalised -> Set (ClassConstraint Generalised)
+lambdaCollect Lambda {..} = expressionCollect body
+
+letCollect :: Let Generalised -> Set (ClassConstraint Generalised)
+letCollect Let {..} =
+  mconcat (toList (fmap (bindCollect) binds)) <> expressionCollect body
+
+infixCollect :: Infix Generalised -> Set (ClassConstraint Generalised)
+infixCollect Infix {..} =
+  expressionCollect left <> expressionCollect right <> globalCollect global
+
+bindCollect :: Bind Generalised -> Set (ClassConstraint Generalised)
+bindCollect Bind {..} = expressionCollect value
+
+applyCollect :: Apply Generalised -> Set (ClassConstraint Generalised)
+applyCollect Apply {..} =
+  expressionCollect function <> expressionCollect argument
