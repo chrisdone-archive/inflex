@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -10,6 +12,7 @@
 module Inflex.Defaulter
   ( defaultText
   , defaultResolvedExpression
+  , suggestTypeConstant
   , DefaulterError(..)
   , ResolverDefaulterError(..)
   ) where
@@ -211,7 +214,8 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
 -- Order of priority: FromDecimal x > FromDecimal y > FromInteger,
 -- such that x > y.
 suggestTypeConstant ::
-     NonEmpty (ClassConstraint Polymorphic)
+     forall s. (StagedLocation s ~ Cursor)
+  => NonEmpty (ClassConstraint s)
      -- ^ All of them must only refer to THE SAME, SINGLE type
      -- variable.
   -> Either DefaulterError (Maybe (Type Polymorphic))
@@ -220,7 +224,7 @@ suggestTypeConstant =
   traverse suggestedConstant . toList
   where
     suggestedConstant ::
-         ClassConstraint Polymorphic
+         ClassConstraint s
       -> Either DefaulterError (Maybe (Natural, Type Polymorphic))
     suggestedConstant =
       \case
@@ -233,7 +237,7 @@ suggestTypeConstant =
                      {location = DefaultedCursor, name = IntegerTypeName}))
         ClassConstraint {className = FromDecimalClassName, typ = params} ->
           case params of
-            ConstantType argument@TypeConstant {name = NatTypeName places} :| [_] ->
+            ConstantType TypeConstant {name = NatTypeName places, location} :| [_] ->
               pure
                 (pure
                    ( places
@@ -247,7 +251,10 @@ suggestTypeConstant =
                                  { location = DefaultedCursor
                                  , name = DecimalTypeName
                                  }
-                         , argument = ConstantType argument
+                         , argument =
+                             ConstantType
+                               TypeConstant
+                                 {location, name = NatTypeName places}
                          }))
             _ -> pure Nothing
         _ -> pure Nothing
