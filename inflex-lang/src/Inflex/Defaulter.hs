@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -186,43 +187,12 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
 --------------------------------------------------------------------------------
 -- Type variables mentioned in the class constraints
 
--- | Acess type variables via @constraintsTypeVariables@.
+-- | Access type variables via @constraintsTypeVariables@.
 constraintedTypeVariables ::
      Scheme Polymorphic
   -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
 constraintedTypeVariables Scheme {constraints} =
-  constraintsTypeVariables constraints
-
--- | Obtain the type variables mentioned in class constraints.
---
--- Example:
---
--- f(C a => C b => a -> b -> c) => {a,b}
-constraintsTypeVariables ::
-     Foldable t
-  => t (ClassConstraint Polymorphic)
-  -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
-constraintsTypeVariables constraints =
-  M.fromListWith
-    (<>)
-    (concatMap
-       (\classConstraint@ClassConstraint {typ = types} ->
-          [ (typeVariable, Set.singleton classConstraint)
-          | typeVariable <- toList (foldMap typeVariables types)
-          ])
-       constraints)
-  where
-    typeVariables :: Type Polymorphic -> Set (TypeVariable Polymorphic)
-    typeVariables =
-      \case
-        RecordType t -> typeVariables t
-        VariableType typeVariable -> Set.singleton typeVariable
-        ApplyType TypeApplication {function, argument} ->
-          typeVariables function <> typeVariables argument
-        ConstantType {} -> mempty
-        RowType TypeRow {typeVariable = _, fields}
-                                   -- maybe mempty Set.singleton typeVariable <> -- TODO: Check this is fine.
-         -> foldMap (\Field {typ} -> typeVariables typ) fields
+  constraintsTypeVariablesPolymorphic constraints
 
 --------------------------------------------------------------------------------
 -- Find type variables which can be defaulted

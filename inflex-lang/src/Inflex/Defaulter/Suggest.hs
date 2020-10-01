@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,13 +12,19 @@
 
 module Inflex.Defaulter.Suggest
   ( suggestTypeConstant
+  , constraintsTypeVariablesGeneralised
+  , constraintsTypeVariablesPolymorphic
   ) where
 
 import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Ord
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Inflex.Types
 import           Inflex.Types.Defaulter
 import           Numeric.Natural
@@ -81,3 +88,54 @@ suggestTypeConstant =
                          }))
             _ -> pure Nothing
         _ -> pure Nothing
+
+-- | Get type variables and each constraint that they're mentioned in,
+-- for a generalised type.
+constraintsTypeVariablesGeneralised ::
+     Foldable t
+  => t (ClassConstraint Generalised)
+  -> Map (TypeVariable Generalised) (Set (ClassConstraint Generalised))
+constraintsTypeVariablesGeneralised = constraintsTypeVariablesGeneric
+
+-- | Get type variables and each constraint that they're mentioned in,
+-- for a polymorphic type.
+constraintsTypeVariablesPolymorphic ::
+     Foldable t
+  => t (ClassConstraint Polymorphic)
+  -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
+constraintsTypeVariablesPolymorphic = constraintsTypeVariablesGeneric
+
+-- | Obtain the type variables mentioned in class constraints.
+--
+-- Example:
+--
+-- f(C a => C b => a -> b -> c) => {a,b}
+constraintsTypeVariablesGeneric ::
+     forall s t. (Foldable t, Ord (TypeVariable s), Ord (ClassConstraint s))
+  => t (ClassConstraint s)
+  -> Map (TypeVariable s) (Set (ClassConstraint s))
+constraintsTypeVariablesGeneric constraints =
+  M.fromListWith
+    (<>)
+    (concatMap
+       (\classConstraint@ClassConstraint {typ = types} ->
+          [ (typeVariable, Set.singleton classConstraint)
+          | typeVariable <- toList (foldMap typeVariables types)
+          ])
+       constraints)
+  where
+    typeVariables :: Type s -> Set (TypeVariable s)
+    typeVariables =
+      \case
+        RecordType t -> typeVariables t
+        -- For s=Polymorphic, this is not possible. For s=Generalised,
+        -- this is not relevant. In both cases we only want
+        -- VariableType, below.
+        PolyType {} -> mempty
+        VariableType typeVariable -> Set.singleton typeVariable
+        ApplyType TypeApplication {function, argument} ->
+          typeVariables function <> typeVariables argument
+        ConstantType {} -> mempty
+        RowType TypeRow {typeVariable = _, fields}
+                                   -- maybe mempty Set.singleton typeVariable <> -- TODO: Check this is fine.
+         -> foldMap (\Field {typ} -> typeVariables typ) fields
