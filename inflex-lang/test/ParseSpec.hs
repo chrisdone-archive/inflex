@@ -556,12 +556,12 @@ ops = do
     "x+ [should error]"
     (shouldBe
        (parseText "" "x+")
-       (Left (ParseError (ParseErrors (NoMoreInput :| [NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput])))))
+       (Left (ParseError (ParseErrors (NoMoreInput :| [NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput])))))
   it
     "x + + y [should error]"
     (shouldBe
        (parseText "" "x + + x")
-       (Left (ParseError (ParseErrors (ExpectedCurly :| [ExpectedLet,ExpectedVariable,ExpectedToken OpenRoundToken,ExpectedInteger,ExpectedDecimal,ExpectedToken BackslashToken,ExpectedVariable,ExpectedVariable,ExpectedToken OpenRoundToken])))))
+       (Left (ParseError (ParseErrors (ExpectedCurly :| [ExpectedVariable,ExpectedCurly,ExpectedLet,ExpectedVariable,ExpectedToken OpenRoundToken,ExpectedInteger,ExpectedDecimal,ExpectedToken BackslashToken,ExpectedVariable,ExpectedToken OpenRoundToken])))))
 
 types :: Spec
 types = describe

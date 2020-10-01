@@ -21,7 +21,6 @@ import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Resolver
 import           Inflex.Types
-import           Inflex.Types.Resolver
 import           Numeric.Natural
 
 --------------------------------------------------------------------------------

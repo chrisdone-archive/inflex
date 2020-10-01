@@ -10,7 +10,12 @@
 
 -- | Resolve class constraints into dictionaries.
 
-module Inflex.Resolver where
+module Inflex.Resolver
+  ( resolveText
+  , resolveGeneralised
+  , resolvePolyConstraint
+  , module Inflex.Types.Resolver
+  ) where
 
 import           Control.Monad.State
 import           Control.Monad.Validate
@@ -18,7 +23,6 @@ import           Data.Bifunctor
 import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.List
-import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -57,7 +61,7 @@ resolveGeneralised IsGeneralised {thing, polytype, mappings} = do
          (runState
             (runValidateT
                (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
-            ResolveState {implicits = mempty}))
+            ResolveState {implicits = mempty, defaulteds}))
   pure
     IsResolved
       { mappings
@@ -169,8 +173,9 @@ globalResolver :: DeBrujinNesting -> Global Generalised -> Resolve (Expression R
 globalResolver nesting global@Global {scheme = GeneralisedScheme Scheme {constraints}} = do
   implicits <-
     traverse
-      (\constraint ->
-         case resolveGeneralisedConstraint constraint of
+      (\constraint -> do
+         defaulteds <- gets defaulteds
+         case resolveGeneralisedConstraint defaulteds constraint of
            Left err -> Resolve (refute (pure err))
            Right resolution -> do
              case resolution of
@@ -250,10 +255,11 @@ addImplicitParamsToExpression =
 addImplicitConstraint :: ClassConstraint Polymorphic -> Resolve DeBrujinOffset
 addImplicitConstraint classConstraint = do
   implicits <- gets implicits
+  defaulteds <- gets defaulteds
   case elemIndex classConstraint (toList implicits) of
     Nothing -> do
       let implicits' = implicits :|> classConstraint
-      put (ResolveState {implicits = implicits'}) -- Must be added to the END.
+      put (ResolveState {implicits = implicits', defaulteds}) -- Must be added to the END.
       pure (DeBrujinOffset (length implicits' - 1))
     Just index -> pure (DeBrujinOffset index)
 
@@ -269,9 +275,11 @@ deBrujinIndex (DeBrujinNesting nesting) (DeBrujinOffset offset) =
 -- | Resolve a class constraint. Ensures that generalised type is
 -- polymorphic first.
 resolveGeneralisedConstraint ::
-     ClassConstraint Generalised -> Either ResolutionError ResolutionSuccess
-resolveGeneralisedConstraint constraint = do
-  polymorphicConstraint <- classConstraintPoly constraint
+     Map (TypeVariable Generalised) (Type Polymorphic)
+  -> ClassConstraint Generalised
+  -> Either ResolutionError ResolutionSuccess
+resolveGeneralisedConstraint defaulteds constraint = do
+  polymorphicConstraint <- classConstraintPoly defaulteds constraint
   resolvePolyConstraint polymorphicConstraint
 
 -- | For resolving polymorphic constraints.
@@ -375,10 +383,11 @@ resolveFromDecimal TypeConstant {name = natural} numericType constraint =
 
 -- | Make sure the class constraint is polymorphic.
 classConstraintPoly ::
-     ClassConstraint Generalised
+     Map (TypeVariable Generalised) (Type Polymorphic)
+  -> ClassConstraint Generalised
   -> Either ResolutionError (ClassConstraint Polymorphic)
-classConstraintPoly ClassConstraint {typ, ..} =
-  case traverse constrainPolymorphic typ of
+classConstraintPoly defaulteds ClassConstraint {typ, ..} =
+  case traverse (constrainPolymorphic defaulteds) typ of
     Left typeVariables -> Left (NoInstanceAndMono className typeVariables)
     Right polyTypes -> pure ClassConstraint {typ = polyTypes, ..}
 
@@ -386,13 +395,18 @@ classConstraintPoly ClassConstraint {typ, ..} =
 -- polymorphic type. If there are any monomorphic variables, returns
 -- Left with that variable.
 constrainPolymorphic ::
-     Type Generalised -> Either (TypeVariable Generalised) (Type Polymorphic)
-constrainPolymorphic = go
+     Map (TypeVariable Generalised) (Type Polymorphic)
+  -> Type Generalised
+  -> Either (TypeVariable Generalised) (Type Polymorphic)
+constrainPolymorphic defaulteds = go
   where
     go =
       \case
         RecordType t -> fmap RecordType (go t)
-        VariableType typeVariable -> Left typeVariable
+        VariableType typeVariable ->
+          case M.lookup typeVariable defaulteds of
+            Just type' -> pure type'
+            Nothing -> Left typeVariable
         ApplyType TypeApplication {function, argument, location, kind} -> do
           function' <- go function
           argument' <- go argument
@@ -407,13 +421,9 @@ constrainPolymorphic = go
           fields' <- traverse fieldSolve fields
           pure
             (RowType
-               TypeRow
-                 { fields = fields'
-                 , typeVariable = typeVariable'
-                 , ..
-                 })
+               TypeRow {fields = fields', typeVariable = typeVariable', ..})
     fieldSolve Field {..} = do
-      typ' <- constrainPolymorphic typ
+      typ' <- go typ
       pure Field {typ = typ', ..}
 
 --------------------------------------------------------------------------------

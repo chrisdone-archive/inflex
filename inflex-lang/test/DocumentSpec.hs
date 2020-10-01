@@ -107,49 +107,7 @@ errors = do
                        }
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = (Uuid u2)
-                     , name = "y"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = ExpressionCursor
-                                    , number = IntegerNumber 1
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location = ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     , order = 1
-                     , code = "1"
-                     }
-                 , Named
-                     { uuid = (Uuid u1)
-                     , name = "x"
-                     , thing =
-                         Left
-                           (LoadResolveError
-                              (ResolverErrors
-                                 (NoInstanceAndMono FromIntegerClassName
-                                    (TypeVariable
-                                       { location =
-                                           ApplyArgCursor ExpressionCursor
-                                       , prefix = PolyPrefix
-                                       , index = 1
-                                       , kind = TypeKind
-                                       }) :|
-                                  [])))
-                     , order = 0
-                     , code = "y y"
-                     }
-                 ]
-             }))
+          (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y y", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
 
 success :: SpecWith ()
 success = do

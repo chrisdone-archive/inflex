@@ -22,6 +22,7 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Writer
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Functor.Identity
 import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -35,7 +36,6 @@ import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Defaulter
-import           Inflex.Types.Resolver
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -86,11 +86,12 @@ generateReplacements ::
      Scheme Polymorphic
   -> Either DefaulterError (Map (ClassConstraint Polymorphic) (Set Substitution))
 generateReplacements scheme0 = do
-  typeVariableReplacements <-
-    M.traverseMaybeWithKey
-      (\_key constraints' ->
-         fmap (fmap (constraints', )) (suggestTypeConstant constraints'))
-      constrainedDefaultableTypeVariables
+  let typeVariableReplacements =
+        M.mapMaybeWithKey
+          (\_key constraints' ->
+             runIdentity
+               (fmap (fmap (constraints', )) (suggestTypeConstant constraints')))
+          constrainedDefaultableTypeVariables
   let classConstraintReplacements =
         M.fromListWith
           (<>)

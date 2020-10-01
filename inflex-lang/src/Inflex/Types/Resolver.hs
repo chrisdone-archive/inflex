@@ -94,6 +94,7 @@ data ResolveState = ResolveState
     -- ^-------------|
     -- has REVERSED order!
     -- :: C2, C1 => ..
+  , defaulteds :: !(Map (TypeVariable Generalised) (Type Polymorphic))
   }
 
 newtype Resolve a = Resolve

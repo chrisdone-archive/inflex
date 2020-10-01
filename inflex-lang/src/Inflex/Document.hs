@@ -36,7 +36,6 @@ import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
-import           Inflex.Types.Resolver
 
 --------------------------------------------------------------------------------
 -- Types
