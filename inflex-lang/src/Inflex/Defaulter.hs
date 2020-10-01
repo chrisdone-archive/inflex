@@ -186,15 +186,23 @@ makeValidDefault classConstraintOriginal classConstraintDefaulted = do
 --------------------------------------------------------------------------------
 -- Type variables mentioned in the class constraints
 
+-- | Acess type variables via @constraintsTypeVariables@.
+constraintedTypeVariables ::
+     Scheme Polymorphic
+  -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
+constraintedTypeVariables Scheme {constraints} =
+  constraintsTypeVariables constraints
+
 -- | Obtain the type variables mentioned in class constraints.
 --
 -- Example:
 --
 -- f(C a => C b => a -> b -> c) => {a,b}
-constraintedTypeVariables ::
-     Scheme Polymorphic
+constraintsTypeVariables ::
+     Foldable t
+  => t (ClassConstraint Polymorphic)
   -> Map (TypeVariable Polymorphic) (Set (ClassConstraint Polymorphic))
-constraintedTypeVariables Scheme {constraints} =
+constraintsTypeVariables constraints =
   M.fromListWith
     (<>)
     (concatMap
@@ -212,9 +220,9 @@ constraintedTypeVariables Scheme {constraints} =
         ApplyType TypeApplication {function, argument} ->
           typeVariables function <> typeVariables argument
         ConstantType {} -> mempty
-        RowType TypeRow {typeVariable = _, fields} ->
-          -- maybe mempty Set.singleton typeVariable <> -- TODO: Check this is fine.
-          foldMap (\Field{typ} -> typeVariables typ) fields
+        RowType TypeRow {typeVariable = _, fields}
+                                   -- maybe mempty Set.singleton typeVariable <> -- TODO: Check this is fine.
+         -> foldMap (\Field {typ} -> typeVariables typ) fields
 
 --------------------------------------------------------------------------------
 -- Find type variables which can be defaulted
