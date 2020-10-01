@@ -15,6 +15,7 @@ import           Data.UUID.V4
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Resolver
+import           Inflex.Solver
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -108,6 +109,11 @@ errors = do
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
           (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y y", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
+  eval_it
+    "Missing field"
+    [("x", "{a:3}.z")]
+    (\[u1] ->
+       [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:3}.z", thing = Left (LoadSolveError (SolverErrors (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = RowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "z"}, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = FieldTypePrefix, index = 3, kind = TypeKind})}]}) (TypeRow {location = PropExpressionCursor ExpressionCursor, typeVariable = Nothing, fields = [Field {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor), name = FieldName {unFieldName = "a"}, typ = VariableType (TypeVariable {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) :| [])))}])
 
 success :: SpecWith ()
 success = do
