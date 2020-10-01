@@ -17,6 +17,7 @@ module Inflex.Defaulter.Suggest
   ) where
 
 import           Data.Foldable
+import           Data.Functor.Identity
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
@@ -26,7 +27,7 @@ import           Data.Ord
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Inflex.Types
-import           Inflex.Types.Defaulter
+import           Inflex.Types.Defaulter ()
 import           Numeric.Natural
 
 --------------------------------------------------------------------------------
@@ -48,14 +49,14 @@ suggestTypeConstant ::
   => NonEmpty (ClassConstraint s)
      -- ^ All of them must only refer to THE SAME, SINGLE type
      -- variable.
-  -> Either DefaulterError (Maybe (Type Polymorphic))
+  -> Identity (Maybe (Type Polymorphic))
 suggestTypeConstant =
   fmap (listToMaybe . map snd . sortBy (flip (comparing fst)) . catMaybes) .
   traverse suggestedConstant . toList
   where
     suggestedConstant ::
          ClassConstraint s
-      -> Either DefaulterError (Maybe (Natural, Type Polymorphic))
+      -> Identity (Maybe (Natural, Type Polymorphic))
     suggestedConstant =
       \case
         ClassConstraint {className = FromIntegerClassName} ->

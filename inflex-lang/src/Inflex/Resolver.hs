@@ -16,12 +16,17 @@ import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Functor.Identity
 import           Data.List
+import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq(..))
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Inflex.Defaulter.Suggest
 import           Inflex.Generaliser
 import           Inflex.Location
 import           Inflex.Type (expressionType, instanceNameType, typeOutput)
@@ -65,7 +70,16 @@ resolveGeneralised IsGeneralised {thing, polytype, mappings} = do
             , typ = polytype
             }
       }
-
+  where
+    allClassConstraints = expressionCollect thing
+    typeVariableToConstraints =
+      constraintsTypeVariablesGeneralised allClassConstraints
+    defaulteds =
+      M.mapMaybe
+        (\classConstraints -> do
+           constraints <- NE.nonEmpty (toList classConstraints)
+           runIdentity (suggestTypeConstant constraints))
+        typeVariableToConstraints
 
 --------------------------------------------------------------------------------
 -- Resolving expression tree
