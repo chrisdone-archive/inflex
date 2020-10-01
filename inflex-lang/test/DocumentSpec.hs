@@ -683,65 +683,509 @@ records :: Spec
 records = do
   eval_it
     "Arith inside a record is fine"
-    [("x","{a:3*2}")]
-    (\[u1] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:3*2}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 6, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression (InfixLeftCursor ExpressionCursor)), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]}))}))}])
+    [("x", "{a:3*2}")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:3*2}"
+           , thing =
+               Right
+                 (RecordExpression
+                    (Record
+                       { fields =
+                           [ FieldE
+                               { name = FieldName {unFieldName = "a"}
+                               , expression =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location = SteppedCursor
+                                           , number = IntegerNumber 6
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        RecordFieldCursor
+                                                          (FieldName
+                                                             {unFieldName = "a"})
+                                                          (RowFieldExpression
+                                                             (InfixLeftCursor
+                                                                ExpressionCursor))
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , location =
+                                   RecordFieldCursor
+                                     (FieldName {unFieldName = "a"})
+                                     TypeCursor
+                               }
+                           ]
+                       , location = ExpressionCursor
+                       , typ =
+                           RecordType
+                             (RowType
+                                (TypeRow
+                                   { location = ExpressionCursor
+                                   , typeVariable = Nothing
+                                   , fields =
+                                       [ Field
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "a"})
+                                                 TypeCursor
+                                           , name =
+                                               FieldName {unFieldName = "a"}
+                                           , typ =
+                                               PolyType
+                                                 (TypeVariable
+                                                    { location = ()
+                                                    , prefix = ()
+                                                    , index = 0
+                                                    , kind = TypeKind
+                                                    })
+                                           }
+                                       ]
+                                   }))
+                       }))
+           }
+       ])
   eval_it
     "Arith referencing a unary record is fine"
-    [("x","{a:666}")
-    ,("y","x.a * 2")]
-    (\[u1,u2] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:666}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 666, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]}))}))},Named {uuid = Uuid u2, name = "y", order = 1, code = "x.a * 2", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 1332, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})))}])
+    [("x", "{a:666}"), ("y", "x.a * 2")]
+    (\[u1, u2] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:666}"
+           , thing =
+               Right
+                 (RecordExpression
+                    (Record
+                       { fields =
+                           [ FieldE
+                               { name = FieldName {unFieldName = "a"}
+                               , expression =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "a"})
+                                                 (RowFieldExpression
+                                                    ExpressionCursor)
+                                           , number = IntegerNumber 666
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        RecordFieldCursor
+                                                          (FieldName
+                                                             {unFieldName = "a"})
+                                                          (RowFieldExpression
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , location =
+                                   RecordFieldCursor
+                                     (FieldName {unFieldName = "a"})
+                                     TypeCursor
+                               }
+                           ]
+                       , location = ExpressionCursor
+                       , typ =
+                           RecordType
+                             (RowType
+                                (TypeRow
+                                   { location = ExpressionCursor
+                                   , typeVariable = Nothing
+                                   , fields =
+                                       [ Field
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "a"})
+                                                 TypeCursor
+                                           , name =
+                                               FieldName {unFieldName = "a"}
+                                           , typ =
+                                               PolyType
+                                                 (TypeVariable
+                                                    { location = ()
+                                                    , prefix = ()
+                                                    , index = 0
+                                                    , kind = TypeKind
+                                                    })
+                                           }
+                                       ]
+                                   }))
+                       }))
+           }
+       , Named
+           { uuid = Uuid u2
+           , name = "y"
+           , order = 1
+           , code = "x.a * 2"
+           , thing =
+               Right
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { location = SteppedCursor
+                          , number = IntegerNumber 1332
+                          , typ =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       RecordFieldCursor
+                                         (FieldName {unFieldName = "a"})
+                                         (RowFieldExpression ExpressionCursor)
+                                   , name = IntegerTypeName
+                                   })
+                          })))
+           }
+       ])
   eval_it_pending
     "Referencing a single field from a 2-ary record is fine (without type sig)"
-    [("x","{a:1, b:8}")
-    ,("y","x.a")]
-    (\[_u1,_u2] -> [])
+    [("x", "{a:1, b:8}"), ("y", "x.a")]
+    (\[_u1, _u2] -> [])
     "Results in NoInstanceAndMono FromIntegerClassName when we have the `b' field present."
   -- This example demonstrates that if the `b' field has a type
   -- annotation, then there is no class inference issue.
   eval_it
     "Referencing a single field from a 2-ary record is fine (with type sig)"
-    [("x","{a:1, b:8 :: Integer}")
-    ,("y","x.a")]
-    (\[u1,u2] -> [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:1, b:8 :: Integer}", thing = Right (RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor},FieldE {name = FieldName {unFieldName = "b"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 8, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})},Field {location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor, name = FieldName {unFieldName = "b"}, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})}]}))}))},Named {uuid = Uuid u2, name = "y", order = 1, code = "x.a", thing = Right (LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})))}])
+    [("x", "{a:1, b:8 :: Integer}"), ("y", "x.a")]
+    (\[u1, u2] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:1, b:8 :: Integer}"
+           , thing =
+               Right
+                 (RecordExpression
+                    (Record
+                       { fields =
+                           [ FieldE
+                               { name = FieldName {unFieldName = "a"}
+                               , expression =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "a"})
+                                                 (RowFieldExpression
+                                                    ExpressionCursor)
+                                           , number = IntegerNumber 1
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        RecordFieldCursor
+                                                          (FieldName
+                                                             {unFieldName = "a"})
+                                                          (RowFieldExpression
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , location =
+                                   RecordFieldCursor
+                                     (FieldName {unFieldName = "a"})
+                                     TypeCursor
+                               }
+                           , FieldE
+                               { name = FieldName {unFieldName = "b"}
+                               , expression =
+                                   LiteralExpression
+                                     (NumberLiteral
+                                        (Number
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "b"})
+                                                 (RowFieldExpression
+                                                    ExpressionCursor)
+                                           , number = IntegerNumber 8
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        RecordFieldCursor
+                                                          (FieldName
+                                                             {unFieldName = "b"})
+                                                          (RowFieldExpression
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }))
+                               , location =
+                                   RecordFieldCursor
+                                     (FieldName {unFieldName = "b"})
+                                     TypeCursor
+                               }
+                           ]
+                       , location = ExpressionCursor
+                       , typ =
+                           RecordType
+                             (RowType
+                                (TypeRow
+                                   { location = ExpressionCursor
+                                   , typeVariable = Nothing
+                                   , fields =
+                                       [ Field
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "a"})
+                                                 TypeCursor
+                                           , name =
+                                               FieldName {unFieldName = "a"}
+                                           , typ =
+                                               PolyType
+                                                 (TypeVariable
+                                                    { location = ()
+                                                    , prefix = ()
+                                                    , index = 0
+                                                    , kind = TypeKind
+                                                    })
+                                           }
+                                       , Field
+                                           { location =
+                                               RecordFieldCursor
+                                                 (FieldName {unFieldName = "b"})
+                                                 TypeCursor
+                                           , name =
+                                               FieldName {unFieldName = "b"}
+                                           , typ =
+                                               ConstantType
+                                                 (TypeConstant
+                                                    { location =
+                                                        RecordFieldCursor
+                                                          (FieldName
+                                                             {unFieldName = "b"})
+                                                          (RowFieldExpression
+                                                             ExpressionCursor)
+                                                    , name = IntegerTypeName
+                                                    })
+                                           }
+                                       ]
+                                   }))
+                       }))
+           }
+       , Named
+           { uuid = Uuid u2
+           , name = "y"
+           , order = 1
+           , code = "x.a"
+           , thing =
+               Right
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { location =
+                              RecordFieldCursor
+                                (FieldName {unFieldName = "a"})
+                                (RowFieldExpression ExpressionCursor)
+                          , number = IntegerNumber 1
+                          , typ =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       RecordFieldCursor
+                                         (FieldName {unFieldName = "a"})
+                                         (RowFieldExpression ExpressionCursor)
+                                   , name = IntegerTypeName
+                                   })
+                          })))
+           }
+       ])
   eval_it
     "Defaulting for a verbatim copy of a record is also fine:"
-    [("x","{a:1, b:8}")
-    ,("y","x")]
-    (\[u1,u2] -> let record = RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "a"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor},FieldE {name = FieldName {unFieldName = "b"}, expression = LiteralExpression (NumberLiteral (Number {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), number = IntegerNumber 8, typ = ConstantType (TypeConstant {location = RecordFieldCursor (FieldName {unFieldName = "b"}) (RowFieldExpression ExpressionCursor), name = IntegerTypeName})})), location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor}], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor, name = FieldName {unFieldName = "a"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})},Field {location = RecordFieldCursor (FieldName {unFieldName = "b"}) TypeCursor, name = FieldName {unFieldName = "b"}, typ = PolyType (TypeVariable {location = (), prefix = (), index = 1, kind = TypeKind})}]}))})
-                 in [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:1, b:8}", thing = Right record},
-                     Named {uuid = Uuid u2, name = "y", order = 1, code = "x", thing = Right record}])
+    [("x", "{a:1, b:8}"), ("y", "x")]
+    (\[u1, u2] ->
+       let record =
+             RecordExpression
+               (Record
+                  { fields =
+                      [ FieldE
+                          { name = FieldName {unFieldName = "a"}
+                          , expression =
+                              LiteralExpression
+                                (NumberLiteral
+                                   (Number
+                                      { location =
+                                          RecordFieldCursor
+                                            (FieldName {unFieldName = "a"})
+                                            (RowFieldExpression ExpressionCursor)
+                                      , number = IntegerNumber 1
+                                      , typ =
+                                          ConstantType
+                                            (TypeConstant
+                                               { location =
+                                                   RecordFieldCursor
+                                                     (FieldName
+                                                        {unFieldName = "a"})
+                                                     (RowFieldExpression
+                                                        ExpressionCursor)
+                                               , name = IntegerTypeName
+                                               })
+                                      }))
+                          , location =
+                              RecordFieldCursor
+                                (FieldName {unFieldName = "a"})
+                                TypeCursor
+                          }
+                      , FieldE
+                          { name = FieldName {unFieldName = "b"}
+                          , expression =
+                              LiteralExpression
+                                (NumberLiteral
+                                   (Number
+                                      { location =
+                                          RecordFieldCursor
+                                            (FieldName {unFieldName = "b"})
+                                            (RowFieldExpression ExpressionCursor)
+                                      , number = IntegerNumber 8
+                                      , typ =
+                                          ConstantType
+                                            (TypeConstant
+                                               { location =
+                                                   RecordFieldCursor
+                                                     (FieldName
+                                                        {unFieldName = "b"})
+                                                     (RowFieldExpression
+                                                        ExpressionCursor)
+                                               , name = IntegerTypeName
+                                               })
+                                      }))
+                          , location =
+                              RecordFieldCursor
+                                (FieldName {unFieldName = "b"})
+                                TypeCursor
+                          }
+                      ]
+                  , location = ExpressionCursor
+                  , typ =
+                      RecordType
+                        (RowType
+                           (TypeRow
+                              { location = ExpressionCursor
+                              , typeVariable = Nothing
+                              , fields =
+                                  [ Field
+                                      { location =
+                                          RecordFieldCursor
+                                            (FieldName {unFieldName = "a"})
+                                            TypeCursor
+                                      , name = FieldName {unFieldName = "a"}
+                                      , typ =
+                                          PolyType
+                                            (TypeVariable
+                                               { location = ()
+                                               , prefix = ()
+                                               , index = 0
+                                               , kind = TypeKind
+                                               })
+                                      }
+                                  , Field
+                                      { location =
+                                          RecordFieldCursor
+                                            (FieldName {unFieldName = "b"})
+                                            TypeCursor
+                                      , name = FieldName {unFieldName = "b"}
+                                      , typ =
+                                          PolyType
+                                            (TypeVariable
+                                               { location = ()
+                                               , prefix = ()
+                                               , index = 1
+                                               , kind = TypeKind
+                                               })
+                                      }
+                                  ]
+                              }))
+                  })
+        in [ Named
+               { uuid = Uuid u1
+               , name = "x"
+               , order = 0
+               , code = "{a:1, b:8}"
+               , thing = Right record
+               }
+           , Named
+               { uuid = Uuid u2
+               , name = "y"
+               , order = 1
+               , code = "x"
+               , thing = Right record
+               }
+           ])
   eval_it
     "Immediate access of a record's field is fine"
-    [("x","{a:1}.a")]
-    (\[u1] -> [ Named
-                  { uuid = Uuid u1
-                  , name = "x"
-                  , order = 0
-                  , code = "{a:1}.a"
-                  , thing =
-                      Right
-                        (LiteralExpression
-                           (NumberLiteral
-                              (Number
-                                 { location =
-                                     PropExpressionCursor
-                                       (RecordFieldCursor
-                                          (FieldName {unFieldName = "a"})
-                                          (RowFieldExpression ExpressionCursor))
-                                 , number = IntegerNumber 1
-                                 , typ =
-                                     ConstantType
-                                       (TypeConstant
-                                          { location =
-                                              PropExpressionCursor
-                                                (RecordFieldCursor
-                                                   (FieldName {unFieldName = "a"})
-                                                   (RowFieldExpression ExpressionCursor))
-                                          , name = IntegerTypeName
-                                          })
-                                 })))
-                  }
-              ])
+    [("x", "{a:1}.a")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:1}.a"
+           , thing =
+               Right
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { location =
+                              PropExpressionCursor
+                                (RecordFieldCursor
+                                   (FieldName {unFieldName = "a"})
+                                   (RowFieldExpression ExpressionCursor))
+                          , number = IntegerNumber 1
+                          , typ =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       PropExpressionCursor
+                                         (RecordFieldCursor
+                                            (FieldName {unFieldName = "a"})
+                                            (RowFieldExpression ExpressionCursor))
+                                   , name = IntegerTypeName
+                                   })
+                          })))
+           }
+       ])
+  eval_it
+    "Multiply record fields"
+    [("x", "{a:3,b:2}.a * {x:1,y:2}.y")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:3,b:2}.a * {x:1,y:2}.y"
+           , thing =
+               Right
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { location = SteppedCursor
+                          , number = IntegerNumber 6
+                          , typ =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       InfixLeftCursor
+                                         (PropExpressionCursor
+                                            (RecordFieldCursor
+                                               (FieldName {unFieldName = "a"})
+                                               (RowFieldExpression
+                                                  ExpressionCursor)))
+                                   , name = IntegerTypeName
+                                   })
+                          })))
+           }
+       ])
 
 regression :: Spec
 regression = do
