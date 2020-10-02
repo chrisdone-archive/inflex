@@ -1301,6 +1301,48 @@ records = do
            }
        ])
   eval_it
+    "Nested record fields"
+    [("x", "({a:{b:2}}.a).b")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "({a:{b:2}}.a).b"
+           , thing =
+               Right
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { location =
+                              PropExpressionCursor
+                                (PropExpressionCursor
+                                   (RecordFieldCursor
+                                      (FieldName {unFieldName = "a"})
+                                      (RowFieldExpression
+                                         (RecordFieldCursor
+                                            (FieldName {unFieldName = "b"})
+                                            (RowFieldExpression ExpressionCursor)))))
+                          , number = IntegerNumber 2
+                          , typ =
+                              ConstantType
+                                (TypeConstant
+                                   { location =
+                                       PropExpressionCursor
+                                         (PropExpressionCursor
+                                            (RecordFieldCursor
+                                               (FieldName {unFieldName = "a"})
+                                               (RowFieldExpression
+                                                  (RecordFieldCursor
+                                                     (FieldName {unFieldName = "b"})
+                                                     (RowFieldExpression
+                                                        ExpressionCursor)))))
+                                   , name = IntegerTypeName
+                                   })
+                          })))
+           }
+       ])
+  eval_it
     "Multiply record fields"
     [("x", "{a:3,b:2}.a * {x:1,y:2}.y")]
     (\[u1] ->
