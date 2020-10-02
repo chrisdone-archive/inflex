@@ -5,7 +5,9 @@
 
 module ParseSpec where
 
+import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.Vector as V
 import           Inflex.Instances ()
 import           Inflex.Lexer
 import           Inflex.Parser
@@ -555,13 +557,13 @@ ops = do
   it
     "x+ [should error]"
     (shouldBe
-       (parseText "" "x+")
-       (Left (ParseError (ParseErrors (NoMoreInput :| [NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput,NoMoreInput])))))
+       (first (const ()) (parseText "" "x+"))
+       (Left ()))
   it
     "x + + y [should error]"
     (shouldBe
-       (parseText "" "x + + x")
-       (Left (ParseError (ParseErrors (ExpectedCurly :| [ExpectedVariable,ExpectedToken OpenRoundToken,ExpectedCurly,ExpectedLet,ExpectedVariable,ExpectedToken OpenRoundToken,ExpectedInteger,ExpectedDecimal,ExpectedToken BackslashToken,ExpectedVariable,ExpectedToken OpenRoundToken])))))
+       (first (const ()) (parseText "" "x + + x"))
+       (Left ()))
 
 types :: Spec
 types = describe
@@ -749,70 +751,131 @@ types = describe
                             })))))
 
 literals :: Spec
-literals = it
-             "Literal"
-             (do shouldBe
-                   (parseText "" "123")
-                   (Right
-                      (LiteralExpression
-                         (NumberLiteral
-                            Number
-                              { location =
-                                  SourceLocation
-                                    { start = SourcePos {name = "", line = 1, column = 1}
-                                    , end = SourcePos {name = "", line = 1, column = 4}
-                                    }
-                              , number = IntegerNumber 123
-                              , typ = Nothing
-                              })))
-                 shouldBe
-                   (parseText "" "123.0")
-                   (Right
-                      (LiteralExpression
-                         (NumberLiteral
-                            (Number
-                               { location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 1, name = ""}
-                                     , end = SourcePos {line = 1, column = 6, name = ""}
-                                     }
-                               , number =
-                                   DecimalNumber (Decimal {places = 1, integer = 1230})
-                               , typ = Nothing
-                               }))))
-                 shouldBe
-                   (parseText "" "123.123")
-                   (Right
-                      (LiteralExpression
-                         (NumberLiteral
-                            (Number
-                               { location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 1, name = ""}
-                                     , end = SourcePos {line = 1, column = 8, name = ""}
-                                     }
-                               , number =
-                                   DecimalNumber (Decimal {places = 3, integer = 123123})
-                               , typ = Nothing
-                               }))))
-                 shouldBe
-                   (parseText "" "0.000")
-                   (Right
-                      (LiteralExpression
-                         (NumberLiteral
-                            (Number
-                               { location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 1, name = ""}
-                                     , end = SourcePos {line = 1, column = 6, name = ""}
-                                     }
-                               , number =
-                                   DecimalNumber (Decimal {places = 3, integer = 0})
-                               , typ = Nothing
-                               })))))
+literals =
+  it
+    "Literal"
+    (do shouldBe
+          (parseText "" "[]")
+          (Right
+             (ArrayExpression
+                (Array
+                   { expressions =
+                       V.fromList
+                         []
+                   , typ = Nothing
+                   , location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 3, name = ""}
+                         }
+                   })))
+        shouldBe
+          (parseText "" "[123,123]")
+          (Right
+             (ArrayExpression
+                (Array
+                   { expressions =
+                       V.fromList
+                         [ LiteralExpression
+                             (NumberLiteral
+                                (Number
+                                   { location =
+                                       SourceLocation
+                                         { start =
+                                             SourcePos
+                                               {line = 1, column = 2, name = ""}
+                                         , end =
+                                             SourcePos
+                                               {line = 1, column = 5, name = ""}
+                                         }
+                                   , number = IntegerNumber 123
+                                   , typ = Nothing
+                                   }))
+                         , LiteralExpression
+                             (NumberLiteral
+                                (Number
+                                   { location =
+                                       SourceLocation
+                                         { start =
+                                             SourcePos
+                                               {line = 1, column = 6, name = ""}
+                                         , end =
+                                             SourcePos
+                                               {line = 1, column = 9, name = ""}
+                                         }
+                                   , number = IntegerNumber 123
+                                   , typ = Nothing
+                                   }))
+                         ]
+                   , typ = Nothing
+                   , location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 10, name = ""}
+                         }
+                   })))
+        shouldBe
+          (parseText "" "123")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   Number
+                     { location =
+                         SourceLocation
+                           { start = SourcePos {name = "", line = 1, column = 1}
+                           , end = SourcePos {name = "", line = 1, column = 4}
+                           }
+                     , number = IntegerNumber 123
+                     , typ = Nothing
+                     })))
+        shouldBe
+          (parseText "" "123.0")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 1, integer = 1230})
+                      , typ = Nothing
+                      }))))
+        shouldBe
+          (parseText "" "123.123")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 8, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 3, integer = 123123})
+                      , typ = Nothing
+                      }))))
+        shouldBe
+          (parseText "" "0.000")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 1, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 3, integer = 0})
+                      , typ = Nothing
+                      })))))
 
 globals :: Spec
 globals =

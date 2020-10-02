@@ -28,6 +28,8 @@ module Inflex.Lexer
   , _LowerWordToken
   , _OpenRoundToken
   , _CloseRoundToken
+  , _OpenSquareToken
+  , _CloseSquareToken
   , _OpenCurlyToken
   , _CloseCurlyToken
   , _LetToken

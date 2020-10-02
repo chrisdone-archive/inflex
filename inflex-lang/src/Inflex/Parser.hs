@@ -15,15 +15,16 @@ module Inflex.Parser where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
-import           Data.Semigroup.Foldable
 import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import           Data.List.Split
 import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
+import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
+import qualified Data.Vector as V
 import           Inflex.Instances ()
 import           Inflex.Lexer
 import           Inflex.Location
@@ -60,6 +61,8 @@ data ParseError
   | ExpectedLet
   | ExpectedCurly
   | ExpectedCloseCurly
+  | ExpectedSquare
+  | ExpectedCloseSquare
   | ExpectedPeriod
   | ExpectedIn
   | ExpectedEquals
@@ -194,6 +197,7 @@ unchainedExpressionParser =
     (NE.fromList
        [ PropExpression <$> propParser
        , RecordExpression <$> recordParser
+       , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
        , ApplyExpression <$> applyParser
        , LiteralExpression <$> literalParser
@@ -225,6 +229,40 @@ recordParser = do
   Located {location = SourceLocation {end}} <-
     token ExpectedCloseCurly (preview _CloseCurlyToken)
   pure Record {fields, typ = Nothing, location = SourceLocation {start, end}}
+
+arrayParser :: Parser (Array Parsed)
+arrayParser = do
+  Located {location = SourceLocation {start}} <-
+    token ExpectedSquare (preview _OpenSquareToken)
+  quickEnd <-
+    fmap
+      (\Located {location = SourceLocation {end}} -> pure end)
+      (token ExpectedCloseSquare (preview _CloseSquareToken)) <>
+    pure Nothing
+  (expressions, end) <-
+    let loop = do
+          expression <- expressionParser
+          comma <-
+            fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
+            pure False
+          rest <-
+            if comma
+              then loop
+              else pure []
+          pure (expression : rest)
+     in case quickEnd of
+          Nothing -> do
+            ret <- loop
+            Located {location = SourceLocation {end}} <-
+              token ExpectedCloseSquare (preview _CloseSquareToken)
+            pure (ret, end)
+          Just end -> pure ([], end)
+  pure
+    Array
+      { expressions = V.fromList expressions
+      , typ = Nothing
+      , location = SourceLocation {start, end}
+      }
 
 propParser :: Parser (Prop Parsed)
 propParser = do
