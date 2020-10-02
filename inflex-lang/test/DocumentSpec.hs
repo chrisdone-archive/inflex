@@ -12,6 +12,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
 import           Data.UUID.V4
+import qualified Data.Vector as V
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Resolver
@@ -1334,7 +1335,8 @@ records = do
                                                (FieldName {unFieldName = "a"})
                                                (RowFieldExpression
                                                   (RecordFieldCursor
-                                                     (FieldName {unFieldName = "b"})
+                                                     (FieldName
+                                                        {unFieldName = "b"})
                                                      (RowFieldExpression
                                                         ExpressionCursor)))))
                                    , name = IntegerTypeName
@@ -1488,6 +1490,67 @@ records = do
                                    , kind = TypeKind
                                    })
                           })))
+           }
+       ])
+  eval_it
+    "Arrays"
+    [("x", "[1,2*3]")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "[1,2*3]"
+           , thing =
+               Right
+                 (ArrayExpression
+                    (Array
+                       { expressions =
+                           V.fromList
+                             [ LiteralExpression
+                                 (NumberLiteral
+                                    (Number
+                                       { location =
+                                           ArrayElementCursor 0 ExpressionCursor
+                                       , number = IntegerNumber 1
+                                       , typ =
+                                           ConstantType
+                                             (TypeConstant
+                                                { location =
+                                                    ArrayElementCursor
+                                                      0
+                                                      ExpressionCursor
+                                                , name = IntegerTypeName
+                                                })
+                                       }))
+                             , LiteralExpression
+                                 (NumberLiteral
+                                    (Number
+                                       { location = SteppedCursor
+                                       , number = IntegerNumber 6
+                                       , typ =
+                                           ConstantType
+                                             (TypeConstant
+                                                { location =
+                                                    ArrayElementCursor
+                                                      1
+                                                      (InfixLeftCursor
+                                                         ExpressionCursor)
+                                                , name = IntegerTypeName
+                                                })
+                                       }))
+                             ]
+                       , typ =
+                           ArrayType
+                             (PolyType
+                                (TypeVariable
+                                   { location = ()
+                                   , prefix = ()
+                                   , index = 0
+                                   , kind = TypeKind
+                                   }))
+                       , location = ExpressionCursor
+                       }))
            }
        ])
 
