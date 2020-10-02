@@ -228,10 +228,13 @@ recordParser = do
 
 propParser :: Parser (Prop Parsed)
 propParser = do
-  expression <- (RecordExpression <$> recordParser) <> (VariableExpression <$> variableParser)
+  expression <-
+    (RecordExpression <$> recordParser) <>
+    (VariableExpression <$> variableParser) <>
+    parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   name <- fieldNameParser
-  pure Prop {typ=Nothing, ..}
+  pure Prop {typ = Nothing, ..}
 
 fieldNameParser :: Parser FieldName
 fieldNameParser = do
