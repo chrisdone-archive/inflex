@@ -93,6 +93,8 @@ expressionGenerator =
       fmap LiteralExpression (literalGenerator literal)
     PropExpression prop ->
       fmap PropExpression (propGenerator prop)
+    ArrayExpression array ->
+      fmap ArrayExpression (arrayGenerator array)
     RecordExpression record ->
       fmap RecordExpression (recordGenerator record)
     LambdaExpression lambda ->
@@ -145,6 +147,20 @@ propGenerator Prop {..} = do
     EqualityConstraint
       {type1 = RecordType rowType, type2 = expressionType expression', ..}
   pure Prop {typ = fieldType, expression = expression', ..}
+
+arrayGenerator :: Array Filled -> Generate e (Array Generated)
+arrayGenerator Array {..} = do
+  elementVariable <- generateVariableType location ArrayElementPrefix TypeKind
+  expressions' <-
+    traverse
+      (\e -> do
+         e' <- expressionGenerator e
+         addEqualityConstraint
+           EqualityConstraint
+             {type1 = elementVariable, type2 = expressionType e', ..}
+         pure e')
+      expressions
+  pure Array {typ = ArrayType elementVariable, expressions = expressions', ..}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =
@@ -461,6 +477,7 @@ renamedToGenerated :: Type Renamed -> Type Generated
 renamedToGenerated =
   \case
     RecordType t -> RecordType (renamedToGenerated t)
+    ArrayType t -> ArrayType (renamedToGenerated t)
     VariableType TypeVariable {..} -> VariableType TypeVariable {..}
     RowType TypeRow {..} ->
       RowType
@@ -508,6 +525,7 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
     rewriteType =
       \case
         RecordType t -> fmap RecordType (rewriteType t)
+        ArrayType t -> fmap ArrayType (rewriteType t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
           typeVariable' <- traverse rewriteTypeVar typeVariable

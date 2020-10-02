@@ -83,6 +83,7 @@ toPolymorphic =
     go =
       \case
         RecordType t -> fmap RecordType (go t)
+        ArrayType t -> fmap ArrayType (go t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
           typeVariable' <- traverse polymorphizeTypeVar typeVariable
@@ -130,6 +131,7 @@ generaliseType substitutions = go
     go =
       \case
         RecordType t -> RecordType (go t)
+        ArrayType t -> ArrayType (go t)
         VariableType typeVariable@TypeVariable {..} ->
           case M.lookup typeVariable substitutions of
             Nothing -> VariableType TypeVariable {..}
@@ -158,6 +160,8 @@ expressionGeneralise substitutions =
       LiteralExpression (literalGeneralise substitutions literal)
     PropExpression prop ->
       PropExpression (propGeneralise substitutions prop)
+    ArrayExpression array ->
+      ArrayExpression (arrayGeneralise substitutions array)
     RecordExpression record ->
       RecordExpression (recordGeneralise substitutions record)
     LambdaExpression lambda ->
@@ -229,6 +233,17 @@ propGeneralise ::
 propGeneralise substitutions Prop {..} =
   Prop
     { expression = expressionGeneralise substitutions expression
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+arrayGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Array Solved
+  -> Array Generalised
+arrayGeneralise substitutions Array {..} =
+  Array
+    { expressions = fmap (expressionGeneralise substitutions) expressions
     , typ = generaliseType substitutions typ
     , ..
     }

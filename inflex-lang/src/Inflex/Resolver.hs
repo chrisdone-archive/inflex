@@ -97,6 +97,8 @@ expressionResolver nesting =
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
       fmap PropExpression (propResolver nesting prop)
+    ArrayExpression array ->
+      fmap ArrayExpression (arrayResolver nesting array)
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda ->
@@ -144,6 +146,11 @@ propResolver :: DeBrujinNesting -> Prop Generalised -> Resolve (Prop Resolved)
 propResolver nesting Prop {..} = do
   expression' <- expressionResolver nesting expression
   pure Prop {expression = expression', ..}
+
+arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved)
+arrayResolver nesting Array {..} = do
+  expressions' <- traverse (expressionResolver nesting) expressions
+  pure Array {expressions = expressions', ..}
 
 variableResolver :: Variable Generalised -> Variable Resolved
 variableResolver Variable {..} = Variable {..}
@@ -403,6 +410,7 @@ constrainPolymorphic defaulteds = go
     go =
       \case
         RecordType t -> fmap RecordType (go t)
+        ArrayType t -> fmap ArrayType (go t)
         VariableType typeVariable ->
           case M.lookup typeVariable defaulteds of
             Just type' -> pure type'
@@ -434,6 +442,7 @@ expressionCollect =
   \case
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
+    ArrayExpression array -> arrayCollect array
     RecordExpression record -> recordCollect record
     LambdaExpression lambda -> lambdaCollect lambda
     LetExpression let' -> letCollect let'
@@ -455,6 +464,9 @@ recordCollect Record {..} =
 
 propCollect :: Prop Generalised -> Set (ClassConstraint Generalised)
 propCollect Prop {..} = expressionCollect expression
+
+arrayCollect :: Array Generalised -> Set (ClassConstraint Generalised)
+arrayCollect Array {..} = foldMap expressionCollect expressions
 
 lambdaCollect :: Lambda Generalised -> Set (ClassConstraint Generalised)
 lambdaCollect Lambda {..} = expressionCollect body

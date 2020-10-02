@@ -129,6 +129,7 @@ constraintsTypeVariablesGeneric constraints =
     typeVariables =
       \case
         RecordType t -> typeVariables t
+        ArrayType t -> typeVariables t
         -- For s=Polymorphic, this is not possible. For s=Generalised,
         -- this is not relevant. In both cases we only want
         -- VariableType, below.

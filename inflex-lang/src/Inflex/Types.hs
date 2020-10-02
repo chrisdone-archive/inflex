@@ -10,12 +10,13 @@
 
 module Inflex.Types where
 
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Sequence (Seq)
-import Data.Text (Text)
-import GHC.Generics
-import Inflex.Types.SHA512
-import Numeric.Natural
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Sequence (Seq)
+import           Data.Text (Text)
+import           Data.Vector (Vector)
+import           GHC.Generics
+import           Inflex.Types.SHA512
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -30,6 +31,13 @@ data Expression s where
   InfixExpression :: !(Infix s) -> Expression s
   RecordExpression :: !(Record s) -> Expression s
   PropExpression :: !(Prop s) -> Expression s
+  ArrayExpression :: !(Array s) -> Expression s
+
+data Array s = Array
+  { expressions :: !(Vector (Expression s))
+  , typ :: !(StagedType s)
+  , location :: !(StagedLocation s)
+  }
 
 data Prop s = Prop
   { expression :: !(Expression s)
@@ -188,6 +196,7 @@ data Type s where
   ConstantType :: TypeConstant s -> Type s
   RowType :: TypeRow s -> Type s
   RecordType :: Type s -> Type s
+  ArrayType :: Type s -> Type s
 
 -- | A row type.
 data TypeRow s = TypeRow
@@ -265,6 +274,7 @@ data TypeVariablePrefix
   | PolyPrefix
   | RowVarPrefix
   | FieldTypePrefix
+  | ArrayElementPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
@@ -356,6 +366,7 @@ data Cursor
   | RecordFieldCursor FieldName Cursor
   | RowFieldExpression Cursor
   | PropExpressionCursor Cursor
+  | ArrayElementCursor Int Cursor
   deriving (Show, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.

@@ -27,6 +27,7 @@ expressionType :: Expression s -> StagedType s
 expressionType =
   \case
     LiteralExpression literal -> literalType literal
+    ArrayExpression array -> arrayType array
     LambdaExpression lambda -> lambdaType lambda
     LetExpression let' -> letType let'
     InfixExpression infix' -> infixType infix'
@@ -38,6 +39,9 @@ expressionType =
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
+
+arrayType :: Array s -> StagedType s
+arrayType Array {typ} = typ
 
 propType :: Prop s -> StagedType s
 propType Prop {typ} = typ

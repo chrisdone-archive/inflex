@@ -27,6 +27,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import qualified Data.Vector as V
 import           Inflex.Instances ()
 import           Inflex.Parser
 import           Inflex.Type
@@ -73,6 +74,7 @@ renameExpression env =
     LambdaExpression lambda -> fmap LambdaExpression (renameLambda env lambda)
     RecordExpression record -> fmap RecordExpression (renameRecord env record)
     PropExpression prop -> fmap PropExpression (renameProp env prop)
+    ArrayExpression array -> fmap ArrayExpression (renameArray env array)
     LetExpression let' -> fmap LetExpression (renameLet env let')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
@@ -164,6 +166,16 @@ renameProp env@Env {cursor} Prop {..} = do
       , typ = typ'
       , ..
       }
+
+renameArray :: Env -> Array Parsed -> Renamer (Array Renamed)
+renameArray env@Env {cursor} Array {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  expressions' <-
+    V.imapM
+      (\i -> renameExpression (over envCursorL (. ArrayElementCursor i) env))
+      expressions
+  typ' <- renameSignature env typ
+  pure Array {expressions = expressions', location = final, typ = typ', ..}
 
 renameFieldE :: Env -> FieldE Parsed -> Renamer (FieldE Renamed)
 renameFieldE env@Env {cursor} FieldE {..} = do
@@ -319,6 +331,7 @@ renameType env =
       fmap ConstantType (renameTypeConstant env typeConstant)
     RowType typeRow -> fmap RowType (renameTypeRow env typeRow)
     RecordType typeRow -> fmap RecordType (renameType env typeRow)
+    ArrayType typ -> fmap ArrayType (renameType env typ)
 
 renameTypeConstant :: Env -> TypeConstant Parsed -> Renamer (TypeConstant Renamed)
 renameTypeConstant Env{cursor} TypeConstant {..} = do

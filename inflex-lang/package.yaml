@@ -33,6 +33,7 @@ dependencies:
 - rio
 - uuid
 - parallel
+- vector
 
 ghc-options: -Wall
 

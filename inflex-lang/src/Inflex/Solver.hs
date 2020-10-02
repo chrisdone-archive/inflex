@@ -238,6 +238,7 @@ occursIn typeVariable =
       occursIn typeVariable function || occursIn typeVariable argument
     ConstantType {} -> False
     RecordType x -> occursIn typeVariable x
+    ArrayType x -> occursIn typeVariable x
     RowType TypeRow{typeVariable=mtypeVariable, fields} ->
       maybe False (occursIn typeVariable . VariableType) mtypeVariable ||
       any (\Field{typ} -> occursIn typeVariable typ) fields
@@ -279,6 +280,7 @@ substituteType substitutions = go
     go =
       \case
         RecordType t -> RecordType (go t)
+        ArrayType t -> ArrayType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
@@ -328,6 +330,7 @@ solveType substitutions = go . substituteType substitutions
     go =
       \case
         RecordType t -> RecordType (go t)
+        ArrayType t -> ArrayType (go t)
         VariableType TypeVariable {..} -> VariableType TypeVariable {..}
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
@@ -350,6 +353,8 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     PropExpression prop ->
       PropExpression (propSolve substitutions prop)
+    ArrayExpression array ->
+      ArrayExpression (arraySolve substitutions array)
     RecordExpression record ->
       RecordExpression (recordSolve substitutions record)
     LambdaExpression lambda ->
@@ -378,6 +383,14 @@ propSolve :: Seq Substitution -> Prop Generated -> Prop Solved
 propSolve substitutions Prop {..} =
   Prop
     { expression = expressionSolve substitutions expression
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+arraySolve :: Seq Substitution -> Array Generated -> Array Solved
+arraySolve substitutions Array {..} =
+  Array
+    { expressions = fmap (expressionSolve substitutions) expressions
     , typ = solveType substitutions typ
     , ..
     }

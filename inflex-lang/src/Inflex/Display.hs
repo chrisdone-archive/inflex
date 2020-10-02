@@ -22,6 +22,7 @@ instance Display (Expression Resolved) where
     \case
       RecordExpression record -> display record
       PropExpression prop -> display prop
+      ArrayExpression array -> display array
       LiteralExpression literal -> display literal
       LambdaExpression lambda -> display lambda
       ApplyExpression apply -> display apply
@@ -33,6 +34,10 @@ instance Display (Expression Resolved) where
 instance Display (Prop Resolved) where
   display (Prop {expression, name}) =
     display expression <> "." <> display name -- TODO: Manage parens.
+
+instance Display (Array Resolved) where
+  display (Array {expressions}) =
+    "[" <> mconcat (intersperse ", " (map display (toList expressions))) <> "]"
 
 instance Display (Record Resolved) where
   display (Record {fields}) =

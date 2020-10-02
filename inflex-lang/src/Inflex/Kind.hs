@@ -19,6 +19,7 @@ typeKind =
     PolyType typePoly -> typeVariableKind typePoly
     RowType {} -> RowKind
     RecordType {} -> TypeKind
+    ArrayType {} -> TypeKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind

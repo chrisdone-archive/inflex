@@ -109,6 +109,7 @@ stepExpression expression = do
       case expression of
         ApplyExpression apply -> stepApply apply
         PropExpression prop -> stepProp prop
+        ArrayExpression array -> stepArray array
         RecordExpression record -> stepRecord record
         InfixExpression infix' -> stepInfix infix'
         GlobalExpression global -> stepGlobal global
@@ -143,6 +144,11 @@ stepProp Prop {..} = do
             Nothing -> Step (lift (lift (Left (MissingRecordKey name))))
             Just FieldE{expression = v} -> stepExpression v
         _ -> Step (lift (lift (Left NotARecord)))
+
+stepArray :: Array Resolved -> Step e (Expression Resolved)
+stepArray Array {..} = do
+  expressions' <- traverse stepExpression expressions
+  pure (ArrayExpression Array {expressions = expressions', ..})
 
 --------------------------------------------------------------------------------
 -- Globals
@@ -329,6 +335,9 @@ betaReduce Lambda {body = body0} arg = go 0 body0
         PropExpression Prop {..} -> do
           expression' <- go deBrujinNesting expression
           pure (PropExpression Prop {expression = expression', ..})
+        ArrayExpression Array {..} -> do
+          expressions' <- traverse (go deBrujinNesting) expressions
+          pure (ArrayExpression Array {expressions = expressions', ..})
         RecordExpression Record {..} -> do
           fields' <-
             traverse

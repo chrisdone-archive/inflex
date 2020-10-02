@@ -218,6 +218,7 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
     typeVariables =
       \case
         RecordType t -> typeVariables t
+        ArrayType t -> typeVariables t
         VariableType typeVariable -> Set.singleton typeVariable
         ApplyType TypeApplication {function, argument} ->
           case function of
@@ -250,6 +251,7 @@ substituteType substitutions = go
     go =
       \case
         RecordType t -> RecordType (go t)
+        ArrayType t -> ArrayType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
