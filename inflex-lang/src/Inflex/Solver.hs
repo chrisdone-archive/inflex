@@ -22,6 +22,7 @@ import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Generator
 import           Inflex.Kind
@@ -186,6 +187,10 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
       -- produce a union row type of both.
       (_, Just {}, _, Just {}) -> do
         pure []
+      -- Below: If neither row has a variable, we have no row
+      -- constraints to do. The fields will be unified below.
+      (sd1, Nothing, sd2, Nothing)
+        | sd1 `rowsExactMatch` sd2 -> do pure []
       _ -> Left (pure (RowMismatch row1 row2))
   let common = intersect (map fieldName fs1) (map fieldName fs2)
       -- You have to make sure that the types of all the fields match
@@ -216,7 +221,8 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
   -- TODO: confirm that unifyConstraints is the right function to use.
   unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
   where
-    rowIsSubset sub sup = all (`elem` map fieldName sup) (map fieldName sub)
+    rowsExactMatch = on (==) (Set.fromList . map fieldName)
+    rowIsSubset = on Set.isSubsetOf (Set.fromList . map fieldName)
     fieldName Field {name} = name
     fieldType Field {typ} = typ
 
