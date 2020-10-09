@@ -62,7 +62,14 @@ data InputCell1 = InputCell1
 
 data Result
   = ResultError CellError
-  | ResultOk Text
+  | ResultOk ResultTree
+
+newtype ResultTree =
+  ResultTree Tree1
+
+data Tree1
+  = ArrayTree Version1 (Vector Tree1)
+  | MiscTree Version1 Text
 
 data CellError
   = SyntaxError -- TODO: more info.

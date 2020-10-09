@@ -23,6 +23,27 @@ import           GHC.Generics
 newtype UUID = UUID Text
  deriving (Eq, Ord, FromJSON, ToJSON, Show)
 
+{-
+
+GUIDELINE
+
+If you change a type by
+
+* removing/adding a field
+
+then you need to bump its schema version, copy the old type deprecated
+(and update all types that refer to this). Do that recursively.
+
+If you change a type by
+
+* changing a used type's version
+
+then you don't need to bump its schema.
+
+ALSO, check your ./rpc file.
+
+-}
+
 class Version v where
   versionNumber :: v -> Int
   versionRefl :: v
@@ -66,7 +87,14 @@ data InputCell1 = InputCell1
 
 data Result
   = ResultError CellError
-  | ResultOk Text
+  | ResultOk ResultTree
+
+newtype ResultTree =
+  ResultTree Tree1
+
+data Tree1
+  = ArrayTree Version1 (Vector Tree1)
+  | MiscTree Version1 Text
 
 data CellError
   = SyntaxError -- TODO: more info.
@@ -116,6 +144,20 @@ deriving instance Generic Result
 deriving instance Show Result
 instance ToJSON Result
 instance FromJSON Result
+
+deriving instance Generic Tree1
+deriving instance Show Tree1
+instance ToJSON Tree1
+instance FromJSON Tree1
+
+deriving instance Generic ResultTree
+deriving instance Show ResultTree
+deriving instance ToJSON ResultTree
+instance FromJSON ResultTree where
+  parseJSON j = fmap ResultTree (parseJSON j <|> fmap migrateV1 (parseJSON j))
+    where
+      migrateV1 :: Text -> Tree1
+      migrateV1 text = MiscTree versionRefl text
 
 deriving instance Generic CellError
 deriving instance Show CellError

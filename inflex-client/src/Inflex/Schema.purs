@@ -5,6 +5,7 @@ module Inflex.Schema where
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
+import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (stringify) as J
 import Data.Argonaut.Parser (jsonParser) as J
@@ -20,7 +21,7 @@ import Foreign.Generic (class Decode, class Encode, genericDecode, genericDecode
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 import Halogen as H
 import Inflex.Json (opts)
-import Prelude
+import Prelude (class Show, bind, discard, map, pure, show, ($), (<>), (==))
 
 --------------------------------------------------------------------------------
 -- Types
@@ -28,6 +29,27 @@ import Prelude
 type Vector a = Array a
 
 type Text = String
+
+{-
+
+GUIDELINE
+
+If you change a type by
+
+* removing/adding a field
+
+then you need to bump its schema version, copy the old type deprecated
+(and update all types that refer to this). Do that recursively.
+
+If you change a type by
+
+* changing a used type's version
+
+then you don't need to bump its schema.
+
+ALSO, check your ./rpc file.
+
+-}
 
 class Version v where
   versionNumber :: v -> Int
@@ -72,7 +94,14 @@ data InputCell1 = InputCell1
 
 data Result
   = ResultError CellError
-  | ResultOk Text
+  | ResultOk ResultTree
+
+newtype ResultTree =
+  ResultTree Tree1
+
+data Tree1
+  = ArrayTree Version1 (Vector Tree1)
+  | MiscTree Version1 Text
 
 data CellError
   = SyntaxError -- TODO: more info.
@@ -116,6 +145,20 @@ derive instance genericResult :: Generic Result _
 instance showResult :: Show Result where show = genericShow
 instance decodeResult :: Decode Result where decode = genericDecode opts
 instance encodeResult :: Encode Result where encode = genericEncode opts
+
+derive instance genericTree1 :: Generic Tree1 _
+instance showTree1 :: Show Tree1 where show x = genericShow x
+instance decodeTree1 :: Decode Tree1 where decode x = genericDecode opts x
+instance encodeTree1 :: Encode Tree1 where encode x  = genericEncode opts x
+
+derive instance genericResultTree :: Generic ResultTree _
+instance showResultTree :: Show ResultTree where show = genericShow
+instance encodeResultTree :: Encode ResultTree where encode (ResultTree tree) = encode tree
+instance decodeResultTree :: Decode ResultTree where
+  decode j = map ResultTree (decode j <|> map migrateV1 (decode j))
+    where
+      migrateV1 :: Text -> Tree1
+      migrateV1 text = MiscTree versionRefl text
 
 derive instance genericCellError :: Generic CellError _
 instance showCellError :: Show CellError where show = genericShow

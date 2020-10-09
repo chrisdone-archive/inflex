@@ -33,7 +33,9 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
                    , result =
                        either
                          (Shared.ResultError . toCellError)
-                         (Shared.ResultOk . textDisplay)
+                         (Shared.ResultOk .
+                          Shared.ResultTree .
+                          Shared.MiscTree Shared.versionRefl . textDisplay)
                          thing
                    , code
                    , name

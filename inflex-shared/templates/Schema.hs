@@ -44,6 +44,20 @@ deriving instance Show Result
 instance ToJSON Result
 instance FromJSON Result
 
+deriving instance Generic Tree1
+deriving instance Show Tree1
+instance ToJSON Tree1
+instance FromJSON Tree1
+
+deriving instance Generic ResultTree
+deriving instance Show ResultTree
+deriving instance ToJSON ResultTree
+instance FromJSON ResultTree where
+  parseJSON j = fmap ResultTree (parseJSON j <|> fmap migrateV1 (parseJSON j))
+    where
+      migrateV1 :: Text -> Tree1
+      migrateV1 text = MiscTree versionRefl text
+
 deriving instance Generic CellError
 deriving instance Show CellError
 instance ToJSON CellError

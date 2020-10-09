@@ -106,7 +106,11 @@ outputCellToCell (Shared.OutputCell {name, code, result}) =
     , result:
         case result of
           Shared.ResultError e -> Left e
-          Shared.ResultOk output -> Right (Editor.MiscE output)
+          Shared.ResultOk (Shared.ResultTree output) ->
+            Right
+              (case output of
+                 Shared.MiscTree _ text -> Editor.MiscE text
+                 Shared.ArrayTree _ _ -> Editor.MiscE "list here!")
     }
 
 --------------------------------------------------------------------------------

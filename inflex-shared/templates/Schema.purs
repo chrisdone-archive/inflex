@@ -44,6 +44,16 @@ instance showResult :: Show Result where show = genericShow
 instance decodeResult :: Decode Result where decode = genericDecode opts
 instance encodeResult :: Encode Result where encode = genericEncode opts
 
+derive instance genericTree1 :: Generic Tree1 _
+instance showTree1 :: Show Tree1 where show = genericShow
+instance decodeTree1 :: Decode Tree1 where decode = genericDecode opts
+instance encodeTree1 :: Encode Tree1 where encode = genericEncode opts
+
+derive instance genericResultTree :: Generic ResultTree _
+instance showResultTree :: Show ResultTree where show = genericShow
+instance encodeResultTree :: Encode ResultTree where encode (ResultTree tree) = encode tree
+instance decodeResultTree :: Decode ResultTree where decode = genericDecode opts
+
 derive instance genericCellError :: Generic CellError _
 instance showCellError :: Show CellError where show = genericShow
 instance decodeCellError :: Decode CellError where decode = genericDecode opts
