@@ -1,3 +1,24 @@
+{-
+
+GUIDELINE
+
+If you change a type by
+
+* removing/adding a field
+
+then you need to bump its schema version, copy the old type deprecated
+(and update all types that refer to this). Do that recursively.
+
+If you change a type by
+
+* changing a used type's version
+
+then you don't need to bump its schema.
+
+ALSO, check your ./rpc file.
+
+-}
+
 class Version v where
   versionNumber :: v -> Int
   versionRefl :: v
