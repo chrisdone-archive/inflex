@@ -9,15 +9,15 @@ module Inflex.Components.Cell
   ) where
 
 import Data.Either (Either(..), either)
-import Data.Int
+import Data.Int (round)
 import Data.Map (Map)
-import Data.Maybe
-import Data.MediaType
+import Data.Maybe (Maybe(..))
+
 import Data.Set (Set)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
-import Effect
-import Effect.Class.Console (log, error)
+import Effect (Effect)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -25,9 +25,9 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema as Shared
-import Prelude
+import Prelude (Unit, bind, discard, identity, pure, show, unit, (-), (<<<), (<>), (>>=))
 import Web.DOM.Node as Node
-import Web.Event.Event
+import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
 import Web.HTML.HTMLElement as HTML
 import Web.UIEvent.MouseEvent as ME
