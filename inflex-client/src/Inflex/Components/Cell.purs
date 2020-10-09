@@ -10,10 +10,7 @@ module Inflex.Components.Cell
 
 import Data.Either (Either(..), either)
 import Data.Int (round)
-import Data.Map (Map)
 import Data.Maybe (Maybe(..))
-
-import Data.Set (Set)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
 import Effect (Effect)
@@ -25,7 +22,7 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema as Shared
-import Prelude (Unit, bind, discard, identity, pure, show, unit, (-), (<<<), (<>), (>>=))
+import Prelude (Unit, bind, discard, identity, pure, show, unit, (-), (<<<), (<>), (>>=), map)
 import Web.DOM.Node as Node
 import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
@@ -48,7 +45,7 @@ data Output
 
 data State = State
   { cell :: Cell
-  , display :: Display
+
   , pos :: Maybe Pos
   , offset :: Maybe {x::Int,y::Int, innerx :: Int, innery :: Int}
   }
@@ -69,10 +66,7 @@ data Cell = Cell
   , result :: Either Shared.CellError Editor.Editor
   }
 
-data Display
-  = DisplayResult
-  | DisplayEditor String
-  | DisplayTable (Set String) (Array (Map String String))
+
 
 --------------------------------------------------------------------------------
 -- Component
@@ -84,7 +78,7 @@ component =
         (\cell ->
            State
              { cell: outputCellToCell cell
-             , display: DisplayResult
+
              , pos: Nothing
              , offset: Nothing
              })
@@ -106,12 +100,14 @@ outputCellToCell (Shared.OutputCell {name, code, result}) =
     , result:
         case result of
           Shared.ResultError e -> Left e
-          Shared.ResultOk (Shared.ResultTree output) ->
-            Right
-              (case output of
-                 Shared.MiscTree _ text -> Editor.MiscE text
-                 Shared.ArrayTree _ _ -> Editor.MiscE "list here!")
+          Shared.ResultOk (Shared.ResultTree output) -> Right (toEditor output)
     }
+
+toEditor :: Shared.Tree1 -> Editor.Editor
+toEditor =
+  case _ of
+    Shared.MiscTree _ text -> Editor.MiscE text
+    Shared.ArrayTree _ trees -> Editor.ArrayE (map toEditor trees)
 
 --------------------------------------------------------------------------------
 -- Query
@@ -187,7 +183,7 @@ render :: forall keys q m. MonadEffect m =>
           State
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit, declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {cell: Cell {name, code, result}, display, pos}) =
+render (State {cell: Cell {name, code, result}, pos}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
     , HP.draggable true

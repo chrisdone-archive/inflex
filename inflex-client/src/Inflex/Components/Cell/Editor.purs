@@ -6,6 +6,8 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
+import Data.Symbol (SProxy(..))
+import Data.Array
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
@@ -19,7 +21,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Schema (CellError(..), FillError(..))
-import Prelude
+import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -55,9 +57,9 @@ data Command
 -- Internal types
 
 data Editor
-  = IntegerE String
-  | MiscE String
+  = MiscE String
   | ErrorE CellError
+  | ArrayE (Array Editor)
 
 data Display
   = DisplayEditor
@@ -167,7 +169,6 @@ renderEditor ::
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderEditor editor =
   case editor of
-    IntegerE i -> [HH.text i]
     MiscE t -> [HH.text t]
     ErrorE msg ->
       [ HH.div
@@ -192,3 +193,34 @@ renderEditor editor =
                  SyntaxError -> "syntax error, did you mistype something?")
           ]
       ]
+    ArrayE editors ->
+      mapWithIndex
+        (\i editor' ->
+           HH.slot
+             (SProxy :: SProxy "editor")
+             i
+             component
+             (EditorAndCode
+                { editor: editor'
+                , code: editorCode editor'
+                })
+             (\rhs ->
+                Just
+                  (FinishEditing
+                     (editorCode (ArrayE (editArray i (MiscE rhs) editors))))))
+        editors
+
+editorCode :: Editor -> String
+editorCode =
+  case _ of
+    MiscE s -> s
+    ArrayE xs -> "[" <> joinWith ", " (map editorCode xs) <> "]"
+    ErrorE _ -> ""
+
+editArray :: forall i. Int -> i -> Array i -> Array i
+editArray idx i =
+  mapWithIndex
+    (\idx' oldi ->
+       if idx == idx'
+         then i
+         else oldi)
