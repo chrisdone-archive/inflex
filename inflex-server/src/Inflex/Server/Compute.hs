@@ -54,6 +54,14 @@ toTree =
   \case
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree Shared.versionRefl (fmap toTree expressions)
+    RecordExpression Record {fields} ->
+      Shared.RecordTree
+        Shared.versionRefl
+        (fmap
+           (\FieldE {name = FieldName key, expression} ->
+              Shared.Field1
+                {key, version = Shared.versionRefl, value = toTree expression})
+           (V.fromList fields))
     expression -> Shared.MiscTree Shared.versionRefl (textDisplay expression)
 
 toCellError :: LoadError -> Shared.CellError

@@ -69,7 +69,14 @@ newtype ResultTree =
 
 data Tree1
   = ArrayTree Version1 (Vector Tree1)
+  | RecordTree Version1 (Vector Field1)
   | MiscTree Version1 Text
+
+data Field1 = Field1
+  { version :: Version1
+  , key :: Text
+  , value :: Tree1
+  }
 
 data CellError
   = SyntaxError -- TODO: more info.

@@ -5,7 +5,6 @@ module Inflex.Schema where
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
-import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (stringify) as J
 import Data.Argonaut.Parser (jsonParser) as J
@@ -21,7 +20,7 @@ import Foreign.Generic (class Decode, class Encode, genericDecode, genericDecode
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 import Halogen as H
 import Inflex.Json (opts)
-import Prelude (class Show, bind, discard, map, pure, show, ($), (<>), (==))
+import Prelude
 
 --------------------------------------------------------------------------------
 -- Types
@@ -101,7 +100,14 @@ newtype ResultTree =
 
 data Tree1
   = ArrayTree Version1 (Vector Tree1)
+  | RecordTree Version1 (Vector Field1)
   | MiscTree Version1 Text
+
+data Field1 = Field1
+  { version :: Version1
+  , key :: Text
+  , value :: Tree1
+  }
 
 data CellError
   = SyntaxError -- TODO: more info.
@@ -149,21 +155,22 @@ instance encodeResult :: Encode Result where encode = genericEncode opts
 derive instance genericTree1 :: Generic Tree1 _
 instance showTree1 :: Show Tree1 where show x = genericShow x
 instance decodeTree1 :: Decode Tree1 where decode x = genericDecode opts x
-instance encodeTree1 :: Encode Tree1 where encode x  = genericEncode opts x
+instance encodeTree1 :: Encode Tree1 where encode x = genericEncode opts x
 
 derive instance genericResultTree :: Generic ResultTree _
-instance showResultTree :: Show ResultTree where show = genericShow
+instance showResultTree :: Show ResultTree where show x = genericShow x
 instance encodeResultTree :: Encode ResultTree where encode (ResultTree tree) = encode tree
-instance decodeResultTree :: Decode ResultTree where
-  decode j = map ResultTree (decode j <|> map migrateV1 (decode j))
-    where
-      migrateV1 :: Text -> Tree1
-      migrateV1 text = MiscTree versionRefl text
+instance decodeResultTree :: Decode ResultTree where decode x = genericDecode opts x
 
 derive instance genericCellError :: Generic CellError _
 instance showCellError :: Show CellError where show = genericShow
 instance decodeCellError :: Decode CellError where decode = genericDecode opts
 instance encodeCellError :: Encode CellError where encode = genericEncode opts
+
+derive instance genericField1 :: Generic Field1 _
+instance showField1 :: Show Field1 where show x = genericShow x
+instance decodeField1 :: Decode Field1 where decode x = genericDecode opts x
+instance encodeField1 :: Encode Field1 where encode x = genericEncode opts x
 
 derive instance genericFillError :: Generic FillError _
 instance showFillError :: Show FillError where show = genericShow

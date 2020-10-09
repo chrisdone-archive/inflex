@@ -94,7 +94,14 @@ newtype ResultTree =
 
 data Tree1
   = ArrayTree Version1 (Vector Tree1)
+  | RecordTree Version1 (Vector Field1)
   | MiscTree Version1 Text
+
+data Field1 = Field1
+  { version :: Version1
+  , key :: Text
+  , value :: Tree1
+  }
 
 data CellError
   = SyntaxError -- TODO: more info.
@@ -163,6 +170,11 @@ deriving instance Generic CellError
 deriving instance Show CellError
 instance ToJSON CellError
 instance FromJSON CellError
+
+deriving instance Generic Field1
+deriving instance Show Field1
+instance ToJSON Field1
+instance FromJSON Field1
 
 deriving instance Generic FillError
 deriving instance Show FillError

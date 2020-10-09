@@ -108,6 +108,8 @@ toEditor =
   case _ of
     Shared.MiscTree _ text -> Editor.MiscE text
     Shared.ArrayTree _ trees -> Editor.ArrayE (map toEditor trees)
+    Shared.RecordTree _ fields ->
+      Editor.RecordE (map (\(Shared.Field1{key,value}) -> {key,value: toEditor value}) fields)
 
 --------------------------------------------------------------------------------
 -- Query

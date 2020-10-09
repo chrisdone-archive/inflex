@@ -60,6 +60,7 @@ data Editor
   = MiscE String
   | ErrorE CellError
   | ArrayE (Array Editor)
+  | RecordE (Array { key :: String, value :: Editor })
 
 data Display
   = DisplayEditor
@@ -216,12 +217,38 @@ renderEditor editor =
                   ])
              editors)
       ]
+    RecordE fields ->
+      [ HH.table
+          [HP.class_ (HH.ClassName "record")]
+          (mapWithIndex
+             (\i {key, value: editor'} ->
+                HH.tr
+                  [HP.class_ (HH.ClassName "record-field")]
+                  [ HH.td [] [HH.text key]
+                  , HH.td [] [HH.slot
+                      (SProxy :: SProxy "editor")
+                      i
+                      component
+                      (EditorAndCode
+                         { editor: editor'
+                         , code: editorCode editor'
+                         })
+                      (\rhs ->
+                         Just
+                           (FinishEditing
+                              (editorCode
+                                 (RecordE (editArray i {key: key, value: MiscE rhs} fields)))))]
+                  ])
+             fields)
+      ]
 
 editorCode :: Editor -> String
 editorCode =
   case _ of
     MiscE s -> s
     ArrayE xs -> "[" <> joinWith ", " (map editorCode xs) <> "]"
+    RecordE fs ->
+      "{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}"
     ErrorE _ -> ""
 
 editArray :: forall i. Int -> i -> Array i -> Array i
