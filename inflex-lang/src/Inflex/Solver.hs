@@ -253,8 +253,8 @@ occursIn typeVariable =
 -- Extension
 
 data Extension = Extension
-  { existing :: Seq Substitution
-  , new :: Seq Substitution
+  { existing :: !(Seq Substitution)
+  , new :: !(Seq Substitution)
   }
 
 extendSubstitutions :: Extension -> Seq Substitution
