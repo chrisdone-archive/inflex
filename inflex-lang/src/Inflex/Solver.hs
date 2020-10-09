@@ -292,6 +292,8 @@ substituteType substitutions = go
           ApplyType
             TypeApplication {function = go function, argument = go argument, ..}
         typ@(VariableType typeVariable :: Type Generated) ->
+          -- TODO: This is an O(n) operation. Bad in a type
+          -- checker. May be the cause of slow down in array.
           case find
                  (\Substitution {before} -> before == typeVariable)
                  substitutions of
@@ -302,6 +304,8 @@ substituteType substitutions = go
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
           | Just substitution@Substitution {after} <-
+             -- TODO: This is an O(n) operation. Bad in a type
+             -- checker.
              find
                (\Substitution {before} -> before == typeVariable)
                substitutions
