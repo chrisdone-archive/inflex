@@ -194,21 +194,28 @@ renderEditor editor =
           ]
       ]
     ArrayE editors ->
-      mapWithIndex
-        (\i editor' ->
-           HH.slot
-             (SProxy :: SProxy "editor")
-             i
-             component
-             (EditorAndCode
-                { editor: editor'
-                , code: editorCode editor'
-                })
-             (\rhs ->
-                Just
-                  (FinishEditing
-                     (editorCode (ArrayE (editArray i (MiscE rhs) editors))))))
-        editors
+      [ HH.div
+          [HP.class_ (HH.ClassName "array")]
+          (mapWithIndex
+             (\i editor' ->
+                HH.div
+                  [HP.class_ (HH.ClassName "array-item")]
+                  [ HH.slot
+                      (SProxy :: SProxy "editor")
+                      i
+                      component
+                      (EditorAndCode
+                         { editor: editor'
+                         , code: editorCode editor'
+                         })
+                      (\rhs ->
+                         Just
+                           (FinishEditing
+                              (editorCode
+                                 (ArrayE (editArray i (MiscE rhs) editors)))))
+                  ])
+             editors)
+      ]
 
 editorCode :: Editor -> String
 editorCode =

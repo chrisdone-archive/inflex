@@ -124,14 +124,14 @@ body {
   }
   .cell-name {
     cursor: text;
-    border: 2px dashed #e9eef2;
+    border: 2px solid #e9eef2;
     padding: 5px;
     font-family: sans-serif;
     flex: 1;
     border-top-left-radius: 5px;
   }
   .cell-name:hover {
-    border: 2px dashed #9fb6c8;
+    border: 2px solid #9fb6c8;
   }
   .delete-cell {
     border: none;
@@ -154,10 +154,10 @@ body {
     border-bottom-left-radius: 3px;
     color: black;
     font-family: ubuntu, monospace;
-    border: 2px dashed #fff;
+    border: 2px solid #fff;
   }
   .cell-body:hover {
-    border: 2px dashed #9fb6c8;
+    border: 2px solid #9fb6c8;
   }
   .cell-body input {
     background: #f9f9fa;
@@ -169,5 +169,13 @@ body {
   }
   .cell-body input:focus {
     border: 1px solid #6a8daa;
+  }
+}
+
+.array {
+  .array-item + .array-item {
+    border-top: 2px solid #ddd;
+    margin-top: 5px;
+    padding-top: 5px;
   }
 }
