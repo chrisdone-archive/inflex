@@ -24,22 +24,22 @@ main = do
   defaultMain
     [ bgroup
         "parseText"
-        [bench "medium array" (whnf parseTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf parseTextUpToErrorSuccess mediumArray)]
     , bgroup
         "renameText"
-        [bench "medium array" (whnf renameTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf renameTextUpToErrorSuccess mediumArray)]
     , bgroup
         "generateText"
-        [bench "medium array" (whnf generateTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
     , bgroup
         "solveText"
-        [bench "medium array" (whnf solveTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray)]
     , bgroup
         "generaliseText"
-        [bench "medium array" (whnf generaliseTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]
     , bgroup
         "resolveText"
-        [bench "medium array" (whnf resolveTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf resolveTextUpToErrorSuccess mediumArray)]
     , bgroup
         "loadDocument"
         [ bench
