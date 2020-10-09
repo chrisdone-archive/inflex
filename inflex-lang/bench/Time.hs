@@ -8,56 +8,41 @@ import           Data.UUID as UUID
 import           Data.UUID.V4
 import           Gauge.Main
 import           Inflex.Document
+import           Inflex.Generaliser
+import           Inflex.Generator
 import           Inflex.Instances ()
+import           Inflex.Parser
+import           Inflex.Renamer
+import           Inflex.Resolver
+import           Inflex.Solver
 import           Inflex.Types
 
 main :: IO ()
 main = do
   u1 <- nextRandom'
-  let !smallArray = T.concat ["[", T.intercalate "," (replicate 10 "1"), "]"]
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
-  -- let !largeArray =
-  --       T.concat ["[", T.intercalate "," (replicate 10000 "1"), "]"]
   defaultMain
     [ bgroup
+        "parseText"
+        [bench "medium array" (whnf parseTextUpToErrorSuccess mediumArray)]
+    , bgroup
+        "renameText"
+        [bench "medium array" (whnf renameTextUpToErrorSuccess mediumArray)]
+    , bgroup
+        "generateText"
+        [bench "medium array" (whnf generateTextUpToErrorSuccess mediumArray)]
+    , bgroup
+        "solveText"
+        [bench "medium array" (whnf solveTextUpToErrorSuccess mediumArray)]
+    , bgroup
+        "generaliseText"
+        [bench "medium array" (whnf generaliseTextUpToErrorSuccess mediumArray)]
+    , bgroup
+        "resolveText"
+        [bench "medium array" (whnf resolveTextUpToErrorSuccess mediumArray)]
+    , bgroup
         "loadDocument"
         [ bench
-            "baseline"
-            (nf
-               loadDocumentUpToErrorSuccess
-               [ Named
-                   { uuid = Uuid u1
-                   , name = "x"
-                   , thing = "0"
-                   , order = 0
-                   , code = "0"
-                   }
-               ])
-        , bench
-            "arithmetic"
-            (nf
-               loadDocumentUpToErrorSuccess
-               [ Named
-                   { uuid = Uuid u1
-                   , name = "x"
-                   , thing = "1 * 2"
-                   , order = 0
-                   , code = "1 * 2"
-                   }
-               ])
-        , bench
-            "small array"
-            (nf
-               loadDocumentUpToErrorSuccess
-               [ Named
-                   { uuid = Uuid u1
-                   , name = "x"
-                   , thing = smallArray
-                   , order = 0
-                   , code = smallArray
-                   }
-               ])
-        , bench
             "medium array"
             (nf
                loadDocumentUpToErrorSuccess
@@ -69,18 +54,6 @@ main = do
                    , code = mediumArray
                    }
                ])
-         {-bench
-            "large array"
-            (nf
-               loadDocumentUpToErrorSuccess
-               [ Named
-                   { uuid = Uuid u1
-                   , name = "x"
-                   , thing = largeArray
-                   , order = 0
-                   , code = largeArray
-                   }
-               ])-}
         ]
     ]
 
@@ -89,3 +62,21 @@ nextRandom' = fmap UUID.toText nextRandom
 
 loadDocumentUpToErrorSuccess :: [Named Text] -> Toposorted (Named (Either () ()))
 loadDocumentUpToErrorSuccess = fmap (fmap (first (const ()) . second (const ()))) . loadDocument
+
+parseTextUpToErrorSuccess :: Text -> Either () ()
+parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
+
+renameTextUpToErrorSuccess :: Text -> Either () ()
+renameTextUpToErrorSuccess = first (const ()) . second (const ()) . renameText ""
+
+solveTextUpToErrorSuccess :: Text -> Either () ()
+solveTextUpToErrorSuccess = first (const ()) . second (const ()) . solveText mempty ""
+
+generateTextUpToErrorSuccess :: Text -> Either () ()
+generateTextUpToErrorSuccess = first (const ()) . second (const ()) . generateText mempty ""
+
+generaliseTextUpToErrorSuccess :: Text -> Either () ()
+generaliseTextUpToErrorSuccess = first (const ()) . second (const ()) . generaliseText mempty ""
+
+resolveTextUpToErrorSuccess :: Text -> Either () ()
+resolveTextUpToErrorSuccess = first (const ()) . second (const ()) . resolveText mempty ""
