@@ -10,13 +10,14 @@
 
 module Inflex.Types where
 
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Sequence (Seq)
-import           Data.Text (Text)
-import           Data.Vector (Vector)
-import           GHC.Generics
-import           Inflex.Types.SHA512
-import           Numeric.Natural
+import Control.DeepSeq
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Sequence (Seq)
+import Data.Text (Text)
+import Data.Vector (Vector)
+import GHC.Generics
+import Inflex.Types.SHA512
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -80,10 +81,11 @@ data Named a = Named
   , order :: Int
   , code :: Text
   , thing :: a
-  } deriving (Show, Eq, Ord, Functor)
+  } deriving (Show, Eq, Ord, Functor, Generic)
+instance NFData a => NFData (Named a)
 
 newtype Uuid = Uuid Text
- deriving (Eq, Ord, Show)
+ deriving (Eq, Ord, Show, NFData)
 
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed

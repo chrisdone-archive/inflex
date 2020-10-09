@@ -34,6 +34,7 @@ dependencies:
 - uuid
 - parallel
 - vector
+- deepseq
 
 ghc-options: -Wall
 
@@ -51,3 +52,14 @@ tests:
     dependencies:
     - inflex-lang
     - hint
+
+benchmarks:
+  inflex-lang-time:
+    main: Time.hs
+    source-dirs: bench
+    ghc-options:
+    - -O2
+    - -threaded
+    dependencies:
+    - gauge
+    - inflex-lang

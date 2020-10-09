@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -16,6 +17,7 @@ module Inflex.Document
   , LoadError(..)
   ) where
 
+import           Control.DeepSeq
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Foldable
@@ -53,7 +55,7 @@ data LoadError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
-  deriving (Functor, Traversable, Foldable, Show, Eq, Ord)
+  deriving (Functor, Traversable, Foldable, Show, Eq, Ord, NFData)
 
 data Context = Context
   { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
