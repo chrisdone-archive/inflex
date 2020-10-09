@@ -33,9 +33,7 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
                    , result =
                        either
                          (Shared.ResultError . toCellError)
-                         (Shared.ResultOk .
-                          Shared.ResultTree .
-                          Shared.MiscTree Shared.versionRefl . textDisplay)
+                         (Shared.ResultOk . Shared.ResultTree . toTree)
                          thing
                    , code
                    , name
@@ -50,6 +48,13 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
            (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
               Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
+
+toTree :: Expression Resolved -> Shared.Tree1
+toTree =
+  \case
+    ArrayExpression Array {expressions} ->
+      Shared.ArrayTree Shared.versionRefl (fmap toTree expressions)
+    expression -> Shared.MiscTree Shared.versionRefl (textDisplay expression)
 
 toCellError :: LoadError -> Shared.CellError
 toCellError =
