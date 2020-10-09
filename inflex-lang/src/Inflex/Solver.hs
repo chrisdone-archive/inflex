@@ -89,6 +89,8 @@ unifyAndSubstitute equalities typ = do
 --------------------------------------------------------------------------------
 -- Unification
 
+-- TODO: Change Seq Substitution to a @Map replaceme withthis@?
+
 unifyConstraints ::
      Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
 unifyConstraints =
