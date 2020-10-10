@@ -49,6 +49,16 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
               Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
 
+-- TODO: include code of each node in output where possible:
+--
+-- the renameText function produces a Map Cursor Location, which
+-- toTree can use to compare with the cursors in the Expression
+-- Resolved to produce the original source string for a given AST
+-- node. genius!
+--
+-- so above in the outputcell, call renameText, give that map to this
+-- function. update the Tree1 type to Tree2, including src code for
+-- each node.
 toTree :: Expression Resolved -> Shared.Tree1
 toTree =
   \case
