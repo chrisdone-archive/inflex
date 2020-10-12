@@ -70,20 +70,31 @@ toTree original =
       Shared.RecordTree2
         Shared.versionRefl
         originalSource
-        (fmap
-           (\FieldE {name = FieldName key, expression} ->
-              Shared.Field2
-                { key
-                , version = Shared.versionRefl
-                , value = toTree original expression
-                })
-           (V.fromList fields))
+        (let originalRecord = inRecord original
+          in V.imap
+               (\i FieldE {name = FieldName key, expression} ->
+                  Shared.Field2
+                    { key
+                    , version = Shared.versionRefl
+                    , value =
+                        toTree
+                          (fmap
+                             (\FieldE {expression=e} -> e)
+                             (atNth i originalRecord))
+                          expression
+                    })
+               (V.fromList fields))
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
         originalSource
         (textDisplay expression)
   where
+    inRecord :: Maybe (Expression Renamed) -> Maybe [FieldE Renamed]
+    inRecord =
+      \case
+        Just (RecordExpression Record {fields}) -> pure fields
+        _ -> Nothing
     inArray :: Maybe (Expression Renamed) -> Maybe (Vector (Expression Renamed))
     inArray =
       \case
@@ -97,6 +108,12 @@ toTree original =
       \case
         Just vector
           | Just e <- vector V.!? idx -> pure e
+        _ -> Nothing
+    atNth :: Int -> Maybe [FieldE Renamed] -> Maybe (FieldE Renamed)
+    atNth idx =
+      \case
+        Just vector
+          | Just e <- lookup idx (zip [0 ..] vector) -> pure e
         _ -> Nothing
     originalSource =
       case original of
