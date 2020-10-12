@@ -107,11 +107,12 @@ toEditor :: Shared.Tree2 -> Editor.Editor
 toEditor =
   case _ of
     Shared.MiscTree2 _ originalSource text ->
-      Editor.MiscE text
+      Editor.MiscE originalSource text
     Shared.ArrayTree2 _ originalSource trees ->
-      Editor.ArrayE (map toEditor trees)
+      Editor.ArrayE originalSource  (map toEditor trees)
     Shared.RecordTree2 _ originalSource fields ->
-      Editor.RecordE (map (\(Shared.Field2{key,value}) -> {key,value: toEditor value}) fields)
+      Editor.RecordE originalSource
+        (map (\(Shared.Field2{key,value}) -> {key,value: toEditor value}) fields)
 
 --------------------------------------------------------------------------------
 -- Query

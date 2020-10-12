@@ -6,11 +6,11 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
-import Data.Symbol (SProxy(..))
 import Data.Array
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
+import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
 import Effect.Console (log)
 import Halogen as H
@@ -21,6 +21,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Schema (CellError(..), FillError(..))
+import Inflex.Schema as Shared
 import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
@@ -57,10 +58,10 @@ data Command
 -- Internal types
 
 data Editor
-  = MiscE String
+  = MiscE Shared.OriginalSource String
   | ErrorE CellError
-  | ArrayE (Array Editor)
-  | RecordE (Array { key :: String, value :: Editor })
+  | ArrayE Shared.OriginalSource (Array Editor)
+  | RecordE Shared.OriginalSource (Array { key :: String, value :: Editor })
 
 data Display
   = DisplayEditor
@@ -170,7 +171,7 @@ renderEditor ::
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderEditor editor =
   case editor of
-    MiscE t -> [HH.text t]
+    MiscE _originalSource t -> [HH.text t]
     ErrorE msg ->
       [ HH.div
           [HP.class_ (HH.ClassName "error-message")]
@@ -194,7 +195,7 @@ renderEditor editor =
                  SyntaxError -> "syntax error, did you mistype something?")
           ]
       ]
-    ArrayE editors ->
+    ArrayE _originalSource editors ->
       [ HH.div
           [HP.class_ (HH.ClassName "array")]
           (mapWithIndex
@@ -213,11 +214,11 @@ renderEditor editor =
                          Just
                            (FinishEditing
                               (editorCode
-                                 (ArrayE (editArray i (MiscE rhs) editors)))))
+                                 (ArrayE Shared.NoOriginalSource (editArray i (MiscE Shared.NoOriginalSource rhs) editors)))))
                   ])
              editors)
       ]
-    RecordE fields ->
+    RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
           (mapWithIndex
@@ -237,7 +238,7 @@ renderEditor editor =
                          Just
                            (FinishEditing
                               (editorCode
-                                 (RecordE (editArray i {key: key, value: MiscE rhs} fields)))))]
+                                 (RecordE Shared.NoOriginalSource (editArray i {key: key, value: MiscE Shared.NoOriginalSource rhs} fields)))))]
                   ])
              fields)
       ]
@@ -245,11 +246,15 @@ renderEditor editor =
 editorCode :: Editor -> String
 editorCode =
   case _ of
-    MiscE s -> s
-    ArrayE xs -> "[" <> joinWith ", " (map editorCode xs) <> "]"
-    RecordE fs ->
-      "{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}"
+    MiscE original s -> originalOr original s
+    ArrayE original xs -> originalOr original ("[" <> joinWith ", " (map editorCode xs) <> "]")
+    RecordE original fs ->
+      originalOr original ("{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}")
     ErrorE _ -> ""
+
+originalOr :: Shared.OriginalSource -> String -> String
+originalOr Shared.NoOriginalSource s = s
+originalOr (Shared.OriginalSource s) _ = s
 
 editArray :: forall i. Int -> i -> Array i -> Array i
 editArray idx i =
