@@ -166,6 +166,14 @@ literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =
   \case
     NumberLiteral number -> fmap NumberLiteral (numberGenerator number)
+    TextLiteral LiteralText {..} ->
+      pure (TextLiteral LiteralText {typ = literalTextType location, ..})
+
+-- | Produce a immediately-known concrete type
+literalTextType ::
+     StagedLocation Filled -> Type Generated
+literalTextType location =
+      ConstantType TypeConstant {location, name = TextTypeName}
 
 numberGenerator :: Number Filled -> Generate e (Number Generated)
 numberGenerator Number {typ = _, ..} =

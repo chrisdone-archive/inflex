@@ -322,6 +322,8 @@ literalGeneralise ::
   -> Literal Generalised
 literalGeneralise substitutions =
   \case
+    TextLiteral LiteralText {..} ->
+      TextLiteral LiteralText {typ = generaliseType substitutions typ, ..}
     NumberLiteral number ->
       NumberLiteral (numberGeneralise substitutions number)
 

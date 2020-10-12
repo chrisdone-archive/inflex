@@ -82,8 +82,11 @@ renameExpression env =
     GlobalExpression {} -> error "impossible" -- TODO: Make impossible at type-level.
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Expression Renamed)
-renameLiteral env =
+renameLiteral env@Env {cursor} =
   \case
+    TextLiteral LiteralText {..} -> do
+      final <- finalizeCursor cursor TypeCursor location
+      pure (LiteralExpression (TextLiteral LiteralText {location = final, typ = Nothing, ..}))
     NumberLiteral number -> do
       number' <- renameNumber env number
       pure
@@ -107,8 +110,10 @@ renameLiteral env =
                          , name =
                              let Number {number = someNumber} = number'
                               in case someNumber of
-                                   IntegerNumber {} -> GlobalRef FromIntegerGlobal
-                                   DecimalNumber {} -> GlobalRef FromDecimalGlobal
+                                   IntegerNumber {} ->
+                                     GlobalRef FromIntegerGlobal
+                                   DecimalNumber {} ->
+                                     GlobalRef FromDecimalGlobal
                          , scheme = RenamedScheme
                          }
                  })

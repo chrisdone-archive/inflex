@@ -490,8 +490,9 @@ solveClassConstraint substitutions ClassConstraint {..} =
 literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
 literalSolve substitutions =
   \case
-    NumberLiteral number ->
-      NumberLiteral (numberSolve substitutions number)
+    TextLiteral LiteralText {..} ->
+      TextLiteral LiteralText {typ = solveType substitutions typ, ..}
+    NumberLiteral number -> NumberLiteral (numberSolve substitutions number)
 
 numberSolve :: Seq Substitution -> Number Generated -> Number Solved
 numberSolve substitutions Number {..} =

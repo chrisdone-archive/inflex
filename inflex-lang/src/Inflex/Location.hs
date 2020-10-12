@@ -56,6 +56,7 @@ literalLocation :: Literal s -> StagedLocation s
 literalLocation =
   \case
     NumberLiteral number -> numberLocation number
+    TextLiteral LiteralText{location} -> location
 
 numberLocation :: Number s -> StagedLocation s
 numberLocation Number {location} = location

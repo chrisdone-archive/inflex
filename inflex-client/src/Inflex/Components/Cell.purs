@@ -108,6 +108,8 @@ toEditor =
   case _ of
     Shared.MiscTree2 _ originalSource text ->
       Editor.MiscE originalSource text
+    Shared.TextTree2 _ originalSource text ->
+      Editor.TextE originalSource text
     Shared.ArrayTree2 _ originalSource trees ->
       Editor.ArrayE originalSource  (map toEditor trees)
     Shared.RecordTree2 _ originalSource fields ->

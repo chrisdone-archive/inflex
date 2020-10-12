@@ -149,6 +149,8 @@ literalFill =
   \case
     NumberLiteral number ->
       NumberLiteral (numberFill number)
+    TextLiteral LiteralText {..} ->
+      TextLiteral LiteralText {..}
 
 numberFill ::
      Number Renamed

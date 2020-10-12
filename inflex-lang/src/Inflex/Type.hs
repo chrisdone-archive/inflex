@@ -79,6 +79,7 @@ literalType :: Literal s -> StagedType s
 literalType =
   \case
     NumberLiteral number -> numberType number
+    TextLiteral LiteralText{typ} -> typ
 
 numberType :: Number s -> StagedType s
 numberType Number {typ} = typ

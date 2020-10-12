@@ -11,11 +11,12 @@
 
 module Inflex.Display where
 
-import Data.Coerce
-import Data.List
-import Inflex.Decimal
-import Inflex.Types
-import RIO
+import           Data.Coerce
+import           Data.List
+import qualified Data.Text as T
+import           Inflex.Decimal
+import           Inflex.Types
+import           RIO
 
 -- TODO: Avoid unneeded parens.
 
@@ -63,6 +64,7 @@ instance Display (Let Resolved) where
 instance Display (Literal Resolved) where
   display = \case
                NumberLiteral number -> display number
+               TextLiteral LiteralText{text} -> display (T.pack (show text))
 
 instance Display (Number Resolved) where
   display (Number {number}) = display number
@@ -139,6 +141,7 @@ instance Display (Let Renamed) where
 instance Display (Literal Renamed) where
   display = \case
                NumberLiteral number -> display number
+               TextLiteral LiteralText{text} -> display (T.pack (show text))
 
 instance Display (Number Renamed) where
   display (Number {number}) = display number

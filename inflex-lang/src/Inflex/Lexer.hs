@@ -41,6 +41,7 @@ module Inflex.Lexer
   , _OperatorToken
   , _PeriodToken
   , _CommaToken
+  , _StringToken
   ) where
 
 import           Data.Bifunctor
@@ -89,6 +90,7 @@ data Token
   | OpenCurlyToken
   | CloseCurlyToken
   | OperatorToken !Text
+  | StringToken !Text
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -119,7 +121,8 @@ tokensLexer =
     mconcat
     (Mega.many
        (Mega.choice
-          [ fmap pure symbol
+          [ fmap pure string
+          , fmap pure symbol
           , fmap pure integer
           , fmap pure decimal
           , fmap pure lowerWord
@@ -127,10 +130,17 @@ tokensLexer =
           ] <*
         Mega.space))
   where
+    string =
+      located
+        (do void (Mega.char '"')
+            contents <- Mega.takeWhileP Nothing (/= '"')
+            void (Mega.char '"')
+            pure (StringToken contents))
     lowerWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)
-            cs <- Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
+            cs <-
+              Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
             let text = (c <> cs)
             case text of
               "let" -> pure LetToken
@@ -139,7 +149,8 @@ tokensLexer =
     upperWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isUpper)
-            cs <- Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
+            cs <-
+              Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
             pure (UpperWordToken (c <> cs)))
     integer =
       Mega.try

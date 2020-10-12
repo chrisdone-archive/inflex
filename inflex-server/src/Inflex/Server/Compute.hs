@@ -120,6 +120,8 @@ toTree original =
                           expression
                     })
                (V.fromList fields))
+    LiteralExpression (TextLiteral (LiteralText {text})) ->
+      Shared.TextTree2 Shared.versionRefl originalSource text
     expression ->
       Shared.MiscTree2
         Shared.versionRefl

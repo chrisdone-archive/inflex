@@ -59,6 +59,7 @@ data Command
 
 data Editor
   = MiscE Shared.OriginalSource String
+  | TextE Shared.OriginalSource String
   | ErrorE CellError
   | ArrayE Shared.OriginalSource (Array Editor)
   | RecordE Shared.OriginalSource (Array { key :: String, value :: Editor })
@@ -178,6 +179,7 @@ renderEditor ::
 renderEditor editor =
   case editor of
     MiscE _originalSource t -> [HH.text t]
+    TextE _originalSource t -> [HH.text t]
     ErrorE msg ->
       [ HH.div
           [HP.class_ (HH.ClassName "error-message")]
@@ -295,6 +297,7 @@ editorCode :: Editor -> String
 editorCode =
   case _ of
     MiscE original s -> originalOr original s
+    TextE original s -> originalOr original s
     ArrayE original xs -> originalOr original ("[" <> joinWith ", " (map editorCode xs) <> "]")
     RecordE original fs ->
       originalOr original ("{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}")

@@ -54,6 +54,7 @@ data ParseError
   | ExpectedVariable
   | ExpectedGlobal
   | ExpectedDecimal
+  | ExpectedText
   | ExpectedDecimalType
   | ExpectedIntegerType
   | ExpectedSignature
@@ -363,9 +364,15 @@ parensParser = do
   pure e
 
 literalParser :: Parser (Literal Parsed)
-literalParser = do
-  number <- numberParser
-  pure (NumberLiteral number)
+literalParser = number <> text
+  where
+    number = do
+      umber <- numberParser
+      pure (NumberLiteral umber)
+    text = do
+      Located {thing = text', location} <-
+        token ExpectedText (preview _StringToken)
+      pure (TextLiteral (LiteralText {typ = Nothing, text = text', ..}))
 
 numberParser :: Parser (Number Parsed)
 numberParser = do

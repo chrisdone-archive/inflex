@@ -159,6 +159,7 @@ literalResolver :: Literal Generalised -> Literal Resolved
 literalResolver =
   \case
     NumberLiteral number -> NumberLiteral (numberResolver number)
+    TextLiteral LiteralText {..} -> TextLiteral LiteralText {..}
 
 numberResolver :: Number Generalised -> Number Resolved
 numberResolver Number {..} = Number { ..}

@@ -10,14 +10,14 @@
 
 module Inflex.Types where
 
-import Control.DeepSeq
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Sequence (Seq)
-import Data.Text (Text)
-import Data.Vector (Vector)
-import GHC.Generics
-import Inflex.Types.SHA512
-import Numeric.Natural
+import           Control.DeepSeq
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Sequence (Seq)
+import           Data.Text (Text)
+import           Data.Vector (Vector)
+import           GHC.Generics
+import           Inflex.Types.SHA512
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -166,8 +166,16 @@ data Variable s = Variable
   , typ :: !(StagedType s)
   }
 
-data Literal s =
-  NumberLiteral (Number s)
+data Literal s
+  = NumberLiteral (Number s)
+  | TextLiteral (LiteralText s)
+
+-- | A text.
+data LiteralText s = LiteralText
+  { location :: !(StagedLocation s)
+  , text :: !Text
+  , typ :: !(StagedType s)
+  }
 
 -- | A number.
 data Number s = Number
