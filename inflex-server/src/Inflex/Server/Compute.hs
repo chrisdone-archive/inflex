@@ -55,23 +55,53 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
               Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
 
-toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree1
+toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
 toTree original =
   \case
     ArrayExpression Array {expressions} ->
-      Shared.ArrayTree Shared.versionRefl (fmap (toTree original) expressions)
-    RecordExpression Record {fields} ->
-      Shared.RecordTree
+      Shared.ArrayTree2
         Shared.versionRefl
+        originalSource
+        (let originalArray = inArray original
+          in V.imap
+               (\i expression -> toTree (atIndex i originalArray) expression)
+               expressions)
+    RecordExpression Record {fields} ->
+      Shared.RecordTree2
+        Shared.versionRefl
+        originalSource
         (fmap
            (\FieldE {name = FieldName key, expression} ->
-              Shared.Field1
+              Shared.Field2
                 { key
                 , version = Shared.versionRefl
                 , value = toTree original expression
                 })
            (V.fromList fields))
-    expression -> Shared.MiscTree Shared.versionRefl (textDisplay expression)
+    expression ->
+      Shared.MiscTree2
+        Shared.versionRefl
+        originalSource
+        (textDisplay expression)
+  where
+    inArray :: Maybe (Expression Renamed) -> Maybe (Vector (Expression Renamed))
+    inArray =
+      \case
+        Just (ArrayExpression Array {expressions}) -> pure expressions
+        _ -> Nothing
+    atIndex ::
+         Int
+      -> Maybe (Vector (Expression Renamed))
+      -> Maybe (Expression Renamed)
+    atIndex idx =
+      \case
+        Just vector
+          | Just e <- vector V.!? idx -> pure e
+        _ -> Nothing
+    originalSource =
+      case original of
+        Nothing -> Shared.NoOriginalSource
+        Just expression -> Shared.OriginalSource (textDisplay expression)
 
 toCellError :: LoadError -> Shared.CellError
 toCellError =

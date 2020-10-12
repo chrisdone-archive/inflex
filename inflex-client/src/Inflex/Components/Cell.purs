@@ -103,13 +103,15 @@ outputCellToCell (Shared.OutputCell {name, code, result}) =
           Shared.ResultOk (Shared.ResultTree output) -> Right (toEditor output)
     }
 
-toEditor :: Shared.Tree1 -> Editor.Editor
+toEditor :: Shared.Tree2 -> Editor.Editor
 toEditor =
   case _ of
-    Shared.MiscTree _ text -> Editor.MiscE text
-    Shared.ArrayTree _ trees -> Editor.ArrayE (map toEditor trees)
-    Shared.RecordTree _ fields ->
-      Editor.RecordE (map (\(Shared.Field1{key,value}) -> {key,value: toEditor value}) fields)
+    Shared.MiscTree2 _ originalSource text ->
+      Editor.MiscE text
+    Shared.ArrayTree2 _ originalSource trees ->
+      Editor.ArrayE (map toEditor trees)
+    Shared.RecordTree2 _ originalSource fields ->
+      Editor.RecordE (map (\(Shared.Field2{key,value}) -> {key,value: toEditor value}) fields)
 
 --------------------------------------------------------------------------------
 -- Query

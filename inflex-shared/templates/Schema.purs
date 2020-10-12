@@ -49,6 +49,11 @@ instance showTree1 :: Show Tree1 where show x = genericShow x
 instance decodeTree1 :: Decode Tree1 where decode x = genericDecode opts x
 instance encodeTree1 :: Encode Tree1 where encode x = genericEncode opts x
 
+derive instance genericTree2 :: Generic Tree2 _
+instance showTree2 :: Show Tree2 where show x = genericShow x
+instance decodeTree2 :: Decode Tree2 where decode x = genericDecode opts x
+instance encodeTree2 :: Encode Tree2 where encode x = genericEncode opts x
+
 derive instance genericResultTree :: Generic ResultTree _
 instance showResultTree :: Show ResultTree where show x = genericShow x
 instance encodeResultTree :: Encode ResultTree where encode (ResultTree tree) = encode tree
@@ -64,10 +69,20 @@ instance showField1 :: Show Field1 where show x = genericShow x
 instance decodeField1 :: Decode Field1 where decode x = genericDecode opts x
 instance encodeField1 :: Encode Field1 where encode x = genericEncode opts x
 
+derive instance genericField2 :: Generic Field2 _
+instance showField2 :: Show Field2 where show x = genericShow x
+instance decodeField2 :: Decode Field2 where decode x = genericDecode opts x
+instance encodeField2 :: Encode Field2 where encode x = genericEncode opts x
+
 derive instance genericFillError :: Generic FillError _
 instance showFillError :: Show FillError where show = genericShow
 instance decodeFillError :: Decode FillError where decode = genericDecode opts
 instance encodeFillError :: Encode FillError where encode = genericEncode opts
+
+derive instance genericOriginalSource :: Generic OriginalSource _
+instance showOriginalSource :: Show OriginalSource where show = genericShow
+instance decodeOriginalSource :: Decode OriginalSource where decode = genericDecode opts
+instance encodeOriginalSource :: Encode OriginalSource where encode = genericEncode opts
 
 derive instance genericInputDocument :: Generic InputDocument _
 instance showInputDocument :: Show InputDocument where show = genericShow
@@ -185,3 +200,11 @@ derive instance genericVersion1 :: Generic Version1 _
 instance showVersion1 :: Show Version1 where show = genericShow
 instance decodeVersion1 :: Decode Version1 where decode = parseVersion
 instance encodeVersion1 :: Encode Version1 where encode = versionToJSON
+
+instance versionVersion2 :: Version Version2 where
+  versionNumber _ = 2
+  versionRefl = Version2
+derive instance genericVersion2 :: Generic Version2 _
+instance showVersion2 :: Show Version2 where show = genericShow
+instance decodeVersion2 :: Decode Version2 where decode = parseVersion
+instance encodeVersion2 :: Encode Version2 where encode = versionToJSON

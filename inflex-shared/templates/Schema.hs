@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeApplications, ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric, NamedFieldPuns, RecordWildCards #-}
@@ -49,24 +50,56 @@ deriving instance Show Tree1
 instance ToJSON Tree1
 instance FromJSON Tree1
 
+deriving instance Generic Tree2
+deriving instance Show Tree2
+instance ToJSON Tree2
+instance FromJSON Tree2
+
 deriving instance Generic ResultTree
 deriving instance Show ResultTree
 deriving instance ToJSON ResultTree
 instance FromJSON ResultTree where
-  parseJSON j = fmap ResultTree (parseJSON j <|> fmap migrateV1 (parseJSON j))
+  parseJSON j =
+    fmap
+      ResultTree
+      (parseJSON j <|> fmap migrateV2 (parseJSON j) <|>
+       fmap (migrateV2 . migrateV1) (parseJSON j))
     where
       migrateV1 :: Text -> Tree1
       migrateV1 text = MiscTree versionRefl text
+      migrateV2 :: Tree1 -> Tree2
+      migrateV2 =
+        \case
+          ArrayTree _ trees ->
+            ArrayTree2 versionRefl NoOriginalSource (fmap migrateV2 trees)
+          RecordTree _ fields ->
+            RecordTree2
+              versionRefl
+              NoOriginalSource
+              (fmap migrateV2Field fields)
+            where migrateV2Field Field1 {..} =
+                    Field2 {version = versionRefl, value = migrateV2 value, ..}
+          MiscTree _ text -> MiscTree2 versionRefl NoOriginalSource text
 
 deriving instance Generic CellError
 deriving instance Show CellError
 instance ToJSON CellError
 instance FromJSON CellError
 
+deriving instance Generic OriginalSource
+deriving instance Show OriginalSource
+instance ToJSON OriginalSource
+instance FromJSON OriginalSource
+
 deriving instance Generic Field1
 deriving instance Show Field1
 instance ToJSON Field1
 instance FromJSON Field1
+
+deriving instance Generic Field2
+deriving instance Show Field2
+instance ToJSON Field2
+instance FromJSON Field2
 
 deriving instance Generic FillError
 deriving instance Show FillError
@@ -154,6 +187,11 @@ deriving instance Show Version1
 instance Version Version1 where versionNumber _ = 1; versionRefl = Version1
 instance FromJSON Version1 where parseJSON = parseVersion
 instance ToJSON Version1 where toJSON = versionToJSON
+
+deriving instance Show Version2
+instance Version Version2 where versionNumber _ = 2; versionRefl = Version2
+instance FromJSON Version2 where parseJSON = parseVersion
+instance ToJSON Version2 where toJSON = versionToJSON
 
 $(derivePersistFieldJSON "InputDocument")
 $(derivePersistFieldJSON "OutputDocument")

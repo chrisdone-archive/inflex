@@ -13,7 +13,7 @@ If you change a type by
 
 * changing a used type's version
 
-then you don't need to bump its schema.
+then you don't need to bump its schema, UNLESS that type is used elsewhere.
 
 ALSO, check your ./rpc file.
 
@@ -24,6 +24,7 @@ class Version v where
   versionRefl :: v
 
 data Version1 = Version1
+data Version2 = Version2
 
 data None =
   None
@@ -65,18 +66,22 @@ data Result
   | ResultOk ResultTree
 
 newtype ResultTree =
-  ResultTree Tree1
+  ResultTree Tree2
 
-data Tree1
-  = ArrayTree Version1 (Vector Tree1)
-  | RecordTree Version1 (Vector Field1)
-  | MiscTree Version1 Text
+data Tree2
+  = ArrayTree2 Version2 OriginalSource (Vector Tree2)
+  | RecordTree2 Version2 OriginalSource (Vector Field2)
+  | MiscTree2 Version2 OriginalSource Text
 
-data Field1 = Field1
-  { version :: Version1
+data Field2 = Field2
+  { version :: Version2
   , key :: Text
-  , value :: Tree1
+  , value :: Tree2
   }
+
+data OriginalSource
+  = OriginalSource Text
+  | NoOriginalSource
 
 data CellError
   = SyntaxError -- TODO: more info.
@@ -105,4 +110,17 @@ data InputCell = InputCell
   { uuid :: UUID
   , name :: Text
   , code :: Text
+  }
+
+{-# DEPRECATED Tree1 "Use Tree2" #-}
+data Tree1
+  = ArrayTree Version1 (Vector Tree1)
+  | RecordTree Version1 (Vector Field1)
+  | MiscTree Version1 Text
+
+{-# DEPRECATED Field1 "Use Field2" #-}
+data Field1 = Field1
+  { version :: Version1
+  , key :: Text
+  , value :: Tree1
   }
