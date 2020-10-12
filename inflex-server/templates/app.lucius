@@ -174,11 +174,11 @@ body {
 
 .array {
   .array-item + .array-item {
-    border-top: 2px solid #ddd;
+    border-top: 1px solid #ddd;
   }
 }
 .array {
-    border: 1px solid #ddd;
+    border: 2px solid #ddd;
     border-radius: 3px;
 }
 
