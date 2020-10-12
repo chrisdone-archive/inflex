@@ -237,6 +237,7 @@ table.record {
     }
     td {
       padding: 5px;
+      vertical-align: top;
     }
     td + td {
       border-left: 1px solid #8e9dbe

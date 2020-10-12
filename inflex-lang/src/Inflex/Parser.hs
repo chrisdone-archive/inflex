@@ -278,7 +278,8 @@ propParser = do
 fieldNameParser :: Parser FieldName
 fieldNameParser = do
   Located {thing = name} <-
-    token ExpectedVariable (preview _LowerWordToken)
+    token ExpectedVariable (preview _LowerWordToken) <>
+    token ExpectedVariable (preview _StringToken)
   pure (FieldName name)
 
 letParser :: Parser (Let Parsed)
