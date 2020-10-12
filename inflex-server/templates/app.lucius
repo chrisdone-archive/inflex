@@ -179,3 +179,28 @@ body {
     padding-top: 5px;
   }
 }
+
+
+/* Records */
+
+td.record-field-name {
+  vertical-align: top;
+  font-weight: bold;
+  background: #e9eaec;
+  padding:  0.3em;
+  border-radius: 3px;
+  color: #244585;
+  margin: 5px;
+}
+
+tr.record-field {
+}
+
+td.record-field {
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 5px;
+}
+table.record {
+  border-spacing: 5px;
+}

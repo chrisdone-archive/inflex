@@ -225,8 +225,8 @@ renderEditor editor =
              (\i {key, value: editor'} ->
                 HH.tr
                   [HP.class_ (HH.ClassName "record-field")]
-                  [ HH.td [] [HH.text key]
-                  , HH.td [] [HH.slot
+                  [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [HH.text key]
+                  , HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
                       (SProxy :: SProxy "editor")
                       i
                       component
