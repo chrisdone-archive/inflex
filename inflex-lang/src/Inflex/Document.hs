@@ -13,6 +13,11 @@ module Inflex.Document
   , evalDocument
   , evalEnvironment
   , defaultDocument
+  , loadDocument1
+  , defaultDocument1
+  , evalEnvironment1
+  , evalDocument1
+  , EvaledExpression(..)
   , Toposorted(..)
   , LoadError(..)
   ) where
@@ -58,8 +63,18 @@ newtype Toposorted a = Toposorted {unToposorted :: [a]}
   deriving (Functor, Traversable, Foldable, Show, Eq, Ord, NFData)
 
 data Context = Context
-  { hashedCells :: Map Hash (Either LoadError (IsResolved (Expression Resolved)))
+  { hashedCells :: Map Hash (Either LoadError LoadedExpression)
   , nameHashes :: Map Text (Either LoadError Hash)
+  }
+
+data LoadedExpression = LoadedExpression
+  { resolvedExpression :: IsResolved (Expression Resolved)
+  , renamedExpression :: Expression Renamed
+  }
+
+data EvaledExpression = EvaledExpression
+  { resultExpression :: Expression Resolved
+  , cell :: Cell1
   }
 
 --------------------------------------------------------------------------------
@@ -70,6 +85,16 @@ loadDocument ::
      [Named Text]
   -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
 loadDocument =
+  fmap
+    (fmap
+       (second (\LoadedExpression {resolvedExpression} -> resolvedExpression))) .
+  loadDocument1
+
+-- | Load a document up to resolution.
+loadDocument1 ::
+     [Named Text]
+  -> Toposorted (Named (Either LoadError LoadedExpression))
+loadDocument1 =
   dependentLoadDocument . topologicalSortDocument . independentLoadDocument
 
 -- | Construct an evaluation environment.
@@ -85,6 +110,13 @@ evalEnvironment =
          Left {} -> Nothing) .
   toList
 
+evalEnvironment1 ::
+     Toposorted (Named (Either LoadError LoadedExpression))
+  -> Map Hash (Expression Resolved)
+evalEnvironment1 =
+  evalEnvironment .
+  fmap (fmap (second (\LoadedExpression {resolvedExpression} -> resolvedExpression)))
+
 -- | Default the expressions in a document to cells.
 defaultDocument ::
      Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
@@ -95,6 +127,21 @@ defaultDocument =
        (\result -> do
           expression <- result
           first LoadDefaulterError (defaultResolvedExpression expression)))
+
+-- | Default the expressions in a document to cells.
+defaultDocument1 ::
+     Toposorted (Named (Either LoadError LoadedExpression))
+  -> Toposorted (Named (Either LoadError Cell1))
+defaultDocument1 =
+  fmap
+    (fmap
+       (\result -> do
+          LoadedExpression {..} <- result
+          Cell {..} <-
+            first
+              LoadDefaulterError
+              (defaultResolvedExpression resolvedExpression)
+          pure Cell1 {renamed = renamedExpression, ..}))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument ::
@@ -107,6 +154,19 @@ evalDocument env =
        (\result -> do
           cell <- result
           first LoadStepError (stepDefaulted env cell)))
+
+-- | Evaluate the cells in a document. The expression will be changed.
+evalDocument1 ::
+     Map Hash (Expression Resolved)
+  -> Toposorted (Named (Either LoadError Cell1))
+  -> Toposorted (Named (Either LoadError EvaledExpression))
+evalDocument1 env =
+  fmap
+    (fmap
+       (\result -> do
+          cell@Cell1 {..} <- result
+          resultExpression <- first LoadStepError (stepDefaulted env Cell {..})
+          pure EvaledExpression {..}))
 
 --------------------------------------------------------------------------------
 -- Document loading
@@ -136,27 +196,29 @@ independentLoadDocument names =
 -- Must be done in order.
 dependentLoadDocument ::
      Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
-  -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
+  -> Toposorted (Named (Either LoadError LoadedExpression))
 dependentLoadDocument = snd . mapAccumL loadCell (Context mempty mempty)
   where
     loadCell ::
          Context
       -> Named (Either LoadError (IsRenamed (Expression Renamed)))
-      -> (Context, Named (Either LoadError (IsResolved (Expression Resolved))))
+      -> (Context, Named (Either LoadError LoadedExpression))
     loadCell Context {hashedCells, nameHashes} result =
       ( Context {hashedCells = hashedCells', nameHashes = nameHashes'}
       , namedMaybeCell)
       where
         namedMaybeCell =
           fmap (>>= resolveRenamedCell hashedCells nameHashes) result
-        nameHashes' = M.insert name (fmap hashResolved thing) nameHashes
+        nameHashes' = M.insert name (fmap hashLoaded thing) nameHashes
           where
             Named {name, thing} = namedMaybeCell
         hashedCells' =
           case namedMaybeCell of
             Named {thing = Left {}} -> hashedCells
-            Named {thing = Right cell} ->
-              M.insert (hashResolved cell) (Right cell) hashedCells
+            Named {thing = Right loaded} ->
+              M.insert (hashLoaded loaded) (Right loaded) hashedCells
+        hashLoaded LoadedExpression {resolvedExpression = cell} =
+          hashResolved cell
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
@@ -186,19 +248,23 @@ topologicalSortDocument =
 
 -- | Load a renamed cell.
 resolveRenamedCell ::
-     Map Hash (Either LoadError (IsResolved (Expression Resolved)))
+     Map Hash (Either LoadError LoadedExpression)
   -> Map Text (Either LoadError Hash)
   -> IsRenamed (Expression Renamed)
-  -> Either LoadError (IsResolved (Expression Resolved))
-resolveRenamedCell globalTypes globalHashes isRenamed = do
+  -> Either LoadError LoadedExpression
+resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do
   hasConstraints <-
     first
       LoadGenerateError
       (generateRenamed
-         (fmap (fmap (\IsResolved {scheme} -> scheme)) globalTypes)
+         (fmap
+            (fmap
+               (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
+                  scheme))
+            globalTypes)
          globalHashes
          isRenamed)
   isSolved <- first LoadSolveError (solveGenerated hasConstraints)
   isGeneralised <- first LoadGeneraliseError (generaliseSolved isSolved)
   isResolved <- first LoadResolveError (resolveGeneralised isGeneralised)
-  pure isResolved
+  pure LoadedExpression {resolvedExpression = isResolved, renamedExpression}

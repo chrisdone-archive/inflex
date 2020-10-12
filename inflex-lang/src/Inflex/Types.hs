@@ -99,6 +99,18 @@ data Cell = Cell
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
   }
 
+-- | A "Cell" is a binding that is going to be evaluated and displayed
+-- in the document. Cells are polymorphic and have type-class
+-- constraints, some of which may have been defaulted.
+data Cell1 = Cell1
+  { location :: !Cursor
+  , defaulted :: !(Expression Resolved)
+  , renamed :: !(Expression Renamed)
+  , scheme :: !(Scheme Polymorphic)
+  , defaultedClassConstraints :: !(Seq (Default Polymorphic))
+  , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
+  }
+
 -- | A defaulted class constraint. Contains the original and defaulted
 -- version, and the instance produced.
 data Default s = Default

@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -33,44 +34,42 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
                    , result =
                        either
                          (Shared.ResultError . toCellError)
-                         (Shared.ResultOk . Shared.ResultTree . toTree)
+                         (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
+                            Shared.ResultOk
+                              (Shared.ResultTree
+                                 (toTree (pure renamed) resultExpression)))
                          thing
                    , code
                    , name
                    , order
                    })
               (unToposorted
-                 (evalDocument (evalEnvironment loaded) (defaultDocument loaded)))))))
+                 (evalDocument1
+                    (evalEnvironment1 loaded)
+                    (defaultDocument1 loaded)))))))
   where
     loaded =
-      loadDocument
+      loadDocument1
         (map
            (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
               Named {uuid = Uuid uuid, name, thing = code, order, code})
            (toList cells))
 
--- TODO: include code of each node in output where possible:
---
--- the renameText function produces a Map Cursor Location, which
--- toTree can use to compare with the cursors in the Expression
--- Resolved to produce the original source string for a given AST
--- node. genius!
---
--- so above in the outputcell, call renameText, give that map to this
--- function. update the Tree1 type to Tree2, including src code for
--- each node.
-toTree :: Expression Resolved -> Shared.Tree1
-toTree =
+toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree1
+toTree original =
   \case
     ArrayExpression Array {expressions} ->
-      Shared.ArrayTree Shared.versionRefl (fmap toTree expressions)
+      Shared.ArrayTree Shared.versionRefl (fmap (toTree original) expressions)
     RecordExpression Record {fields} ->
       Shared.RecordTree
         Shared.versionRefl
         (fmap
            (\FieldE {name = FieldName key, expression} ->
               Shared.Field1
-                {key, version = Shared.versionRefl, value = toTree expression})
+                { key
+                , version = Shared.versionRefl
+                , value = toTree original expression
+                })
            (V.fromList fields))
     expression -> Shared.MiscTree Shared.versionRefl (textDisplay expression)
 
