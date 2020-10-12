@@ -174,11 +174,11 @@ body {
 
 .array {
   .array-item + .array-item {
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #8e9dbe;
   }
 }
 .array {
-    border: 2px solid #ddd;
+    border: 1px solid #8e9dbe;
     border-radius: 3px;
 }
 
@@ -191,7 +191,7 @@ body {
 
 td.record-field-name {
   vertical-align: top;
-  font-weight: bold;
+  /* font-weight: bold; */
   background: #e9eaec;
   padding:  0.3em;
   border-radius: 3px;
@@ -209,4 +209,37 @@ td.record-field {
 }
 table.record {
   border-spacing: 5px;
+  border: 1px solid #8e9dbe;
+}
+
+/* Tables */
+
+.table-column {
+  font-weight: normal;
+}
+.table {
+  border: 1px solid #8e9dbe;
+  border-radius: 3px;
+  border-spacing: 0;
+  .table-header {
+    th + th {
+      border-left: 1px solid #8e9dbe
+    }
+     th {
+      padding: 5px;
+      background:  #e9eaec;
+      color: #244585
+    }
+  }
+  .table-body {
+    tr > td {
+      border-top: 1px solid #8e9dbe
+    }
+    td {
+      padding: 5px;
+    }
+    td + td {
+      border-left: 1px solid #8e9dbe
+    }
+  }
 }
