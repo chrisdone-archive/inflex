@@ -103,7 +103,10 @@ unifyConstraints =
     mempty
 
 unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
-unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
+unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
+                                                              , type2
+                                                              , location
+                                                              } =
   case (type1, type2) of
     (ApplyType typeApplication1, ApplyType typeApplication2) ->
       unifyTypeApplications typeApplication1 typeApplication2
@@ -113,6 +116,9 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint {type1, type2} =
       | typeConstant1 == typeConstant2 -> pure mempty
     (RowType x, RowType y) -> unifyRows x y
     (RecordType r1, RecordType r2) -> unifyRecords r1 r2
+    (ArrayType a, ArrayType b) ->
+      unifyEqualityConstraint
+        EqualityConstraint {location, type1 = a, type2 = b}
     _ -> Left (pure (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
