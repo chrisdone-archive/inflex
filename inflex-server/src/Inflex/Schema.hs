@@ -97,7 +97,13 @@ newtype ResultTree =
 data Tree2
   = ArrayTree2 Version2 OriginalSource (Vector Tree2)
   | RecordTree2 Version2 OriginalSource (Vector Field2)
+  | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | MiscTree2 Version2 OriginalSource Text
+
+data Row = Row
+ { source :: OriginalSource
+ , fields :: Vector Field2
+ }
 
 data Field2 = Field2
   { version :: Version2
@@ -226,6 +232,11 @@ deriving instance Generic Field2
 deriving instance Show Field2
 instance ToJSON Field2
 instance FromJSON Field2
+
+deriving instance Generic Row
+deriving instance Show Row
+instance ToJSON Row
+instance FromJSON Row
 
 deriving instance Generic FillError
 deriving instance Show FillError

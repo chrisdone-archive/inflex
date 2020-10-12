@@ -74,6 +74,11 @@ instance showField2 :: Show Field2 where show x = genericShow x
 instance decodeField2 :: Decode Field2 where decode x = genericDecode opts x
 instance encodeField2 :: Encode Field2 where encode x = genericEncode opts x
 
+derive instance genericRow :: Generic Row _
+instance showRow :: Show Row where show x = genericShow x
+instance decodeRow :: Decode Row where decode x = genericDecode opts x
+instance encodeRow :: Encode Row where encode x = genericEncode opts x
+
 derive instance genericFillError :: Generic FillError _
 instance showFillError :: Show FillError where show = genericShow
 instance decodeFillError :: Decode FillError where decode = genericDecode opts

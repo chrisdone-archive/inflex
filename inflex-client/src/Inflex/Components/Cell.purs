@@ -113,6 +113,17 @@ toEditor =
     Shared.RecordTree2 _ originalSource fields ->
       Editor.RecordE originalSource
         (map (\(Shared.Field2{key,value}) -> {key,value: toEditor value}) fields)
+    Shared.TableTree2 _ originalSource columns rows ->
+      Editor.TableE
+        originalSource
+        columns
+        (map (\(Shared.Row {source, fields}) ->
+                { original: source
+                , fields:
+                    map (\(Shared.Field2{key,value}) -> {key,value: toEditor value})
+                        fields
+                })
+             rows)
 
 --------------------------------------------------------------------------------
 -- Query

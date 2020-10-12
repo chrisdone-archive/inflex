@@ -58,6 +58,42 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
 toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
 toTree original =
   \case
+    ArrayExpression Array {typ, expressions}
+      | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
+        Shared.TableTree2
+          Shared.versionRefl
+          originalSource
+          (V.fromList (map (\Field {name = FieldName text} -> text) fields))
+          (let originalArray = inArray original
+            in V.imap
+                 (\rowIndex ->
+                    \case
+                      RecordExpression Record {fields = fieldEs} ->
+                        let arrayItem = atIndex rowIndex originalArray
+                            originalRecord = inRecord arrayItem
+                         in Shared.Row
+                              { source = originalSource' arrayItem
+                              , fields =
+                                  V.imap
+                                    (\fieldIndex FieldE { name = FieldName key
+                                                        , expression
+                                                        } ->
+                                       Shared.Field2
+                                         { key
+                                         , version = Shared.versionRefl
+                                         , value =
+                                             toTree
+                                               (fmap
+                                                  (\FieldE {expression = e} -> e)
+                                                  (atNth
+                                                     fieldIndex
+                                                     originalRecord))
+                                               expression
+                                         })
+                                    (V.fromList fieldEs)
+                              }
+                      _ -> error "TODO: resolve this.")
+                 expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
         Shared.versionRefl
@@ -79,7 +115,7 @@ toTree original =
                     , value =
                         toTree
                           (fmap
-                             (\FieldE {expression=e} -> e)
+                             (\FieldE {expression = e} -> e)
                              (atNth i originalRecord))
                           expression
                     })
@@ -115,8 +151,9 @@ toTree original =
         Just vector
           | Just e <- lookup idx (zip [0 ..] vector) -> pure e
         _ -> Nothing
-    originalSource =
-      case original of
+    originalSource = originalSource' original
+    originalSource' =
+      \case
         Nothing -> Shared.NoOriginalSource
         Just expression -> Shared.OriginalSource (textDisplay expression)
 

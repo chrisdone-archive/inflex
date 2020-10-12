@@ -22,7 +22,7 @@ import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==))
+import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==), show)
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -62,6 +62,12 @@ data Editor
   | ErrorE CellError
   | ArrayE Shared.OriginalSource (Array Editor)
   | RecordE Shared.OriginalSource (Array { key :: String, value :: Editor })
+  | TableE Shared.OriginalSource
+           (Array String)
+           (Array { original :: Shared.OriginalSource
+                  , fields :: Array { key :: String, value :: Editor }
+                  }
+           )
 
 data Display
   = DisplayEditor
@@ -72,7 +78,7 @@ data EditorAndCode = EditorAndCode
   , code :: String
   }
 
-type Slots i = (editor :: H.Slot i String Int)
+type Slots i = (editor :: H.Slot i String String)
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -204,7 +210,7 @@ renderEditor editor =
                   [HP.class_ (HH.ClassName "array-item")]
                   [ HH.slot
                       (SProxy :: SProxy "editor")
-                      i
+                      (show i)
                       component
                       (EditorAndCode
                          { editor: editor'
@@ -228,7 +234,7 @@ renderEditor editor =
                   [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [HH.text key]
                   , HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
                       (SProxy :: SProxy "editor")
-                      i
+                      (show i)
                       component
                       (EditorAndCode
                          { editor: editor'
@@ -238,9 +244,51 @@ renderEditor editor =
                          Just
                            (FinishEditing
                               (editorCode
-                                 (RecordE Shared.NoOriginalSource (editArray i {key: key, value: MiscE Shared.NoOriginalSource rhs} fields)))))]
+                                 (RecordE Shared.NoOriginalSource (editArray i {key, value: MiscE Shared.NoOriginalSource rhs} fields)))))]
                   ])
              fields)
+      ]
+    TableE _originalSource columns rows ->
+      [ HH.table
+        [HP.class_ (HH.ClassName "table")]
+        [HH.thead [HP.class_ (HH.ClassName "table-header")]
+                  (map (\text -> HH.th [HP.class_ (HH.ClassName "table-column")] [HH.text text]) columns)
+        ,HH.tbody
+           [HP.class_ (HH.ClassName "table-body")]
+           (mapWithIndex
+             (\rowIndex {original, fields} ->
+               HH.tr []
+
+               (mapWithIndex
+                  (\fieldIndex {key, value: editor'} ->
+                        HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
+                           (SProxy :: SProxy "editor")
+                           (show rowIndex <> "/" <> show fieldIndex)
+                           component
+                           (EditorAndCode
+                              { editor: editor'
+                              , code: editorCode editor'
+                              })
+                           (\rhs ->
+                              Just
+                                (FinishEditing
+                                   (editorCode
+                                      (TableE
+                                         Shared.NoOriginalSource
+                                         columns
+                                         (editArray
+                                            rowIndex
+                                            {original: Shared.NoOriginalSource
+                                            ,fields: editArray fieldIndex {key, value: MiscE Shared.NoOriginalSource rhs}
+                                                       fields}
+                                            rows)
+                                       ))))]
+                       )
+                  fields)
+
+               )
+             rows)
+        ]
       ]
 
 editorCode :: Editor -> String
@@ -251,6 +299,8 @@ editorCode =
     RecordE original fs ->
       originalOr original ("{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}")
     ErrorE _ -> ""
+    TableE original _columns rows ->
+      editorCode (ArrayE original (map (\{ original: o, fields } -> RecordE o fields) rows))
 
 originalOr :: Shared.OriginalSource -> String -> String
 originalOr Shared.NoOriginalSource s = s

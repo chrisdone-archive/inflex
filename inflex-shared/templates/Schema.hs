@@ -101,6 +101,11 @@ deriving instance Show Field2
 instance ToJSON Field2
 instance FromJSON Field2
 
+deriving instance Generic Row
+deriving instance Show Row
+instance ToJSON Row
+instance FromJSON Row
+
 deriving instance Generic FillError
 deriving instance Show FillError
 instance ToJSON FillError
