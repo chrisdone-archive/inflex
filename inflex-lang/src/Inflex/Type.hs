@@ -126,3 +126,23 @@ decimalT nat =
   ApplyType
     TypeApplication
       {function = f, argument = x, location = BuiltIn, kind = TypeKind}
+
+--------------------------------------------------------------------------------
+-- Schemes
+
+functionScheme :: Cursor -> Function -> Scheme Polymorphic
+functionScheme location =
+  \case
+    MapFunction ->
+      Scheme
+        { location
+        , constraints = []
+        , typ = (a .-> b) .-> ArrayType a .-> ArrayType b
+        }
+  where
+    a = typeVariable 0
+    b = typeVariable 1
+    typeVariable index =
+      VariableType
+        (TypeVariable
+           {location = (), prefix = (), index = index, kind = TypeKind})

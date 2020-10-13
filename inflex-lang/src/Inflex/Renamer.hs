@@ -62,7 +62,10 @@ renameText fp text = do
 wiredInGlobals :: Map Text (GlobalRef Renamed)
 wiredInGlobals =
   M.fromList
-    [("fromInteger", FromIntegerGlobal), ("fromDecimal", FromDecimalGlobal)]
+    [ ("fromInteger", FromIntegerGlobal)
+    , ("fromDecimal", FromDecimalGlobal)
+    , ("map", FunctionGlobal MapFunction)
+    ]
 
 --------------------------------------------------------------------------------
 -- Renamers

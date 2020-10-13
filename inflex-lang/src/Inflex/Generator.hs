@@ -318,6 +318,8 @@ globalGenerator :: Global Filled -> Generate e (Global Generated)
 globalGenerator Global {name, location} = do
   scheme <-
     case name of
+      FunctionGlobal function ->
+        polymorphicSchemeToGenerated location (functionScheme location function)
       HashGlobal hash -> do
         Env {globals} <- ask
         case M.lookup hash globals of
@@ -424,6 +426,7 @@ globalGenerator Global {name, location} = do
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         HashGlobal h -> HashGlobal h
+        FunctionGlobal f -> FunctionGlobal f
 
 --------------------------------------------------------------------------------
 -- Map from operators to classes

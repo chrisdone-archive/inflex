@@ -480,6 +480,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
+        FunctionGlobal f -> FunctionGlobal f
 
 solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
 solveScheme substitutions Scheme {..} =

@@ -430,6 +430,7 @@ data GlobalRef s where
   FromDecimalGlobal :: GlobalRef s
   NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
+  FunctionGlobal :: !Function -> GlobalRef s
 
 -- | Numeric binary operator.
 data NumericBinOp
@@ -437,6 +438,10 @@ data NumericBinOp
   | AddOp
   | SubtractOp
   | DivideOp
+  deriving (Show, Eq, Ord)
+
+data Function =
+  MapFunction
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------

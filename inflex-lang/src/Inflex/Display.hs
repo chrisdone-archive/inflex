@@ -85,6 +85,7 @@ instance Display (GlobalRef Resolved) where
                FromDecimalGlobal -> "fromDecimal"
                NumericBinOpGlobal op -> display op
                InstanceGlobal r -> display r
+               FunctionGlobal function -> display function
 
 instance Display (Apply Resolved) where
   display Apply {function, argument} =
@@ -177,6 +178,11 @@ instance Display (GlobalRef Renamed) where
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
                NumericBinOpGlobal op -> display op
+               FunctionGlobal function -> display function
+
+instance Display Function where
+  display = \case
+    MapFunction -> "map"
 
 instance Display NumericBinOp where
   display =

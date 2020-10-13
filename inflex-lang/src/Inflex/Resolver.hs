@@ -235,6 +235,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
+        FunctionGlobal f -> FunctionGlobal f
 
 -- | Add implicit parameters to an expression.
 --

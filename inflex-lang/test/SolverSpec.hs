@@ -309,7 +309,7 @@ _Option x1 =
 -- Coarse grained
 
 arrays :: SpecWith ()
-arrays =
+arrays = do
   it
     "[[1],[2]]"
     (shouldBe
