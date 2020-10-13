@@ -168,9 +168,25 @@ render (State {display, code, editor}) =
       case display of
         DisplayCode -> HH.div [] inner
         DisplayEditor ->
-          HH.div
-            [HE.onClick (\e -> pure (PreventDefault (toEvent e) StartEditor))]
-            inner
+          case editor of
+            MiscE _ _ ->
+              HH.div
+                [ HP.class_ (HH.ClassName "editor-boundary-wrap")
+                , HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e) StartEditor))
+                ]
+                inner
+            _ ->
+              HH.div
+                [HP.class_ (HH.ClassName "editor-boundary-wrap")]
+                ([ HH.div
+                     [ HP.class_ (HH.ClassName "ellipsis-button")
+                     , HE.onClick
+                         (\e -> pure (PreventDefault (toEvent e) StartEditor))
+                     ]
+                     [HH.text "[edit]"]
+                 ] <>
+                 inner)
 
 renderEditor ::
      forall i a. MonadEffect a
