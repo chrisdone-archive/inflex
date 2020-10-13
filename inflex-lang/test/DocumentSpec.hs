@@ -1580,6 +1580,55 @@ regression :: Spec
 regression = do
   error_while_evaluating_with_annotation
   duplicate_empty_names_ok
+  mapfunc
+
+mapfunc :: SpecWith ()
+mapfunc =
+  eval_it
+    "map(x:x*2,[3])"
+    [("x", "(map(x:x*2))([3])")]
+    (\[u1] ->
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "(map(x:x*2))([3])"
+           , thing =
+               Right
+                 (ArrayExpression
+                    (Array
+                       { expressions =
+                           V.fromList
+                             [ LiteralExpression
+                                 (NumberLiteral
+                                    (Number
+                                       { location = SteppedCursor
+                                       , number = IntegerNumber 6
+                                       , typ =
+                                           ConstantType
+                                             (TypeConstant
+                                                { location =
+                                                    ApplyArgCursor
+                                                      (ArrayElementCursor
+                                                         0
+                                                         ExpressionCursor)
+                                                , name = IntegerTypeName
+                                                })
+                                       }))
+                             ]
+                       , typ =
+                           ArrayType
+                             (PolyType
+                                (TypeVariable
+                                   { location = ()
+                                   , prefix = ()
+                                   , index = 0
+                                   , kind = TypeKind
+                                   }))
+                       , location = ApplyFuncCursor ExpressionCursor
+                       }))
+           }
+       ])
 
 error_while_evaluating_with_annotation :: SpecWith ()
 error_while_evaluating_with_annotation =

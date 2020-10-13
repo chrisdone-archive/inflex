@@ -20,7 +20,9 @@ import           Data.Text (Text)
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Resolver
+import           Inflex.Type
 import           Inflex.Types
+import           Inflex.Types as Apply (Apply(..))
 import           Numeric.Natural
 
 --------------------------------------------------------------------------------
@@ -212,6 +214,43 @@ stepApply Apply {..} = do
                        , typ = typ'
                        , ..
                        })))
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal MapFunction}
+                                    , argument = functionExpression
+                                    , location = applyLocation
+                                    } ->
+          case argument' of
+            ArrayExpression Array {expressions} -> do
+              expressions' <-
+                traverse
+                  (\arrayItem ->
+                     stepExpression
+                       (ApplyExpression
+                          (Apply
+                             { function = functionExpression
+                             , argument = arrayItem
+                             , location = location
+                             , typ = typeOutput (expressionType functionExpression)
+                             })))
+                  expressions
+              stepped' <- get
+              case stepped' of
+                Stepped ->
+                  error "TODO: stepped form."
+                Continue ->
+                  pure
+                    (ArrayExpression
+                       Array
+                         { typ =
+                             ArrayType
+                               (typeOutput (expressionType functionExpression))
+                         , location = applyLocation
+                         , expressions = expressions'
+                         })
+            _ ->
+              pure
+                (ApplyExpression
+                   Apply {function = function', argument = argument', ..} -- TODO: error here.
+                 )
         _ ->
           pure
             (ApplyExpression

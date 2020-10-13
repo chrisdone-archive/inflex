@@ -23,6 +23,14 @@ typeOutput =
                               } -> typeOutput output
     t -> t
 
+typeInput :: Type s -> Type s
+typeInput =
+  \case
+    ApplyType TypeApplication {function = ApplyType TypeApplication { function = ConstantType TypeConstant {name = FunctionTypeName}
+                                                                    , argument = input
+                                                                    }} -> input
+    t -> t
+
 expressionType :: Expression s -> StagedType s
 expressionType =
   \case
@@ -121,11 +129,25 @@ decimalT nat =
       , kind = TypeKind
       }
 
+infixr .->
 (.->) :: (StagedLocation s ~ Cursor) => Type s -> Type s -> Type s
-(.->) f x =
+(.->) i o =
   ApplyType
     TypeApplication
-      {function = f, argument = x, location = BuiltIn, kind = TypeKind}
+      { function =
+          ApplyType
+            TypeApplication
+              { function =
+                  ConstantType
+                    TypeConstant {location = BuiltIn, name = FunctionTypeName}
+              , argument = i
+              , location = BuiltIn
+              , kind = FunKind TypeKind TypeKind
+              }
+      , argument = o
+      , location = BuiltIn
+      , kind = TypeKind
+      }
 
 --------------------------------------------------------------------------------
 -- Schemes
