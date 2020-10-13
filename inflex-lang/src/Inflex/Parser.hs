@@ -11,10 +11,11 @@
 
 -- | Parser for Inflex language.
 
-module Inflex.Parser where
+module Inflex.Parser (parseText, parseType, RenameParseError(..)) where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
@@ -200,7 +201,7 @@ unchainedExpressionParser =
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
-       , ApplyExpression <$> applyParser
+       , applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , VariableExpression <$> variableParser
@@ -319,16 +320,39 @@ bindParser = do
   pure
     Bind {param, location = SourceLocation {start, end}, value, typ = Nothing}
 
-applyParser :: Parser (Apply Parsed)
+applyParser :: Parser (Expression Parsed)
 applyParser = do
   function <- functionParser
-  argument <- argumentParser
+  token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+  let loop = do
+        bind <- expressionParser
+        comma <-
+          fmap
+            (const True)
+            (token_ (ExpectedToken CommaToken) (preview _CommaToken)) <>
+          pure False
+        rest <-
+          if comma
+            then fmap NE.toList loop
+            else pure []
+        pure (bind :| rest)
+  arguments <- loop
+  token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
   typ <- optionalSignatureParser
-  let SourceLocation {start} = expressionLocation function
-      SourceLocation {end} = expressionLocation argument
   pure
-    Apply
-      {function, argument, location = SourceLocation {start, end}, typ}
+    (foldl'
+       (\function' (i, argument) ->
+          ApplyExpression
+            Apply
+              { function = function'
+              , argument
+              , location = expressionLocation argument -- TODO: Look at this.
+              , typ = if i == length arguments
+                         then typ
+                         else Nothing
+              })
+       function
+       (zip [1..] (toList arguments)))
 
 optionalSignatureParser :: Parser (Maybe (Type Parsed))
 optionalSignatureParser = do
@@ -344,16 +368,6 @@ functionParser =
   fold1
     (NE.fromList
        [ VariableExpression <$> variableParser
-       , parensParser
-       ])
-
-argumentParser :: Parser (Expression Parsed)
-argumentParser =
-  fold1
-    (NE.fromList
-       [ VariableExpression <$> variableParser
-       , LiteralExpression <$> literalParser
-       , LambdaExpression <$> lambdaParser
        , parensParser
        ])
 

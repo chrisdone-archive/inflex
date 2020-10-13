@@ -88,10 +88,10 @@ spec = do
           "(2 :: Decimal 3)"
           (shouldBe (stepDefaultedTextly "(2 :: Decimal 3)") (Right "2.000"))
         it
-          "fromInteger (6 :: Integer) + 3.10 + (fromDecimal 3.1 :: Decimal 1)"
+          "fromInteger (6 :: Integer) + 3.10 + fromDecimal (3.1 :: Decimal 1)"
           (shouldBe
              (stepDefaultedTextly
-                "fromInteger (6 :: Integer) + 3.10 + (fromDecimal 3.1 :: Decimal 1)")
+                "fromInteger (6 :: Integer) + 3.10 + fromDecimal (3.1 :: Decimal 1)")
              (Right "12.20")))
   describe
     "Sanity checks"

@@ -96,8 +96,8 @@ errors = do
                    [ Named
                        { uuid = Uuid u1
                        , name = "x"
-                       , thing = "y y"
-                       , code = "y y"
+                       , thing = "y(y)"
+                       , code = "y(y)"
                        , order = 0
                        }
                    , Named
@@ -109,7 +109,7 @@ errors = do
                        }
                    ]
             in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
-          (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y y", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
+          (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y(y)", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
   eval_it
     "Missing field"
     [("x", "{a:3}.z")]
@@ -218,7 +218,7 @@ success = do
                  ]
              }))
   it
-    "double = x: x * 2; a = double 1; b = double 2.2"
+    "double = x: x * 2; a = double(1); b = double(2.2)"
     (do u1 <- nextRandom'
         u2 <- nextRandom'
         u3 <- nextRandom'
@@ -235,15 +235,15 @@ success = do
                    , Named
                        { uuid = Uuid u2
                        , name = "a"
-                       , thing = "double 1"
-                       , code = "double 1"
+                       , thing = "double(1)"
+                       , code = "double(1)"
                        , order = 1
                        }
                    , Named
                        { uuid = Uuid u3
                        , name = "b"
-                       , thing = "double 2.2"
-                       , code = "double 2.2"
+                       , thing = "double(2.2)"
+                       , code = "double(2.2)"
                        , order = 2
                        }
                    ]
@@ -626,7 +626,7 @@ success = do
                      { uuid = (Uuid u3)
                      , name = "b"
                      , order = 2
-                     , code = "double 2.2"
+                     , code = "double(2.2)"
                      , thing =
                          Right
                            (LiteralExpression
@@ -665,7 +665,7 @@ success = do
                      { uuid = (Uuid u2)
                      , name = "a"
                      , order = 1
-                     , code = "double 1"
+                     , code = "double(1)"
                      , thing =
                          Right
                            (LiteralExpression
