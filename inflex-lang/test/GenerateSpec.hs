@@ -125,7 +125,7 @@ spec = do
   it
     "Lambda"
     (shouldBe
-       (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "\\x->(123::Integer)"))
+       (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "x:(123::Integer)"))
        (Right
           (HasConstraints
              { equalities = Seq.fromList []
@@ -202,7 +202,7 @@ spec = do
     (do shouldBe
           (second
              (set hasConstraintsMappingsL mempty)
-             (generateText' mempty "" "(\\x->x)(123::Integer)"))
+             (generateText' mempty "" "(x:x)(123::Integer)"))
           (Right
              (HasConstraints
                 { equalities =

@@ -218,7 +218,7 @@ success = do
                  ]
              }))
   it
-    "double = \\x -> x * 2; a = double 1; b = double 2.2"
+    "double = x: x * 2; a = double 1; b = double 2.2"
     (do u1 <- nextRandom'
         u2 <- nextRandom'
         u3 <- nextRandom'
@@ -228,8 +228,8 @@ success = do
                    [ Named
                        { uuid = Uuid u1
                        , name = "double"
-                       , thing = "\\x -> x * 2"
-                       , code = "\\x -> x * 2"
+                       , thing = "x: x * 2"
+                       , code = "x: x * 2"
                        , order = 0
                        }
                    , Named
@@ -253,7 +253,7 @@ success = do
                  [ Named
                      { uuid = (Uuid u1)
                      , name = "double"
-                     , code = "\\x -> x * 2"
+                     , code = "x: x * 2"
                      , order = 0
                      , thing =
                          Right

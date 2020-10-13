@@ -399,12 +399,11 @@ variableParser = do
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do
-  Located {location = SourceLocation {start}} <-
-    token (ExpectedToken BackslashToken) (preview _BackslashToken)
   param <- paramParser
-  token_ (ExpectedToken RightArrowToken) (preview _RightArrowToken)
+  token_ (ExpectedToken ColonToken) (preview _ColonToken)
   body <- expressionParser
-  let SourceLocation {end} = expressionLocation body
+  let SourceLocation {start} = paramLocation param
+      SourceLocation {end} = expressionLocation body
   pure
     Lambda
       {location = SourceLocation {start, end}, body, typ = Nothing, param = param}

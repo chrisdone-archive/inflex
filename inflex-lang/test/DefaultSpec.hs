@@ -1819,9 +1819,9 @@ spec_1_plus_1_0 =
 spec_lambda :: SpecWith ()
 spec_lambda =
   it
-    "\\x -> x + x"
+    "x : x + x"
     (shouldBe
-       (defaultText' mempty "" "\\x -> x + x")
+       (defaultText' mempty "" "x : x + x")
        (Right
           (Cell
              { location = ExpressionCursor

@@ -895,240 +895,25 @@ globals =
                    , typ = Nothing
                    })))
         shouldBe
-          (parseText "" "\\x->y")
-          (Right
-             (LambdaExpression
-                (Lambda
-                   { location =
-                       SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 6, name = ""}
-                         }
-                   , param =
-                       Param
-                         { location =
-                             SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 3, name = ""}
-                               }
-                         , name = "x"
-                         , typ = Nothing
-                         }
-                   , body =
-                       VariableExpression
-                         (Variable
-                            { location =
-                                SourceLocation
-                                  { start =
-                                      SourcePos
-                                        {line = 1, column = 5, name = ""}
-                                  , end =
-                                      SourcePos
-                                        {line = 1, column = 6, name = ""}
-                                  }
-                            , name = "y"
-                            , typ = Nothing
-                            })
-                   , typ = Nothing
-                   })))
+          (parseText "" "x:y")
+          (Right (LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}, body = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, name = "y", typ = Nothing}), typ = Nothing})))
         shouldBe
-          (parseText "" "\\x->x y")
-          (Right
-             (LambdaExpression
-                (Lambda
-                   { location =
-                       SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 8, name = ""}
-                         }
-                   , param =
-                       Param
-                         { location =
-                             SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 3, name = ""}
-                               }
-                         , name = "x"
-                         , typ = Nothing
-                         }
-                   , body =
-                       ApplyExpression
-                         (Apply
-                            { location =
-                                SourceLocation
-                                  { start =
-                                      SourcePos
-                                        {line = 1, column = 5, name = ""}
-                                  , end =
-                                      SourcePos
-                                        {line = 1, column = 8, name = ""}
-                                  }
-                            , function =
-                                VariableExpression
-                                  (Variable
-                                     { location =
-                                         SourceLocation
-                                           { start =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 5
-                                                 , name = ""
-                                                 }
-                                           , end =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 6
-                                                 , name = ""
-                                                 }
-                                           }
-                                     , name = "x"
-                                     , typ = Nothing
-                                     })
-                            , argument =
-                                VariableExpression
-                                  (Variable
-                                     { location =
-                                         SourceLocation
-                                           { start =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 7
-                                                 , name = ""
-                                                 }
-                                           , end =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 8
-                                                 , name = ""
-                                                 }
-                                           }
-                                     , name = "y"
-                                     , typ = Nothing
-                                     })
-                            , typ = Nothing
-                            })
-                   , typ = Nothing
-                   }))))
+          (parseText "" "x:x y")
+          (Right (LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}, body = ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, function = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, name = "x", typ = Nothing}), argument = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 5, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, name = "y", typ = Nothing}), typ = Nothing}), typ = Nothing}))))
 
 lambda :: Spec
 lambda = it
            "Lambda"
            (shouldBe
-              (parseText "" "\\x->123")
-              (Right
-                 (LambdaExpression
-                    (Lambda
-                       { location =
-                           SourceLocation
-                             { start = SourcePos {line = 1, column = 1, name = ""}
-                             , end = SourcePos {line = 1, column = 8, name = ""}
-                             }
-                       , param =
-                           Param
-                             { location =
-                                 SourceLocation
-                                   { start =
-                                       SourcePos {line = 1, column = 2, name = ""}
-                                   , end = SourcePos {line = 1, column = 3, name = ""}
-                                   }
-                             , name = "x"
-                             , typ = Nothing
-                             }
-                       , body =
-                           LiteralExpression
-                             (NumberLiteral
-                                (Number
-                                   { location =
-                                       SourceLocation
-                                         { start =
-                                             SourcePos
-                                               {line = 1, column = 5, name = ""}
-                                         , end =
-                                             SourcePos
-                                               {line = 1, column = 8, name = ""}
-                                         }
-                                   , number = IntegerNumber 123
-                                   , typ = Nothing
-                                   }))
-                       , typ = Nothing
-                       }))))
+              (parseText "" "x:123")
+              (Right (LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}, body = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, number = IntegerNumber 123, typ = Nothing})), typ = Nothing}))))
 
 apply :: SpecWith ()
 apply = it
           "Apply"
           (shouldBe
-             (parseText "" "(\\x->x) 1")
-             (Right
-                (ApplyExpression
-                   (Apply
-                      { location =
-                          SourceLocation
-                            { start = SourcePos {line = 1, column = 2, name = ""}
-                            , end = SourcePos {line = 1, column = 10, name = ""}
-                            }
-                      , function =
-                          LambdaExpression
-                            (Lambda
-                               { location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 2, name = ""}
-                                     , end =
-                                         SourcePos {line = 1, column = 7, name = ""}
-                                     }
-                               , param =
-                                   Param
-                                     { location =
-                                         SourceLocation
-                                           { start =
-                                               SourcePos
-                                                 {line = 1, column = 3, name = ""}
-                                           , end =
-                                               SourcePos
-                                                 {line = 1, column = 4, name = ""}
-                                           }
-                                     , name = "x"
-                                     , typ = Nothing
-                                     }
-                               , body =
-                                   VariableExpression
-                                     (Variable
-                                        { location =
-                                            SourceLocation
-                                              { start =
-                                                  SourcePos
-                                                    {line = 1, column = 6, name = ""}
-                                              , end =
-                                                  SourcePos
-                                                    {line = 1, column = 7, name = ""}
-                                              }
-                                        , name = "x"
-                                        , typ = Nothing
-                                        })
-                               , typ = Nothing
-                               })
-                      , argument =
-                          LiteralExpression
-                            (NumberLiteral
-                               (Number
-                                  { location =
-                                      SourceLocation
-                                        { start =
-                                            SourcePos
-                                              {line = 1, column = 9, name = ""}
-                                        , end =
-                                            SourcePos
-                                              {line = 1, column = 10, name = ""}
-                                        }
-                                  , number = IntegerNumber 1
-                                  , typ = Nothing
-                                  }))
-                      , typ = Nothing
-                      }))))
+             (parseText "" "(x:x) 1")
+             (Right (ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, function = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, name = "x", typ = Nothing}, body = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, name = "x", typ = Nothing}), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}))))
 
 sigs :: SpecWith ()
 sigs =
