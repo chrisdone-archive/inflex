@@ -174,16 +174,16 @@ body {
 
 .array {
   .array-item + .array-item {
-    border-top: 1px solid #8e9dbe;
+    border-top:1px solid #c4cbdb
   }
 }
 .array {
-    border: 1px solid #8e9dbe;
+    box-shadow: 0px 0px 3px #9fb6c8;
     border-radius: 3px;
 }
 
 .array-item {
-    padding: 2px;
+    padding: 5px;
 }
 
 
@@ -192,7 +192,7 @@ body {
 td.record-field-name {
   vertical-align: top;
   /* font-weight: bold; */
-  background: #e9eaec;
+  background: #e9eef2;
   padding:  0.3em;
   border-radius: 3px;
   color: #244585;
@@ -209,7 +209,8 @@ td.record-field {
 }
 table.record {
   border-spacing: 5px;
-  border: 1px solid #8e9dbe;
+  box-shadow: 0px 0px 3px #9fb6c8;
+  border-radius: 3px;
 }
 
 /* Tables */
@@ -218,29 +219,30 @@ table.record {
   font-weight: normal;
 }
 .table {
-  border: 1px solid #8e9dbe;
+  box-shadow: 0px 0px 3px #9fb6c8;
   border-radius: 3px;
+
   border-spacing: 0;
   .table-header {
     th + th {
-      border-left: 1px solid #8e9dbe
+      border-left: 1px solid #c4cbdb
     }
      th {
       padding: 5px;
-      background:  #e9eaec;
+      background:  #e9eef2;
       color: #244585
     }
   }
   .table-body {
     tr > td {
-      border-top: 1px solid #8e9dbe
+      border-top: 1px solid #dadeea
     }
     td {
       padding: 5px;
       vertical-align: top;
     }
     td + td {
-      border-left: 1px solid #8e9dbe
+      border-left: 1px solid #dadeea
     }
   }
 }
