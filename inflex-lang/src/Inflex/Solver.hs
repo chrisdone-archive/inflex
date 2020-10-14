@@ -90,10 +90,21 @@ unifyAndSubstitute equalities typ = do
 -- Unification
 
 -- TODO: Change Seq Substitution to a @Map replaceme withthis@?
+-- Doesn't save much time presently, but may in future. The current
+-- largest hit is in unifyConstraints with O(n^2) behavior.
 
 unifyConstraints ::
      Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
 unifyConstraints =
+  -- This is a large speed hit. If there are 1000 elements in an
+  -- array, it will iterate at least 1000x times. So it performs
+  -- O(n). Meanwhile, the length of the 'existing' increases over time
+  -- too. And extendSubstitutions performs an O(n) map over the
+  -- existing set of subs.
+  --
+  -- That adds up to O(n^2) time, which is (of course) very poorly
+  -- performing. Consider alternative ways to express this function
+  -- without paying this penalty.
   foldM
     (\existing equalityConstraint ->
        fmap
