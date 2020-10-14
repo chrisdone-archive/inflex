@@ -35,6 +35,9 @@ dependencies:
 - parallel
 - vector
 - deepseq
+- hashable
+- unordered-containers
+
 
 ghc-options: -Wall
 

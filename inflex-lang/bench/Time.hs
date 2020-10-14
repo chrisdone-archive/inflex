@@ -21,6 +21,8 @@ main :: IO ()
 main = do
   u1 <- nextRandom'
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
+      !mediumArray2 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]"]
+      !mediumArray3 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]"]
   defaultMain
     [ bgroup
         "parseText"
@@ -33,7 +35,9 @@ main = do
         [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
     , bgroup
         "solveText"
-        [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray),
+        bench "medium array2" (nf solveTextUpToErrorSuccess mediumArray2),
+        bench "medium array3" (nf solveTextUpToErrorSuccess mediumArray3)]
     , bgroup
         "generaliseText"
         [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]

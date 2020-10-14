@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
@@ -15,10 +18,15 @@ module Inflex.Solver where
 
 import           Control.Monad
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.Function
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+import           Data.Hashable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -89,20 +97,23 @@ unifyAndSubstitute equalities typ = do
 --------------------------------------------------------------------------------
 -- Unification
 
--- TODO: Change Seq Substitution to a @Map replaceme withthis@?
+-- TODO: Change Seq Substitution to a @HashMap replaceme withthis@?
+
+instance Hashable (TypeVariable Generated) where
+  hashWithSalt s TypeVariable{index} = hashWithSalt s index
 
 unifyConstraints ::
-     Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+     Seq EqualityConstraint -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyConstraints =
   foldM
-    (\existing equalityConstraint ->
+    (\(!existing) equalityConstraint ->
        fmap
          (\new -> extendSubstitutions Extension {existing, new})
          (unifyEqualityConstraint
             (substituteEqualityConstraint existing equalityConstraint)))
     mempty
 
-unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
@@ -124,7 +135,7 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
 unifyTypeApplications ::
      TypeApplication Generated
   -> TypeApplication Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
+  -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyTypeApplications typeApplication1 typeApplication2 = do
   existing <-
     unifyEqualityConstraint
@@ -144,14 +155,14 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
       typeApplication2
 
 -- | Unify records -- must contain row types inside.
-unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyRecords (RowType x) (RowType y) = unifyRows x y
 unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
 
 unifyRows ::
      TypeRow Generated
   -> TypeRow Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
+  -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
@@ -227,7 +238,8 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
                })
           constraints
   -- TODO: confirm that unifyConstraints is the right function to use.
-  unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
+  unifyConstraints (Seq.fromList
+                    (fieldsToUnify <> constraintsToUnify))
   where
     rowsExactMatch = on (==) (Set.fromList . map fieldName)
     rowIsSubset = on Set.isSubsetOf (Set.fromList . map fieldName)
@@ -237,12 +249,12 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
 --------------------------------------------------------------------------------
 -- Binding
 
-bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
   | occursIn typeVariable typ = Left (pure (OccursCheckFail typeVariable typ))
   | typeVariableKind typeVariable /= typeKind typ = Left (pure (KindMismatch typeVariable typ))
-  | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
+  | otherwise = pure (HM.singleton typeVariable typ)
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
 occursIn typeVariable =
@@ -261,24 +273,23 @@ occursIn typeVariable =
 -- Extension
 
 data Extension = Extension
-  { existing :: !(Seq Substitution)
-  , new :: !(Seq Substitution)
+  { existing :: !(HashMap (TypeVariable Generated) (Type Generated))
+  , new :: !(HashMap (TypeVariable Generated) (Type Generated))
   }
 
-extendSubstitutions :: Extension -> Seq Substitution
-extendSubstitutions Extension {new, existing} = existing' <> new
+extendSubstitutions :: Extension -> HashMap (TypeVariable Generated) (Type Generated)
+extendSubstitutions Extension {new, existing} = new <> existing
   where
     existing' =
-      fmap
-        (\Substitution {after, ..} ->
-           Substitution {after = substituteType new after, ..})
+      -- fmap
+      --   (substituteType new)
         existing
 
 --------------------------------------------------------------------------------
 -- Substitution
 
 substituteEqualityConstraint ::
-     Seq Substitution -> EqualityConstraint -> EqualityConstraint
+     HashMap (TypeVariable Generated) (Type Generated) -> EqualityConstraint -> EqualityConstraint
 substituteEqualityConstraint substitutions equalityConstraint =
   EqualityConstraint
     { type1 = substituteType substitutions type1
@@ -288,7 +299,11 @@ substituteEqualityConstraint substitutions equalityConstraint =
   where
     EqualityConstraint {type1, type2, ..} = equalityConstraint
 
-substituteType :: Seq Substitution -> Type Generated -> Type Generated
+
+-- tomap :: Seq Substitution -> HashMap (TypeVariable Generated) (Type Generated)
+-- tomap = M.fromList . map (\(Substitution{before,after}) -> (before,after)) . toList
+
+substituteType :: HashMap (TypeVariable Generated) (Type Generated) -> Type Generated -> Type Generated
 substituteType substitutions = go
   where
     go =
@@ -302,22 +317,18 @@ substituteType substitutions = go
         typ@(VariableType typeVariable :: Type Generated) ->
           -- TODO: This is an O(n) operation. Bad in a type
           -- checker. May be the cause of slow down in array.
-          case find
-                 (\Substitution {before} -> before == typeVariable)
+          case HM.lookup
+                 typeVariable
                  substitutions of
-            Just substitution@Substitution {after}
-              | substitutionKind substitution == typeVariableKind typeVariable ->
-                after
-              | otherwise -> typ -- TODO: error/signal problem.
+            Just after -> substituteType substitutions after -- added!
+
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
-          | Just substitution@Substitution {after} <-
-             -- TODO: This is an O(n) operation. Bad in a type
-             -- checker.
-             find
-               (\Substitution {before} -> before == typeVariable)
+          | Just after <-
+             HM.lookup
+               typeVariable
                substitutions
-          , substitutionKind substitution == RowKind
+          -- , substitutionKind substitution == RowKind
           , RowType TypeRow {typeVariable = newVariable, fields = ys} <- after ->
             RowType -- Here we merge the two field sets with shadowing.
               (TypeRow
@@ -342,7 +353,7 @@ shadowFields = unionBy (on (==) (\Field{name} -> name))
 -- Solving (i.e. substitution, but we also change the type from
 -- Generated to Solved)
 
-solveType :: Seq Substitution -> Type Generated -> Type Solved
+solveType :: HashMap (TypeVariable Generated) (Type Generated) -> Type Generated -> Type Solved
 solveType substitutions = go . substituteType substitutions
   where
     go =
@@ -364,7 +375,7 @@ solveType substitutions = go . substituteType substitutions
     fieldSolve Field {..} = Field {typ = solveType substitutions typ, ..}
     typeVarSolve TypeVariable {..} = TypeVariable {..}
 
-expressionSolve :: Seq Substitution -> Expression Generated -> Expression Solved
+expressionSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Expression Generated -> Expression Solved
 expressionSolve substitutions =
   \case
     LiteralExpression literal ->
@@ -388,7 +399,7 @@ expressionSolve substitutions =
     GlobalExpression global ->
       GlobalExpression (globalSolve substitutions global)
 
-lambdaSolve :: Seq Substitution -> Lambda Generated -> Lambda Solved
+lambdaSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Lambda Generated -> Lambda Solved
 lambdaSolve substitutions Lambda {..} =
   Lambda
     { param = paramSolve substitutions param
@@ -397,7 +408,7 @@ lambdaSolve substitutions Lambda {..} =
     , ..
     }
 
-propSolve :: Seq Substitution -> Prop Generated -> Prop Solved
+propSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Prop Generated -> Prop Solved
 propSolve substitutions Prop {..} =
   Prop
     { expression = expressionSolve substitutions expression
@@ -405,7 +416,7 @@ propSolve substitutions Prop {..} =
     , ..
     }
 
-arraySolve :: Seq Substitution -> Array Generated -> Array Solved
+arraySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Array Generated -> Array Solved
 arraySolve substitutions Array {..} =
   Array
     { expressions = fmap (expressionSolve substitutions) expressions
@@ -413,7 +424,7 @@ arraySolve substitutions Array {..} =
     , ..
     }
 
-recordSolve :: Seq Substitution -> Record Generated -> Record Solved
+recordSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Record Generated -> Record Solved
 recordSolve substitutions Record {..} =
   Record
     { fields = map (fieldESolve substitutions) fields
@@ -421,14 +432,14 @@ recordSolve substitutions Record {..} =
     , ..
     }
 
-fieldESolve :: Seq Substitution -> FieldE Generated -> FieldE Solved
+fieldESolve :: HashMap (TypeVariable Generated) (Type Generated) -> FieldE Generated -> FieldE Solved
 fieldESolve substitutions FieldE {..} =
   FieldE
     { expression = expressionSolve substitutions expression
     , ..
     }
 
-infixSolve :: Seq Substitution -> Infix Generated -> Infix Solved
+infixSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Infix Generated -> Infix Solved
 infixSolve substitutions Infix {..} =
   Infix
     { left = expressionSolve substitutions left
@@ -438,7 +449,7 @@ infixSolve substitutions Infix {..} =
     , ..
     }
 
-letSolve :: Seq Substitution -> Let Generated -> Let Solved
+letSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Let Generated -> Let Solved
 letSolve substitutions Let {..} =
   Let
     { binds = fmap (bindSolve substitutions) binds
@@ -447,7 +458,7 @@ letSolve substitutions Let {..} =
     , ..
     }
 
-bindSolve :: Seq Substitution -> Bind Generated -> Bind Solved
+bindSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Bind Generated -> Bind Solved
 bindSolve substitutions Bind {..} =
   Bind
     { param = paramSolve substitutions param
@@ -456,7 +467,7 @@ bindSolve substitutions Bind {..} =
     , ..
     }
 
-applySolve :: Seq Substitution -> Apply Generated -> Apply Solved
+applySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Apply Generated -> Apply Solved
 applySolve substitutions Apply {..} =
   Apply
     { function = expressionSolve substitutions function
@@ -465,11 +476,11 @@ applySolve substitutions Apply {..} =
     , ..
     }
 
-variableSolve :: Seq Substitution -> Variable Generated -> Variable Solved
+variableSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Variable Generated -> Variable Solved
 variableSolve substitutions Variable {..} =
   Variable {typ = solveType substitutions typ, ..}
 
-globalSolve :: Seq Substitution -> Global Generated -> Global Solved
+globalSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Global Generated -> Global Solved
 globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
   Global
     {scheme = SolvedScheme (solveScheme substitutions scheme), name = refl, ..}
@@ -482,7 +493,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         FunctionGlobal f -> FunctionGlobal f
 
-solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
+solveScheme :: HashMap (TypeVariable Generated) (Type Generated) -> Scheme Generated -> Scheme Solved
 solveScheme substitutions Scheme {..} =
   Scheme
     { typ = solveType substitutions typ
@@ -490,22 +501,22 @@ solveScheme substitutions Scheme {..} =
     , ..
     }
 
-solveClassConstraint :: Seq Substitution -> ClassConstraint Generated -> ClassConstraint Solved
+solveClassConstraint :: HashMap (TypeVariable Generated) (Type Generated) -> ClassConstraint Generated -> ClassConstraint Solved
 solveClassConstraint substitutions ClassConstraint {..} =
   ClassConstraint {typ = fmap (solveType substitutions) typ, ..}
 
-literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
+literalSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Literal Generated -> Literal Solved
 literalSolve substitutions =
   \case
     TextLiteral LiteralText {..} ->
       TextLiteral LiteralText {typ = solveType substitutions typ, ..}
     NumberLiteral number -> NumberLiteral (numberSolve substitutions number)
 
-numberSolve :: Seq Substitution -> Number Generated -> Number Solved
+numberSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Number Generated -> Number Solved
 numberSolve substitutions Number {..} =
   Number {typ = solveType substitutions typ, ..}
 
-paramSolve :: Seq Substitution -> Param Generated -> Param Solved
+paramSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
 
