@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
@@ -14,12 +16,15 @@
 module Inflex.Solver where
 
 import           Control.Monad
+import           Control.Monad.ST
+import           Control.Monad.Trans.Except
 import           Data.Bifunctor
 import           Data.Function
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import           Data.Maybe
+import           Data.STRef
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
@@ -52,6 +57,54 @@ data Substitution = Substitution
   { before :: !(TypeVariable Generated)
   , after :: !(Type Generated)
   } deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- ST unification
+
+newtype STSolve s a = STSolve
+  { runSTSolve :: ExceptT (NonEmpty SolveError) (ST s) a
+  } deriving (Monad, Functor, Applicative)
+
+data STType s
+  = VariableSTType Kind (STVariable s)
+  | ApplySTType Kind Cursor (STType s) (STType s)
+  | ConstantSTType (TypeConstant Generated)
+  | ArraySTType (STType s)
+
+data STVariable s =
+  STVariable (STRef s (Either (TypeVariable Generated) (STType s)))
+
+toSType :: Type Generated -> ST s (STType s)
+toSType =
+  \case
+    VariableType tyvar@TypeVariable {kind} -> do
+      ref <- newSTRef (Left tyvar)
+      pure (VariableSTType kind (STVariable ref))
+    ApplyType TypeApplication {location, function, argument, kind} -> do
+      t1 <- toSType function
+      t2 <- toSType argument
+      pure (ApplySTType kind location t1 t2)
+    ConstantType constant -> pure (ConstantSTType constant)
+    ArrayType typ -> do
+      t1 <- toSType typ
+      pure (ArraySTType t1)
+
+fromSTType :: STType s -> ST s (Type Generated)
+fromSTType =
+  \case
+    VariableSTType _kind (STVariable ref) -> do
+      result <- readSTRef ref
+      case result of
+        Left v -> pure (VariableType v)
+        Right ty -> fromSTType ty
+    ApplySTType kind location t1 t2 -> do
+      function <- fromSTType t1
+      argument <- fromSTType t2
+      pure
+        (ApplyType
+           TypeApplication {function, argument, location, kind})
+    ConstantSTType c -> pure (ConstantType c)
+    ArraySTType a -> fmap ArrayType (fromSTType a)
 
 --------------------------------------------------------------------------------
 -- Top-level
