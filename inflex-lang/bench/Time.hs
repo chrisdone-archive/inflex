@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
 
+import           Control.DeepSeq
 import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -21,6 +22,10 @@ main :: IO ()
 main = do
   u1 <- nextRandom'
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
+      !mediumArray2 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]"]
+      !mediumArray3 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]"]
+  -- let !x = force (solveTextUpToErrorSuccess mediumArray)
+  -- print x
   defaultMain
     [ bgroup
         "parseText"
@@ -33,7 +38,11 @@ main = do
         [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
     , bgroup
         "solveText"
-        [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray)]
+        [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray),
+        bench "medium array2" (nf solveTextUpToErrorSuccess mediumArray2),
+        bench "medium array3" (nf solveTextUpToErrorSuccess mediumArray3)
+
+        ]
     , bgroup
         "generaliseText"
         [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]
@@ -69,8 +78,8 @@ parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
 renameTextUpToErrorSuccess :: Text -> Either () ()
 renameTextUpToErrorSuccess = first (const ()) . second (const ()) . renameText ""
 
-solveTextUpToErrorSuccess :: Text -> Either () ()
-solveTextUpToErrorSuccess = first (const ()) . second (const ()) . solveText mempty ""
+solveTextUpToErrorSuccess :: Text -> ()
+solveTextUpToErrorSuccess = either (error "nooo") (const ()) . solveText mempty ""
 
 generateTextUpToErrorSuccess :: Text -> Either () ()
 generateTextUpToErrorSuccess = first (const ()) . second (const ()) . generateText mempty ""

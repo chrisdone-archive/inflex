@@ -17,17 +17,19 @@ module Inflex.Solver where
 
 import           Control.Monad
 import           Control.Monad.ST
+import           Control.Monad.Trans
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Reader
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.Function
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
-import           Data.Maybe
+import qualified Data.Map.Strict as M
 import           Data.STRef
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Inflex.Generator
 import           Inflex.Kind
@@ -62,8 +64,11 @@ data Substitution = Substitution
 -- ST unification
 
 newtype STSolve s a = STSolve
-  { runSTSolve :: ExceptT (NonEmpty SolveError) (ST s) a
+  { runSTSolve :: ReaderT (STRef s (Map (TypeVariable Generated) (STVariable s))) (ExceptT (NonEmpty SolveError) (ST s)) a
   } deriving (Monad, Functor, Applicative)
+
+left_ :: NonEmpty SolveError -> STSolve s a
+left_ e = STSolve (lift (throwE e))
 
 data STType s
   = VariableSTType Kind (STVariable s)
@@ -74,35 +79,37 @@ data STType s
 data STVariable s =
   STVariable (STRef s (Either (TypeVariable Generated) (STType s)))
 
-toSType :: Type Generated -> ST s (STType s)
-toSType =
+toSTType :: STRef s (Map (TypeVariable Generated) (STVariable s)) -> Type Generated -> ST s (STType s)
+toSTType ms =
   \case
     VariableType tyvar@TypeVariable {kind} -> do
-      ref <- newSTRef (Left tyvar)
-      pure (VariableSTType kind (STVariable ref))
+      var <- putVariable ms tyvar Nothing
+      pure (VariableSTType kind var)
     ApplyType TypeApplication {location, function, argument, kind} -> do
-      t1 <- toSType function
-      t2 <- toSType argument
+      t1 <- toSTType ms function
+      t2 <- toSTType ms argument
       pure (ApplySTType kind location t1 t2)
     ConstantType constant -> pure (ConstantSTType constant)
     ArrayType typ -> do
-      t1 <- toSType typ
+      t1 <- toSTType ms typ
       pure (ArraySTType t1)
+    _ -> error "toSTType: todo"
+
+fromSTVariable :: STVariable s -> ST s (Type Generated)
+fromSTVariable (STVariable ref) = do
+  e <- readSTRef ref
+  case e of
+    Left ty -> pure (VariableType ty)
+    Right sty -> fromSTType sty
 
 fromSTType :: STType s -> ST s (Type Generated)
 fromSTType =
   \case
-    VariableSTType _kind (STVariable ref) -> do
-      result <- readSTRef ref
-      case result of
-        Left v -> pure (VariableType v)
-        Right ty -> fromSTType ty
+    VariableSTType _kind var -> fromSTVariable var
     ApplySTType kind location t1 t2 -> do
       function <- fromSTType t1
       argument <- fromSTType t2
-      pure
-        (ApplyType
-           TypeApplication {function, argument, location, kind})
+      pure (ApplyType TypeApplication {function, argument, location, kind})
     ConstantSTType c -> pure (ConstantType c)
     ArraySTType a -> fmap ArrayType (fromSTType a)
 
@@ -126,29 +133,45 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
     SolverErrors
     (do substitutions <- unifyConstraints equalities
         pure
-          IsSolved
-            { thing = expressionSolve substitutions expression
-            , mappings
-            })
+          IsSolved {thing = expressionSolve substitutions expression, mappings})
 
 unifyAndSubstitute ::
      Seq EqualityConstraint
   -> Type Generated
   -> Either (NonEmpty SolveError) (Type Solved)
-unifyAndSubstitute equalities typ = do
+unifyAndSubstitute equalities typ' = do
   substitutions <- unifyConstraints equalities
-  pure (solveType substitutions typ)
+  pure (solveType substitutions typ')
 
 --------------------------------------------------------------------------------
 -- Unification
+
+unifyConstraints :: Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyConstraints equalities =
+  runST
+    (do mappingRef <- newSTRef mempty
+        result <-
+          runExceptT
+            (runReaderT (runSTSolve (unifyConstraints' equalities)) mappingRef)
+        case result of
+          Left e -> pure (Left e)
+          Right () -> do
+            mapping <- readSTRef mappingRef
+            fmap
+              (Right . Seq.fromList)
+              (traverse
+                 (\(var, typ) -> do
+                    after <- fromSTVariable typ
+                    pure Substitution {before = var, after})
+                 (M.toList mapping)))
 
 -- TODO: Change Seq Substitution to a @Map replaceme withthis@?
 -- Doesn't save much time presently, but may in future. The current
 -- largest hit is in unifyConstraints with O(n^2) behavior.
 
-unifyConstraints ::
-     Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
-unifyConstraints =
+unifyConstraints' ::
+     Seq EqualityConstraint -> STSolve s ()
+unifyConstraints'
   -- This is a large speed hit. If there are 1000 elements in an
   -- array, it will iterate at least 1000x times. So it performs
   -- O(n). Meanwhile, the length of the 'existing' increases over time
@@ -158,15 +181,9 @@ unifyConstraints =
   -- That adds up to O(n^2) time, which is (of course) very poorly
   -- performing. Consider alternative ways to express this function
   -- without paying this penalty.
-  foldM
-    (\existing equalityConstraint ->
-       fmap
-         (\new -> extendSubstitutions Extension {existing, new})
-         (unifyEqualityConstraint
-            (substituteEqualityConstraint existing equalityConstraint)))
-    mempty
+ = traverse_ unifyEqualityConstraint
 
-unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyEqualityConstraint :: EqualityConstraint -> STSolve s ()
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
@@ -178,135 +195,160 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
     (typ, VariableType typeVariable) -> bindTypeVariable typeVariable typ
     (ConstantType TypeConstant {name = typeConstant1}, ConstantType TypeConstant {name = typeConstant2})
       | typeConstant1 == typeConstant2 -> pure mempty
-    (RowType x, RowType y) -> unifyRows x y
-    (RecordType r1, RecordType r2) -> unifyRecords r1 r2
+    -- (RowType x, RowType y) -> unifyRows x y
+    -- (RecordType r1, RecordType r2) -> unifyRecords r1 r2
     (ArrayType a, ArrayType b) ->
       unifyEqualityConstraint
         EqualityConstraint {location, type1 = a, type2 = b}
-    _ -> Left (pure (TypeMismatch equalityConstraint))
+    _ -> left_ (pure (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
      TypeApplication Generated
   -> TypeApplication Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
+  -> STSolve s ()
 unifyTypeApplications typeApplication1 typeApplication2 = do
-  existing <-
-    unifyEqualityConstraint
-      EqualityConstraint {type1 = function1, type2 = function2, location}
-  new <-
-    unifyEqualityConstraint
-      (substituteEqualityConstraint
-         existing
-         (EqualityConstraint {type1 = argument1, type2 = argument2, location}))
-  pure (extendSubstitutions Extension {existing, new})
+  unifyEqualityConstraint
+    EqualityConstraint {type1 = function1, type2 = function2, location}
+  unifyEqualityConstraint
+    (EqualityConstraint {type1 = argument1, type2 = argument2, location})
+  pure ()
   where
-    TypeApplication {function = function1, argument = argument1, location}
-     = typeApplication1
+    TypeApplication {function = function1, argument = argument1, location} =
+      typeApplication1
      -- TODO: set location properly. This will enable "provenance"
      -- <https://www.youtube.com/watch?v=rdVqQUOvxSU>
     TypeApplication {function = function2, argument = argument2} =
       typeApplication2
 
--- | Unify records -- must contain row types inside.
-unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
-unifyRecords (RowType x) (RowType y) = unifyRows x y
-unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
+-- -- | Unify records -- must contain row types inside.
+-- unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+-- unifyRecords (RowType x) (RowType y) = unifyRows x y
+-- unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
 
-unifyRows ::
-     TypeRow Generated
-  -> TypeRow Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
-unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
-                                                                             , fields = fs2
-                                                                             }) = do
-  constraints <-
-    case (fs1, v1, fs2, v2) of
-      ([], Nothing, [], Nothing) -> pure []
-      -- Below: Just unify a row variable with no fields with any other row.
-      ([], Just u, sd, r) ->
-        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
-      (sd, r, [], Just u) ->
-        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
-      -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
-      -- forming { p: s, f: t }, provided the open row is a subset
-      -- of the closed row.
-      (sd1, Nothing, sd2, Just u2)
-        | sd2 `rowIsSubset` sd1 -> do
-          pure
-            [ (,)
-                u2
-                (RowType
-                   (TypeRow
-                      { typeVariable = Nothing
-                      , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
-                      , .. -- TODO: Merge locs, vars
-                      }))
-            ]
-       -- Below: Same as above, but flipped.
-      (sd1, Just u1, sd2, Nothing)
-        | sd1 `rowIsSubset` sd2 -> do
-          pure
-            [ (,)
-                u1
-                (RowType
-                   TypeRow
-                     { typeVariable = Nothing
-                     , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
-                     , .. -- TODO: Merge locs, vars
-                     })
-            ]
-      -- Below: Two open records, their fields must unify and we
-      -- produce a union row type of both.
-      (_, Just {}, _, Just {}) -> do
-        pure []
-      -- Below: If neither row has a variable, we have no row
-      -- constraints to do. The fields will be unified below.
-      (sd1, Nothing, sd2, Nothing)
-        | sd1 `rowsExactMatch` sd2 -> do pure []
-      _ -> Left (pure (RowMismatch row1 row2))
-  let common = intersect (map fieldName fs1) (map fieldName fs2)
-      -- You have to make sure that the types of all the fields match
-      -- up, obviously.
-      fieldsToUnify =
-        mapMaybe
-          (\name -> do
-             f1 <- find ((== name) . fieldName) fs1
-             f2 <- find ((== name) . fieldName) fs2
-             pure
-               EqualityConstraint
-                 { type1 = fieldType f1
-                 , type2 = fieldType f2
-                 , .. -- TODO: clever location.
-                 })
-          common
-      -- These are essentially substitutions -- replacing one of the
-      -- rows with something else.
-      constraintsToUnify =
-        map
-          (\(tyvar, t) ->
-             EqualityConstraint
-               { type1 = VariableType tyvar
-               , type2 = t
-               , .. -- TODO: clever location.
-               })
-          constraints
-  -- TODO: confirm that unifyConstraints is the right function to use.
-  unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
-  where
-    rowsExactMatch = on (==) (Set.fromList . map fieldName)
-    rowIsSubset = on Set.isSubsetOf (Set.fromList . map fieldName)
-    fieldName Field {name} = name
-    fieldType Field {typ} = typ
+-- unifyRows ::
+--      TypeRow Generated
+--   -> TypeRow Generated
+--   -> Either (NonEmpty SolveError) (Seq Substitution)
+-- unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
+--                                                                              , fields = fs2
+--                                                                              }) = do
+--   constraints <-
+--     case (fs1, v1, fs2, v2) of
+--       ([], Nothing, [], Nothing) -> pure []
+--       -- Below: Just unify a row variable with no fields with any other row.
+--       ([], Just u, sd, r) ->
+--         pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
+--       (sd, r, [], Just u) ->
+--         pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
+--       -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
+--       -- forming { p: s, f: t }, provided the open row is a subset
+--       -- of the closed row.
+--       (sd1, Nothing, sd2, Just u2)
+--         | sd2 `rowIsSubset` sd1 -> do
+--           pure
+--             [ (,)
+--                 u2
+--                 (RowType
+--                    (TypeRow
+--                       { typeVariable = Nothing
+--                       , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
+--                       , .. -- TODO: Merge locs, vars
+--                       }))
+--             ]
+--        -- Below: Same as above, but flipped.
+--       (sd1, Just u1, sd2, Nothing)
+--         | sd1 `rowIsSubset` sd2 -> do
+--           pure
+--             [ (,)
+--                 u1
+--                 (RowType
+--                    TypeRow
+--                      { typeVariable = Nothing
+--                      , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
+--                      , .. -- TODO: Merge locs, vars
+--                      })
+--             ]
+--       -- Below: Two open records, their fields must unify and we
+--       -- produce a union row type of both.
+--       (_, Just {}, _, Just {}) -> do
+--         pure []
+--       -- Below: If neither row has a variable, we have no row
+--       -- constraints to do. The fields will be unified below.
+--       (sd1, Nothing, sd2, Nothing)
+--         | sd1 `rowsExactMatch` sd2 -> do pure []
+--       _ -> Left (pure (RowMismatch row1 row2))
+--   let common = intersect (map fieldName fs1) (map fieldName fs2)
+--       -- You have to make sure that the types of all the fields match
+--       -- up, obviously.
+--       fieldsToUnify =
+--         mapMaybe
+--           (\name -> do
+--              f1 <- find ((== name) . fieldName) fs1
+--              f2 <- find ((== name) . fieldName) fs2
+--              pure
+--                EqualityConstraint
+--                  { type1 = fieldType f1
+--                  , type2 = fieldType f2
+--                  , .. -- TODO: clever location.
+--                  })
+--           common
+--       -- These are essentially substitutions -- replacing one of the
+--       -- rows with something else.
+--       constraintsToUnify =
+--         map
+--           (\(tyvar, t) ->
+--              EqualityConstraint
+--                { type1 = VariableType tyvar
+--                , type2 = t
+--                , .. -- TODO: clever location.
+--                })
+--           constraints
+--   -- TODO: confirm that unifyConstraints is the right function to use.
+--   unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
+--   where
+--     rowsExactMatch = on (==) (Set.fromList . map fieldName)
+--     rowIsSubset = on Set.isSubsetOf (Set.fromList . map fieldName)
+--     fieldName Field {name} = name
+--     fieldType Field {typ} = typ
 
 --------------------------------------------------------------------------------
 -- Binding
 
-bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+bindTypeVariable :: TypeVariable Generated -> Type Generated -> STSolve s ()
 bindTypeVariable typeVariable typ
-  | typ == VariableType typeVariable = pure mempty
-  | occursIn typeVariable typ = Left (pure (OccursCheckFail typeVariable typ))
-  | typeVariableKind typeVariable /= typeKind typ = Left (pure (KindMismatch typeVariable typ))
-  | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
+  | typ == VariableType typeVariable = pure ()
+  | occursIn typeVariable typ = left_ (pure (OccursCheckFail typeVariable typ))
+  | typeVariableKind typeVariable /= typeKind typ =
+    left_ (pure (KindMismatch typeVariable typ))
+  | otherwise = do
+    mapping <- STSolve ask
+    STSolve (lift (lift (void (putVariable mapping typeVariable (Just typ)))))
+
+putVariable ::
+     STRef s (Map (TypeVariable Generated) (STVariable s))
+  -> TypeVariable Generated
+  -> Maybe (Type Generated)
+  -> ST s (STVariable s)
+putVariable mapping tyv typ = do
+  ms <- readSTRef mapping
+  case M.lookup tyv ms of
+    Nothing -> do
+      value <-
+        case typ of
+          Nothing -> pure (Left tyv)
+          Just typ' -> fmap Right (toSTType mapping typ')
+      ref <- newSTRef value
+      modifySTRef' mapping (M.insert tyv (STVariable ref))
+      pure (STVariable ref)
+    Just var@(STVariable ref') -> do
+      case typ of
+        Nothing -> do value <-
+                       case typ of
+                         Nothing -> pure (Left tyv)
+                         Just typ' -> fmap Right (toSTType mapping typ')
+                      writeSTRef ref' value
+        _ -> pure ()
+      pure var
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
 occursIn typeVariable =
@@ -324,19 +366,19 @@ occursIn typeVariable =
 --------------------------------------------------------------------------------
 -- Extension
 
-data Extension = Extension
-  { existing :: !(Seq Substitution)
-  , new :: !(Seq Substitution)
-  }
+-- data Extension = Extension
+--   { existing :: !(Seq Substitution)
+--   , new :: !(Seq Substitution)
+--   }
 
-extendSubstitutions :: Extension -> Seq Substitution
-extendSubstitutions Extension {new, existing} = existing' <> new
-  where
-    existing' =
-      fmap
-        (\Substitution {after, ..} ->
-           Substitution {after = substituteType new after, ..})
-        existing
+-- extendSubstitutions :: Extension -> Seq Substitution
+-- extendSubstitutions Extension {new, existing} = existing' <> new
+--   where
+--     existing' =
+--       fmap
+--         (\Substitution {after, ..} ->
+--            Substitution {after = substituteType new after, ..})
+--         existing
 
 --------------------------------------------------------------------------------
 -- Substitution
