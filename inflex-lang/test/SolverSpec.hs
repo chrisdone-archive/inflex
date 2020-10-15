@@ -161,6 +161,16 @@ fineGrained = do
           "a ~ Integer"
           (shouldBe (unifyConstraints [a .~ _Integer]) (pure [a' .+-> _Integer]))
         it
+          "F a b ~ F Text a"
+          (shouldBe
+             (unifyConstraints [_F a b .~ _F _Text a])
+             (pure [a' .+-> _Text, b' .+-> _Text]))
+        it
+          "F a Text ~ F Text a"
+          (shouldBe
+             (unifyConstraints [_F a _Text .~ _F _Text a])
+             (pure [a' .+-> _Text]))
+        it
           "F a Text ~ F Integer b"
           (shouldBe
              (unifyConstraints [_F a _Text .~ _F _Integer b])
