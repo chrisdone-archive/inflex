@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE BangPatterns #-}
@@ -26,7 +27,6 @@ import           Data.Hashable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -70,6 +70,7 @@ solveText ::
   -> Text
   -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
 solveText globals fp text = do
+  -- trace ("what's going on here?" <> show text) (pure ())
   generated <- first GeneratorErrored (generateText globals fp text)
   solveGenerated generated
 
@@ -79,7 +80,10 @@ solveGenerated ::
 solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   first
     SolverErrors
-    (do substitutions <- unifyConstraints equalities
+    (do -- trace "what up" (pure ())
+        substitutions <- unifyConstraints equalities
+        -- trace (show substitutions) (pure ())
+
         pure
           IsSolved
             { thing = expressionSolve substitutions expression
@@ -278,11 +282,11 @@ data Extension = Extension
   }
 
 extendSubstitutions :: Extension -> HashMap (TypeVariable Generated) (Type Generated)
-extendSubstitutions Extension {new, existing} = new <> existing
+extendSubstitutions Extension {new, existing} = existing' <> new
   where
     existing' =
-      -- fmap
-      --   (substituteType new)
+      fmap
+        (substituteType new)
         existing
 
 --------------------------------------------------------------------------------
@@ -320,7 +324,7 @@ substituteType substitutions = go
           case HM.lookup
                  typeVariable
                  substitutions of
-            Just after -> substituteType substitutions after -- added!
+            Just after ->  after -- added! -- substituteType substitutions
 
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}

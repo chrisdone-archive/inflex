@@ -302,8 +302,8 @@ _Option x1 =
 (.~) x y =
   EqualityConstraint {location = ExpressionCursor, type1 = x, type2 = y}
 
-(.+->) :: TypeVariable Generated -> Type Generated -> Substitution
-(.+->) x y = Substitution {before = x, after = y}
+(.+->) :: TypeVariable Generated -> Type Generated -> (TypeVariable Generated, Type Generated)
+(.+->) x y = (x, y)
 
 --------------------------------------------------------------------------------
 -- Coarse grained
