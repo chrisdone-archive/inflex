@@ -21,6 +21,8 @@ import           Control.Monad
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.Function
+import qualified Data.Graph.Inductive.Graph as Graph
+import qualified Data.Graph.Inductive.PatriciaTree as Graph
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.Hashable
@@ -32,6 +34,7 @@ import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Debug.Trace
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
@@ -64,6 +67,59 @@ data Substitution = Substitution
 --------------------------------------------------------------------------------
 -- Top-level
 
+prune :: Seq EqualityConstraint -> (Seq EqualityConstraint, HashMap (TypeVariable Generated) (Type Generated))
+prune cs =
+  -- trace ("subs="++show subs)
+  (Seq.fromList (fmap (substituteEqualityConstraint subs) keeps), subs)
+  where
+    (subs,keeps) = foldl'
+          (\(subs, keeps) q@EqualityConstraint {type1, type2} ->
+             case (type1, type2) of
+               (VariableType v1, VariableType v2)
+                 | Set.member v1 cs' && Set.member v2 cs' ->
+                   (subs, q:keeps)
+                 | Set.member v1 cs' ->
+                   (HM.insert v1 (VariableType v2) subs, keeps)
+                 | Set.member v2 cs' ->
+                   (HM.insert v2 (VariableType v1) subs, keeps)
+               _ -> (subs, q:keeps))
+          (mempty, mempty)
+          cs
+    cs' =
+      Set.fromList . map (\(_, w) -> w) . Graph.labNodes . getTys . toGraph $ cs
+    getTys ::
+         Graph.Gr (TypeVariable Generated) EqualityConstraint
+      -> Graph.Gr (TypeVariable Generated) EqualityConstraint
+    getTys g = Graph.nfilter ((== 1) . Graph.deg g) g
+    toGraph ::
+         Seq EqualityConstraint
+      -> Graph.Gr (TypeVariable Generated) EqualityConstraint
+    toGraph sq =
+      let r = Graph.mkGraph (Set.toList nodes) edges
+       in -- trace (Graph.prettify r)
+        r
+      where
+        list = toList sq
+        nodes =
+          Set.fromList
+            (concatMap
+               (\(tyvar1@TypeVariable {index = index1}, tyvar@TypeVariable {index}, _) ->
+                  [(fromIntegral index1, tyvar1), (fromIntegral index, tyvar)])
+               pairs)
+        edges =
+          map
+            (\(TypeVariable {index = index1}, TypeVariable {index}, eq) ->
+               ((fromIntegral index1), (fromIntegral index), eq))
+            pairs
+        pairs =
+          concatMap
+            (\eq@EqualityConstraint {type1, type2} ->
+               [ (t1, t2, eq)
+               | VariableType t1 <- [type1]
+               , VariableType t2 <- [type2]
+               ])
+            list
+
 solveText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
@@ -81,7 +137,7 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   first
     SolverErrors
     (do -- trace "what up" (pure ())
-        substitutions <- unifyConstraints equalities
+        substitutions <- unifyConstraints (traceShowId  equalities')
         -- trace (show substitutions) (pure ())
 
         pure
@@ -89,14 +145,16 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
             { thing = expressionSolve substitutions expression
             , mappings
             })
+  where (equalities',subs) = prune equalities
 
 unifyAndSubstitute ::
      Seq EqualityConstraint
   -> Type Generated
   -> Either (NonEmpty SolveError) (Type Solved)
 unifyAndSubstitute equalities typ = do
-  substitutions <- unifyConstraints equalities
-  pure (solveType substitutions typ)
+  substitutions <- unifyConstraints equalities'
+  pure (solveType substitutions (typ))
+  where (equalities',subs) = prune equalities
 
 --------------------------------------------------------------------------------
 -- Unification

@@ -37,7 +37,7 @@ dependencies:
 - deepseq
 - hashable
 - unordered-containers
-
+- fgl
 
 ghc-options: -Wall
 

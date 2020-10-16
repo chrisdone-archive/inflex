@@ -41,6 +41,8 @@ main = do
         [bench "medium array" (nf solveTextUpToErrorSuccess mediumArray),
         bench "medium array2" (nf solveTextUpToErrorSuccess mediumArray2),
         bench "medium array3" (nf solveTextUpToErrorSuccess mediumArray3)
+
+
         ]
     , bgroup
         "generaliseText"
