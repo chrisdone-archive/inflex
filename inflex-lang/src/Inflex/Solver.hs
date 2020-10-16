@@ -70,7 +70,7 @@ data Substitution = Substitution
 prune :: Seq EqualityConstraint -> (Seq EqualityConstraint, HashMap (TypeVariable Generated) (Type Generated))
 prune cs =
   -- trace ("subs="++show subs)
-  (Seq.fromList (fmap (substituteEqualityConstraint subs) keeps), subs)
+  (Seq.fromList (fmap (substituteEqualityConstraint subs) (reverse keeps)), subs)
   where
     (subs,keeps) = foldl'
           (\(subs, keeps) q@EqualityConstraint {type1, type2} ->
@@ -137,7 +137,7 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   first
     SolverErrors
     (do -- trace "what up" (pure ())
-        substitutions <- unifyConstraints (traceShowId  equalities')
+        substitutions <- unifyConstraints subs equalities'
         -- trace (show substitutions) (pure ())
 
         pure
@@ -152,7 +152,7 @@ unifyAndSubstitute ::
   -> Type Generated
   -> Either (NonEmpty SolveError) (Type Solved)
 unifyAndSubstitute equalities typ = do
-  substitutions <- unifyConstraints equalities'
+  substitutions <- unifyConstraints subs equalities'
   pure (solveType substitutions (typ))
   where (equalities',subs) = prune equalities
 
@@ -165,7 +165,7 @@ instance Hashable (TypeVariable Generated) where
   hashWithSalt s TypeVariable{index} = hashWithSalt s index
 
 unifyConstraints ::
-     Seq EqualityConstraint -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
+     HashMap (TypeVariable Generated) (Type Generated) -> Seq EqualityConstraint -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyConstraints =
   foldM
     (\(!existing) equalityConstraint ->
@@ -173,7 +173,7 @@ unifyConstraints =
          (\new -> extendSubstitutions Extension {existing, new})
          (unifyEqualityConstraint
             (substituteEqualityConstraint existing equalityConstraint)))
-    mempty
+
 
 unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (HashMap (TypeVariable Generated) (Type Generated))
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
@@ -300,7 +300,7 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
                })
           constraints
   -- TODO: confirm that unifyConstraints is the right function to use.
-  unifyConstraints (Seq.fromList
+  unifyConstraints mempty (Seq.fromList
                     (fieldsToUnify <> constraintsToUnify))
   where
     rowsExactMatch = on (==) (Set.fromList . map fieldName)

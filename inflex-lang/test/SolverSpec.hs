@@ -152,23 +152,23 @@ fineGrained :: Spec
 fineGrained = do
   describe
     "Successful"
-    (do it "a ~ a" (shouldBe (unifyConstraints [a .~ a]) (pure []))
+    (do it "a ~ a" (shouldBe (unifyConstraints mempty [a .~ a]) (pure []))
         it
           "Integer ~ Integer"
-          (shouldBe (unifyConstraints [_Integer .~ _Integer]) (pure []))
-        it "a ~ b" (shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
+          (shouldBe (unifyConstraints mempty [_Integer .~ _Integer]) (pure []))
+        it "a ~ b" (shouldBe (unifyConstraints mempty [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
-          (shouldBe (unifyConstraints [a .~ _Integer]) (pure [a' .+-> _Integer]))
+          (shouldBe (unifyConstraints mempty [a .~ _Integer]) (pure [a' .+-> _Integer]))
         it
           "F a Text ~ F Integer b"
           (shouldBe
-             (unifyConstraints [_F a _Text .~ _F _Integer b])
+             (unifyConstraints mempty [_F a _Text .~ _F _Integer b])
              (pure [a' .+-> _Integer, b' .+-> _Text]))
         it
           "F a a ~ F (Option b) (Option Integer)"
           (shouldBe
-             (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
+             (unifyConstraints mempty [_F a a .~ _F (_Option b) (_Option _Integer)])
              (pure [a' .+-> _Option _Integer, b' .+-> _Integer]))
         it
           "(t ~ F a a, F a a ~ F (Option b) (Option Integer)) => t"
@@ -182,22 +182,22 @@ fineGrained = do
     (do it
           "Occurs check: F a b ~ a"
           (shouldBe
-             (unifyConstraints [_F a b .~ a])
+             (unifyConstraints mempty [_F a b .~ a])
              (Left (pure (OccursCheckFail a' (_F a b)))))
         it
           "Kind mismatch: F a ~ b"
           (shouldBe
-             (unifyConstraints [_F_partial a .~ b])
+             (unifyConstraints mempty [_F_partial a .~ b])
              (Left (pure (KindMismatch b' (_F_partial a)))))
         it
           "Constant mismatch: Integer ~ Text"
           (shouldBe
-             (unifyConstraints [_Integer .~ _Text])
+             (unifyConstraints mempty [_Integer .~ _Text])
              (Left (pure (TypeMismatch (_Integer .~ _Text)))))
         it
           "Type mismatch: F a a ~ F (Option Text) (Option Integer)"
           (shouldBe
-             (unifyConstraints [_F a a .~ _F (_Option _Text) (_Option _Integer)])
+             (unifyConstraints mempty [_F a a .~ _F (_Option _Text) (_Option _Integer)])
              (Left (pure (TypeMismatch (_Text .~ _Integer))))))
 
 --------------------------------------------------------------------------------
