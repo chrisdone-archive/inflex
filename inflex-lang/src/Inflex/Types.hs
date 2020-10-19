@@ -33,6 +33,12 @@ data Expression s where
   RecordExpression :: !(Record s) -> Expression s
   PropExpression :: !(Prop s) -> Expression s
   ArrayExpression :: !(Array s) -> Expression s
+  HoleExpression :: !(Hole s) -> Expression s
+
+data Hole s = Hole
+  { location :: !(StagedLocation s)
+  , typ :: !(StagedType s)
+  }
 
 data Array s = Array
   { expressions :: !(Vector (Expression s))
@@ -297,6 +303,7 @@ data TypeVariablePrefix
   | RowVarPrefix
   | FieldTypePrefix
   | ArrayElementPrefix
+  | HolePrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint

@@ -44,6 +44,7 @@ expressionType =
     GlobalExpression global -> globalType global
     RecordExpression record -> recordType record
     PropExpression prop -> propType prop
+    HoleExpression hole -> holeType hole
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
@@ -53,6 +54,9 @@ arrayType Array {typ} = typ
 
 propType :: Prop s -> StagedType s
 propType Prop {typ} = typ
+
+holeType :: Hole s -> StagedType s
+holeType Hole {typ} = typ
 
 globalType :: Global s -> StagedType s
 globalType Global {scheme} =

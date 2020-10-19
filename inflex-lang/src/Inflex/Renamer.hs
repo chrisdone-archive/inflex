@@ -82,6 +82,9 @@ renameExpression env =
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable -> renameVariable env variable
+    HoleExpression Hole {..} -> do
+      final <- finalizeCursor (cursor env) TypeCursor location
+      pure (HoleExpression Hole {location = final, typ = Nothing})
     GlobalExpression {} -> error "impossible" -- TODO: Make impossible at type-level.
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Expression Renamed)

@@ -118,6 +118,7 @@ stepExpression expression = do
         LiteralExpression {} -> pure expression
         LambdaExpression {} -> pure expression
         VariableExpression {} -> pure expression
+        HoleExpression {} -> pure expression
         LetExpression {} -> pure expression
 
 --------------------------------------------------------------------------------
@@ -397,6 +398,7 @@ betaReduce Lambda {body = body0} arg = go 0 body0
           pure (LetExpression Let {body = body', ..})
         e@GlobalExpression {} -> pure e
         e@LiteralExpression {} -> pure e
+        e@HoleExpression {} -> pure e
 
 --------------------------------------------------------------------------------
 -- FromDecimal instance stepping

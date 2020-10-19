@@ -109,6 +109,13 @@ expressionGenerator =
       fmap VariableExpression (variableGenerator variable)
     GlobalExpression global ->
       fmap GlobalExpression (globalGenerator global)
+    HoleExpression hole ->
+      fmap HoleExpression (holeGenerator hole)
+
+holeGenerator :: Hole Filled -> Generate e (Hole Generated)
+holeGenerator Hole {..} = do
+  elementVariable <- generateVariableType location HolePrefix TypeKind
+  pure Hole {typ = elementVariable, ..}
 
 recordGenerator :: Record Filled -> Generate e (Record Generated)
 recordGenerator Record {..} = do

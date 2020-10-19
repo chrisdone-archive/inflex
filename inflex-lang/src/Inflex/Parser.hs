@@ -204,6 +204,7 @@ unchainedExpressionParser =
        , applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
+       , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
        , parensParser
        ])
@@ -270,6 +271,7 @@ propParser :: Parser (Prop Parsed)
 propParser = do
   expression <-
     (RecordExpression <$> recordParser) <>
+    (HoleExpression <$> holeParser) <>
     (VariableExpression <$> variableParser) <>
     parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
@@ -367,7 +369,8 @@ functionParser :: Parser (Expression Parsed)
 functionParser =
   fold1
     (NE.fromList
-       [ VariableExpression <$> variableParser
+       [ HoleExpression <$> holeParser
+       , VariableExpression <$> variableParser
        , parensParser
        ])
 
@@ -410,6 +413,12 @@ variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken)
   pure Variable {name, location, typ = Nothing}
+
+holeParser :: Parser (Hole Parsed)
+holeParser = do
+  Located {thing = _name, location} <-
+    token ExpectedVariable (preview _HoleToken)
+  pure Hole {location, typ = Nothing}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do

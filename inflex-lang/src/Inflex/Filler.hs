@@ -26,26 +26,18 @@ expressionFill ::
   -> Filler e (Expression Filled)
 expressionFill globals =
   \case
-    RecordExpression record ->
-      fmap RecordExpression (recordFill globals record)
-    PropExpression prop ->
-      fmap PropExpression (propFill globals prop)
-    ArrayExpression array ->
-      fmap ArrayExpression (arrayFill globals array)
-    LiteralExpression literal ->
-      pure (LiteralExpression (literalFill literal))
-    LambdaExpression lambda ->
-      fmap LambdaExpression (lambdaFill globals lambda)
-    LetExpression let' ->
-      fmap LetExpression (letFill globals let')
-    InfixExpression infix' ->
-      fmap InfixExpression (infixFill globals infix')
-    ApplyExpression apply ->
-      fmap ApplyExpression (applyFill globals apply)
+    RecordExpression record -> fmap RecordExpression (recordFill globals record)
+    PropExpression prop -> fmap PropExpression (propFill globals prop)
+    HoleExpression hole -> pure (HoleExpression (holeFill hole))
+    ArrayExpression array -> fmap ArrayExpression (arrayFill globals array)
+    LiteralExpression literal -> pure (LiteralExpression (literalFill literal))
+    LambdaExpression lambda -> fmap LambdaExpression (lambdaFill globals lambda)
+    LetExpression let' -> fmap LetExpression (letFill globals let')
+    InfixExpression infix' -> fmap InfixExpression (infixFill globals infix')
+    ApplyExpression apply -> fmap ApplyExpression (applyFill globals apply)
     VariableExpression variable ->
       pure (VariableExpression (variableFill variable))
-    GlobalExpression global ->
-      fmap GlobalExpression (globalFill globals global)
+    GlobalExpression global -> fmap GlobalExpression (globalFill globals global)
 
 --------------------------------------------------------------------------------
 -- Fillers
@@ -161,3 +153,8 @@ paramFill ::
      Param Renamed
   -> Param Filled
 paramFill Param {..} = Param {..}
+
+holeFill ::
+     Hole Renamed
+  -> Hole Filled
+holeFill Hole {..} = Hole {..}

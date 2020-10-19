@@ -93,6 +93,8 @@ expressionResolver nesting =
   \case
     LiteralExpression literal ->
       fmap LiteralExpression (pure (literalResolver literal))
+    HoleExpression hole ->
+      fmap HoleExpression (pure (holeResolver hole))
     RecordExpression record ->
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
@@ -154,6 +156,9 @@ arrayResolver nesting Array {..} = do
 
 variableResolver :: Variable Generalised -> Variable Resolved
 variableResolver Variable {..} = Variable {..}
+
+holeResolver :: Hole Generalised -> Hole Resolved
+holeResolver Hole {..} = Hole {..}
 
 literalResolver :: Literal Generalised -> Literal Resolved
 literalResolver =
@@ -444,6 +449,7 @@ expressionCollect =
   \case
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
+    HoleExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
     RecordExpression record -> recordCollect record
     LambdaExpression lambda -> lambdaCollect lambda

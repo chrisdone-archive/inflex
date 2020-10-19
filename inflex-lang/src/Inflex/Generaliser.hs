@@ -160,6 +160,8 @@ expressionGeneralise substitutions =
       LiteralExpression (literalGeneralise substitutions literal)
     PropExpression prop ->
       PropExpression (propGeneralise substitutions prop)
+    HoleExpression hole ->
+      HoleExpression (holeGeneralise substitutions hole)
     ArrayExpression array ->
       ArrayExpression (arrayGeneralise substitutions array)
     RecordExpression record ->
@@ -235,6 +237,16 @@ propGeneralise substitutions Prop {..} =
   Prop
     { expression = expressionGeneralise substitutions expression
     , typ = generaliseType substitutions typ
+    , ..
+    }
+
+holeGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Hole Solved
+  -> Hole Generalised
+holeGeneralise substitutions Hole {..} =
+  Hole
+    { typ = generaliseType substitutions typ
     , ..
     }
 

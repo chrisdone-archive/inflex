@@ -25,6 +25,7 @@ instance Display (Expression Resolved) where
     \case
       RecordExpression record -> display record
       PropExpression prop -> display prop
+      HoleExpression hole -> display hole
       ArrayExpression array -> display array
       LiteralExpression literal -> display literal
       LambdaExpression lambda -> display lambda
@@ -33,6 +34,9 @@ instance Display (Expression Resolved) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Hole Resolved) where
+  display (Hole{}) = "_"
 
 instance Display (Prop Resolved) where
   display (Prop {expression, name}) =
@@ -100,6 +104,7 @@ instance Display (Expression Renamed) where
     \case
       RecordExpression record -> display record
       PropExpression prop -> display prop
+      HoleExpression hole -> display hole
       ArrayExpression array -> display array
       LiteralExpression literal -> display literal
       LambdaExpression lambda -> display lambda
@@ -108,6 +113,9 @@ instance Display (Expression Renamed) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Hole Renamed) where
+  display (Hole{}) = "_"
 
 instance Display (Prop Renamed) where
   display (Prop {expression, name}) =

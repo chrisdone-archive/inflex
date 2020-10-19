@@ -382,6 +382,8 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     PropExpression prop ->
       PropExpression (propSolve substitutions prop)
+    HoleExpression hole ->
+      HoleExpression (holeSolve substitutions hole)
     ArrayExpression array ->
       ArrayExpression (arraySolve substitutions array)
     RecordExpression record ->
@@ -519,6 +521,10 @@ numberSolve substitutions Number {..} =
 paramSolve :: Seq Substitution -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
+
+holeSolve :: Seq Substitution -> Hole Generated -> Hole Solved
+holeSolve substitutions Hole {..} =
+  Hole {typ = solveType substitutions typ, ..}
 
 substitutionKind :: Substitution -> Kind
 substitutionKind Substitution {before} = typeVariableKind before

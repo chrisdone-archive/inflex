@@ -42,6 +42,7 @@ module Inflex.Lexer
   , _PeriodToken
   , _CommaToken
   , _StringToken
+  , _HoleToken
   ) where
 
 import           Data.Bifunctor
@@ -91,6 +92,7 @@ data Token
   | CloseCurlyToken
   | OperatorToken !Text
   | StringToken !Text
+  | HoleToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -122,11 +124,11 @@ tokensLexer =
     (Mega.many
        (Mega.choice
           [ fmap pure string
+          , fmap pure lowerWord
+          , fmap pure upperWord
           , fmap pure symbol
           , fmap pure integer
           , fmap pure decimal
-          , fmap pure lowerWord
-          , fmap pure upperWord
           ] <*
         Mega.space))
   where
@@ -171,7 +173,8 @@ tokensLexer =
     symbol =
       located
         (Mega.choice
-           [ OpenSquareToken <$ Mega.char '['
+           [ HoleToken <$ Mega.char '_'
+           , OpenSquareToken <$ Mega.char '['
            , CloseSquareToken <$ Mega.char ']'
            , OpenCurlyToken <$ Mega.char '{'
            , CloseCurlyToken <$ Mega.char '}'

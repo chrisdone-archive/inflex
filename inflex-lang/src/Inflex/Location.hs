@@ -14,6 +14,7 @@ expressionLocation =
     LiteralExpression literal -> literalLocation literal
     RecordExpression record -> recordLocation record
     PropExpression prop -> propLocation prop
+    HoleExpression hole -> holeLocation hole
     ArrayExpression array -> arrayLocation array
     LambdaExpression lambda -> lambdaLocation lambda
     LetExpression let' -> letLocation let'
@@ -30,6 +31,9 @@ recordLocation Record {location} = location
 
 propLocation :: Prop s -> StagedLocation s
 propLocation Prop {location} = location
+
+holeLocation :: Hole s -> StagedLocation s
+holeLocation Hole {location} = location
 
 arrayLocation :: Array s -> StagedLocation s
 arrayLocation Array {location} = location
