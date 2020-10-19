@@ -266,20 +266,25 @@ stepInfix Infix {..} = do
   left' <- stepExpression left
   right' <- stepExpression right
   stepped <- get
-  case stepped of
-    Stepped ->
-      pure
+  let asis =
         (InfixExpression
            Infix {global = global', left = left', right = right', ..})
+  case stepped of
+    Stepped -> pure asis
     Continue ->
-      case global' of
-        ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
-                              , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
-                              } -> stepIntegerOp numericBinOp left' right'
-        ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
-                              , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
-                              } -> stepDecimalOp precision numericBinOp left' right'
-        _ -> error ("stepInfix: " ++ show global')
+      case (left', right') of
+        (HoleExpression {}, _) -> pure asis
+        (_, HoleExpression {}) -> pure asis
+        _ ->
+          case global' of
+            ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
+                                  } -> stepIntegerOp numericBinOp left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
+                                  } ->
+              stepDecimalOp precision numericBinOp left' right'
+            _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
 -- Numeric operations

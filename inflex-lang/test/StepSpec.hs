@@ -21,6 +21,12 @@ spec = do
     "Single expressions"
     (do it "6" (shouldBe (stepTextly "6 :: Integer") (Right "6"))
         it
+          "6 + _"
+          (shouldBe (stepDefaultedTextly "(6 + _)") (Right "(6 + _)"))
+        it
+          "2 * 6 + _"
+          (shouldBe (stepDefaultedTextly "(2 * 6 + _)") (Right "(12 + _)"))
+        it
           "6 + 3"
           (shouldBe (stepTextly "6 :: Integer + 3 :: Integer") (Right "9"))
         it

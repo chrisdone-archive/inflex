@@ -15,6 +15,8 @@ import           Data.Coerce
 import           Data.List
 import qualified Data.Text as T
 import           Inflex.Decimal
+import           Inflex.Instances
+import           Inflex.Location
 import           Inflex.Types
 import           RIO
 
@@ -93,8 +95,10 @@ instance Display (GlobalRef Resolved) where
 
 instance Display (Apply Resolved) where
   display Apply {function, argument} =
-    "(" <> display function <> " " <> display argument <> ")"
-
+    case expressionLocation argument of
+      ImplicitArgumentFor{} -> display function
+      AutoInsertedForDefaulterCursor {} -> display function
+      _ -> display function <> "(" <> display argument <> ")"
 
 --------------------------------------------------------------------------------
 -- Renamed
