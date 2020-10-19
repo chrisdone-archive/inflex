@@ -279,22 +279,23 @@ stepInfix Infix {..} = do
           case global' of
             ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                                   , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
-                                  } -> stepIntegerOp numericBinOp left' right'
+                                  } -> stepIntegerOp asis numericBinOp left' right'
             ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                                   , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
                                   } ->
-              stepDecimalOp precision numericBinOp left' right'
+              stepDecimalOp asis precision numericBinOp left' right'
             _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
 -- Numeric operations
 
 stepIntegerOp ::
-     NumericBinOp
+     Expression Resolved
+  -> NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
   -> Step e (Expression Resolved)
-stepIntegerOp numericBinOp left' right' =
+stepIntegerOp asis numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = IntegerNumber left, typ}), LiteralExpression (NumberLiteral Number {number = IntegerNumber right})) -> do
       pure
@@ -311,15 +312,17 @@ stepIntegerOp numericBinOp left' right' =
                 , location = SteppedCursor
                 , ..
                 }))
-    _ -> Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))
+    _ -> {-Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))-} -- warn
+      pure asis
 
 stepDecimalOp ::
-     Natural
+     Expression Resolved
+  -> Natural
   -> NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
   -> Step e (Expression Resolved)
-stepDecimalOp places numericBinOp left' right' =
+stepDecimalOp asis places numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number { number = DecimalNumber (decimalToFixed -> left)
                                              , typ
@@ -353,7 +356,8 @@ stepDecimalOp places numericBinOp left' right' =
                     -- useful for finding 0's which hit an x/0.
                     , ..
                     }))
-    _ -> Step (lift (lift (Left (InvalidDecimalOpOperands left' right'))))
+    -- _ -> Step (lift (lift (Left (InvalidDecimalOpOperands left' right'))))
+    _ -> pure asis
 
 --------------------------------------------------------------------------------
 -- Beta reduction
