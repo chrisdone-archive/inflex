@@ -146,7 +146,6 @@ body {
     cursor: pointer;
   }
   .cell-body {
-    padding: 5px;
     cursor: text;
     border: none;
     background: #f9f9fa;
@@ -249,19 +248,28 @@ table.record {
 
 .editor-boundary-wrap {
   position: relative;
+  overflow: hidden;
 }
+
 .ellipsis-button {
-  font-family: sans-serif;
-  font-size: 10px;
-  vertical-align: middle;
+  visibility: hidden;
+  position: absolute;
+  background: #9fb6c8;
+  top: -0.5em;
+  left: -0.5em;
+  height: 1em;
   width: 1em;
-  display: block;
-  margin-right: 5px;
-  color: #555;
+  transform: rotate(45deg);
+}
+.editor-boundary-wrap:hover > .ellipsis-button {
+  visibility: visible;
 }
 .ellipsis-button:hover {
-  opacity: 1;
   background: #15263b;
-  color: #fff;
   cursor: pointer;
+}
+
+.cell-body > .editor-boundary-wrap > .array {
+  border: 0;
+  box-shadow: 0;
 }

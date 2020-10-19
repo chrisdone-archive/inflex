@@ -184,7 +184,7 @@ render (State {display, code, editor}) =
                      , HE.onClick
                          (\e -> pure (PreventDefault (toEvent e) StartEditor))
                      ]
-                     [HH.text "[edit]"]
+                     []
                  ] <>
                  inner)
 
