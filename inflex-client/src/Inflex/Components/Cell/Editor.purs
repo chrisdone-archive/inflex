@@ -122,7 +122,7 @@ eval =
     FinishEditing code -> do
       H.liftEffect (log ("Finish editing with code:" <> code))
       State {display, editor} <- H.get
-      _result <- H.raise code
+      _result <- H.raise (if trim code == "" then "_" else code)
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
     SetEditor (EditorAndCode {editor, code}) ->
       H.put (State {editor, code, display: DisplayEditor})
@@ -152,7 +152,7 @@ render (State {display, code, editor}) =
   where
     renderControl =
       [ HH.input
-          [ HP.value code
+          [ HP.value (if code == "_" then "" else code)
           , HP.class_ (HH.ClassName "form-control")
           , manage InputElementChanged
           , HE.onKeyUp
