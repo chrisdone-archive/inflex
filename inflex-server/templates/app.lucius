@@ -124,8 +124,9 @@ body {
     display: flex;
   }
   .error-message {
-    background: red;
+    background: #a04a4a;
     color: white;
+    padding: 10px;
   }
   .cell-header {
     border: none;
