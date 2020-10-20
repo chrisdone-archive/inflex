@@ -206,6 +206,7 @@ td.record-field-name {
   padding:  0.3em;
   border-radius: 3px;
   color: #244585;
+  cursor: default;
   margin: 5px;
 }
 
@@ -221,6 +222,7 @@ table.record {
   border-spacing: 5px;
   box-shadow: 0px 0px 3px #9fb6c8;
   border-radius: 3px;
+  margin: 5px;
 }
 
 /* Tables */
@@ -231,8 +233,9 @@ table.record {
 .table {
   box-shadow: 0px 0px 3px #9fb6c8;
   border-radius: 3px;
-
   border-spacing: 0;
+  margin: 5px;
+
   .table-header {
     th + th {
       border-left: 1px solid #c4cbdb
@@ -244,14 +247,14 @@ table.record {
     }
   }
   .table-body {
-    tr > td {
+    tr > .table-datum-value {
       border-top: 1px solid #dadeea
     }
-    td {
+    .table-datum-value {
       padding: 5px;
       vertical-align: top;
     }
-    td + td {
+    .table-datum-value + .table-datum-value {
       border-left: 1px solid #dadeea
     }
   }
@@ -283,4 +286,12 @@ table.record {
 .cell-body > .editor-boundary-wrap > .array {
   border: 0;
   box-shadow: 0;
+}
+
+.cell-body > .editor-boundary-wrap > .misc {
+    padding: 5px;
+}
+
+.clickable-to-edit:hover {
+  background: white;
 }

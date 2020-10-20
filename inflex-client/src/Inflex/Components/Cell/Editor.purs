@@ -171,7 +171,7 @@ render (State {display, code, editor}) =
           case editor of
             MiscE _ _ ->
               HH.div
-                [ HP.class_ (HH.ClassName "editor-boundary-wrap")
+                [ HP.class_ (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                 , HE.onClick
                     (\e -> pure (PreventDefault (toEvent e) StartEditor))
                 ]
@@ -194,8 +194,14 @@ renderEditor ::
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderEditor editor =
   case editor of
-    MiscE _originalSource t -> [HH.text t]
-    TextE _originalSource t -> [HH.text t]
+    MiscE _originalSource t ->
+      [HH.div
+          [HP.class_ (HH.ClassName "misc")]
+          [HH.text t]]
+    TextE _originalSource t ->
+       [HH.div
+          [HP.class_ (HH.ClassName "text")]
+          [HH.text t]]
     ErrorE msg ->
       [ HH.div
           [HP.class_ (HH.ClassName "error-message")]
@@ -279,7 +285,7 @@ renderEditor editor =
 
                (mapWithIndex
                   (\fieldIndex {key, value: editor'} ->
-                        HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
+                        HH.td [HP.class_ (HH.ClassName "table-datum-value")] [HH.slot
                            (SProxy :: SProxy "editor")
                            (show rowIndex <> "/" <> show fieldIndex)
                            component
