@@ -16,6 +16,11 @@ body {
   "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
 }
 
+@font-face {
+  font-family:"Futura Round W01 Light";
+  src:url("@{Futura2R}") format("woff2"),url("@{FuturaR}") format("woff");
+}
+
 /********************************************************************************
  * Body/wrapper
  */
@@ -61,7 +66,12 @@ body {
     margin-left: auto;
     display: flex;
     flex-direction: row;
+    margin-right: 5px;
 
+    .logout, .full-button {
+      font-family: "Futura Round W01 Light";
+      font-size: 20px;
+    }
     .logout {
       height: 100%;
     }
@@ -177,12 +187,12 @@ body {
   }
 }
 .array {
-    box-shadow: 0px 0px 3px #9fb6c8;
-    border-radius: 3px;
+  box-shadow: 0px 0px 3px #9fb6c8;
+  border-radius: 3px;
 }
 
 .array-item {
-    padding: 5px;
+  padding: 5px;
 }
 
 
@@ -226,7 +236,7 @@ table.record {
     th + th {
       border-left: 1px solid #c4cbdb
     }
-     th {
+    th {
       padding: 5px;
       background:  #e9eef2;
       color: #244585

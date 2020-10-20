@@ -1,3 +1,21 @@
+/* Reboot */
+
+body {
+  font-family:
+  /* Safari for OS X and iOS (San Francisco) */
+  -apple-system,
+  /* Chrome < 56 for OS X (San Francisco) */
+  BlinkMacSystemFont,
+  /* Windows */
+  "Segoe UI",
+  /* Android */
+  "Roboto",
+  /* Basic web fallback */
+  "Helvetica Neue", Arial, sans-serif,
+  /* Emoji fonts */
+  "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+}
+
 @font-face {
   font-family:"Futura Round W01 Light";
   src:url("@{Futura2R}") format("woff2"),url("@{FuturaR}") format("woff");
@@ -75,6 +93,7 @@ body {
     margin-left: auto;
     display: flex;
     flex-direction: row;
+    margin-right: 5px;
 
     .logout, .login {
       height: 100%;
