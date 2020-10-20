@@ -1,3 +1,15 @@
+* Limits
+limits:
+  document:
+    versions:
+      days: 6
+    cells:
+      count: 1000
+      nameLength: 100
+  parser:
+    depth: 10
+    arrayLength: 5000
+    fieldsPerRecord: 100
 * Go live checklist
 - [X] Stripe checkout
 - [ ] Stripe portal working
