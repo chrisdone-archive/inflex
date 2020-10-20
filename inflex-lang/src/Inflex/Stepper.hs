@@ -65,6 +65,8 @@ newtype Step e a = Step
 --------------------------------------------------------------------------------
 -- Main entry points
 
+-- TODO: Add a configuration with limits: number of steps, memory used, etc.
+
 stepText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> Map Hash (Expression Resolved)

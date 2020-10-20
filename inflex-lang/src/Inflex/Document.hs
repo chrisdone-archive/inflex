@@ -80,6 +80,8 @@ data EvaledExpression = EvaledExpression
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
+-- TODO: Add cell limit
+
 -- | Load a document up to resolution.
 loadDocument ::
      [Named Text]

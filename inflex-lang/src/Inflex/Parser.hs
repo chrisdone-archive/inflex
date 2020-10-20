@@ -87,6 +87,9 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 --------------------------------------------------------------------------------
 -- Top-level accessor
 
+-- TODO: Add a configuration that includes limits: depth limits, array
+-- size limits, record field limits, etc.
+
 -- | Parse a given block of text.
 parseText :: FilePath -> Text -> Either RenameParseError (Expression Parsed)
 parseText fp bs = do
