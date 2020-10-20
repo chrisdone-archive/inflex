@@ -93,26 +93,33 @@ body {
   }
 }
 
-/********************************************************************************
- * Hero
- */
-
-.hero {
-  background: #15263b;
-  display: flex;
-  color: #fff;
+.documents {
   font-family: sans-serif;
+  display: flex;
   flex-direction: row;
+  .document {
+    padding: 10px;
+    box-shadow: 0px 0px 3px #9fb6c8;
+    margin-right: 10px;
+    margin-top: 10px;
+    .document-title {
+      margin-top: 0;
+      margin-bottom: 1em;
+      padding: 0;
+    }
+    .document-date {
+      margin-bottom: 0;
+    }
+  }
+}
 
-  .lhs {
-    width: 50%;
-  }
-
-  .tagline {
-    font-size: 70px;
-    font-family: "Futura Round W01 Light";
-  }
-  .small-tag {
-    font-family: "Futura Round W01 Light";
-  }
+.dashboard {
+  margin: 10px;
+}
+.dashboard button {
+  background: #e9eef2;
+  padding: 5px;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
 }

@@ -68,7 +68,10 @@ getAppEditorR slug =
                       toHtmlRaw
                         (encode
                            (object
-                              ["documentId" .= documentId, "logout" .= url LogoutR])))
+                              [ "documentId" .= documentId
+                              , "logout" .= url LogoutR
+                              , "dashboard" .= url AppDashboardR
+                              ])))
                 script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
 
 getAppJsR :: Handler TypedContent

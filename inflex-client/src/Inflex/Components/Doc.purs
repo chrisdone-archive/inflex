@@ -32,7 +32,7 @@ import Web.UIEvent.MouseEvent as ME
 --------------------------------------------------------------------------------
 -- Foreign
 
-foreign import meta :: { documentId :: Int, logout :: String }
+foreign import meta :: { documentId :: Int, logout :: String, dashboard :: String }
 
 foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
 
@@ -81,7 +81,7 @@ render state =
     [HP.class_ (HH.ClassName "wrapper")]
     [ HH.div
         [HP.class_ (HH.ClassName "navbar")]
-        [ HH.div [HP.class_ (HH.ClassName "logo")] []
+        [ HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
         , HH.div
             [HP.class_ (HH.ClassName "rhs-nav")]
             [ HH.button

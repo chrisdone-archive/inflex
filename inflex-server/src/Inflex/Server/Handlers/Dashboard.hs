@@ -12,6 +12,7 @@ module Inflex.Server.Handlers.Dashboard
 
 import           Control.Monad.Reader
 import           Data.String
+import qualified Data.Text as T
 import           Data.Time
 import           Database.Persist.Sql
 import           Formatting
@@ -40,54 +41,43 @@ getAppDashboardR =
        htmlWithUrl
          (shopTemplate
             (Registered state)
-            (do url <- ask
-                div_
-                  [class_ "container-fluid"]
-                  (div_
-                     [class_ "row"]
+            (div_
+               [class_ "dashboard"]
+               (do url <- ask
+                   h1_ "Dashboard"
+                   form_
+                     [action_ (url NewDocumentR), method_ "post"]
+                     (button_ [class_ "btn-primary btn"] "New Document")
+                   unless
+                     (null documents)
                      (div_
-                        [class_ "col"]
-                        (do h1_ "Dashboard"
-                            form_
-                              [action_ (url NewDocumentR), method_ "post"]
-                              (button_ [class_ "btn-primary btn"] "New Document"))))
-                unless
-                  (null documents)
-                  (div_
-                     [class_ "container-fluid mt-3"]
-                     (div_
-                        [class_ "row"]
-                        (div_
-                           [class_ "col"]
-                           (do div_
-                                 [class_ "card-deck"]
-                                 (forM_
-                                    documents
-                                    (\(Entity documentId Document {..}) ->
-                                       div_
-                                         [class_ "card"]
-                                         (do img_ []
-                                             div_
-                                               [class_ "card-body"]
-                                               (do h5_
-                                                     [class_ "card-title"]
-                                                     (a_
-                                                        [ href_ (url (AppEditorR documentName))
-                                                        ]
-                                                        (toHtml documentName))
-                                                   p_
-                                                     [class_ "card-text"]
-                                                     "Example description here..."
-                                                   form_
-                                                     [action_ (url (DeleteDocumentR documentId)), method_ "post"]
-                                                     (button_ [class_ "btn-primary btn"] "Delete"))
-                                             div_
-                                               [class_ "card-footer"]
-                                               (small_
-                                                  [class_ "text-muted"]
-                                                  (do "Created "
-                                                      toHtml (format (diff True)
-                                                                     (diffUTCTime documentCreated now'))))))))))))))
+                        [class_ "documents"]
+                        (forM_
+                           documents
+                           (\(Entity documentId Document {..}) ->
+                              div_
+                                [class_ "document"]
+                                (do p_
+                                      [class_ "document-title"]
+                                      (a_
+                                         [href_ (url (AppEditorR documentName))]
+                                         (toHtml documentName))
+                                    form_
+                                      [ action_
+                                          (url (DeleteDocumentR documentId))
+                                      , method_ "post"
+                                      ]
+                                      (button_
+                                         [class_ "delete-document"]
+                                         "Delete")
+                                    p_
+                                      [ class_ "document-date"
+                                      , title_ (T.pack (show documentCreated))
+                                      ]
+                                      (toHtml
+                                         (format
+                                            (diff True)
+                                            (diffUTCTime documentCreated now')))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())

@@ -64,16 +64,4 @@ shopTemplate state body = do
                                  form_
                                    [action_ (url LoginR), method_ "get"]
                                    (button_ [class_ "login full-button"] "Login")))
-                    div_
-                      [class_ "hero"]
-                      (do div_
-                            [class_ "lhs"]
-                            (do h1_
-                                  [class_ "tagline"]
-                                  "It's time to go off grid"
-                                h2_
-                                  [class_ "small-tag"]
-                                  "Online spreadsheets reinvented")
-                          div_ [class_ "rhs"]
-                               (pure ()))
                     body)))
