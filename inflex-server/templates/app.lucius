@@ -225,6 +225,11 @@ table.record {
   margin: 5px;
 }
 
+.cell-body > .editor-boundary-wrap > table.record {
+  margin: 0;
+  box-shadow: none;
+}
+
 /* Tables */
 
 .table-column {
