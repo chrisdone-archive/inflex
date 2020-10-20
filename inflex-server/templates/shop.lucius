@@ -113,9 +113,15 @@ body {
 }
 
 .documents {
+  margin-top: 5px;
   font-family: sans-serif;
   display: flex;
   flex-direction: row;
+
+  a {
+    color: #174783;
+    text-decoration: none;
+  }
   .document {
     padding: 10px;
     box-shadow: 0px 0px 3px #9fb6c8;
@@ -128,17 +134,24 @@ body {
       padding: 0;
     }
     .document-date {
-      margin-bottom: 0;
     }
   }
 }
 
 .dashboard {
   margin: 10px;
+  h1 {
+    font-size: 50px;
+    font-family: sans-serif;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
 }
 .dashboard button {
   background: #e9eef2;
   padding: 5px;
+  box-shadow: 0px 0px 3px #9fb6c8;
   border: 0;
   border-radius: 5px;
   cursor: pointer;

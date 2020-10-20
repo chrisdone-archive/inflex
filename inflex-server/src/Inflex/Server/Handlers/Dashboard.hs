@@ -62,14 +62,7 @@ getAppDashboardR =
                                       (a_
                                          [href_ (url (AppEditorR documentName))]
                                          (toHtml documentName))
-                                    form_
-                                      [ action_
-                                          (url (DeleteDocumentR documentId))
-                                      , method_ "post"
-                                      ]
-                                      (button_
-                                         [class_ "delete-document"]
-                                         "Delete")
+
                                     p_
                                       [ class_ "document-date"
                                       , title_ (T.pack (show documentCreated))
@@ -77,7 +70,15 @@ getAppDashboardR =
                                       (toHtml
                                          (format
                                             (diff True)
-                                            (diffUTCTime documentCreated now')))))))))))
+                                            (diffUTCTime documentCreated now')))
+                                    form_
+                                      [ action_
+                                          (url (DeleteDocumentR documentId))
+                                      , method_ "post"
+                                      ]
+                                      (button_
+                                         [class_ "delete-document"]
+                                         "Delete")))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())
