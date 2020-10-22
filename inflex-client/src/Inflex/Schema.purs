@@ -91,7 +91,7 @@ data NewField = NewField
   }
 
 data DataPath
-  = DataRoot
+  = DataHere
   | DataElemOf Int DataPath
   | DataFieldOf Int DataPath
 

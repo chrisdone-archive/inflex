@@ -13,6 +13,7 @@ import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Effect (Effect)
 import Halogen as H
 import Halogen.HTML as HH
@@ -158,7 +159,9 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
-    AddFieldTo path name -> H.raise (CellAddField path name)
+    AddFieldTo path name -> do
+      log (show path)
+      H.raise (CellAddField path name)
     CodeUpdate (Cell {name, code}) -> do
       H.raise (CellUpdate {name, code})
     SetCell cell -> do
@@ -245,7 +248,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                 (Editor.EditorAndCode
                    { editor: either Editor.ErrorE identity result
                    , code: code
-                   , path: Shared.DataRoot
+                   , path: identity
                    })
                 (\output ->
                   case output of

@@ -13,7 +13,6 @@ import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -23,7 +22,7 @@ import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (Unit, bind, discard, map, pure, unit, (<<<), (<>), (==), show)
+import Prelude (Unit, bind, discard, map, pure, show, unit, (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -44,7 +43,7 @@ data State = State
   { display :: Display
   , editor :: Editor
   , code :: String
-  , path :: Shared.DataPath
+  , path :: Shared.DataPath -> Shared.DataPath
   }
 
 data Command
@@ -82,7 +81,7 @@ data Display
 data EditorAndCode = EditorAndCode
   { editor :: Editor
   , code :: String
-  , path :: Shared.DataPath
+  , path :: Shared.DataPath -> Shared.DataPath
   }
 
 type Slots i = (editor :: H.Slot i Output String)
@@ -102,7 +101,8 @@ editorRef = (H.RefLabel "editor")
 component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
-    { initialState: (\(EditorAndCode{editor, code, path}) -> State {display: DisplayEditor, editor, code, path })
+    { initialState: (\(EditorAndCode{editor, code, path}) ->
+                       State {display: DisplayEditor, editor, code, path })
     , render
     , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
     }
@@ -197,7 +197,7 @@ render (State {display, code, editor, path}) =
 
 renderEditor ::
      forall i a. MonadEffect a
-  => Shared.DataPath
+  => (Shared.DataPath -> Shared.DataPath)
   -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderEditor path editor =
@@ -247,11 +247,11 @@ renderEditor path editor =
                       (EditorAndCode
                          { editor: editor'
                          , code: editorCode editor'
-                         , path: Shared.DataElemOf i path
+                         , path: path <<< Shared.DataElemOf i
                          })
                       (\output ->
                          case output of
-                           AddFieldTo path f -> Just (AddField path f)
+                           AddFieldTo path' f -> Just (AddField path' f)
                            NewCode rhs -> Just
                             (FinishEditing
                               (editorCode
@@ -262,10 +262,10 @@ renderEditor path editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          ((if true then [] else
+          ((if false then [] else
               [HH.button [
                        HE.onClick
-                    (\e -> pure (PreventDefault (toEvent e) (AddField path "foo")))
+                    (\e -> pure (PreventDefault (toEvent e) (AddField (path Shared.DataHere) "foo")))
                        ] [HH.text "Add field"]]) <>
            mapWithIndex
              (\i {key, value: editor'} ->
@@ -279,11 +279,11 @@ renderEditor path editor =
                       (EditorAndCode
                          { editor: editor'
                          , code: editorCode editor'
-                         , path: Shared.DataFieldOf i path
+                         , path: path <<< Shared.DataFieldOf i
                          })
                       (\output ->
                        case output of
-                         AddFieldTo path f -> Just (AddField path f)
+                         AddFieldTo path' f -> Just (AddField path' f)
                          NewCode rhs ->
                             Just
                            (FinishEditing
@@ -312,11 +312,11 @@ renderEditor path editor =
                            (EditorAndCode
                               { editor: editor'
                               , code: editorCode editor'
-                              , path: Shared.DataFieldOf fieldIndex (Shared.DataElemOf rowIndex path)
+                              , path: path <<< Shared.DataElemOf rowIndex <<< Shared.DataFieldOf fieldIndex
                               })
                            (\output ->
                              case output of
-                              AddFieldTo path f -> Just (AddField path f)
+                              AddFieldTo path' f -> Just (AddField path' f)
                               NewCode rhs ->
                                Just
                                 (FinishEditing
