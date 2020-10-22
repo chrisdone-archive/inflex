@@ -71,6 +71,20 @@ data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
+data UpdateDocument = UpdateDocument
+  { documentId :: DocumentId
+  , update :: Update
+  }
+
+data Update =
+  AddFieldUpdate NewField
+
+data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
 data DataPath
   = DataRoot
   | DataElemOf Int DataPath
@@ -295,6 +309,26 @@ deriving instance Generic OutputCell
 deriving instance Show OutputCell
 instance ToJSON OutputCell
 instance FromJSON OutputCell
+
+deriving instance Generic UpdateDocument
+deriving instance Show UpdateDocument
+instance ToJSON UpdateDocument
+instance FromJSON UpdateDocument
+
+deriving instance Generic Update
+deriving instance Show Update
+instance ToJSON Update
+instance FromJSON Update
+
+deriving instance Generic NewField
+deriving instance Show NewField
+instance ToJSON NewField
+instance FromJSON NewField
+
+deriving instance Generic DataPath
+deriving instance Show DataPath
+instance ToJSON DataPath
+instance FromJSON DataPath
 
 deriving instance Real DocumentId
 deriving instance Enum DocumentId

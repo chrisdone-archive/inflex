@@ -15,17 +15,17 @@ import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (log, error)
+import Effect.Class.Console (error)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument)
+import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
+import Inflex.Schema as Shared
 import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
 import Web.Event.Event (preventDefault)
-
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -44,6 +44,7 @@ data Command
   | UpdateCell UUID {name :: String, code :: String}
   | NewCell
   | DeleteCell UUID
+  | AddField UUID Shared.DataPath String
   | DragStart UUID DE.DragEvent
   | OnDragOver DE.DragEvent
   | OnDrop DE.DragEvent
@@ -109,12 +110,14 @@ render state =
                 (uuidToString uuid)
                 Cell.component
                 cell
-                (\update ->
+                (\update0 ->
                    pure
-                     (case update of
+                     (case update0 of
                         Cell.CellUpdate update' -> UpdateCell uuid update'
                         Cell.RemoveCell -> DeleteCell uuid
-                        Cell.CellDragStart dragEvent -> DragStart uuid dragEvent)))
+                        Cell.CellDragStart dragEvent -> DragStart uuid dragEvent
+                        Cell.CellAddField path string -> AddField uuid path string
+                        )))
            (state . cells))
     ]
 
@@ -209,6 +212,8 @@ eval =
            (filter
               (\(OutputCell {uuid: uuid'}) -> uuid' /= uuid)
               (state . cells)))
+    AddField uuid path name -> do
+      update (Shared.AddFieldUpdate (Shared.NewField {path, name, uuid}))
 
 --------------------------------------------------------------------------------
 -- API calls
@@ -226,6 +231,25 @@ refresh cells = do
       (RefreshDocument
          { documentId: DocumentId (meta.documentId)
          , document: InputDocument1 {cells: cells}
+         })
+  case result of
+    Left err -> do
+      error err -- TODO:Display this to the user properly.
+    Right outputDocument -> setOutputDocument outputDocument
+
+update :: forall t60 t74.
+  Bind t60 => MonadEffect t60 => MonadAff t60 => MonadState
+                                                   { cells :: Array OutputCell
+                                                   | t74
+                                                   }
+                                                   t60
+                                                  => Shared.Update -> t60 Unit
+update update' = do
+  result <-
+    rpcUpdateDocument
+      (Shared.UpdateDocument
+         { documentId: DocumentId (meta.documentId)
+         , update: update'
          })
   case result of
     Left err -> do

@@ -56,3 +56,22 @@ rpcRefreshDocument Schema.RefreshDocument {documentId, document} =
                 (entityKey documentEntity)
                 [DocumentContent =. document, DocumentUpdated =. now])
            pure (loadInputDocument document))
+
+--------------------------------------------------------------------------------
+-- Update document
+
+rpcUpdateDocument :: Schema.UpdateDocument -> Handler Schema.OutputDocument
+rpcUpdateDocument Schema.UpdateDocument {documentId, update} =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       mdoc <-
+         runDB
+           (selectFirst
+              [ DocumentAccount ==. fromAccountID loginAccountId
+              , DocumentId ==. toSqlKey (fromIntegral documentId)
+              ]
+              [])
+       case mdoc of
+         Nothing -> notFound
+         Just (Entity _ Document {documentContent = document}) ->
+           pure (loadInputDocument document))

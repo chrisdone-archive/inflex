@@ -45,6 +45,20 @@ data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
+data UpdateDocument = UpdateDocument
+  { documentId :: DocumentId
+  , update :: Update
+  }
+
+data Update =
+  AddFieldUpdate NewField
+
+data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
 data DataPath
   = DataRoot
   | DataElemOf Int DataPath

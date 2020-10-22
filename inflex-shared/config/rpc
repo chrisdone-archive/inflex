@@ -4,3 +4,6 @@ LoadDocument:
 RefreshDocument:
   input: RefreshDocument
   output: OutputDocument
+UpdateDocument:
+  input: UpdateDocument
+  output: OutputDocument

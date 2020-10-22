@@ -3,6 +3,7 @@
 module Inflex.Components.Cell.Editor
   ( Editor(..)
   , EditorAndCode(..)
+  , Output(..)
   , component
   ) where
 
@@ -35,7 +36,9 @@ import Web.UIEvent.MouseEvent (toEvent)
 
 type Input = EditorAndCode
 
-type Output = String
+data Output
+  = NewCode String
+  | AddFieldTo Shared.DataPath String
 
 data State = State
   { display :: Display
@@ -82,7 +85,7 @@ data EditorAndCode = EditorAndCode
   , path :: Shared.DataPath
   }
 
-type Slots i = (editor :: H.Slot i String String)
+type Slots i = (editor :: H.Slot i Output String)
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -107,11 +110,10 @@ component =
 --------------------------------------------------------------------------------
 -- Eval
 
-eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
+eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval =
   case _ of
-    AddField path name -> do log ("AddField: " <> show path)
-                             pure unit
+    AddField path name -> H.raise (AddFieldTo path name)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged elemRef ->
@@ -127,9 +129,9 @@ eval =
       State {display, editor} <- H.get
       _result <-
         H.raise
-          (if trim code == ""
+          (NewCode (if trim code == ""
              then "_"
-             else code)
+             else code))
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
     SetEditor (EditorAndCode {editor, code, path}) ->
       H.put (State {path, editor, code, display: DisplayEditor})
@@ -247,9 +249,11 @@ renderEditor path editor =
                          , code: editorCode editor'
                          , path: Shared.DataElemOf i path
                          })
-                      (\rhs ->
-                         Just
-                           (FinishEditing
+                      (\output ->
+                         case output of
+                           AddFieldTo path f -> Just (AddField path f)
+                           NewCode rhs -> Just
+                            (FinishEditing
                               (editorCode
                                  (ArrayE Shared.NoOriginalSource (editArray i (MiscE Shared.NoOriginalSource rhs) editors)))))
                   ])
@@ -258,10 +262,10 @@ renderEditor path editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          (-- [HH.button [
-           --             HE.onClick
-           --          (\e -> pure (PreventDefault (toEvent e) (AddField path "foo")))
-           --             ] [HH.text "Add field"]] <>
+          ([HH.button [
+                       HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e) (AddField path "foo")))
+                       ] [HH.text "Add field"]] <>
            mapWithIndex
              (\i {key, value: editor'} ->
                 HH.tr
@@ -276,8 +280,11 @@ renderEditor path editor =
                          , code: editorCode editor'
                          , path: Shared.DataFieldOf i path
                          })
-                      (\rhs ->
-                         Just
+                      (\output ->
+                       case output of
+                         AddFieldTo path f -> Just (AddField path f)
+                         NewCode rhs ->
+                            Just
                            (FinishEditing
                               (editorCode
                                  (RecordE Shared.NoOriginalSource (editArray i {key, value: MiscE Shared.NoOriginalSource rhs} fields)))))]
@@ -306,8 +313,11 @@ renderEditor path editor =
                               , code: editorCode editor'
                               , path: Shared.DataFieldOf fieldIndex (Shared.DataElemOf rowIndex path)
                               })
-                           (\rhs ->
-                              Just
+                           (\output ->
+                             case output of
+                              AddFieldTo path f -> Just (AddField path f)
+                              NewCode rhs ->
+                               Just
                                 (FinishEditing
                                    (editorCode
                                       (TableE

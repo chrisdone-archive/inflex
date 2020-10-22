@@ -41,10 +41,10 @@ data Output
   = CellUpdate { name :: String, code :: String}
   | RemoveCell
   | CellDragStart DE.DragEvent
+  | CellAddField Shared.DataPath String
 
 data State = State
   { cell :: Cell
-
   , pos :: Maybe Pos
   , offset :: Maybe {x::Int,y::Int, innerx :: Int, innery :: Int}
   }
@@ -55,6 +55,7 @@ data Command
   | DeleteCell
   | DragStarted DE.DragEvent
   | MouseDown ME.MouseEvent
+  | AddFieldTo Shared.DataPath String
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -157,6 +158,7 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
+    AddFieldTo path name -> H.raise (CellAddField path name)
     CodeUpdate (Cell {name, code}) -> do
       H.raise (CellUpdate {name, code})
     SetCell cell -> do
@@ -197,7 +199,7 @@ eval =
 
 render :: forall keys q m. MonadEffect m =>
           State
-       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit, declname :: H.Slot q String Unit | keys) m Command)
+       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q Editor.Output Unit, declname :: H.Slot q String Unit | keys) m Command)
                   Command
 render (State {cell: Cell {name, code, result}, pos}) =
   HH.div
@@ -245,8 +247,11 @@ render (State {cell: Cell {name, code, result}, pos}) =
                    , code: code
                    , path: Shared.DataRoot
                    })
-                (\code' ->
-                   pure
+                (\output ->
+                  case output of
+                    Editor.AddFieldTo path f -> Just (AddFieldTo path f)
+                    Editor.NewCode code' ->
+                     pure
                      (CodeUpdate
                         (Cell {name, result, code: code'})))
             ]

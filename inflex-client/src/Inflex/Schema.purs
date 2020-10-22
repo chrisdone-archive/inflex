@@ -76,6 +76,20 @@ data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
+data UpdateDocument = UpdateDocument
+  { documentId :: DocumentId
+  , update :: Update
+  }
+
+data Update =
+  AddFieldUpdate NewField
+
+data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
 data DataPath
   = DataRoot
   | DataElemOf Int DataPath
@@ -251,6 +265,21 @@ derive instance genericOutputDocument :: Generic OutputDocument _
 instance showOutputDocument :: Show OutputDocument where show = genericShow
 instance decodeOutputDocument :: Decode OutputDocument where decode = genericDecode opts
 instance encodeOutputDocument :: Encode OutputDocument where encode = genericEncode opts
+
+derive instance genericUpdateDocument :: Generic UpdateDocument _
+instance showUpdateDocument :: Show UpdateDocument where show = genericShow
+instance decodeUpdateDocument :: Decode UpdateDocument where decode = genericDecode opts
+instance encodeUpdateDocument :: Encode UpdateDocument where encode = genericEncode opts
+
+derive instance genericNewField :: Generic NewField _
+instance showNewField :: Show NewField where show = genericShow
+instance decodeNewField :: Decode NewField where decode = genericDecode opts
+instance encodeNewField :: Encode NewField where encode = genericEncode opts
+
+derive instance genericUpdate :: Generic Update _
+instance showUpdate :: Show Update where show = genericShow
+instance decodeUpdate :: Decode Update where decode = genericDecode opts
+instance encodeUpdate :: Encode Update where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow
