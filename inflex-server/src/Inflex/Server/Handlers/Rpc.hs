@@ -11,6 +11,7 @@ import qualified Inflex.Schema as Schema
 import           Inflex.Server.App
 import           Inflex.Server.Compute
 import           Inflex.Server.Session
+import           Inflex.Server.Transforms
 import           Inflex.Server.Types
 import           Yesod hiding (Html)
 
@@ -61,7 +62,7 @@ rpcRefreshDocument Schema.RefreshDocument {documentId, document} =
 -- Update document
 
 rpcUpdateDocument :: Schema.UpdateDocument -> Handler Schema.OutputDocument
-rpcUpdateDocument Schema.UpdateDocument {documentId, update} =
+rpcUpdateDocument Schema.UpdateDocument {documentId, update = update'} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        mdoc <-
@@ -73,5 +74,13 @@ rpcUpdateDocument Schema.UpdateDocument {documentId, update} =
               [])
        case mdoc of
          Nothing -> notFound
-         Just (Entity _ Document {documentContent = document}) ->
-           pure (loadInputDocument document))
+         Just (Entity documentId' document) -> do
+           now <- liftIO getCurrentTime
+           -- TODO: Maybe check for errors before saving.
+           let inputDocument =
+                 applyUpdateToDocument update' (documentContent document)
+           runDB
+             (update
+                documentId'
+                [DocumentContent =. inputDocument, DocumentUpdated =. now])
+           pure (loadInputDocument inputDocument))
