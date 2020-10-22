@@ -39,6 +39,11 @@ instance showNone :: Show None where show = genericShow
 instance decodeNone :: Decode None where decode = genericDecode opts
 instance encodeNone :: Encode None where encode = genericEncode opts
 
+derive instance genericDataPath :: Generic DataPath _
+instance showDataPath :: Show DataPath where show x = genericShow x
+instance decodeDataPath :: Decode DataPath where decode x = genericDecode opts x
+instance encodeDataPath :: Encode DataPath where encode x = genericEncode opts x
+
 derive instance genericResult :: Generic Result _
 instance showResult :: Show Result where show = genericShow
 instance decodeResult :: Decode Result where decode = genericDecode opts

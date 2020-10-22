@@ -76,6 +76,11 @@ data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
+data DataPath
+  = DataRoot
+  | DataElemOf Int DataPath
+  | DataFieldOf Int DataPath
+
 data OutputCell = OutputCell
   { uuid :: UUID
   , name :: Text
@@ -171,6 +176,11 @@ derive instance genericNone :: Generic None _
 instance showNone :: Show None where show = genericShow
 instance decodeNone :: Decode None where decode = genericDecode opts
 instance encodeNone :: Encode None where encode = genericEncode opts
+
+derive instance genericDataPath :: Generic DataPath _
+instance showDataPath :: Show DataPath where show x = genericShow x
+instance decodeDataPath :: Decode DataPath where decode x = genericDecode opts x
+instance encodeDataPath :: Encode DataPath where encode x = genericEncode opts x
 
 derive instance genericResult :: Generic Result _
 instance showResult :: Show Result where show = genericShow

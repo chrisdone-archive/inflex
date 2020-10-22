@@ -12,6 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -40,6 +41,7 @@ data State = State
   { display :: Display
   , editor :: Editor
   , code :: String
+  , path :: Shared.DataPath
   }
 
 data Command
@@ -52,6 +54,7 @@ data Command
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef Element)
+  | AddField Shared.DataPath String
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -76,6 +79,7 @@ data Display
 data EditorAndCode = EditorAndCode
   { editor :: Editor
   , code :: String
+  , path :: Shared.DataPath
   }
 
 type Slots i = (editor :: H.Slot i String String)
@@ -95,7 +99,7 @@ editorRef = (H.RefLabel "editor")
 component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
-    { initialState: (\(EditorAndCode{editor, code}) -> State {display: DisplayEditor, editor, code })
+    { initialState: (\(EditorAndCode{editor, code, path}) -> State {display: DisplayEditor, editor, code, path })
     , render
     , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
     }
@@ -106,6 +110,8 @@ component =
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) String t45 Unit
 eval =
   case _ of
+    AddField path name -> do log ("AddField: " <> show path)
+                             pure unit
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged elemRef ->
@@ -125,8 +131,8 @@ eval =
              then "_"
              else code)
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
-    SetEditor (EditorAndCode {editor, code}) ->
-      H.put (State {editor, code, display: DisplayEditor})
+    SetEditor (EditorAndCode {editor, code, path}) ->
+      H.put (State {path, editor, code, display: DisplayEditor})
     Autoresize -> do
       ref <- H.getHTMLElementRef editorRef
       H.liftEffect (for_ ref (\el -> pure unit))
@@ -141,13 +147,13 @@ eval =
 -- Render
 
 render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
-render (State {display, code, editor}) =
+render (State {display, code, editor, path}) =
   case display of
     DisplayCode -> wrapper renderControl
     DisplayEditor ->
       if trim code == ""
         then wrapper (renderControl)
-        else wrapper (renderEditor editor)
+        else wrapper (renderEditor path editor)
   where
     renderControl =
       [ HH.input
@@ -189,9 +195,10 @@ render (State {display, code, editor}) =
 
 renderEditor ::
      forall i a. MonadEffect a
-  => Editor
+  => Shared.DataPath
+  -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
-renderEditor editor =
+renderEditor path editor =
   case editor of
     MiscE _originalSource t ->
       [HH.div
@@ -238,6 +245,7 @@ renderEditor editor =
                       (EditorAndCode
                          { editor: editor'
                          , code: editorCode editor'
+                         , path: Shared.DataElemOf i path
                          })
                       (\rhs ->
                          Just
@@ -250,7 +258,11 @@ renderEditor editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          (mapWithIndex
+          ([HH.button [
+                       HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e) (AddField path "foo")))
+                       ] [HH.text "Add field"]] <>
+           mapWithIndex
              (\i {key, value: editor'} ->
                 HH.tr
                   [HP.class_ (HH.ClassName "record-field")]
@@ -262,6 +274,7 @@ renderEditor editor =
                       (EditorAndCode
                          { editor: editor'
                          , code: editorCode editor'
+                         , path: Shared.DataFieldOf i path
                          })
                       (\rhs ->
                          Just
@@ -291,6 +304,7 @@ renderEditor editor =
                            (EditorAndCode
                               { editor: editor'
                               , code: editorCode editor'
+                              , path: Shared.DataFieldOf fieldIndex (Shared.DataElemOf rowIndex path)
                               })
                            (\rhs ->
                               Just

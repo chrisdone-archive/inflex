@@ -243,6 +243,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                 (Editor.EditorAndCode
                    { editor: either Editor.ErrorE identity result
                    , code: code
+                   , path: Shared.DataRoot
                    })
                 (\code' ->
                    pure

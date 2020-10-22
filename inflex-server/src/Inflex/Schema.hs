@@ -71,6 +71,11 @@ data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
+data DataPath
+  = DataRoot
+  | DataElemOf Int DataPath
+  | DataFieldOf Int DataPath
+
 data OutputCell = OutputCell
   { uuid :: UUID
   , name :: Text
