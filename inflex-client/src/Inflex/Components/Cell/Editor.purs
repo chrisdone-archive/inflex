@@ -262,11 +262,11 @@ renderEditor path editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          ((if false then [] else
-              [HH.button [
-                       HE.onClick
-                    (\e -> pure (PreventDefault (toEvent e) (AddField (path Shared.DataHere) "foo")))
-                       ] [HH.text "Add field"]]) <>
+          (-- (if false then [] else
+           --    [HH.button [
+           --             HE.onClick
+           --          (\e -> pure (PreventDefault (toEvent e) (AddField (path Shared.DataHere) "foo")))
+           --             ] [HH.text "Add field"]]) <>
            mapWithIndex
              (\i {key, value: editor'} ->
                 HH.tr
@@ -293,7 +293,14 @@ renderEditor path editor =
              fields)
       ]
     TableE _originalSource columns rows ->
-      [ HH.table
+      [
+              -- HH.button [
+              --          HE.onClick
+              --       (\e -> pure (PreventDefault (toEvent e)
+              --                     (AddField (path (Shared.DataElemOf 0 Shared.DataHere)) "boo")))
+              --          ] [HH.text "Add column"] ,
+
+        HH.table
         [HP.class_ (HH.ClassName "table")]
         [HH.thead [HP.class_ (HH.ClassName "table-header")]
                   (map (\text -> HH.th [HP.class_ (HH.ClassName "table-column")] [HH.text text]) columns)
