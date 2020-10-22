@@ -262,10 +262,11 @@ renderEditor path editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          ([HH.button [
+          ((if true then [] else
+              [HH.button [
                        HE.onClick
                     (\e -> pure (PreventDefault (toEvent e) (AddField path "foo")))
-                       ] [HH.text "Add field"]] <>
+                       ] [HH.text "Add field"]]) <>
            mapWithIndex
              (\i {key, value: editor'} ->
                 HH.tr
