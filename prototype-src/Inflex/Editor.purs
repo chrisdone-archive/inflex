@@ -19,7 +19,6 @@ import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Effect.Class (class MonadEffect)
 import Effect (Effect)
-import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -132,14 +131,13 @@ eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Sl
 eval =
   case _ of
     SetInput i -> do
-      H.liftEffect (log "Inflex.Editor: eval(SetInput)")
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     CanvasElementChanged editor elemRef ->
       case elemRef of
         Created element ->
           case fromElement element of
             Just htmlelement ->
-              H.liftEffect (drawBarChart htmlelement) -- TODO: Fill in the data properly.
+              H.liftEffect (drawBarChart htmlelement) -- TODO:Fill in the data properly.
             Nothing -> pure unit
         Removed _ -> pure unit
     InputElementChanged elemRef ->
@@ -152,7 +150,6 @@ eval =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.liftEffect (log ("Finish editing with code:" <> code))
       State {display, editor} <- H.get
       _result <- H.raise code
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
@@ -163,10 +160,8 @@ eval =
       H.liftEffect (for_ ref (\el -> pure unit))
     PreventDefault e c -> do
       H.liftEffect
-        (do log "Preventing default and propagation ..."
-            preventDefault e
-            stopPropagation e
-            log "Triggering")
+        (do preventDefault e
+            stopPropagation e)
       eval c
     NoOp -> pure unit
 

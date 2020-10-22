@@ -161,12 +161,12 @@ eval =
               (Cell.SetXY {x, y})
           pure unit
     Initialize -> do
-      log "Loading document ..."
       result <- rpcLoadDocument (DocumentId (meta.documentId))
       case result of
         Left err -> do
-          error err -- TODO:Display this to the user properly.
-        Right outputDocument -> setOutputDocument outputDocument
+          error ("Error loading document: " <> err) -- TODO:Display this to the user properly.
+        Right outputDocument ->
+          setOutputDocument outputDocument
     NewCell -> do
       uuid <- H.liftEffect genUUIDV4
       s <- H.get
@@ -185,11 +185,9 @@ eval =
                 }
             ] <>
             map toInputCell (s . cells)
-      H.liftEffect (log "New cell, refreshing ...")
       refresh cells'
     UpdateCell uuid cell -> do
       state <- H.get
-      H.liftEffect (log "Cell updated, refreshing ...")
       refresh
         (map
            (\original@(InputCell1 {uuid: uuid', order, version}) ->
@@ -205,7 +203,6 @@ eval =
            (map toInputCell (state . cells)))
     DeleteCell uuid -> do
       state <- H.get
-      H.liftEffect (log "Cell deleted, refreshing ...")
       refresh
         (map
            toInputCell

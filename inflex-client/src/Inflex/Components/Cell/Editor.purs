@@ -12,7 +12,6 @@ import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
-import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -108,7 +107,6 @@ eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Sl
 eval =
   case _ of
     SetInput i -> do
-      H.liftEffect (log "Inflex.Editor:eval(SetInput)")
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged elemRef ->
       case elemRef of
@@ -120,9 +118,12 @@ eval =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.liftEffect (log ("Finish editing with code:" <> code))
       State {display, editor} <- H.get
-      _result <- H.raise (if trim code == "" then "_" else code)
+      _result <-
+        H.raise
+          (if trim code == ""
+             then "_"
+             else code)
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
     SetEditor (EditorAndCode {editor, code}) ->
       H.put (State {editor, code, display: DisplayEditor})
@@ -131,10 +132,8 @@ eval =
       H.liftEffect (for_ ref (\el -> pure unit))
     PreventDefault e c -> do
       H.liftEffect
-        (do log "Preventing default and propagation ..."
-            preventDefault e
-            stopPropagation e
-            log "Triggering")
+        (do preventDefault e
+            stopPropagation e)
       eval c
     NoOp -> pure unit
 

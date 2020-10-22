@@ -55,8 +55,7 @@ rpcCall
   -> m (Either String output)
 rpcCall endpoint0 input =
   H.liftAff
-    (do log ("POST " <> endpoint)
-        case J.jsonParser (genericEncodeJSON opts input) of
+    (do case J.jsonParser (genericEncodeJSON opts input) of
           Left e -> do
             error ("Own JSON was invalid! " <> e)
             pure (Left e)
@@ -74,16 +73,13 @@ rpcCall endpoint0 input =
                    " response failed to decode:" <>
                    AX.printError err)
                 pure (Left (AX.printError err))
-              Right response -> do
-                log $
-                  "POST " <> endpoint <> " response:" <>
-                  (J.stringify (response . body))
+              Right response ->
                 case runExcept
                        (genericDecodeJSON opts (J.stringify (response . body))) of
                   Right r -> do
-                    log ("OK, decoded:" <> show r)
                     pure (Right r)
                   Left e -> do
                     error ("Failed to decode:" <> show e)
                     pure (Left (show e)))
-  where endpoint = "/api/rpc/" <> endpoint0
+  where
+    endpoint = "/api/rpc/" <> endpoint0

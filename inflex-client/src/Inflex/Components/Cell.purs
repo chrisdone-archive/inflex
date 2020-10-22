@@ -14,7 +14,6 @@ import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
 import Effect (Effect)
-import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -159,7 +158,6 @@ eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m
 eval =
   case _ of
     CodeUpdate (Cell {name, code}) -> do
-      H.liftEffect (log "Inflex.Cell:CodeUpdate, raising ...")
       H.raise (CellUpdate {name, code})
     SetCell cell -> do
       H.modify_ (\(State s) -> State (s {cell = cell}))

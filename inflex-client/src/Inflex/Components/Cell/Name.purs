@@ -81,16 +81,14 @@ eval =
   case _ of
     PrintCode string -> H.liftEffect (log string)
     CodeUpdate event -> do
-      H.liftEffect (log "Ok, go!")
       case currentTarget event of
         Nothing -> pure unit
         Just x ->
           case fromEventTarget x of
             Just htmlelement -> do
-              H.liftEffect (log "OK, got element.")
               mvalue <- H.liftEffect (getValue htmlelement)
               case toMaybe mvalue >>= cleanName of
-                Nothing -> H.liftEffect (log "No value...")
+                Nothing -> pure unit
                 Just value -> do
                   H.raise value
                   eval (SetInput value)
@@ -155,7 +153,8 @@ render (State {display, name}) =
                  "Enter" ->
                    Just
                      (StopPropagation (K.toEvent e) (CodeUpdate (K.toEvent e)))
-                 code -> Just (StopPropagation (K.toEvent e) (PrintCode code)))
+                 code -> Nothing
+                         {-Just (StopPropagation (K.toEvent e) (PrintCode code))-})
         ]
 
 cleanName :: String -> Maybe String
