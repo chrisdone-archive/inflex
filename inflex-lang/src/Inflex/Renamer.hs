@@ -86,6 +86,18 @@ renameExpression env =
       final <- finalizeCursor (cursor env) TypeCursor location
       pure (HoleExpression Hole {location = final, typ = Nothing})
     GlobalExpression {} -> error "impossible" -- TODO: Make impossible at type-level.
+    -- Use:
+    --
+    -- data StagedGlobal s where
+    --   ParsedGlobal :: Void -> StagedGlobal Parsed
+    --   RenamedGlobal :: Global s -> StagedGlobal Renamed
+    --   FilledGlobal :: Global s -> StagedGlobal Filled
+    --   GeneratedGlobal :: Global s -> StagedGlobal Generated
+    --   SolvedGlobal :: Global s -> StagedGlobal Solved
+    --   GeneralisedGlobal :: Global s -> StagedGlobal Generalised
+    --   ResolvedGlobal :: Global s -> StagedGlobal Resolved
+    --
+    -- And then use `absurd v` instead of `error "impossible"`.
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Expression Renamed)
 renameLiteral env@Env {cursor} =
