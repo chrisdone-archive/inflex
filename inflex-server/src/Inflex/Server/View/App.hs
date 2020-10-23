@@ -12,7 +12,7 @@ import Lucid
 import Yesod.Lucid
 
 appTemplate :: SessionState -> Lucid App () -> Lucid App ()
-appTemplate state body = do
+appTemplate _state body = do
   doctype_
   url <- ask
   html_

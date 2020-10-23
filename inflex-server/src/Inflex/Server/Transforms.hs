@@ -18,6 +18,7 @@ applyUpdateToDocument :: Shared.Update -> Shared.InputDocument1 -> Shared.InputD
 applyUpdateToDocument =
   \case
     Shared.AddFieldUpdate newField -> addNewFieldToDocument newField
+    _ -> error "TODO"
 
 addNewFieldToDocument :: Shared.NewField -> Shared.InputDocument1 -> Shared.InputDocument1
 addNewFieldToDocument Shared.NewField {path, name = name0, uuid = uuid0} Shared.InputDocument1 {cells} =

@@ -6,8 +6,6 @@
 module Inflex.Server.View.Shop where
 
 import           Control.Monad.Reader
-import           Data.FileEmbed
-import           Data.FileEmbed.Stack
 import           Data.Text (Text)
 import           Inflex.Server.App
 import           Inflex.Server.Types

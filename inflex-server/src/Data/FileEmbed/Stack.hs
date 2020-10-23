@@ -18,6 +18,7 @@ wrapStackRoot :: FilePath -> Q FilePath
 wrapStackRoot fp = pure ([r|STACK_ROOT|] <> "/" <> fp)
 #else
 wrapStackRoot fp = makeRelativeToProject fp
+  where _ = [r|...|]
 #endif
 
 makeRelativeToProject :: FilePath -> Q FilePath

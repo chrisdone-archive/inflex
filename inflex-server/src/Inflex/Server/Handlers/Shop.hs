@@ -30,20 +30,14 @@ module Inflex.Server.Handlers.Shop
   , getFutura2R
   ) where
 
-import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           GA
 import           Inflex.Server.App
-import           Inflex.Server.Session
-import           Inflex.Server.Types
-import           Inflex.Server.View.Shop
 import           Lucid
 import           Sendfile
 import           Shakespearean
 import           Text.Lucius
 import           Yesod hiding (Html, Field, lookupSession)
-import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Home
