@@ -45,6 +45,9 @@ ALSO, check your ./rpc file.
 
 -}
 
+--------------------------------------------------------------------------------
+-- Versions
+
 class Version v where
   versionNumber :: v -> Int
   versionRefl :: v
@@ -52,29 +55,27 @@ class Version v where
 data Version1 = Version1
 data Version2 = Version2
 
+--------------------------------------------------------------------------------
+-- Basic types
+
 data None =
   None
 
-newtype DocumentId =
-  DocumentId Int
-
-data OutputDocument = OutputDocument
-  { cells :: Vector OutputCell
-  }
+--------------------------------------------------------------------------------
+-- Command types
 
 data RefreshDocument = RefreshDocument
   { document :: InputDocument1
   , documentId :: DocumentId
   }
 
-data InputDocument1 = InputDocument1
-  { cells :: Vector InputCell1
-  }
-
 data UpdateDocument = UpdateDocument
   { documentId :: DocumentId
   , update :: Update
   }
+
+--------------------------------------------------------------------------------
+-- Update commands
 
 data Update
   = AddFieldUpdate NewField
@@ -104,6 +105,20 @@ data DataPath
   = DataHere
   | DataElemOf Int DataPath
   | DataFieldOf Int DataPath
+
+--------------------------------------------------------------------------------
+-- General document types (not specific to a given command)
+
+newtype DocumentId =
+  DocumentId Int
+
+data OutputDocument = OutputDocument
+  { cells :: Vector OutputCell
+  }
+
+data InputDocument1 = InputDocument1
+  { cells :: Vector InputCell1
+  }
 
 data OutputCell = OutputCell
   { uuid :: UUID
@@ -163,9 +178,9 @@ data FillError
   = NoSuchGlobal Text
   | OtherCellProblem Text
 
-
 --------------------------------------------------------------------------------
--- Deprecated
+-- Deprecated -- types that should no longer be used outside of the
+-- Schema.hs/.purs modules
 
 {-# DEPRECATED InputDocument "Use InputDocument1" #-}
 data InputDocument = InputDocument
