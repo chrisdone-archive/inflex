@@ -81,10 +81,25 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
-data Update =
-  AddFieldUpdate NewField
+data Update
+  = AddFieldUpdate NewField
+  | RenameFieldUpdate RenameField
+  | DeleteFieldUpdate DeleteField
 
 data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
+data RenameField = RenameField
+  { path :: DataPath
+  , old :: Text
+  , new :: Text
+  , uuid :: UUID
+  }
+
+data DeleteField = DeleteField
   { path :: DataPath
   , name :: Text
   , uuid :: UUID
@@ -275,6 +290,16 @@ derive instance genericNewField :: Generic NewField _
 instance showNewField :: Show NewField where show = genericShow
 instance decodeNewField :: Decode NewField where decode = genericDecode opts
 instance encodeNewField :: Encode NewField where encode = genericEncode opts
+
+derive instance genericRenameField :: Generic RenameField _
+instance showRenameField :: Show RenameField where show = genericShow
+instance decodeRenameField :: Decode RenameField where decode = genericDecode opts
+instance encodeRenameField :: Encode RenameField where encode = genericEncode opts
+
+derive instance genericDeleteField :: Generic DeleteField _
+instance showDeleteField :: Show DeleteField where show = genericShow
+instance decodeDeleteField :: Decode DeleteField where decode = genericDecode opts
+instance encodeDeleteField :: Encode DeleteField where encode = genericEncode opts
 
 derive instance genericUpdate :: Generic Update _
 instance showUpdate :: Show Update where show = genericShow

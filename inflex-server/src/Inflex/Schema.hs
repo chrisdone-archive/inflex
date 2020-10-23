@@ -76,10 +76,25 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
-data Update =
-  AddFieldUpdate NewField
+data Update
+  = AddFieldUpdate NewField
+  | RenameFieldUpdate RenameField
+  | DeleteFieldUpdate DeleteField
 
 data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
+data RenameField = RenameField
+  { path :: DataPath
+  , old :: Text
+  , new :: Text
+  , uuid :: UUID
+  }
+
+data DeleteField = DeleteField
   { path :: DataPath
   , name :: Text
   , uuid :: UUID
@@ -324,6 +339,16 @@ deriving instance Generic NewField
 deriving instance Show NewField
 instance ToJSON NewField
 instance FromJSON NewField
+
+deriving instance Generic RenameField
+deriving instance Show RenameField
+instance ToJSON RenameField
+instance FromJSON RenameField
+
+deriving instance Generic DeleteField
+deriving instance Show DeleteField
+instance ToJSON DeleteField
+instance FromJSON DeleteField
 
 deriving instance Generic DataPath
 deriving instance Show DataPath

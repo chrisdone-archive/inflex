@@ -124,6 +124,16 @@ instance showNewField :: Show NewField where show = genericShow
 instance decodeNewField :: Decode NewField where decode = genericDecode opts
 instance encodeNewField :: Encode NewField where encode = genericEncode opts
 
+derive instance genericRenameField :: Generic RenameField _
+instance showRenameField :: Show RenameField where show = genericShow
+instance decodeRenameField :: Decode RenameField where decode = genericDecode opts
+instance encodeRenameField :: Encode RenameField where encode = genericEncode opts
+
+derive instance genericDeleteField :: Generic DeleteField _
+instance showDeleteField :: Show DeleteField where show = genericShow
+instance decodeDeleteField :: Decode DeleteField where decode = genericDecode opts
+instance encodeDeleteField :: Encode DeleteField where encode = genericEncode opts
+
 derive instance genericUpdate :: Generic Update _
 instance showUpdate :: Show Update where show = genericShow
 instance decodeUpdate :: Decode Update where decode = genericDecode opts

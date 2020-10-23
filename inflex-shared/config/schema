@@ -50,10 +50,25 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
-data Update =
-  AddFieldUpdate NewField
+data Update
+  = AddFieldUpdate NewField
+  | RenameFieldUpdate RenameField
+  | DeleteFieldUpdate DeleteField
 
 data NewField = NewField
+  { path :: DataPath
+  , name :: Text
+  , uuid :: UUID
+  }
+
+data RenameField = RenameField
+  { path :: DataPath
+  , old :: Text
+  , new :: Text
+  , uuid :: UUID
+  }
+
+data DeleteField = DeleteField
   { path :: DataPath
   , name :: Text
   , uuid :: UUID

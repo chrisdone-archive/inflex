@@ -173,6 +173,16 @@ deriving instance Show NewField
 instance ToJSON NewField
 instance FromJSON NewField
 
+deriving instance Generic RenameField
+deriving instance Show RenameField
+instance ToJSON RenameField
+instance FromJSON RenameField
+
+deriving instance Generic DeleteField
+deriving instance Show DeleteField
+instance ToJSON DeleteField
+instance FromJSON DeleteField
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath
