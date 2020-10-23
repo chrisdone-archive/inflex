@@ -3,40 +3,21 @@
 module Inflex.Rpc where
 
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
-import Data.UUID (UUID)
-import Foreign.Generic (class Decode, class Encode, SumEncoding, defaultOptions, genericDecode, genericEncode)
+import Foreign.Generic (genericDecodeJSON, genericEncodeJSON)
 import Inflex.Json (opts)
-import Prelude (Unit, bind, const, discard, map, mempty, pure, ($), (<>), show, unit, Unit, bind, const, discard, map, mempty, pure, show, unit, ($), (<>), class Show)
-
+import Prelude (class Show, bind, discard, pure, show, (<>))
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.Except (runExcept)
-import Control.Monad.State (class MonadState)
 import Data.Argonaut.Core (stringify) as J
 import Data.Argonaut.Parser (jsonParser) as J
 import Data.Either (Either(..))
-import Data.Generic.Rep
 import Halogen as H
-
-import Data.Map (Map)
-import Data.Map as M
 import Data.Maybe (Maybe(..))
-import Data.Maybe (Maybe)
-
-import Data.Symbol (SProxy(..))
-
-import Data.Tuple (Tuple(..))
-import Data.UUID (UUID, genUUIDV4, uuidToString)
-import Effect (Effect)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (class MonadEffect)
-import Effect.Class.Console (log, error)
-import Foreign.Generic (genericDecodeJSON, genericEncodeJSON, class GenericDecode, class GenericEncode)
+import Effect.Class.Console (error)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
-
 import Inflex.Schema
 
 rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
@@ -49,6 +30,9 @@ rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String 
 rpcUpdateDocument = rpcCall "UpdateDocument"
 
 
+
+--------------------------------------------------------------------------------
+-- API call
 
 -- TODO: Fix the double encoding and double decoding here.
 rpcCall
