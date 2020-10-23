@@ -2,23 +2,11 @@
 
 module Inflex.Schema where
 
-import Affjax as AX
-import Affjax.RequestBody as RequestBody
-import Affjax.ResponseFormat as ResponseFormat
-import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (stringify) as J
-import Data.Argonaut.Parser (jsonParser) as J
-import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(..))
 import Data.UUID (UUID)
-import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (log, error)
 import Foreign (F, Foreign, ForeignError(..), fail)
-import Foreign.Generic (class Decode, class Encode, genericDecode, genericDecodeJSON, genericEncode, genericEncodeJSON, decode, encode)
-import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
-import Halogen as H
+import Foreign.Generic (class Decode, class Encode, decode, encode, genericDecode, genericEncode)
 import Inflex.Json (opts)
 import Prelude
 
@@ -28,6 +16,9 @@ import Prelude
 type Vector a = Array a
 
 type Text = String
+
+--------------------------------------------------------------------------------
+-- Custom types
 
 {-
 

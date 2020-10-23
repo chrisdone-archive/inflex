@@ -9,9 +9,9 @@ module Data.UUID
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Effect (Effect)
-import Foreign.Generic (class Decode, class Encode, SumEncoding, defaultOptions, genericDecode, genericEncode)
-import Inflex.Json
-import Prelude
+import Foreign.Generic (class Decode, class Encode, genericDecode, genericEncode)
+import Inflex.Json (opts)
+import Prelude (class Eq, class Ord, class Show, map)
 
 foreign import uuidv4 :: Effect String
 
