@@ -20,6 +20,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
+import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
 import Prelude (Unit, bind, discard, map, pure, show, unit, (<<<), (<>), (==))
@@ -84,7 +85,7 @@ data EditorAndCode = EditorAndCode
   , path :: Shared.DataPath -> Shared.DataPath
   }
 
-type Slots i = (editor :: H.Slot i Output String)
+type Slots i = (editor :: H.Slot i Output String, fieldname :: H.Slot i String String)
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -271,7 +272,21 @@ renderEditor path editor =
              (\i {key, value: editor'} ->
                 HH.tr
                   [HP.class_ (HH.ClassName "record-field")]
-                  [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [HH.text key]
+                  [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [
+
+                      -- HH.text key
+
+                      HH.slot
+                       (SProxy :: SProxy "fieldname")
+
+                       (show i)
+                       Name.component
+                       key
+                       (\name' ->
+                          pure
+                            (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.RenameFieldUpdate (Shared.RenameField {from: key, to: name'})})))
+
+                                                                         ]
                   , HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
                       (SProxy :: SProxy "editor")
                       (show i)
@@ -294,16 +309,28 @@ renderEditor path editor =
       ]
     TableE _originalSource columns rows ->
       [
-              -- HH.button [
-              --          HE.onClick
-              --       (\e -> pure (PreventDefault (toEvent e)
-              --                     (AddField (path (Shared.DataElemOf 0 Shared.DataHere)) "boo")))
-              --          ] [HH.text "Add column"] ,
+              HH.button [
+                       HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e)
+                                  (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})}))))
+                       ] [HH.text "Add column"] ,
 
         HH.table
         [HP.class_ (HH.ClassName "table")]
         [HH.thead [HP.class_ (HH.ClassName "table-header")]
-                  (map (\text -> HH.th [HP.class_ (HH.ClassName "table-column")] [HH.text text]) columns)
+                  (mapWithIndex (\i text -> HH.th [HP.class_ (HH.ClassName "table-column")] [-- HH.text text
+
+                              HH.slot
+                               (SProxy :: SProxy "fieldname")
+
+                               (show i)
+                               Name.component
+                               text
+                               (\name' ->
+                                  pure
+                                    (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.RenameFieldUpdate (Shared.RenameField {from: text, to: name'})})))
+
+                                                                                 ]) columns)
         ,HH.tbody
            [HP.class_ (HH.ClassName "table-body")]
            (mapWithIndex
