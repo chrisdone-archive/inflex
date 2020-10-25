@@ -274,9 +274,16 @@ renderEditor path editor =
                   [HP.class_ (HH.ClassName "record-field")]
                   [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [
 
+                                                     HH.button [
+                                   HE.onClick
+                                (\e -> pure (PreventDefault (toEvent e)
+                                              (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: key})}))))
+                                   ] [HH.text "-"]
+
+
                       -- HH.text key
 
-                      HH.slot
+                   , HH.slot
                        (SProxy :: SProxy "fieldname")
 
                        (show i)
@@ -330,7 +337,15 @@ renderEditor path editor =
                                   pure
                                     (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.RenameFieldUpdate (Shared.RenameField {from: text, to: name'})})))
 
-                                                                                 ]) columns)
+                                                                               ,
+
+                               HH.button [
+                                   HE.onClick
+                                (\e -> pure (PreventDefault (toEvent e)
+                                              (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: text})}))))
+                                   ] [HH.text "-"]
+
+                               ]) columns)
         ,HH.tbody
            [HP.class_ (HH.ClassName "table-body")]
            (mapWithIndex
