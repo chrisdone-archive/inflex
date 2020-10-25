@@ -183,6 +183,21 @@ deriving instance Show DeleteField
 instance ToJSON DeleteField
 instance FromJSON DeleteField
 
+deriving instance Generic UpdateCell
+deriving instance Show UpdateCell
+instance ToJSON UpdateCell
+instance FromJSON UpdateCell
+
+deriving instance Generic UpdatePath
+deriving instance Show UpdatePath
+instance ToJSON UpdatePath
+instance FromJSON UpdatePath
+
+deriving instance Generic PathUpdate
+deriving instance Show PathUpdate
+instance ToJSON PathUpdate
+instance FromJSON PathUpdate
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath

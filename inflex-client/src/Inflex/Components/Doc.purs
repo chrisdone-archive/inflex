@@ -44,7 +44,7 @@ data Command
   | UpdateCell UUID {name :: String, code :: String}
   | NewCell
   | DeleteCell UUID
-  | AddField UUID Shared.DataPath String
+  | UpdatePath UUID Shared.UpdatePath
   | DragStart UUID DE.DragEvent
   | OnDragOver DE.DragEvent
   | OnDrop DE.DragEvent
@@ -116,7 +116,7 @@ render state =
                         Cell.CellUpdate update' -> UpdateCell uuid update'
                         Cell.RemoveCell -> DeleteCell uuid
                         Cell.CellDragStart dragEvent -> DragStart uuid dragEvent
-                        Cell.CellAddField path string -> AddField uuid path string
+                        Cell.UpdatePath update' -> UpdatePath uuid update'
                         )))
            (state . cells))
     ]
@@ -212,8 +212,10 @@ eval =
            (filter
               (\(OutputCell {uuid: uuid'}) -> uuid' /= uuid)
               (state . cells)))
-    AddField uuid path name -> do
-      update (Shared.AddFieldUpdate (Shared.NewField {path, name, uuid}))
+    UpdatePath uuid update' ->
+      update (Shared.CellUpdate
+                (Shared.UpdateCell
+                  {uuid, update: update'}))
 
 --------------------------------------------------------------------------------
 -- API calls

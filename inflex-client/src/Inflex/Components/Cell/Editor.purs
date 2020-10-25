@@ -37,7 +37,7 @@ type Input = EditorAndCode
 
 data Output
   = NewCode String
-  | AddFieldTo Shared.DataPath String
+  | UpdatePath Shared.UpdatePath
 
 data State = State
   { display :: Display
@@ -56,7 +56,7 @@ data Command
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef Element)
-  | AddField Shared.DataPath String
+  | TriggerUpdatePath Shared.UpdatePath
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -113,7 +113,7 @@ component =
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval =
   case _ of
-    AddField path name -> H.raise (AddFieldTo path name)
+    TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged elemRef ->
@@ -251,7 +251,7 @@ renderEditor path editor =
                          })
                       (\output ->
                          case output of
-                           AddFieldTo path' f -> Just (AddField path' f)
+                           UpdatePath update -> Just (TriggerUpdatePath update)
                            NewCode rhs -> Just
                             (FinishEditing
                               (editorCode
@@ -262,11 +262,11 @@ renderEditor path editor =
     RecordE _originalSource fields ->
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
-          (-- (if false then [] else
-           --    [HH.button [
-           --             HE.onClick
-           --          (\e -> pure (PreventDefault (toEvent e) (AddField (path Shared.DataHere) "foo")))
-           --             ] [HH.text "Add field"]]) <>
+          ((if false then [] else
+              [HH.button [
+                       HE.onClick
+                    (\e -> pure (PreventDefault (toEvent e) ((TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})})))))
+                       ] [HH.text "Add field"]]) <>
            mapWithIndex
              (\i {key, value: editor'} ->
                 HH.tr
@@ -283,7 +283,7 @@ renderEditor path editor =
                          })
                       (\output ->
                        case output of
-                         AddFieldTo path' f -> Just (AddField path' f)
+                         UpdatePath update -> Just (TriggerUpdatePath update)
                          NewCode rhs ->
                             Just
                            (FinishEditing
@@ -323,7 +323,7 @@ renderEditor path editor =
                               })
                            (\output ->
                              case output of
-                              AddFieldTo path' f -> Just (AddField path' f)
+                              UpdatePath update -> Just (TriggerUpdatePath update)
                               NewCode rhs ->
                                Just
                                 (FinishEditing

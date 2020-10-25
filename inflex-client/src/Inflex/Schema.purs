@@ -74,28 +74,28 @@ data UpdateDocument = UpdateDocument
 -- Update commands
 
 data Update
-  = AddFieldUpdate NewField
+  = CellUpdate UpdateCell
+
+data UpdateCell = UpdateCell {
+  uuid :: UUID,
+  update :: UpdatePath
+ }
+
+data UpdatePath = UpdatePath
+ { path :: DataPath
+ , update :: PathUpdate
+ }
+
+data PathUpdate
+  = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
 
-data NewField = NewField
-  { path :: DataPath
-  , name :: Text
-  , uuid :: UUID
-  }
+data NewField = NewField { name :: Text }
 
-data RenameField = RenameField
-  { path :: DataPath
-  , old :: Text
-  , new :: Text
-  , uuid :: UUID
-  }
+data RenameField = RenameField { from :: Text, to :: Text }
 
-data DeleteField = DeleteField
-  { path :: DataPath
-  , name :: Text
-  , uuid :: UUID
-  }
+data DeleteField = DeleteField { name :: Text }
 
 data DataPath
   = DataHere
@@ -311,6 +311,21 @@ derive instance genericUpdate :: Generic Update _
 instance showUpdate :: Show Update where show = genericShow
 instance decodeUpdate :: Decode Update where decode = genericDecode opts
 instance encodeUpdate :: Encode Update where encode = genericEncode opts
+
+derive instance genericUpdateCell :: Generic UpdateCell _
+instance showUpdateCell :: Show UpdateCell where show = genericShow
+instance decodeUpdateCell :: Decode UpdateCell where decode = genericDecode opts
+instance encodeUpdateCell :: Encode UpdateCell where encode = genericEncode opts
+
+derive instance genericUpdatePath :: Generic UpdatePath _
+instance showUpdatePath :: Show UpdatePath where show = genericShow
+instance decodeUpdatePath :: Decode UpdatePath where decode = genericDecode opts
+instance encodeUpdatePath :: Encode UpdatePath where encode = genericEncode opts
+
+derive instance genericPathUpdate :: Generic PathUpdate _
+instance showPathUpdate :: Show PathUpdate where show = genericShow
+instance decodePathUpdate :: Decode PathUpdate where decode = genericDecode opts
+instance encodePathUpdate :: Encode PathUpdate where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

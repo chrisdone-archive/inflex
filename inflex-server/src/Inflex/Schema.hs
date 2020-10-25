@@ -78,28 +78,28 @@ data UpdateDocument = UpdateDocument
 -- Update commands
 
 data Update
-  = AddFieldUpdate NewField
+  = CellUpdate UpdateCell
+
+data UpdateCell = UpdateCell {
+  uuid :: UUID,
+  update :: UpdatePath
+ }
+
+data UpdatePath = UpdatePath
+ { path :: DataPath
+ , update :: PathUpdate
+ }
+
+data PathUpdate
+  = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
 
-data NewField = NewField
-  { path :: DataPath
-  , name :: Text
-  , uuid :: UUID
-  }
+data NewField = NewField { name :: Text }
 
-data RenameField = RenameField
-  { path :: DataPath
-  , old :: Text
-  , new :: Text
-  , uuid :: UUID
-  }
+data RenameField = RenameField { from :: Text, to :: Text }
 
-data DeleteField = DeleteField
-  { path :: DataPath
-  , name :: Text
-  , uuid :: UUID
-  }
+data DeleteField = DeleteField { name :: Text }
 
 data DataPath
   = DataHere
@@ -364,6 +364,21 @@ deriving instance Generic DeleteField
 deriving instance Show DeleteField
 instance ToJSON DeleteField
 instance FromJSON DeleteField
+
+deriving instance Generic UpdateCell
+deriving instance Show UpdateCell
+instance ToJSON UpdateCell
+instance FromJSON UpdateCell
+
+deriving instance Generic UpdatePath
+deriving instance Show UpdatePath
+instance ToJSON UpdatePath
+instance FromJSON UpdatePath
+
+deriving instance Generic PathUpdate
+deriving instance Show PathUpdate
+instance ToJSON PathUpdate
+instance FromJSON PathUpdate
 
 deriving instance Generic DataPath
 deriving instance Show DataPath

@@ -17,11 +17,21 @@ import           RIO
 applyUpdateToDocument :: Shared.Update -> Shared.InputDocument1 -> Shared.InputDocument1
 applyUpdateToDocument =
   \case
-    Shared.AddFieldUpdate newField -> addNewFieldToDocument newField
+    Shared.CellUpdate Shared.UpdateCell { uuid
+                                        , update = Shared.UpdatePath { path
+                                                                     , update = Shared.NewFieldUpdate newField
+                                                                     }
+                                        } ->
+      addNewFieldToDocument uuid path newField
     _ -> error "TODO"
 
-addNewFieldToDocument :: Shared.NewField -> Shared.InputDocument1 -> Shared.InputDocument1
-addNewFieldToDocument Shared.NewField {path, name = name0, uuid = uuid0} Shared.InputDocument1 {cells} =
+addNewFieldToDocument ::
+     Shared.UUID
+  -> Shared.DataPath
+  -> Shared.NewField
+  -> Shared.InputDocument1
+  -> Shared.InputDocument1
+addNewFieldToDocument uuid0 path Shared.NewField {name = name0} Shared.InputDocument1 {cells} =
   Shared.InputDocument1 {cells = fmap apply cells}
   where
     apply same@Shared.InputCell1 {..} =
