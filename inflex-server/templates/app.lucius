@@ -300,3 +300,10 @@ table.record {
 .clickable-to-edit:hover {
   background: white;
 }
+
+.wip-button {
+display: none;
+}
+body.wip {
+  .wip-button{ display: inline-block; }
+}

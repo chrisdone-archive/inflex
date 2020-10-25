@@ -264,7 +264,7 @@ renderEditor path editor =
       [ HH.table
           [HP.class_ (HH.ClassName "record")]
           ((if false then [] else
-              [HH.button [
+              [HH.button [HP.class_ (HH.ClassName "wip-button"),
                        HE.onClick
                     (\e -> pure (PreventDefault (toEvent e) ((TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})})))))
                        ] [HH.text "Add field"]]) <>
@@ -274,7 +274,7 @@ renderEditor path editor =
                   [HP.class_ (HH.ClassName "record-field")]
                   [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [
 
-                                                     HH.button [
+                                                     HH.button [HP.class_ (HH.ClassName "wip-button"),
                                    HE.onClick
                                 (\e -> pure (PreventDefault (toEvent e)
                                               (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: key})}))))
@@ -316,7 +316,7 @@ renderEditor path editor =
       ]
     TableE _originalSource columns rows ->
       [
-              HH.button [
+              HH.button [HP.class_ (HH.ClassName "wip-button"),
                        HE.onClick
                     (\e -> pure (PreventDefault (toEvent e)
                                   (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})}))))
@@ -339,7 +339,7 @@ renderEditor path editor =
 
                                                                                ,
 
-                               HH.button [
+                               HH.button [HP.class_ (HH.ClassName "wip-button"),
                                    HE.onClick
                                 (\e -> pure (PreventDefault (toEvent e)
                                               (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: text})}))))
