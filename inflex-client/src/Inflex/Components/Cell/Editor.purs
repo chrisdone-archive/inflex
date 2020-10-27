@@ -7,12 +7,13 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
-import Data.Array
+import Data.Array (mapWithIndex)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -23,7 +24,9 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (Unit, bind, discard, map, pure, show, unit, (<<<), (<>), (==))
+import Prelude (class Show, Unit, bind, discard, map, pure, show, unit, (<<<), (<>), (==))
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -51,13 +54,16 @@ data Command
   = SetEditor EditorAndCode
   | StartEditor
   | FinishEditing String
-  | PreventDefault Event
+  | PreventDefault Event'
                    Command
   | Autoresize
   | NoOp
   | SetInput String
-  | InputElementChanged (ElemRef Element)
+  | InputElementChanged (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
+
+derive instance genericCommand :: Generic Command _
+instance showCommand :: Show Command where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -75,6 +81,9 @@ data Editor
                   }
            )
 
+derive instance genericEditor :: Generic Editor _
+instance showEditor :: Show Editor where show x = genericShow x
+
 data Display
   = DisplayEditor
   | DisplayCode
@@ -84,6 +93,13 @@ data EditorAndCode = EditorAndCode
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
   }
+
+instance showEditorAndCode :: Show EditorAndCode where show _ = "EditorAndCode{}"
+newtype Event' = Event' Event
+instance showEvent :: Show Event' where show _ = "Event"
+
+newtype ElemRef' a = ElemRef' (ElemRef a)
+instance showElemRef :: Show (ElemRef' a) where show _ = "ElemRef"
 
 type Slots i = (editor :: H.Slot i Output String, fieldname :: H.Slot i String String)
 
@@ -105,11 +121,16 @@ component =
     { initialState: (\(EditorAndCode{editor, code, path}) ->
                        State {display: DisplayEditor, editor, code, path })
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
+    , eval: H.mkEval H.defaultEval { handleAction = eval', receive = pure <<< SetEditor }
     }
 
 --------------------------------------------------------------------------------
 -- Eval
+
+eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
+eval' cmd = do
+  log (show cmd)
+  eval cmd
 
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval =
@@ -117,9 +138,9 @@ eval =
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
-    InputElementChanged elemRef ->
+    InputElementChanged (ElemRef' elemRef) ->
       case elemRef of
-        Created element ->
+        Created (element) ->
           case fromElement element of
             Just htmlelement -> H.liftEffect (focus htmlelement)
             Nothing -> pure unit
@@ -139,7 +160,7 @@ eval =
     Autoresize -> do
       ref <- H.getHTMLElementRef editorRef
       H.liftEffect (for_ ref (\el -> pure unit))
-    PreventDefault e c -> do
+    PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
             stopPropagation e)
@@ -162,14 +183,14 @@ render (State {display, code, editor, path}) =
       [ HH.input
           [ HP.value (if code == "_" then "" else code)
           , HP.class_ (HH.ClassName "form-control")
-          , manage InputElementChanged
+          , manage (InputElementChanged <<< ElemRef')
           , HE.onKeyUp
               (\k ->
                  case K.code k of
                    "Enter" -> Just (FinishEditing code)
                    _code -> Just Autoresize)
           , HE.onValueChange (\i -> pure (SetInput i))
-          , HE.onClick (\e -> pure (PreventDefault (toEvent e) NoOp))
+          , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
           ]
       ]
     wrapper inner =
@@ -181,7 +202,7 @@ render (State {display, code, editor, path}) =
               HH.div
                 [ HP.class_ (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                 , HE.onClick
-                    (\e -> pure (PreventDefault (toEvent e) StartEditor))
+                    (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
                 ]
                 inner
             _ ->
@@ -190,7 +211,7 @@ render (State {display, code, editor, path}) =
                 ([ HH.div
                      [ HP.class_ (HH.ClassName "ellipsis-button")
                      , HE.onClick
-                         (\e -> pure (PreventDefault (toEvent e) StartEditor))
+                         (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
                      ]
                      []
                  ] <>
@@ -266,7 +287,7 @@ renderEditor path editor =
           ((if false then [] else
               [HH.button [HP.class_ (HH.ClassName "wip-button"),
                        HE.onClick
-                    (\e -> pure (PreventDefault (toEvent e) ((TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})})))))
+                    (\e -> pure (PreventDefault (Event' (toEvent e)) ((TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})})))))
                        ] [HH.text "Add field"]]) <>
            mapWithIndex
              (\i {key, value: editor'} ->
@@ -276,7 +297,7 @@ renderEditor path editor =
 
                                                      HH.button [HP.class_ (HH.ClassName "wip-button"),
                                    HE.onClick
-                                (\e -> pure (PreventDefault (toEvent e)
+                                (\e -> pure (PreventDefault (Event'(toEvent e))
                                               (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: key})}))))
                                    ] [HH.text "-"]
 
@@ -318,7 +339,7 @@ renderEditor path editor =
       [
               HH.button [HP.class_ (HH.ClassName "wip-button"),
                        HE.onClick
-                    (\e -> pure (PreventDefault (toEvent e)
+                    (\e -> pure (PreventDefault (Event'(toEvent e))
                                   (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})}))))
                        ] [HH.text "Add column"] ,
 
@@ -341,7 +362,7 @@ renderEditor path editor =
 
                                HH.button [HP.class_ (HH.ClassName "wip-button"),
                                    HE.onClick
-                                (\e -> pure (PreventDefault (toEvent e)
+                                (\e -> pure (PreventDefault (Event'(toEvent e))
                                               (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: text})}))))
                                    ] [HH.text "-"]
 

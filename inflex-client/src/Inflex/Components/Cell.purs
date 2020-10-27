@@ -8,6 +8,9 @@ module Inflex.Components.Cell
   , Output(..)
   ) where
 
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Effect.Class.Console (log)
 import Data.Either (Either(..), either)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
@@ -21,7 +24,7 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema as Shared
-import Prelude (Unit, bind, discard, identity, pure, show, unit, (-), (<<<), (<>), (>>=), map)
+import Prelude
 import Web.DOM.Node as Node
 import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
@@ -53,9 +56,20 @@ data Command
   = SetCell Cell
   | CodeUpdate Cell
   | DeleteCell
-  | DragStarted DE.DragEvent
-  | MouseDown ME.MouseEvent
+  | DragStarted DragEvent'
+  | MouseDown MouseEvent'
   | TriggerUpdatePath Shared.UpdatePath
+
+newtype DragEvent' = DragEvent' DE.DragEvent
+derive instance genericDragEvent :: Generic DragEvent' _
+instance showDragEvent :: Show DragEvent' where show _ = "DragEvent"
+
+newtype MouseEvent' = MouseEvent' ME.MouseEvent
+derive instance genericMouseEvent :: Generic MouseEvent' _
+instance showMouseEvent :: Show MouseEvent' where show _ = "MouseEvent"
+
+derive instance genericCommand :: Generic Command _
+instance showCommand :: Show Command where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -66,7 +80,8 @@ data Cell = Cell
   , result :: Either Shared.CellError Editor.Editor
   }
 
-
+derive instance genericCell :: Generic Cell _
+instance showCell :: Show Cell where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Component
@@ -86,7 +101,7 @@ component =
     , eval:
         H.mkEval
           H.defaultEval
-            { handleAction = eval
+            { handleAction = eval'
             , receive = pure <<< SetCell <<< outputCellToCell
             , handleQuery = query
             }
@@ -155,6 +170,11 @@ query =
 foreign import clearDragImage :: DE.DragEvent -> Effect Unit
 foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 
+eval' :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
+eval' cmd = do
+  log (show cmd)
+  eval cmd
+
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
@@ -164,12 +184,12 @@ eval =
     SetCell cell -> do
       H.modify_ (\(State s) -> State (s {cell = cell}))
     DeleteCell -> H.raise RemoveCell
-    DragStarted dragEvent -> do
+    DragStarted (DragEvent' dragEvent) -> do
       H.liftEffect
         (do setEmptyData dragEvent
             clearDragImage dragEvent)
       H.raise (CellDragStart dragEvent)
-    MouseDown mouseEvent -> do
+    MouseDown (MouseEvent' mouseEvent) -> do
       case currentTarget (ME.toEvent mouseEvent) >>= HTML.fromEventTarget of
         Nothing -> pure unit
         Just el -> do
@@ -204,9 +224,10 @@ render :: forall keys q m. MonadEffect m =>
 render (State {cell: Cell {name, code, result}, pos}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
-    , HP.draggable true
-    , HE.onDragStart (Just <<< DragStarted)
-    , HE.onMouseDown (Just <<< MouseDown)
+    -- Disabling dragging for now:
+    -- , HP.draggable true
+    -- , HE.onDragStart (Just <<< DragStarted <<< DragEvent')
+    -- , HE.onMouseDown (Just <<< MouseDown <<< MouseEvent')
     , HP.prop
         (H.PropName "style")
         (case pos of
