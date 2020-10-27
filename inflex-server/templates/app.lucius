@@ -163,7 +163,7 @@ body {
     border-bottom-right-radius: 3px;
     border-bottom-left-radius: 3px;
     color: black;
-    font-family: ubuntu, monospace;
+    font-family: dejavu mono, monospace;
     border: 2px solid #fff;
   }
   .cell-body:hover {
@@ -176,7 +176,7 @@ body {
     height: 1.5em;
     border-bottom-right-radius: 3px;
     border-bottom-left-radius: 3px;
-    font-family: ubuntu, monospace;
+    font-family: dejavu mono, monospace !important;
   }
   .cell-body input:focus, .cell-header input:focus {
     border: 2px solid #6a8daa;
