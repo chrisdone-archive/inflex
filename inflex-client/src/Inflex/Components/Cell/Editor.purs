@@ -188,7 +188,10 @@ render (State {display, code, editor, path}) =
               (\k ->
                  case K.code k of
                    "Enter" -> Just (FinishEditing code)
-                   _code -> Just Autoresize)
+                   _ -> Nothing
+                   -- Disabled for now, as we're not implementing it.
+                   -- _code -> Just Autoresize
+              )
           , HE.onValueChange (\i -> pure (SetInput i))
           , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
           ]
