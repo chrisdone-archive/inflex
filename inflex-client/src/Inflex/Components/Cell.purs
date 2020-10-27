@@ -101,7 +101,7 @@ component =
     , eval:
         H.mkEval
           H.defaultEval
-            { handleAction = eval'
+            { handleAction = eval
             , receive = pure <<< SetCell <<< outputCellToCell
             , handleQuery = query
             }
@@ -170,10 +170,10 @@ query =
 foreign import clearDragImage :: DE.DragEvent -> Effect Unit
 foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 
-eval' :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
-eval' cmd = do
-  log (show cmd)
-  eval cmd
+-- eval' :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
+-- eval' cmd = do
+--   log (show cmd)
+--   eval cmd
 
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =

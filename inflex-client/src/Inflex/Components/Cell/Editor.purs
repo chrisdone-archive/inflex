@@ -121,16 +121,16 @@ component =
     { initialState: (\(EditorAndCode{editor, code, path}) ->
                        State {display: DisplayEditor, editor, code, path })
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = eval', receive = pure <<< SetEditor }
+    , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
     }
 
 --------------------------------------------------------------------------------
 -- Eval
 
-eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
-eval' cmd = do
-  log (show cmd)
-  eval cmd
+-- eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
+-- eval' cmd = do
+--   log (show cmd)
+--   eval cmd
 
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval =
