@@ -9,9 +9,15 @@ module Inflex.Components.Cell.Editor
 
 import Data.Array (mapWithIndex)
 import Data.Foldable (for_)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe
 import Data.Maybe (Maybe(..))
+import Data.Nullable
+import Data.String
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
+import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
@@ -24,13 +30,12 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (class Show, Unit, bind, discard, map, pure, show, unit, (<<<), (<>), (==))
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
-import Web.DOM.Element (Element)
-import Web.Event.Event (preventDefault, stopPropagation)
+import Prelude
+import Web.DOM.Element (Element, fromEventTarget)
+import Web.DOM.Element (Element, setAttribute)
+import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.HTMLElement (focus, fromElement)
+import Web.HTML.HTMLElement (focus, fromElement, toElement, HTMLElement)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
@@ -56,14 +61,14 @@ data Command
   | FinishEditing String
   | PreventDefault Event'
                    Command
-  | Autoresize
+  | Autoresize Event
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
 
-derive instance genericCommand :: Generic Command _
-instance showCommand :: Show Command where show x = genericShow x
+-- derive instance genericCommand :: Generic Command _
+-- instance showCommand :: Show Command where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -142,7 +147,7 @@ eval =
       case elemRef of
         Created (element) ->
           case fromElement element of
-            Just htmlelement -> H.liftEffect (focus htmlelement)
+            Just htmlelement -> H.liftEffect (autosize htmlelement)
             Nothing -> pure unit
         Removed _ -> pure unit
     StartEditor -> do
@@ -151,21 +156,39 @@ eval =
       State {display, editor} <- H.get
       _result <-
         H.raise
-          (NewCode (if trim code == ""
-             then "_"
-             else code))
+          (NewCode
+             (if trim code == ""
+                then "_"
+                else code))
       H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
     SetEditor (EditorAndCode {editor, code, path}) ->
       H.put (State {path, editor, code, display: DisplayEditor})
-    Autoresize -> do
-      ref <- H.getHTMLElementRef editorRef
-      H.liftEffect (for_ ref (\el -> pure unit))
+    Autoresize ev -> do
+      case currentTarget ev of
+        Nothing -> pure unit
+        Just x ->
+          case fromEventTarget x of
+            Just htmlelement -> do
+              mvalue <- H.liftEffect (getValue htmlelement)
+              case toMaybe mvalue of
+                Nothing -> pure unit
+                Just v ->
+                  H.liftEffect
+                    (setStyle
+                       ("width:" <> show (max 3 (length v + 1)) <>
+                        "ch")
+                       htmlelement)
+            Nothing -> pure unit
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
             stopPropagation e)
       eval c
     NoOp -> pure unit
+
+foreign import getValue :: Element -> Effect (Nullable String)
+foreign import setStyle :: String -> Element -> Effect Unit
+foreign import autosize :: HTMLElement -> Effect Unit
 
 --------------------------------------------------------------------------------
 -- Render
@@ -184,13 +207,13 @@ render (State {display, code, editor, path}) =
           [ HP.value (if code == "_" then "" else code)
           , HP.class_ (HH.ClassName "form-control")
           , manage (InputElementChanged <<< ElemRef')
+          -- , HP.
           , HE.onKeyUp
               (\k ->
                  case K.code k of
                    "Enter" -> Just (FinishEditing code)
                    _ -> Nothing
-                   -- Disabled for now, as we're not implementing it.
-                   -- _code -> Just Autoresize
+                   -- _code -> Just (Autoresize (K.toEvent k))
               )
           , HE.onValueChange (\i -> pure (SetInput i))
           , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))

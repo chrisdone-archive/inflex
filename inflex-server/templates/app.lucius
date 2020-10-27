@@ -176,6 +176,7 @@ body {
     height: 1.5em;
     border-bottom-right-radius: 3px;
     border-bottom-left-radius: 3px;
+    font-family: ubuntu, monospace;
   }
   .cell-body input:focus, .cell-header input:focus {
     border: 2px solid #6a8daa;
