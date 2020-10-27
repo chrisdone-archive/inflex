@@ -224,7 +224,7 @@ render :: forall keys q m. MonadEffect m =>
 render (State {cell: Cell {name, code, result}, pos}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
-    -- Disabling dragging for now:
+    -- Disabling dragging for now
     -- , HP.draggable true
     -- , HE.onDragStart (Just <<< DragStarted <<< DragEvent')
     -- , HE.onMouseDown (Just <<< MouseDown <<< MouseEvent')
