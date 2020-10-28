@@ -1,0 +1,241 @@
+<html lang="en">
+  <head>
+    <link href="#" rel="shortcut icon">
+    <title>Inflex</title>
+    <meta content="utf-8" name="charset">
+    <meta content="width=device-width, initial-scale=1,
+                   shrink-to-fit=no" name="viewport">
+    <link href="http://localhost:3031/favicon.png" type="image/png"
+          rel="icon">
+    <!-- <link href="home.css" type="text/css" -->
+    <!--       rel="stylesheet"> -->
+<style>
+  form { margin-block-end: 0 }
+body {
+  font-family:
+  BlinkMacSystemFont,
+
+  "Segoe UI",
+
+  "Roboto",
+
+  "Helvetica Neue", Arial, sans-serif,
+
+  "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+html,body,.wrapper {
+  height: 100%;
+}
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  background: #01203a;
+}
+
+
+/* Wrappers */
+
+.margin-wrapper {
+  display: flex;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* Navbar */
+
+.navbar {
+  background: #01203a;
+  height: 120px;
+  width: 100%;
+}
+.navbar > .margin-wrapper {
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.navbar .logo {
+  display: block;
+  background: url(http://localhost:3031/logo.svg) no-repeat center;
+  width: 100px;
+  height: 100%;
+}
+.navbar .rhs-nav {
+  margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  margin-right: 5px;
+}
+.navbar .rhs-nav .logout,.navbar .rhs-nav .login {
+  height: 100%;
+  font-size: 20px;
+}
+.navbar .rhs-nav .full-button {
+  border: 0;
+  background: #01203a;
+  color: #fff;
+}
+.navbar .rhs-nav .full-button:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Hero */
+
+.hero {
+  /* border-top: 1px solid red; */
+  background: #01203a;
+  width: 100%;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+.hero > .margin-wrapper {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.hero .tagline {
+  flex: 1;
+  color: #fff;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+.hero .hero-pic {
+  flex: 1;
+  height: 300px;
+  border-radius: 3px;
+  box-shadow: 0px 0px 5px 5px #0001;
+  color: #fff;
+  background: #0c204c;
+  padding: 10px;
+}
+.hero .tagline h1 {
+  font-size: 80px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.hero .tagline h2 {
+  margin-top: 30px;
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+.button {
+  color: #fff;
+  background: #7121ea;
+  padding: 10px;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: 0px 0px 5px 5px #0001;
+  cursor: pointer;
+}
+
+.button {
+  background: #7121ea;
+}
+.button:hover {
+  background: #4520a5;
+  transition: 0.3s;
+}
+
+.tagline-action {
+  margin-top: 30px;
+  font-size: 17px;
+}
+
+.beta-badge {
+  color: #00e4a2;
+  margin-left: 5px;
+}
+
+.footer {
+  color: #fff;
+  opacity: 0.8;
+}
+.footer {
+    margin-top: 50px;
+}
+.footer p { margin-top: 0; }
+.footer > .margin-wrapper {
+  flex-direction: column;
+  text-align: center;
+}
+
+@media only screen and (max-width: 1200px) {
+  .margin-wrapper {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  .hero {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  .hero .hero-pic {
+    flex: auto;
+  }
+  .hero h1 {
+    margin-bottom: 0;
+  }
+  .hero .tagline h2 {
+    margin-top: 20px;
+  }
+  .hero > .margin-wrapper {
+    width: auto;
+    margin: 5px;
+    flex-direction: column;
+  }
+  .tagline {
+    margin-bottom: 10px;
+  }
+  .navbar {
+    height: 50px;
+  }
+  .navbar > .margin-wrapper {
+    margin-left: 5px;
+  }
+  .hero .tagline h1 {
+    font-size: 60px;
+  }
+  .tagline-action { margin-top: 20px; margin-bottom: 20px;}
+}
+</style>
+    <script async defer data-domain="inflex.io" src="https://plausible.inflex.io/js/index.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="margin-wrapper">
+        <div class="logo">
+        </div>
+        <span class="beta-badge">beta</span>
+        <div class="rhs-nav">
+          <form action="/login" method="post">
+            <button class="logout full-button">Login</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="margin-wrapper">
+        <div class="tagline">
+          <h1>It's time to go off grid</h1>
+          <h2>Online spreadsheets re-invented</h2>
+          <button class="button tagline-action">Request early access!</button>
+        </div>
+        <div class="hero-pic">
+        </div>
+      </div>
+    </div>
+    <div>
+
+    </div>
+    <div class="footer">
+      <div class="margin-wrapper">
+        <p>© 2020 Sky Above Limited</p>
+        <p>Inflex® is a registered trademark of Sky Above Limited.</p>
+      </div>
+    </div>
+  </body>
+</html>
