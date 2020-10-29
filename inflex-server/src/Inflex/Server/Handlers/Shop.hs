@@ -82,10 +82,10 @@ getHomeR = do
                    case state of
                      Registered {} ->
                        form_ [action_ (url AppDashboardR), method_ "get"] $ do
-                         button_ [class_ "logout full-button"] "Dashboard"
+                         a_ [href_ (url AppDashboardR),class_ "logout full-button"] "Dashboard"
                      _ ->
-                       form_ [action_ (url LoginR), method_ "post"] $ do
-                         button_ [class_ "logout full-button"] "Login"
+                       form_ [action_ (url AppDashboardR), method_ "get"] $ do
+                         a_ [href_ (url AppDashboardR), class_ "logout full-button"] "Login"
              div_ [class_ "hero"] $
                div_ [class_ "margin-wrapper"] $ do
                  div_ [class_ "tagline"] $ do

@@ -67,6 +67,7 @@ body {
   border: 0;
   background: #01203a;
   color: #fff;
+  text-decoration: none;
 }
 .navbar .rhs-nav .full-button:hover {
   text-decoration: underline;
