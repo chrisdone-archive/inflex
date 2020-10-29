@@ -19,4 +19,4 @@ openFileFrom :: FilePath -> Q Exp
 openFileFrom fp0 = do
   fp <- wrapStackRoot fp0
   bs <- embedFile fp
-  [|$(pure bs)|]
+  [|pure $(pure bs)|]
