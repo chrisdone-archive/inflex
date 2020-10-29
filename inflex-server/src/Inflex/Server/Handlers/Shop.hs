@@ -51,6 +51,7 @@ getHomeR = do
   (do msession <- lookupSession
       let state = maybe NoSessionState (sessionState . entityVal) msession
       css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
+      logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
       htmlWithUrl
         (html_ $ do
            url <- ask
@@ -75,7 +76,7 @@ getHomeR = do
            body_ $ do
              div_ [class_ "navbar"] $
                div_ [class_ "margin-wrapper"] $ do
-                 div_ [class_ "logo"] (pure ())
+                 div_ [class_ "logo"] (toHtmlRaw logo)
                  span_ [class_ "beta-badge"] "beta"
                  div_ [class_ "rhs-nav"] $
                    case state of

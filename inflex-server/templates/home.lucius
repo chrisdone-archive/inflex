@@ -45,9 +45,13 @@ body {
 }
 .navbar .logo {
   display: block;
-  background: url(@{LogoR}) no-repeat center;
+  /* background: url(@{LogoR}) no-repeat center; */
   width: 100px;
   height: 100%;
+  svg {
+    height: 100%;
+    width: 100px;
+  }
 }
 .navbar .rhs-nav {
   margin-left: auto;

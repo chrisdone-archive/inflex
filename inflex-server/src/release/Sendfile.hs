@@ -14,3 +14,9 @@ sendFileFrom typ fp0 = do
   fp <- wrapStackRoot fp0
   bs <- embedFile fp
   [|pure (Yesod.TypedContent typ (toContent $(pure bs)))|]
+
+openFileFrom :: FilePath -> Q Exp
+openFileFrom fp0 = do
+  fp <- wrapStackRoot fp0
+  bs <- embedFile fp
+  [|$(pure bs)|]
