@@ -7,8 +7,6 @@
 
 -- General
 /favicon.png FaviconR GET
-/fonts/futura.woff FuturaR GET
-/fonts/futura2.woff2 Futura2R GET
 /logo.svg LogoR GET
 
 -- Shop

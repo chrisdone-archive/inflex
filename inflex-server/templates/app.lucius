@@ -16,10 +16,6 @@ body {
   "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
 }
 
-@font-face {
-  font-family:"Futura Round W01 Light";
-  src:url("@{Futura2R}") format("woff2"),url("@{FuturaR}") format("woff");
-}
 
 /********************************************************************************
  * Body/wrapper
@@ -69,7 +65,6 @@ body {
     margin-right: 5px;
 
     .logout, .full-button {
-      font-family: "Futura Round W01 Light";
       font-size: 20px;
     }
     .logout {
