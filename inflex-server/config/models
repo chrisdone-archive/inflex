@@ -19,3 +19,9 @@ Document
   created UTCTime
   updated UTCTime
   deriving Show
+
+EarlyAccessRequest
+  created UTCTime
+  email Email
+  approved UTCTime Maybe
+  deriving Show

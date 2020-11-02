@@ -26,6 +26,7 @@ module Inflex.Server.Handlers.Shop
   , getHomeR
   , getFaviconR
   , getShopCssR
+  , postEarlyAccessRequestR
   ) where
 
 import           Control.Monad.Reader
@@ -101,16 +102,63 @@ getHomeR = do
                  div_ [class_ "tagline"] $ do
                    h1_ "It's time to go off grid"
                    h2_ "Online spreadsheets re-invented"
-                   button_
-                     [class_ "button tagline-action"]
-                     "Request early access!"
-                 div_ [class_ "hero-pic"] (do button_ [class_ "play",onclick_ "play();"] (pure ()))
+                   form_
+                     [action_ (url EarlyAccessRequestR), method_ "post"]
+                     (do div_
+                           [class_ "email-address"]
+                           (input_
+                              [type_ "email", placeholder_ "Your email address"])
+                         button_
+                           [class_ "button tagline-action"]
+                           "Request early access!")
+                 div_
+                   [class_ "hero-pic"]
+                   (do button_ [class_ "play", onclick_ "play();"] (pure ()))
              div_ [class_ "footer"] $ do
                div_ [class_ "margin-wrapper"] $ do
                  p_ "© 2020 Sky Above Limited"
                  p_ "Inflex® is a registered trademark of Sky Above Limited."
              script_ (LT.toStrict (renderJavascript js))))
 
+--------------------------------------------------------------------------------
+-- Early access request
+
+postEarlyAccessRequestR :: Handler (Html ())
+postEarlyAccessRequestR = do
+  (do css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
+      logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+      htmlWithUrl
+        (html_ $ do
+           url <- ask
+           head_ $ do
+             link_ [href_ "#", rel_ "shortcut icon"]
+             title_ "Inflex"
+             meta_ [content_ "utf-8", name_ "charset"]
+             meta_
+               [ content_
+                   "width=device-width, initial-scale=1, shrink-to-fit=no"
+               , name_ "viewport"
+               ]
+             link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+             script_
+               [ async_ ""
+               , defer_ ""
+               , makeAttribute "data-domain" "inflex.io"
+               , src_ "https://plausible.inflex.io/js/index.js"
+               ]
+               ("" :: Text)
+             style_ (LT.toStrict (renderCss css))
+           body_ [] $ do
+             div_ [class_ "navbar"] $
+               div_ [class_ "margin-wrapper"] $ do
+                 div_ [class_ "logo"] (toHtmlRaw logo)
+                 span_ [class_ "beta-badge"] "beta"
+             div_ [class_ "hero"] $
+               div_ [class_ "margin-wrapper"] $ do p_ "Thanks."
+             div_ [class_ "footer"] $ do
+               div_ [class_ "margin-wrapper"] $ do
+                 p_ "© 2020 Sky Above Limited"
+                 p_ "Inflex® is a registered trademark of Sky Above Limited."))
 
 --------------------------------------------------------------------------------
 -- Account

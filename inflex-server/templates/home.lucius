@@ -95,7 +95,7 @@ body {
 }
 .hero .hero-pic {
   flex: 1;
-  height: 300px;
+  height: auto;
   border-radius: 3px;
   box-shadow: 0px 0px 5px 5px #0001;
   color: #fff;
@@ -168,6 +168,7 @@ body {
   }
   .hero .hero-pic {
     flex: auto;
+    height: 300px;
   }
   .hero h1 {
     margin-bottom: 0;
@@ -199,7 +200,6 @@ body {
 
 .hero-pic {
   background: #ddd;
-  height: 300px;
   display: -ms-flex;
   display: -webkit-flex;
   display: flex;
@@ -229,4 +229,23 @@ body {
   border-style: solid;
   border-width: 10px 0 10px 20px;
   border-color: transparent transparent transparent white;
+}
+
+.email-address {
+    margin-top: 30px;
+    border: 0;
+    radius: 5px;
+}
+
+.email-address input {
+    border: 0;
+    border-radius: 2px;
+    padding: 10px;
+    font-size: 18px;
+    width: 200px;
+}
+
+button.button.tagline-action {
+    width: 200px;
+    margin-top: 5px;
 }

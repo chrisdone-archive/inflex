@@ -17,6 +17,7 @@
 /register/checkout/waiting CheckoutWaitingR GET
 /account ShopAccountR GET POST
 /shop/css ShopCssR GET
+/early-access-request EarlyAccessRequestR POST
 
 -- Auth
 /login LoginR
