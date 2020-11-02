@@ -153,8 +153,17 @@ postEarlyAccessRequestR = do
                div_ [class_ "margin-wrapper"] $ do
                  div_ [class_ "logo"] (toHtmlRaw logo)
                  span_ [class_ "beta-badge"] "beta"
+                 div_ [class_ "rhs-nav"] (pure ())
              div_ [class_ "hero"] $
-               div_ [class_ "margin-wrapper"] $ do p_ "Thanks."
+               div_ [class_ "margin-wrapper"] $ do
+                 div_ [class_ "thanks"] $ do
+                   h1_ [] (do "Thanks for subscribing!"; toHtmlRaw "&#x1f44d;")
+                   p_
+                     []
+                     "When the time is right, we'll email you with an invitation link."
+                   p_
+                     []
+                     "Don't worry, we don't spam you. Any emails will have an 'unsubscribe' button."
              div_ [class_ "footer"] $ do
                div_ [class_ "margin-wrapper"] $ do
                  p_ "© 2020 Sky Above Limited"

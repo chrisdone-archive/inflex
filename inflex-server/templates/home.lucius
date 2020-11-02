@@ -249,3 +249,8 @@ button.button.tagline-action {
     width: 200px;
     margin-top: 5px;
 }
+
+.thanks {
+  color: white;
+  font-size: 20px;
+}
