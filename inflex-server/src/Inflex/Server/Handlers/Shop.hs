@@ -166,12 +166,8 @@ postEarlyAccessRequestR = do
                      "When the time is right, we'll email you with an invitation link."
                    p_
                      []
-                     (do "Don't worry, we don't spam you. Any emails will have an 'unsubscribe' button. "
-                         "Email us at "
-                         a_
-                           [href_ "mailto:support@inflex.io"]
-                           "support@inflex.io"
-                         " if you were signed up by mistake or have changed your mind.")
+                     (do "Don't worry, we don't spam you. Any emails will have an 'unsubscribe' button."
+                         )
              div_ [class_ "footer"] $ do
                div_ [class_ "margin-wrapper"] $ do
                  p_ "© 2020 Sky Above Limited"
