@@ -4,6 +4,7 @@ module Main (main) where
 
 import           Control.Concurrent
 import           Control.Exception
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Reader
@@ -35,7 +36,8 @@ main = do
        withResource
          pool
          (runReaderT
-            (manualMigration migrateAll))
+            (do when False (printMigration migrateAll) -- Enable when updating the DB.
+                manualMigration migrateAll))
        lock <- liftIO (newMVar ())
        app <- liftIO (toWaiApp App {appPool = pool, appConfig = config, appGALock = lock}) {-Plain-}
        -- Not important for local dev, but will be important when deploying online.

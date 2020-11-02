@@ -31,7 +31,9 @@ manualMigration x = do
   -- Dispatch a migrateion.
   case version of
     0 -> schema0
-    1 -> liftIO $ putStrLn "At correct schema version."
+    1 -> schema1
+    2 -> liftIO $ putStrLn "At correct schema version."
+    _ -> error ("At mysterious schema version: " ++ show version)
   -- Commit transaction NOW.
   run "COMMIT;"
   where
@@ -47,4 +49,10 @@ CREATe TABLE "account"("id" SERIAL8  PRIMARY KEY UNIQUE,"username" VARCHAR NULL,
 CREATe TABLE "session"("id" SERIAL8  PRIMARY KEY UNIQUE,"uuid" VARCHAR NOT NULL,"state" VARCHAR NOT NULL,"nonce" VARCHAR NULL);
 CREATe TABLE "document"("id" SERIAL8  PRIMARY KEY UNIQUE,"account" INT8 NOT NULL,"name" VARCHAR NOT NULL,"content" VARCHAR NOT NULL,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"updated" TIMESTAMP WITH TIME ZONE NOT NULL);
 ALTER TABLE "document" ADD CONSTRAINT "document_account_fkey" FOREIGN KEY("account") REFERENCES "account"("id");
+  |]
+
+schema1 = run [s|
+INSERT INTO schema_versions VALUES (1);
+CREATE TABLE "early_access_request"("id" SERIAL8  PRIMARY KEY UNIQUE,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"email" VARCHAR NOT NULL,"approved" TIMESTAMP WITH TIME ZONE NULL);
+ALTER TABLE "early_access_request" ADD CONSTRAINT "early_access_request_early_access_email" UNIQUE("email");
   |]

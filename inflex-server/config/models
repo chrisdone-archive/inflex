@@ -24,4 +24,5 @@ EarlyAccessRequest
   created UTCTime
   email Email
   approved UTCTime Maybe
+  Unique EarlyAccessEmail email
   deriving Show

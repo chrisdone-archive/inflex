@@ -24,6 +24,7 @@ import           Data.Char
 import           Data.Int
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.UUID as UUID
 import           Database.Persist
 import           Database.Persist.Sql
@@ -32,6 +33,7 @@ import           Inflex.Server.Types.Sha256
 import           Lucid
 import           Optics.TH
 import           Stripe
+import           Text.Email.Validate as Email
 import           Yesod hiding (Html)
 
 data Config = Config
@@ -107,6 +109,12 @@ instance PersistFieldSql UUID where
 instance PersistField UUID where
  toPersistValue = toPersistValue . UUID.toText
  fromPersistValue = fromPersistValue >=> maybe (Left "Bad UUID") Right . UUID.fromText
+
+parseEmail :: Text -> Maybe Email
+parseEmail t =
+  case Email.validate (T.encodeUtf8 t) of
+    Left {} -> Nothing
+    Right {} -> pure (Email t)
 
 newtype Email = Email
   { unEmail :: Text
