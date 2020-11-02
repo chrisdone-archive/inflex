@@ -107,7 +107,7 @@ getHomeR = do
                      (do div_
                            [class_ "email-address"]
                            (input_
-                              [type_ "email", placeholder_ "Your email address", required_])
+                              [type_ "email", placeholder_ "Your email address", required_ ""])
                          button_
                            [class_ "button tagline-action"]
                            "Request early access!")
