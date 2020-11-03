@@ -11,11 +11,7 @@ body {
 
   "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
-html,body,.wrapper {
-  height: 100%;
-}
 body {
-  overflow: hidden;
   margin: 0;
   padding: 0;
   font-size: 14px;
