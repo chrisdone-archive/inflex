@@ -208,14 +208,13 @@ render (State {display, code, editor, path}) =
       [ HH.input
           [ HP.value (if code == "_" then "" else code)
           , HP.class_ (HH.ClassName "form-control")
+          , HP.placeholder "Type code here"
           , manage (InputElementChanged <<< ElemRef')
-          -- , HP.
           , HE.onKeyUp
               (\k ->
                  case K.code k of
                    "Enter" -> Just (FinishEditing code)
                    _ -> Nothing
-                   -- _code -> Just (Autoresize (K.toEvent k))
               )
           , HE.onValueChange (\i -> pure (SetInput i))
           , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
@@ -229,6 +228,7 @@ render (State {display, code, editor, path}) =
             MiscE _ _ ->
               HH.div
                 [ HP.class_ (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                , HP.title "Click to edit"
                 , HE.onClick
                     (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
                 ]
@@ -238,6 +238,7 @@ render (State {display, code, editor, path}) =
                 [HP.class_ (HH.ClassName "editor-boundary-wrap")]
                 ([ HH.div
                      [ HP.class_ (HH.ClassName "ellipsis-button")
+                     , HP.title "Edit this as code"
                      , HE.onClick
                          (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
                      ]
@@ -291,7 +292,7 @@ renderTableEditor path columns rows =
           (mapWithIndex
              (\i text ->
                 HH.th
-                  [HP.class_ (HH.ClassName "table-column")]
+                  [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
                   [ HH.slot
                       (SProxy :: SProxy "fieldname")
                       (show i)
@@ -397,6 +398,7 @@ renderTableEditor path columns rows =
         [HP.class_ (HH.ClassName "add-column")]
         [ HH.button
             [ HP.class_ (HH.ClassName "add-column-button")
+            , HP.title "Add column to this table"
             , HE.onClick
                 (\e ->
                    pure

@@ -10,7 +10,6 @@ module Inflex.Components.Cell
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Effect.Class.Console (log)
 import Data.Either (Either(..), either)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
@@ -129,15 +128,16 @@ toEditor =
       Editor.ArrayE originalSource  (map toEditor trees)
     Shared.RecordTree2 _ originalSource fields ->
       Editor.RecordE originalSource
-        (map (\(Shared.Field2{key,value}) -> {key,value: toEditor value}) fields)
+        (map (\(Shared.Field2{key,value}) -> Editor.Field ({key,value: toEditor value})) fields)
     Shared.TableTree2 _ originalSource columns rows ->
       Editor.TableE
         originalSource
         columns
         (map (\(Shared.Row {source, fields}) ->
+                Editor.Row
                 { original: source
                 , fields:
-                    map (\(Shared.Field2{key,value}) -> {key,value: toEditor value})
+                    map (\(Shared.Field2{key,value}) -> Editor.Field {key,value: toEditor value})
                         fields
                 })
              rows)
@@ -252,8 +252,10 @@ render (State {cell: Cell {name, code, result}, pos}) =
                      (CodeUpdate
                         (Cell {name: name', result, code})))
             , HH.button
+
                 [ HP.class_ (HH.ClassName "delete-cell")
                 , HE.onClick (\_ -> pure DeleteCell)
+                , HP.title "Delete this cell"
                 ]
                 [HH.text "×"]
             ]

@@ -130,6 +130,7 @@ render (State {display, name}) =
     DisplayResult ->
       HH.div
         [ HP.class_ (HH.ClassName "cell-name")
+        , HP.title "Click to edit name"
         , HE.onClick (\e -> pure StartEditor)
         ]
         [ case cleanName name of
