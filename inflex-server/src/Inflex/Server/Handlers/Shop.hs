@@ -32,7 +32,6 @@ module Inflex.Server.Handlers.Shop
 import           Control.Monad.Reader
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time
 import           Inflex.Server.App
@@ -54,8 +53,11 @@ getHomeR :: Handler (Html ())
 getHomeR = do
   (do msession <- lookupSession
       let state = maybe NoSessionState (sessionState . entityVal) msession
+      case state of
+        Registered{} -> redirect AppDashboardR
+        _ -> pure ()
       css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
-      js <- $(juliusFileFrom "inflex-server/templates/home.julius")
+      js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
       logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
       htmlWithUrl
         (html_ $ do
@@ -124,7 +126,7 @@ getHomeR = do
                div_ [class_ "margin-wrapper"] $ do
                  p_ "© 2020 Sky Above Limited"
                  p_ "Inflex® is a registered trademark of Sky Above Limited."
-             script_ (LT.toStrict (renderJavascript js))))
+             script_ (LT.toStrict (renderJavascript js'))))
 
 --------------------------------------------------------------------------------
 -- Early access request
