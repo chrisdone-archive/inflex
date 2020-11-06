@@ -44,7 +44,6 @@ getAppDashboardR =
             (div_
                [class_ "dashboard"]
                (do url <- ask
-                   h1_ "Dashboard"
                    form_
                      [action_ (url NewDocumentR), method_ "post"]
                      (button_ [class_ "btn-primary btn"] "New Document")

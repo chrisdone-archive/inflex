@@ -4,22 +4,20 @@ module Inflex.Components.Cell.Editor
   ( Editor(..)
   , EditorAndCode(..)
   , Output(..)
+  , Field(..)
+  , Row(..)
   , component
   ) where
 
 import Data.Array (mapWithIndex)
-import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe
 import Data.Maybe (Maybe(..))
-import Data.Nullable
-import Data.String
-import Data.String (joinWith, trim)
+import Data.Nullable (Nullable, toMaybe)
+import Data.String (joinWith, length, trim)
 import Data.Symbol (SProxy(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -30,12 +28,11 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude
+import Prelude (class Show, Unit, bind, discard, map, max, pure, show, unit, (+), (<<<), (<>), (==))
 import Web.DOM.Element (Element, fromEventTarget)
-import Web.DOM.Element (Element, setAttribute)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.HTMLElement (focus, fromElement, toElement, HTMLElement)
+import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
@@ -78,13 +75,10 @@ data Editor
   | TextE Shared.OriginalSource String
   | ErrorE CellError
   | ArrayE Shared.OriginalSource (Array Editor)
-  | RecordE Shared.OriginalSource (Array { key :: String, value :: Editor })
+  | RecordE Shared.OriginalSource (Array Field)
   | TableE Shared.OriginalSource
            (Array String)
-           (Array { original :: Shared.OriginalSource
-                  , fields :: Array { key :: String, value :: Editor }
-                  }
-           )
+           (Array Row)
 
 derive instance genericEditor :: Generic Editor _
 instance showEditor :: Show Editor where show x = genericShow x
@@ -107,6 +101,14 @@ newtype ElemRef' a = ElemRef' (ElemRef a)
 instance showElemRef :: Show (ElemRef' a) where show _ = "ElemRef"
 
 type Slots i = (editor :: H.Slot i Output String, fieldname :: H.Slot i String String)
+
+newtype Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
+derive instance genericRow :: Generic Row _
+instance showRow :: Show Row where show x = genericShow x
+
+newtype Field = Field { key :: String , value :: Editor}
+derive instance genericField :: Generic Field _
+instance showField :: Show Field where show x = genericShow x
 
 manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
 manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
@@ -191,7 +193,7 @@ foreign import setStyle :: String -> Element -> Effect Unit
 foreign import autosize :: HTMLElement -> Effect Unit
 
 --------------------------------------------------------------------------------
--- Render
+-- Render main component
 
 render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
 render (State {display, code, editor, path}) =
@@ -243,6 +245,9 @@ render (State {display, code, editor, path}) =
                  ] <>
                  inner)
 
+--------------------------------------------------------------------------------
+-- Render inner editor
+
 renderEditor ::
      forall i a. MonadEffect a
   => (Shared.DataPath -> Shared.DataPath)
@@ -251,206 +256,362 @@ renderEditor ::
 renderEditor path editor =
   case editor of
     MiscE _originalSource t ->
-      [HH.div
-          [HP.class_ (HH.ClassName "misc")]
-          [HH.text t]]
+      [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]]
     TextE _originalSource t ->
-       [HH.div
-          [HP.class_ (HH.ClassName "text")]
-          [HH.text t]]
-    ErrorE msg ->
-      [ HH.div
-          [HP.class_ (HH.ClassName "error-message")]
-          [ HH.text
-              (case msg of
-                 FillErrors fillErrors ->
-                   joinWith ", " (map fromFillError fillErrors)
-                   where fromFillError =
-                           case _ of
-                             NoSuchGlobal name ->
-                               "missing name “" <> name <> "”"
-                             OtherCellProblem name ->
-                               "other cell “" <> name <> "” has a problem"
-                 CyclicCells names ->
-                   "cells refer to eachother in a loop:" <> " " <>
-                   joinWith ", " names
-                 DuplicateCellName -> "this name is used twice"
-                 CellRenameErrors -> "internal bug; please report!" -- TODO:make this automatic.
-                 CellTypeError -> "types of values don't match up"
-                 CellStepEror -> "error while evaluating formula"
-                 SyntaxError -> "syntax error, did you mistype something?")
-          ]
+      [renderTextEditor path t]
+    ErrorE msg -> [renderError msg]
+    ArrayE _originalSource editors -> [renderArrayEditor path editors]
+    RecordE _originalSource fields -> [renderRecordEditor path fields]
+    TableE _originalSource columns rows -> renderTableEditor path columns rows
+
+--------------------------------------------------------------------------------
+-- Text editor
+
+renderTextEditor ::
+     forall i a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> String
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+renderTextEditor _path t = HH.div [HP.class_ (HH.ClassName "text")] [HH.text t]
+
+--------------------------------------------------------------------------------
+-- Tables
+
+renderTableEditor ::
+     forall i a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> Array String
+  -> Array Row
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
+renderTableEditor path columns rows =
+  [ HH.button
+      [ HP.class_ (HH.ClassName "wip-button")
+      , HE.onClick
+          (\e ->
+             pure
+               (PreventDefault
+                  (Event' (toEvent e))
+                  (TriggerUpdatePath
+                     (Shared.UpdatePath
+                        { path:
+                            path (Shared.DataElemOf 0 Shared.DataHere)
+                        , update:
+                            Shared.NewFieldUpdate
+                              (Shared.NewField {name: "foo"})
+                        }))))
       ]
-    ArrayE _originalSource editors ->
-      [ HH.div
-          [HP.class_ (HH.ClassName "array")]
+      [HH.text "Add column"]
+  , HH.table
+      [HP.class_ (HH.ClassName "table")]
+      [ HH.thead
+          [HP.class_ (HH.ClassName "table-header")]
           (mapWithIndex
-             (\i editor' ->
-                HH.div
-                  [HP.class_ (HH.ClassName "array-item")]
+             (\i text ->
+                HH.th
+                  [HP.class_ (HH.ClassName "table-column")]
                   [ HH.slot
-                      (SProxy :: SProxy "editor")
+                      (SProxy :: SProxy "fieldname")
                       (show i)
-                      component
-                      (EditorAndCode
-                         { editor: editor'
-                         , code: editorCode editor'
-                         , path: path <<< Shared.DataElemOf i
-                         })
-                      (\output ->
-                         case output of
-                           UpdatePath update -> Just (TriggerUpdatePath update)
-                           NewCode rhs -> Just
-                            (FinishEditing
-                              (editorCode
-                                 (ArrayE Shared.NoOriginalSource (editArray i (MiscE Shared.NoOriginalSource rhs) editors)))))
+                      Name.component
+                      text
+                      (\name' ->
+                         pure
+                           (TriggerUpdatePath
+                              (Shared.UpdatePath
+                                 { path:
+                                     path (Shared.DataElemOf 0 Shared.DataHere)
+                                 , update:
+                                     Shared.RenameFieldUpdate
+                                       (Shared.RenameField
+                                          { from: text
+                                          , to: name'
+                                          })
+                                 })))
+                  , HH.button
+                      [ HP.class_ (HH.ClassName "wip-button")
+                      , HE.onClick
+                          (\e ->
+                             pure
+                               (PreventDefault
+                                  (Event' (toEvent e))
+                                  (TriggerUpdatePath
+                                     (Shared.UpdatePath
+                                        { path:
+                                            path
+                                              (Shared.DataElemOf
+                                                 0
+                                                 Shared.DataHere)
+                                        , update:
+                                            Shared.DeleteFieldUpdate
+                                              (Shared.DeleteField
+                                                 {name: text})
+                                        }))))
+                      ]
+                      [HH.text "-"]
                   ])
-             editors)
-      ]
-    RecordE _originalSource fields ->
-      [ HH.table
-          [HP.class_ (HH.ClassName "record")]
-          ((if false then [] else
-              [HH.button [HP.class_ (HH.ClassName "wip-button"),
-                       HE.onClick
-                    (\e -> pure (PreventDefault (Event' (toEvent e)) ((TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})})))))
-                       ] [HH.text "Add field"]]) <>
-           mapWithIndex
-             (\i {key, value: editor'} ->
+             columns)
+      , HH.tbody
+          [HP.class_ (HH.ClassName "table-body")]
+          (mapWithIndex
+             (\rowIndex (Row {original, fields}) ->
                 HH.tr
-                  [HP.class_ (HH.ClassName "record-field")]
-                  [ HH.td [HP.class_ (HH.ClassName "record-field-name")] [
+                  []
+                  (mapWithIndex
+                     (\fieldIndex (Field {key, value: editor'}) ->
+                        HH.td
+                          [HP.class_ (HH.ClassName "table-datum-value")]
+                          [ HH.slot
+                              (SProxy :: SProxy "editor")
+                              (show rowIndex <> "/" <> show fieldIndex)
+                              component
+                              (EditorAndCode
+                                 { editor: editor'
+                                 , code: editorCode editor'
+                                 , path:
+                                     path <<<
+                                     Shared.DataElemOf rowIndex <<<
+                                     Shared.DataFieldOf fieldIndex
+                                 })
+                              (\output ->
+                                 case output of
+                                   UpdatePath update ->
+                                     Just (TriggerUpdatePath update)
+                                   NewCode rhs ->
+                                     Just
+                                       (FinishEditing
+                                          (editorCode
+                                             (TableE
+                                                Shared.NoOriginalSource
+                                                columns
+                                                (editArray
+                                                   rowIndex
+                                                     (Row { original:
+                                                              Shared.NoOriginalSource
+                                                          , fields:
+                                                              editArray
+                                                                fieldIndex
+                                                                (Field
+                                                                   { key
+                                                                   , value:
+                                                                       MiscE
+                                                                         Shared.NoOriginalSource
+                                                                         rhs
+                                                                   })
+                                                                fields
+                                                          })
+                                                   rows)))))
+                          ])
+                     fields))
+             rows)
+      ]
+  ]
 
-                                                     HH.button [HP.class_ (HH.ClassName "wip-button"),
-                                   HE.onClick
-                                (\e -> pure (PreventDefault (Event'(toEvent e))
-                                              (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: key})}))))
-                                   ] [HH.text "-"]
+--------------------------------------------------------------------------------
+-- Render arrays
 
+renderArrayEditor ::
+     forall i a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> Array Editor
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+renderArrayEditor path editors =
+  HH.div
+    [HP.class_ (HH.ClassName "array")]
+    (mapWithIndex
+       (\i editor' ->
+          HH.div
+            [HP.class_ (HH.ClassName "array-item")]
+            [ HH.slot
+                (SProxy :: SProxy "editor")
+                (show i)
+                component
+                (EditorAndCode
+                   { editor: editor'
+                   , code: editorCode editor'
+                   , path: path <<< Shared.DataElemOf i
+                   })
+                (\output ->
+                   case output of
+                     UpdatePath update -> Just (TriggerUpdatePath update)
+                     NewCode rhs ->
+                       Just
+                         (FinishEditing
+                            (editorCode
+                               (ArrayE
+                                  Shared.NoOriginalSource
+                                  (editArray
+                                     i
+                                     (MiscE Shared.NoOriginalSource rhs)
+                                     editors)))))
+            ])
+       editors)
 
-                      -- HH.text key
+--------------------------------------------------------------------------------
+-- Records
 
-                   , HH.slot
-                       (SProxy :: SProxy "fieldname")
-
-                       (show i)
-                       Name.component
-                       key
-                       (\name' ->
-                          pure
-                            (TriggerUpdatePath (Shared.UpdatePath {path: path Shared.DataHere, update: Shared.RenameFieldUpdate (Shared.RenameField {from: key, to: name'})})))
-
-                                                                         ]
-                  , HH.td [HP.class_ (HH.ClassName "record-field-value")] [HH.slot
-                      (SProxy :: SProxy "editor")
-                      (show i)
-                      component
-                      (EditorAndCode
-                         { editor: editor'
-                         , code: editorCode editor'
-                         , path: path <<< Shared.DataFieldOf i
-                         })
-                      (\output ->
+renderRecordEditor ::
+     forall i a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> Array Field
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+renderRecordEditor path fields =
+  HH.table
+    [HP.class_ (HH.ClassName "record")]
+    ((if false
+        then []
+        else [ HH.button
+                 [ HP.class_ (HH.ClassName "wip-button")
+                 , HE.onClick
+                     (\e ->
+                        pure
+                          (PreventDefault
+                             (Event' (toEvent e))
+                             (TriggerUpdatePath
+                                (Shared.UpdatePath
+                                   { path: path Shared.DataHere
+                                   , update:
+                                       Shared.NewFieldUpdate
+                                         (Shared.NewField
+                                            {name: "foo"})
+                                   }))))
+                 ]
+                 [HH.text "Add field"]
+             ]) <>
+     mapWithIndex
+       (\i (Field {key, value: editor'}) ->
+          HH.tr
+            [HP.class_ (HH.ClassName "record-field")]
+            [ HH.td
+                [HP.class_ (HH.ClassName "record-field-name")]
+                [ HH.button
+                    [ HP.class_ (HH.ClassName "wip-button")
+                    , HE.onClick
+                        (\e ->
+                           pure
+                             (PreventDefault
+                                (Event' (toEvent e))
+                                (TriggerUpdatePath
+                                   (Shared.UpdatePath
+                                      { path:
+                                          path Shared.DataHere
+                                      , update:
+                                          Shared.DeleteFieldUpdate
+                                            (Shared.DeleteField
+                                               {name: key})
+                                      }))))
+                    ]
+                    [HH.text "-"]
+                                               -- HH.text key
+                , HH.slot
+                    (SProxy :: SProxy "fieldname")
+                    (show i)
+                    Name.component
+                    key
+                    (\name' ->
+                       pure
+                         (TriggerUpdatePath
+                            (Shared.UpdatePath
+                               { path: path Shared.DataHere
+                               , update:
+                                   Shared.RenameFieldUpdate
+                                     (Shared.RenameField
+                                        { from: key
+                                        , to: name'
+                                        })
+                               })))
+                ]
+            , HH.td
+                [HP.class_ (HH.ClassName "record-field-value")]
+                [ HH.slot
+                    (SProxy :: SProxy "editor")
+                    (show i)
+                    component
+                    (EditorAndCode
+                       { editor: editor'
+                       , code: editorCode editor'
+                       , path: path <<< Shared.DataFieldOf i
+                       })
+                    (\output ->
                        case output of
                          UpdatePath update -> Just (TriggerUpdatePath update)
                          NewCode rhs ->
-                            Just
-                           (FinishEditing
-                              (editorCode
-                                 (RecordE Shared.NoOriginalSource (editArray i {key, value: MiscE Shared.NoOriginalSource rhs} fields)))))]
-                  ])
-             fields)
-      ]
-    TableE _originalSource columns rows ->
-      [
-              HH.button [HP.class_ (HH.ClassName "wip-button"),
-                       HE.onClick
-                    (\e -> pure (PreventDefault (Event'(toEvent e))
-                                  (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.NewFieldUpdate (Shared.NewField {name: "foo"})}))))
-                       ] [HH.text "Add column"] ,
+                           Just
+                             (FinishEditing
+                                (editorCode
+                                   (RecordE
+                                      Shared.NoOriginalSource
+                                      (editArray
+                                         i
+                                         (Field
+                                            { key
+                                            , value:
+                                                MiscE
+                                                  Shared.NoOriginalSource
+                                                  rhs
+                                            })
+                                         fields)))))
+                ]
+            ])
+       fields)
 
-        HH.table
-        [HP.class_ (HH.ClassName "table")]
-        [HH.thead [HP.class_ (HH.ClassName "table-header")]
-                  (mapWithIndex (\i text -> HH.th [HP.class_ (HH.ClassName "table-column")] [-- HH.text text
+--------------------------------------------------------------------------------
+-- Errors
 
-                              HH.slot
-                               (SProxy :: SProxy "fieldname")
+renderError :: forall t10 t11. CellError -> HH.HTML t11 t10
+renderError msg =
+  HH.div
+    [HP.class_ (HH.ClassName "error-message")]
+    [ HH.text
+        (case msg of
+           FillErrors fillErrors -> joinWith ", " (map fromFillError fillErrors)
+             where fromFillError =
+                     case _ of
+                       NoSuchGlobal name -> "missing name “" <> name <> "”"
+                       OtherCellProblem name ->
+                         "other cell “" <> name <> "” has a problem"
+           CyclicCells names ->
+             "cells refer to eachother in a loop:" <> " " <>
+             joinWith ", " names
+           DuplicateCellName -> "this name is used twice"
+           CellRenameErrors -> "internal bug; please report!" -- TODO:make this automatic.
+           CellTypeError -> "types of values don't match up"
+           CellStepEror -> "error while evaluating formula"
+           SyntaxError -> "syntax error, did you mistype something?")
+    ]
 
-                               (show i)
-                               Name.component
-                               text
-                               (\name' ->
-                                  pure
-                                    (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.RenameFieldUpdate (Shared.RenameField {from: text, to: name'})})))
-
-                                                                               ,
-
-                               HH.button [HP.class_ (HH.ClassName "wip-button"),
-                                   HE.onClick
-                                (\e -> pure (PreventDefault (Event'(toEvent e))
-                                              (TriggerUpdatePath (Shared.UpdatePath {path: path (Shared.DataElemOf 0 Shared.DataHere), update: Shared.DeleteFieldUpdate (Shared.DeleteField {name: text})}))))
-                                   ] [HH.text "-"]
-
-                               ]) columns)
-        ,HH.tbody
-           [HP.class_ (HH.ClassName "table-body")]
-           (mapWithIndex
-             (\rowIndex {original, fields} ->
-               HH.tr []
-
-               (mapWithIndex
-                  (\fieldIndex {key, value: editor'} ->
-                        HH.td [HP.class_ (HH.ClassName "table-datum-value")] [HH.slot
-                           (SProxy :: SProxy "editor")
-                           (show rowIndex <> "/" <> show fieldIndex)
-                           component
-                           (EditorAndCode
-                              { editor: editor'
-                              , code: editorCode editor'
-                              , path: path <<< Shared.DataElemOf rowIndex <<< Shared.DataFieldOf fieldIndex
-                              })
-                           (\output ->
-                             case output of
-                              UpdatePath update -> Just (TriggerUpdatePath update)
-                              NewCode rhs ->
-                               Just
-                                (FinishEditing
-                                   (editorCode
-                                      (TableE
-                                         Shared.NoOriginalSource
-                                         columns
-                                         (editArray
-                                            rowIndex
-                                            {original: Shared.NoOriginalSource
-                                            ,fields: editArray fieldIndex {key, value: MiscE Shared.NoOriginalSource rhs}
-                                                       fields}
-                                            rows)
-                                       ))))]
-                       )
-                  fields)
-
-               )
-             rows)
-        ]
-      ]
+--------------------------------------------------------------------------------
+-- Code regenerators
 
 editorCode :: Editor -> String
 editorCode =
   case _ of
     MiscE original s -> originalOr original s
-    TextE original s -> originalOr original s
-    ArrayE original xs -> originalOr original ("[" <> joinWith ", " (map editorCode xs) <> "]")
+    TextE original s -> originalOr original (show s) -- TODO:Encoding strings is not easy. Fix this.
+    ArrayE original xs ->
+      originalOr original ("[" <> joinWith ", " (map editorCode xs) <> "]")
     RecordE original fs ->
-      originalOr original ("{" <> joinWith ", " (map (\{key,value} -> key <> ":" <> editorCode value) fs) <> "}")
+      originalOr
+        original
+        ("{" <>
+         joinWith
+           ", "
+           (map (\(Field {key, value}) -> key <> ":" <> editorCode value) fs) <>
+         "}")
     ErrorE _ -> ""
     TableE original _columns rows ->
-      editorCode (ArrayE original (map (\{ original: o, fields } -> RecordE o fields) rows))
+      editorCode
+        (ArrayE
+           original
+           (map
+              (\(Row {original: o, fields}) -> RecordE o fields)
+              rows))
 
 originalOr :: Shared.OriginalSource -> String -> String
 originalOr Shared.NoOriginalSource s = s
 originalOr (Shared.OriginalSource s) _ = s
 
+-- TODO: This is slow -- use a 'update at index' function, one must
+-- exist and be way faster.
 editArray :: forall i. Int -> i -> Array i -> Array i
 editArray idx i =
   mapWithIndex
