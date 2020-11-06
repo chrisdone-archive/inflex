@@ -292,46 +292,52 @@ renderTableEditor path columns rows =
           (mapWithIndex
              (\i text ->
                 HH.th
-                  [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
-                  [ HH.slot
-                      (SProxy :: SProxy "fieldname")
-                      (show i)
-                      Name.component
-                      text
-                      (\name' ->
-                         pure
-                           (TriggerUpdatePath
-                              (Shared.UpdatePath
-                                 { path:
-                                     path (Shared.DataElemOf 0 Shared.DataHere)
-                                 , update:
-                                     Shared.RenameFieldUpdate
-                                       (Shared.RenameField
-                                          { from: text
-                                          , to: name'
-                                          })
-                                 })))
-                  , HH.button
-                      [ HP.class_ (HH.ClassName "wip-button")
-                      , HE.onClick
-                          (\e ->
+                  [ HP.class_ (HH.ClassName "table-column")
+                  , HP.title "Click to edit"
+                  ]
+                  [ HH.div
+                      [HP.class_ (HH.ClassName "table-column-content")]
+                      [ HH.slot
+                          (SProxy :: SProxy "fieldname")
+                          (show i)
+                          Name.component
+                          text
+                          (\name' ->
                              pure
-                               (PreventDefault
-                                  (Event' (toEvent e))
-                                  (TriggerUpdatePath
-                                     (Shared.UpdatePath
-                                        { path:
-                                            path
-                                              (Shared.DataElemOf
-                                                 0
-                                                 Shared.DataHere)
-                                        , update:
-                                            Shared.DeleteFieldUpdate
-                                              (Shared.DeleteField
-                                                 {name: text})
-                                        }))))
+                               (TriggerUpdatePath
+                                  (Shared.UpdatePath
+                                     { path:
+                                         path
+                                           (Shared.DataElemOf 0 Shared.DataHere)
+                                     , update:
+                                         Shared.RenameFieldUpdate
+                                           (Shared.RenameField
+                                              { from: text
+                                              , to: name'
+                                              })
+                                     })))
+                      , HH.button
+                          [ HP.class_ (HH.ClassName "remove-column-button")
+                          , HE.onClick
+                              (\e ->
+                                 pure
+                                   (PreventDefault
+                                      (Event' (toEvent e))
+                                      (TriggerUpdatePath
+                                         (Shared.UpdatePath
+                                            { path:
+                                                path
+                                                  (Shared.DataElemOf
+                                                     0
+                                                     Shared.DataHere)
+                                            , update:
+                                                Shared.DeleteFieldUpdate
+                                                  (Shared.DeleteField
+                                                     {name: text})
+                                            }))))
+                          ]
+                          [HH.text "×"]
                       ]
-                      [HH.text "-"]
                   ])
              columns <>
            [newColumnButton])
@@ -387,7 +393,8 @@ renderTableEditor path columns rows =
                                                       })
                                                    rows)))))
                           ])
-                     fields <> addColumnBlank))
+                     fields <>
+                   addColumnBlank))
              rows)
       ]
   ]

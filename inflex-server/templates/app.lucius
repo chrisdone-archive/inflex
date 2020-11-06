@@ -271,6 +271,26 @@ table.record {
       background: #15263b;
       color: #fff;
     }
+    .table-column {
+      padding: 0;
+    }
+    .table-column-content {
+      display: flex;
+      flex-direction: row;
+    }
+    .cell-name:hover {
+      border-radius: none;
+    }
+    .remove-column-button {
+      border: 0;
+      background: inherit;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .remove-column-button:hover {
+      background: #15263b;
+      color: #fff;
+    }
   }
   .table-body {
     tr > .table-datum-value {
@@ -322,7 +342,7 @@ table.record {
 }
 
 .cell-body > .editor-boundary-wrap > .misc {
-    padding: 5px;
+  padding: 5px;
 }
 
 .clickable-to-edit:hover {
