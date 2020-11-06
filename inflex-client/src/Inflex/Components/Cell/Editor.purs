@@ -284,24 +284,7 @@ renderTableEditor ::
   -> Array Row
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
 renderTableEditor path columns rows =
-  [ HH.button
-      [ HP.class_ (HH.ClassName "wip-button")
-      , HE.onClick
-          (\e ->
-             pure
-               (PreventDefault
-                  (Event' (toEvent e))
-                  (TriggerUpdatePath
-                     (Shared.UpdatePath
-                        { path:
-                            path (Shared.DataElemOf 0 Shared.DataHere)
-                        , update:
-                            Shared.NewFieldUpdate
-                              (Shared.NewField {name: "foo"})
-                        }))))
-      ]
-      [HH.text "Add column"]
-  , HH.table
+  [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ HH.thead
           [HP.class_ (HH.ClassName "table-header")]
@@ -349,7 +332,8 @@ renderTableEditor path columns rows =
                       ]
                       [HH.text "-"]
                   ])
-             columns)
+             columns <>
+           [newColumnButton])
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
           (mapWithIndex
@@ -385,26 +369,52 @@ renderTableEditor path columns rows =
                                                 columns
                                                 (editArray
                                                    rowIndex
-                                                     (Row { original:
-                                                              Shared.NoOriginalSource
-                                                          , fields:
-                                                              editArray
-                                                                fieldIndex
-                                                                (Field
-                                                                   { key
-                                                                   , value:
-                                                                       MiscE
-                                                                         Shared.NoOriginalSource
-                                                                         rhs
-                                                                   })
-                                                                fields
-                                                          })
+                                                   (Row
+                                                      { original:
+                                                          Shared.NoOriginalSource
+                                                      , fields:
+                                                          editArray
+                                                            fieldIndex
+                                                            (Field
+                                                               { key
+                                                               , value:
+                                                                   MiscE
+                                                                     Shared.NoOriginalSource
+                                                                     rhs
+                                                               })
+                                                            fields
+                                                      })
                                                    rows)))))
                           ])
-                     fields))
+                     fields <> addColumnBlank))
              rows)
       ]
   ]
+  where
+    addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
+    newColumnButton =
+      HH.th
+        [HP.class_ (HH.ClassName "add-column")]
+        [ HH.button
+            [ HP.class_ (HH.ClassName "add-column-button")
+            , HE.onClick
+                (\e ->
+                   pure
+                     (PreventDefault
+                        (Event' (toEvent e))
+                        (TriggerUpdatePath
+                           (Shared.UpdatePath
+                              { path:
+                                  path (Shared.DataElemOf 0 Shared.DataHere)
+                              , update:
+                                  Shared.NewFieldUpdate
+                                    (Shared.NewField
+                                       {name: "foo"})
+                              }))))
+            ]
+            [HH.text "+"]
+        ]
+
 
 --------------------------------------------------------------------------------
 -- Render arrays

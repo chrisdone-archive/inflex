@@ -248,6 +248,29 @@ table.record {
       background:  #e9eef2;
       color: #244585
     }
+    .add-column {
+      position: relative;
+      width: 1.5em;
+      height: 1.5em;
+    }
+    .add-column-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: inherit;
+      cursor: pointer;
+      font-weight: bold;
+      border-top-right-radius: 3px;
+    }
+    .add-column-button:hover {
+      background: #15263b;
+      color: #fff;
+    }
   }
   .table-body {
     tr > .table-datum-value {
@@ -259,6 +282,13 @@ table.record {
     }
     .table-datum-value + .table-datum-value {
       border-left: 1px solid #dadeea
+    }
+    .table-datum-value + .add-column-blank {
+      border-left: 1px solid #dadeea
+    }
+    .add-column-blank {
+      border-top: 1px solid #dadeea;
+      background: #e9eef2;
     }
   }
 }
@@ -300,7 +330,7 @@ table.record {
 }
 
 .wip-button {
-display: none;
+  display: none;
 }
 body.wip {
   .wip-button{ display: inline-block; }
