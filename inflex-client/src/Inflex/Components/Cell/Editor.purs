@@ -417,34 +417,37 @@ renderArrayEditor ::
 renderArrayEditor path editors =
   HH.div
     [HP.class_ (HH.ClassName "array")]
-    (mapWithIndex
-       (\i editor' ->
-          HH.div
-            [HP.class_ (HH.ClassName "array-item")]
-            [ HH.slot
-                (SProxy :: SProxy "editor")
-                (show i)
-                component
-                (EditorAndCode
-                   { editor: editor'
-                   , code: editorCode editor'
-                   , path: path <<< Shared.DataElemOf i
-                   })
-                (\output ->
-                   case output of
-                     UpdatePath update -> Just (TriggerUpdatePath update)
-                     NewCode rhs ->
-                       Just
-                         (FinishEditing
-                            (editorCode
-                               (ArrayE
-                                  Shared.NoOriginalSource
-                                  (editArray
-                                     i
-                                     (MiscE Shared.NoOriginalSource rhs)
-                                     editors)))))
-            ])
-       editors)
+    (case editors of
+       [] -> [HH.text "(No items)"]
+       _ ->
+         mapWithIndex
+           (\i editor' ->
+              HH.div
+                [HP.class_ (HH.ClassName "array-item")]
+                [ HH.slot
+                    (SProxy :: SProxy "editor")
+                    (show i)
+                    component
+                    (EditorAndCode
+                       { editor: editor'
+                       , code: editorCode editor'
+                       , path: path <<< Shared.DataElemOf i
+                       })
+                    (\output ->
+                       case output of
+                         UpdatePath update -> Just (TriggerUpdatePath update)
+                         NewCode rhs ->
+                           Just
+                             (FinishEditing
+                                (editorCode
+                                   (ArrayE
+                                      Shared.NoOriginalSource
+                                      (editArray
+                                         i
+                                         (MiscE Shared.NoOriginalSource rhs)
+                                         editors)))))
+                ])
+           editors)
 
 --------------------------------------------------------------------------------
 -- Records
