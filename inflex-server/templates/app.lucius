@@ -282,6 +282,7 @@ table.record {
       border-radius: none;
     }
     .remove-column-button {
+      opacity: 0.5;
       border: 0;
       background: inherit;
       cursor: pointer;
@@ -310,6 +311,12 @@ table.record {
       border-top: 1px solid #dadeea;
       background: #e9eef2;
     }
+  }
+}
+
+.table:hover {
+  .remove-column-button {
+    opacity: 1;
   }
 }
 
