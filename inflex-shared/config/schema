@@ -1,21 +1,24 @@
 {-
 
-GUIDELINE
+GUIDELINE:
 
-If you change a type by
+* Changing input types:
+  - Duplicate and bump version when adding more required fields or
+    renaming fields. Removed fields can simply be ignored, but a version
+    bump is explicit.
 
-* removing/adding a field
+* Changing output types:
+  - Duplicate and bump version when removing fields or renaming
+   fields. New fields can simply be ignored, but a version bump is
+   explicit.
+  - A breaking change may merit an rpc endpoint clone-and-bump.
 
-then you need to bump its schema version, copy the old type deprecated
-(and update all types that refer to this). Do that recursively.
+* Deprecating old rpc endpoints can use 410 gone.
 
-If you change a type by
+* Add a warp middleware to insert a header in responses of the server
+  schema version? And server commit.
 
-* changing a used type's version
-
-then you don't need to bump its schema, UNLESS that type is used elsewhere.
-
-ALSO, check your ./rpc file.
+* Always check your ./rpc file.
 
 -}
 
