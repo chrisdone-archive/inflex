@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
@@ -10,19 +12,19 @@ module Inflex.Server.Handlers.Blog where
 
 import           Control.Monad.Reader
 import           Data.Foldable
-import           Data.String
 import           Data.Text (Text)
 import qualified Data.Text.Lazy as LT
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types.Blog
+import           Inflex.Server.Types.Article
 import           Lucid
 import           Lucid.Base
 import           Sendfile
 import           Shakespearean
 import           Text.Julius
 import           Text.Lucius
-import           Yesod hiding (Html, Field, lookupSession)
+import           Yesod hiding (Html, Field, lookupSession, toHtml)
 import           Yesod.Lucid
 
 getBlogR :: Handler (Html ())
@@ -31,6 +33,11 @@ getBlogR = do
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
   logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+  articles <-
+    liftIO
+      (traverse
+         (\entryName -> fmap (entryName, ) (getArticleByEntryName entryName))
+         [minBound .. maxBound])
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -70,12 +77,12 @@ getBlogR = do
            div_ [class_ "margin-wrapper"] $ do
              ul_
                (traverse_
-                  (\(blogEntryName :: BlogEntryName) ->
+                  (\(blogEntryName, Article {..}) ->
                      li_
                        (a_
                           [href_ (url (BlogEntryR blogEntryName))]
-                          (Lucid.toHtml (show blogEntryName))))
-                  [minBound .. maxBound])
+                          (Lucid.toHtml title)))
+                  articles)
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"
@@ -88,6 +95,7 @@ getBlogEntryR entryName = do
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
   logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+  Article{..} <- liftIO (getArticleByEntryName entryName)
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -125,14 +133,9 @@ getBlogEntryR entryName = do
                      (button_ [class_ "logout full-button"] "Logout")
          article_ [class_ "article"] $
            div_ [class_ "margin-wrapper"] $ do
-             ul_
-               (traverse_
-                  (\(blogEntryName :: BlogEntryName) ->
-                     li_
-                       (a_
-                          [href_ (url (BlogEntryR blogEntryName))]
-                          (Lucid.toHtml (show blogEntryName))))
-                  [minBound .. maxBound])
+             h1_ (toHtml title)
+             p_ (strong_ (toHtml (show date)))
+             p_ (toHtml content)
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"

@@ -9,12 +9,22 @@ module Inflex.Server.Types.Blog where
 import           Data.Maybe
 import qualified Data.Text as T
 import           Inflex.Server.Types.Blog.TH
+import           Inflex.Server.Types.Article
+import           Language.Haskell.TH
 import           Text.Read
 import           Yesod (PathPiece(..))
 
 $(do files <- generateBlog
-     dt <- mkBlogDataType files
-     pure (dt))
+     (dt, nameAndGetters) <- mkBlogDataType files
+     getter <-
+            [d|
+               getArticleByEntryName =
+                 $(pure (LamCaseE (map (\(name,getter') ->
+                                          Match (ConP name []) (NormalB getter') [])
+                                       nameAndGetters))) |]
+     pure (dt <> getter))
+
+getArticleByEntryName :: BlogEntryName -> IO Article
 
 deriving instance Show BlogEntryName
 deriving instance Eq BlogEntryName

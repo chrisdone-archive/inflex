@@ -206,3 +206,7 @@ a {
     color: #1473c3;
   }
 }
+
+.article > .margin-wrapper {
+  display: block;
+}

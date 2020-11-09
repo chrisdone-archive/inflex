@@ -1,16 +1,19 @@
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Blog generation.
 
 module Inflex.Server.Types.Blog.TH where
 
-import Control.Monad.IO.Class
-import Data.Char
-import Data.FileEmbed.Stack
-import Data.Maybe
-import Language.Haskell.TH
-import Sendfile
-import System.Directory
+import           Blogfile
+import           Control.Monad.IO.Class
+import           Data.Char
+import           Data.FileEmbed.Stack
+import           Data.Maybe
+import           Data.Time.QQ ()
+import           Language.Haskell.TH
+import           Sendfile ()
+import           System.Directory
 
 -- | This reads all the files in the directory and generates a set of
 -- name<->content tuples.
@@ -21,16 +24,19 @@ generateBlog = do
     fmap (filter (not . all (== '.'))) (liftIO (getDirectoryContents blogDir))
   traverse
     (\fp -> do
-       contents <- openFileFrom (root ++ "/" ++ fp)
+       contents <- openBlogFileFrom (root ++ "/" ++ fp)
        pure (fp, contents))
     fps
   where root = "inflex-content/blog"
 
-mkBlogDataType :: [(FilePath,Exp)] -> Q [Dec]
+mkBlogDataType :: [(FilePath,Exp)] -> Q ([Dec], [(Name, Exp)])
 mkBlogDataType names =
-  fmap pure (dataD (pure []) (mkName "BlogEntryName") [] Nothing conses [])
+  do d <- dataD (pure []) (mkName "BlogEntryName") [] Nothing (map snd conses) []
+     pure ([d], map fst conses)
   where
-    conses = map (\(fp, _) -> normalC (mkName (toCons fp)) []) names
+    conses = map (\(fp, getter) -> let nom = mkName (toCons fp)
+                                   in
+                                   ((nom, getter), normalC nom [])) names
 
 toCons :: [Char] -> [Char]
 toCons =

@@ -1,8 +1,8 @@
 Article {
  title = "What’s wrong with the grid?",
- date = Date 2020 11 09,
+ date = 2020-09-13,
+ content = ""
 }
-
 
 What’s wrong with "the grid"?
 

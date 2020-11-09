@@ -26,6 +26,8 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - rio
 - formatting
+- time-qq
+- th-lift
 - unliftio
 - http-conduit
 - yaml
