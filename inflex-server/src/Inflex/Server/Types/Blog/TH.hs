@@ -16,14 +16,15 @@ import System.Directory
 -- name<->content tuples.
 generateBlog :: Q [(FilePath,Exp)]
 generateBlog = do
-  blogDir <- wrapStackRoot "inflex-content/blog"
+  blogDir <- wrapStackRoot root
   fps <-
     fmap (filter (not . all (== '.'))) (liftIO (getDirectoryContents blogDir))
   traverse
     (\fp -> do
-       contents <- openFileFrom (blogDir ++ "/" ++ fp)
+       contents <- openFileFrom (root ++ "/" ++ fp)
        pure (fp, contents))
     fps
+  where root = "inflex-content/blog"
 
 mkBlogDataType :: [(FilePath,Exp)] -> Q [Dec]
 mkBlogDataType names =

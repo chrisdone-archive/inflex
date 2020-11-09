@@ -1,3 +1,9 @@
+Article {
+ title = "What’s wrong with the grid?",
+ date = Date 2020 11 09,
+}
+
+
 What’s wrong with "the grid"?
 
 The grid system in spreadsheets is very simple. It’s also very powerful. It’s powerful because it’s simple. As a user you can immediately start entering data without even thinking about it. And then in an ad hoc fashion you can add logic and conditions as you think of them.

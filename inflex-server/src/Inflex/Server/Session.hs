@@ -15,15 +15,35 @@ module Inflex.Server.Session
   , withLogin
   , queryNonceSession
   , resetSessionNonce
+  , HasLoginCookie(..)
+  , hasLoginCookie
   ) where
 
-import           RIO (try)
+import           Data.Text (Text)
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
 import           Inflex.Server.App
 import           Inflex.Server.Types
+import           RIO (try)
 import           Yesod hiding (lookupSession, deleteSession)
 
+data HasLoginCookie
+  = HasLoginCookie UUID
+  | NoLoginCookie
+  deriving (Show)
+
+sessionCookieKey :: Text
+sessionCookieKey = "SESSION_UUID"
+
+-- | If there's a login cookie, tell me whether I have it.
+hasLoginCookie :: Handler HasLoginCookie
+hasLoginCookie = do
+  result <- lookupCookie sessionCookieKey
+  case result >>= UUID.fromText of
+    Just uuid -> pure (HasLoginCookie uuid)
+    Nothing -> pure NoLoginCookie
+
+-- | If there's a session cookie, hit the database and get the state.
 withLogin :: (SessionId -> LoginState -> Handler a) -> Handler a
 withLogin cont = do
   session <- requireSession LoginR
@@ -43,7 +63,7 @@ assumeSession sessionState = do
       -- with an empty value which breaks everything.
       addHeader
         "Set-Cookie"
-        ("SESSION_UUID=" <>
+        (sessionCookieKey <> "=" <>
          UUID.toText (unSessionUUID (sessionUuid (entityVal session))) <> "; Path=/")
       pure session
     Just session -> pure session
@@ -66,11 +86,11 @@ requireSession route = do
 deleteSession :: SessionId -> YesodDB App ()
 deleteSession sid = do
   delete sid
-  addHeader "Set-Cookie" ("SESSION_UUID=; Path=/; Max-Age=-1")
+  addHeader "Set-Cookie" (sessionCookieKey <> "=; Path=/; Max-Age=-1")
 
 lookupSession :: Handler (Maybe (Entity Session))
 lookupSession = do
-  result <- lookupCookie "SESSION_UUID"
+  result <- lookupCookie sessionCookieKey
   case result >>= UUID.fromText of
     Just sessionUUID -> runDB (querySession (SessionUUID sessionUUID))
     Nothing -> pure Nothing
