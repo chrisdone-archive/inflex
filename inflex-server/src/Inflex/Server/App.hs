@@ -34,6 +34,7 @@ import           Inflex.Backend
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
+import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Sha256
 import           Yesod hiding (Html, Field)
 import           Yesod.Lucid

@@ -20,6 +20,7 @@
 module Inflex.Server.Types where
 
 import           Control.Monad
+import           Data.Aeson
 import           Data.Char
 import           Data.Int
 import           Data.Text (Text)

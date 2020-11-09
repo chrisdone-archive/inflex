@@ -19,6 +19,10 @@
 /shop/css ShopCssR GET
 /early-access-request EarlyAccessRequestR POST
 
+-- Blog
+/blog/#BlogEntryName BlogEntryR GET
+/blog BlogR GET
+
 -- Auth
 /login LoginR
 /logout LogoutR POST
