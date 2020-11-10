@@ -9,11 +9,13 @@ import           Data.FileEmbed.Stack
 import           Data.Time.QQ ()
 import           Inflex.Server.Types.Article
 import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
 import           Sendfile ()
 
 openBlogFileFrom :: FilePath -> Q Exp
 openBlogFileFrom fp0 = do
   fp <- wrapStackRoot fp0
+  qAddDependentFile fp
   [|do bs <- S.readFile fp
        case parseArticle bs of
          Just article -> pure article
