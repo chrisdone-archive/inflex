@@ -201,6 +201,18 @@ a {
   }
 }
 
+.article-page {
+  h1 {
+    margin: 0;
+    padding-top: 50px;
+    font-size: 50px;
+  }
+  .article {
+    padding-bottom: 50px;
+    min-height: 75%;
+  }
+}
+
 @media only screen and (max-width: 1200px) {
 
 }

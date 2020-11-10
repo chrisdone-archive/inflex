@@ -63,7 +63,7 @@ getBlogR = do
            ]
            ("" :: Text)
          style_ (LT.toStrict (renderCss css))
-       body_ [] $ do
+       body_ [class_ "blog-page"] $ do
          div_ [class_ "navbar"] $
            div_ [class_ "margin-wrapper"] $ do
              div_ [class_ "logo"] (a_ [href_ (url HomeR)] (toHtmlRaw logo))
@@ -139,7 +139,7 @@ getBlogEntryR entryName = do
            ]
            ("" :: Text)
          style_ (LT.toStrict (renderCss css))
-       body_ [] $ do
+       body_ [class_ "article-page"] $ do
          div_ [class_ "navbar"] $
            div_ [class_ "margin-wrapper"] $ do
              div_ [class_ "logo"] (a_ [href_ (url HomeR)] (toHtmlRaw logo))
