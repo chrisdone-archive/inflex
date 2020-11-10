@@ -28,6 +28,8 @@ dependencies:
 - formatting
 - time-qq
 - th-lift
+- markdown
+- blaze-markup
 - unliftio
 - http-conduit
 - yaml
