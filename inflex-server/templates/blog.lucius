@@ -23,7 +23,8 @@ body {
 
 .margin-wrapper {
   display: flex;
-  max-width: 1200px;
+  font-size: 14px;
+  max-width: 50em;
   margin: auto;
 }
 
@@ -56,8 +57,13 @@ body {
   margin-right: 5px;
 }
 .navbar .rhs-nav .logout,.navbar .rhs-nav .login {
+  opacity: 0.5;
   height: 100%;
   font-size: 20px;
+}
+.navbar .rhs-nav .login:hover {
+  opacity: 1;
+  transition: 0.5s;
 }
 .navbar .rhs-nav .full-button {
   border: 0;
@@ -151,48 +157,6 @@ body {
   text-align: center;
 }
 
-@media only screen and (max-width: 1200px) {
-  .margin-wrapper {
-    margin-left: 10px;
-    margin-right: 10px;
-  }
-}
-
-@media only screen and (max-width: 800px) {
-  .hero {
-    padding-top: 5px;
-    padding-bottom: 5px;
-  }
-  .hero .hero-pic {
-    flex: auto;
-    height: 300px;
-  }
-  .hero h1 {
-    margin-bottom: 0;
-  }
-  .hero .tagline h2 {
-    margin-top: 20px;
-  }
-  .hero > .margin-wrapper {
-    width: auto;
-    margin: 5px;
-    flex-direction: column;
-  }
-  .tagline {
-    margin-bottom: 10px;
-  }
-  .navbar {
-    height: 50px;
-  }
-  .navbar > .margin-wrapper {
-    margin-left: 5px;
-  }
-  .hero .tagline h1 {
-    font-size: 60px;
-  }
-  .tagline-action { margin-top: 20px; margin-bottom: 20px;}
-}
-
 a {
   color: #fff;
 }
@@ -209,4 +173,50 @@ a {
 
 .article > .margin-wrapper {
   display: block;
+}
+
+.years {
+  min-height: 75%;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  h1 {
+    font-size: 28px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #bbb;
+    color: #444;
+  }
+}
+
+.year {
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+  h2 {
+    font-size: 50px;
+    margin-block-end: 0;
+    a {
+      text-decoration: none;
+      color: #444;
+    }
+  }
+}
+
+@media only screen and (max-width: 1200px) {
+
+}
+
+@media only screen and (max-width: 800px) {
+  .navbar {
+    height: 60px;
+    .logo {
+      padding: 10px;
+    }
+  }
+  body > .article {
+    padding: 10px;
+  }
+  .years h1 { padding-bottom: 5px; margin-bottom: 10px;}
+  h1, h2, .years, .year { margin-top: 0; padding-top: 0;}
+  .year h2 { font-size: 30px; }
+  .footer { margin-top: 20px; }
 }

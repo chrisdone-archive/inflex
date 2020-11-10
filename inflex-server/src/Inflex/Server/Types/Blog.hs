@@ -38,3 +38,4 @@ instance PathPiece BlogEntryName where
     T.replace "_" "-" .
     (\t -> fromMaybe t (T.stripPrefix (T.pack blogPrefix) t)) . T.pack . show
   fromPathPiece = readMaybe . (blogPrefix <>) . T.unpack . T.replace "-" "_"
+--

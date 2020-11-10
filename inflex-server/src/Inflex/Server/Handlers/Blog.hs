@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,13 +13,17 @@ module Inflex.Server.Handlers.Blog where
 
 import           Control.Monad.Reader
 import           Data.Foldable
+import           Data.Function
+import           Data.List
+import qualified Data.List.NonEmpty as NE
 import           Data.Text (Text)
 import qualified Data.Text.Lazy as LT
+import           Data.Time
 import           Inflex.Server.App
 import           Inflex.Server.Session
-import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Article
-import           Lucid
+import           Inflex.Server.Types.Blog
+import           Lucid hiding (for_)
 import           Lucid.Base
 import           Sendfile
 import           Shakespearean
@@ -75,14 +80,32 @@ getBlogR = do
                      (button_ [class_ "logout full-button"] "Logout")
          article_ [class_ "article"] $
            div_ [class_ "margin-wrapper"] $ do
-             ul_
-               (traverse_
-                  (\(blogEntryName, Article {..}) ->
-                     li_
-                       (a_
-                          [href_ (url (BlogEntryR blogEntryName))]
-                          (Lucid.toHtml title)))
-                  articles)
+             let byYear (_, Article {date}) = getYear date
+                 getYear date =
+                   let (year, _, _) = toGregorian date
+                    in year
+             div_
+               [class_ "years"]
+               (for_
+                  (NE.groupBy (on (==) byYear) (sortOn byYear articles))
+                  (\articles' -> do
+                     h1_
+                       (let (_, Article {date}) = NE.head articles'
+                         in toHtml (show (getYear date)))
+                     ul_
+                       [class_ "year"]
+                       (for_
+                          articles'
+                          (\(blogEntryName, Article {..}) ->
+                             li_
+                               [class_ "article"]
+                               (do h2_
+                                     (a_
+                                        [href_ (url (BlogEntryR blogEntryName))]
+                                        (Lucid.toHtml title))
+                                   p_
+                                     [class_ "preview"]
+                                     (toHtml (showGregorian date)))))))
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"
