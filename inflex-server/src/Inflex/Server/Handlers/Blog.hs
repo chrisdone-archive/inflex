@@ -11,6 +11,7 @@
 
 module Inflex.Server.Handlers.Blog where
 
+import qualified Data.Text.Lazy as LT
 import           Control.Monad.Reader
 import           Data.Foldable
 import           Data.Function
@@ -27,8 +28,10 @@ import           Lucid hiding (for_)
 import           Lucid.Base
 import           Sendfile
 import           Shakespearean
+import           Text.Blaze.Renderer.Utf8
 import           Text.Julius
 import           Text.Lucius
+import           Text.Markdown
 import           Yesod hiding (Html, Field, lookupSession, toHtml)
 import           Yesod.Lucid
 
@@ -118,7 +121,7 @@ getBlogEntryR entryName = do
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
   logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
-  Article{..} <- liftIO (getArticleByEntryName entryName)
+  Article {..} <- liftIO (getArticleByEntryName entryName)
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -158,7 +161,12 @@ getBlogEntryR entryName = do
            div_ [class_ "margin-wrapper"] $ do
              h1_ (toHtml title)
              p_ (strong_ (toHtml (show date)))
-             p_ (toHtml content)
+             p_
+               (toHtmlRaw
+                  (renderMarkup
+                     (markdown
+                        defaultMarkdownSettings {msAddHeadingId = True}
+                        (LT.fromStrict content))))
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"

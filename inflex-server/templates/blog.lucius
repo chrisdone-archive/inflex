@@ -150,6 +150,7 @@ body {
 }
 .footer {
   margin-top: 50px;
+  padding-bottom: 30px;
 }
 .footer p { margin-top: 0; }
 .footer > .margin-wrapper {
@@ -207,9 +208,16 @@ a {
     padding-top: 50px;
     font-size: 50px;
   }
+  h2 { font-size: 30px; }
   .article {
     padding-bottom: 50px;
     min-height: 75%;
+
+    p {
+      font-size: 22px;
+      font-family: serif;
+      line-height: 1.5;
+    }
   }
 }
 

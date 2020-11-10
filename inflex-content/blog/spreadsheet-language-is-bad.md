@@ -4,8 +4,6 @@ Article {
  content = ""
 }
 
-Spreadsheets language is bad
-
 The user interface in a spreadsheet is Modal.  There are two modes. The first mode is code. The second mode is the result of running that code. You type in some equation, some mathematics, some conditions, and then you hit return, and then you see the results.
 
 The programming language that you write your code in is a declarative probably language. We call programming language is declarative when you state what you want in a more mathematical way, instead of stating imperative steps: do this, do that. Instead you write for example some of some range, and so on. The code in spreadsheets is this kind of language. And it is a real programming language.  What are examples of declarative programming are structured query language or SQL, and that’s pretty much it.
