@@ -240,6 +240,10 @@ a {
   h1, h2, .years, .year { margin-top: 0; padding-top: 0;}
   .year h2 { font-size: 30px; }
   .footer { margin-top: 20px; }
+
+  .article-page {
+    h1 { padding-top: 5px; }
+  }
 }
 
 hr {
