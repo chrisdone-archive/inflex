@@ -144,5 +144,5 @@ We keep what's *good* about spreadsheets: the reactivity and
 "edit-in-place" user experience.
 
 In our next post we'll be discussing the fundamental problems with the
-expression/formula languages used in spreadsheet sofware, and how we
+expression/formula languages used in spreadsheet software, and how we
 are fixing it.
