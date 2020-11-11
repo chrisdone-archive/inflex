@@ -69,7 +69,7 @@ government, or a taxonomy of a species.
 Trees are three data structures, perfectly normal, well understood,
 pliable, things that you can express in a programming language and
 manipulate using code in a very logical manner. You can count how many
-items are in the tree, you can restrict the tree to a certain branch ,
+items are in the tree, you can restrict the tree to a certain branch,
 perform a transformation on each node in the tree, or transpose the
 tree and flip it upside down!
 
