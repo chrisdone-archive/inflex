@@ -1,6 +1,6 @@
 Article {
  title = "What’s wrong with the grid?",
- date = 2020-09-13,
+ date = 2020-11-12,
  content = ""
 }
 
@@ -24,104 +24,102 @@ an economics paper, called
 [Growth in a time of Debt](https://en.wikipedia.org/wiki/Growth_in_a_Time_of_Debt#Methodological_flaws),
 and there was a miscalculation because a few rows at the end of a list
 of items were not taken into account, as, per usual in a spreadsheet,
-the user specified them in a range. It has been criticized anywhere
+the user specified them in a range. It has been criticised anywhere
 from a gross oversight to disastrous.
 
 ## Proper data structures are simpler
 
-However, in normal programming, we have not just one data
+However, in normal programming, we don't have just one data
 structure. The grid is just one data structure, a matrix of
-practically infinite width and height, you can access its elements by
-coordinates. But in programming––normal programming––we have for
+practically infinite width and height. You can access its elements by
+coordinates. But in programming––normal programming––we have, for
 example, lists. If a proper list data structure were were used for the
-list of elements in the above example, there wouldn’t have been this bug,
-because you don’t have to specify how many elements of a list you want
-to work on. We can just say "apply this function to all elements of
+list of elements in the above example, there wouldn’t have been this
+bug, because you don’t have to specify how many elements of a list you
+want to work on. We just say "apply this function to all elements of
 the list."
 
 Data structures like lists and matrices can all be approximated in a
-spreadsheet by a grid. However, anything more than this becomes
+spreadsheet by a grid, badly. However, anything more than this becomes
 awkward very quickly.
 
-For example, a simple record consisting of a name and an age in the
-spreadsheet must be modeled by using a cell for the label of the name
-and label of the age, and then the value for each thing, like so:
-
-<!-- TODO: example -->
+For example, a simple record consisting of a name and an age in a
+spreadsheet must be modelled by using a cell for the label of the name
+and label of the age, and then the value for each thing. This is a
+hack, using superficial visual embellishments to reflect what is
+actually data.
 
 In normal programming languages, this is called a record. There’s no
 need for any kind of strange and brittle hacking and tricks to make
-this work as you have to do in a spreadsheet. The basic spreadsheet as
-is is very accessible to the normal person who just wants to do every
-day calculations about their business. But the ideas of a record,
-list, tree or graph are also intuitive for normal people because they
-actually model the kind of data that their domain is dealing with.
+this work as you have to do in a spreadsheet. The basic spreadsheet,
+as-is, is very accessible to the normal person who just wants to do
+every day calculations about their business. But the ideas of a
+record, list, tree or graph are also intuitive for normal people
+because they actually model the kind of data that their domain is
+dealing with. Sadly, knowledge workers using spreadsheets are deprived
+of these tools.
 
 ## Data modelling is poor
 
 Therefore we find spreadsheets very lacking, in fact, when we try to
 model even every day pedestrian problems.  Consider for example trying
 to model a family tree, or the hierarchical structure of the US
-government, or a taxonomy of a species. These are three data
-structures, perfectly normal, well understood, pliable, things that
-you can express in a programming language and manipulate using code in
-a very logical manner. You can count how many items are in the tree,
-you can restrict the tree to a certain branch and do operations there
-you can do an operation on each node in the tree, you can transpose
-the tree and flip it upside down.
+government, or a taxonomy of a species.
 
-Another example is a graph. For example, the coronavirus can be
-modeled by its spread using a graph the graph consists of a set of
-people in the connections between those people. Do you knows which
-have more connections indicate that this person was more contagious in
-the spread to more people. You can easily write code to count how many
-connections a given note has to it, and also count how many transitive
-notes are connected to it, in other words, you can measure what the
+Trees are three data structures, perfectly normal, well understood,
+pliable, things that you can express in a programming language and
+manipulate using code in a very logical manner. You can count how many
+items are in the tree, you can restrict the tree to a certain branch ,
+perform a transformation on each node in the tree, or transpose the
+tree and flip it upside down!
+
+Another example is a graph. For example, the Coronavirus can be
+modelled by its spread using a graph the graph consists of a set of
+people in the connections between those people. You can easily write
+code to count how many connections a given node has to it; that's a
+normal graph operation. Or count how many transitive node are
+connected to it in one direction, in other words; you can measure the
 influences of one person within a community.
 
-Both of those things are impossible, practically, to describe, talk
-about, express, manipulate, visualize, in a traditional grid
-Dash-based spreadsheet.
+Aside from using code to manipulate said data structures, your user
+interface should allow you to click a node and edit the text, maybe
+write some code in there, like any other type of cell.
 
-So we’ve established two things so far. The first is that the grid
-system locks boundaries between different data structures, which can
+Both of those things are impossible, practically, to describe, talk
+about, express, manipulate, or visualise, in a traditional grid-based
+spreadsheet!
+
+So, we’ve established two things so far. The first is that the grid
+system lacks boundaries between different data structures, which can
 lead to bugs. Second is that there are actually very normal, every
-day, useful data structures which we should in a reasonable system be
-able to express, but which the grid system is unable to express.
+day, useful data structures which we should, in a reasonable system,
+be able to express, but which the grid system is unable to express.
 
 Additionally, we have seen that these data structures actually have
 very well understood and rich and useful operations which work only if
 you have that kind of data structure.
 
+But a spreadsheet simply has one single data structure: the grid. And,
+the only elements that you can put in that data structure are numbers,
+strings and dates. In other words, atomic values. But that’s not real
+life. There’s no reason that I should not be able to have a list of
+lists. Or a tree of records. Or a list of records (aka a "table"). I
+should, hypothetically, be able to arbitrarily nest data structures as
+it fits my problem.
+
 ## Correctness checks
 
-Turn into a different topic, when you have different data structures,
-you can start to add checks that help you avoid making more
+Turning to a different topic, when you have different data structures,
+you can start to add checks that help you avoid making other types of
 mistakes. If your system knows the shape of data, it can have
 expectations about how you use it.
 
-You can add a type system to your language. The purpose of a type
-system is to make sure that you are combining your different
-operations together in a way that makes sense. Not putting a square
-peg in around hole. For example, you can calculate the sum of an list,
-of a graph, of a tree, however, you cannot concatenate a graph to an
-list. What would that even mean? It’s easy to reduce to regular
-programming languages because they have data structures.
-
-But a spreadsheet simply has one Single data structure: the grid. And,
-the only elements that you can put in that data structure are Numbers
-and strings and dates. In other words. Atomic values. But that’s not
-real life. There’s no reason that I should not be able to have an
-list of a raise. Or a tree of records. Or a list of records. I
-should, hypothetically, be able to arbitrarily nest data structures as
-much is my problem needs me to do.
-
-We can’t forget atomic data structures too, of course. Data types like
-date, time, integer, decimal, currency are all atomic and still should
-not be combined together in the wrong way. You cannot for example add
-two dates together. What would that even mean. But you can subtract
-one date from another. That would give you a duration. The type system
-should prevent me from making mistakes with these types too.
+You can add a type system to the system. The purpose of a type system
+is to make sure that you are combining your different operations
+together in a way that makes sense. Not putting a square peg in around
+hole. For example, you can calculate the sum of an list, of a graph,
+of a tree. However, you cannot concatenate a graph to an list. What
+would that even mean?
 
 ## Conclusion
 
@@ -129,3 +127,22 @@ In conclusion, we’ve looked at reasons why a traditional spreadsheet
 grid system is lacking in several key areas of expression,
 correctness, and even convenience, in a way that is actually important
 for normal knowledge work and not just for programmers.
+
+If you look through various competitors to the established spreadsheet
+vendors, you'll see a lot of "reinvent spreadsheets" language. But
+it's always the same thing: we have a grid system with coordinates and
+an underwhelming untyped expression language. But they added
+JavaScript or Python to it, or added a "low-code" app generator on top
+of the spreadsheet, or some special views.
+
+We're working on a system that really does rethink the spreadsheet
+fundamentally from the ground up. And the first thing to be thrown out
+is the grid, the coordinate system and replace them with real data
+structures and a type system.
+
+We keep what's *good* about spreadsheets: the reactivity and
+"edit-in-place" user experience.
+
+In our next post we'll be discussing the fundamental problems with the
+expression/formula languages used in spreadsheet sofware, and how we
+are fixing it.

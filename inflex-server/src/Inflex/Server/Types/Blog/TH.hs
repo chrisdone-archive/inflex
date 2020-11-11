@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -7,10 +8,14 @@ module Inflex.Server.Types.Blog.TH where
 
 import           Blogfile
 import           Control.Monad.IO.Class
+import qualified Data.ByteString as S
 import           Data.Char
 import           Data.FileEmbed.Stack
+import           Data.List
 import           Data.Maybe
+import           Data.Ord
 import           Data.Time.QQ ()
+import           Inflex.Server.Types.Article
 import           Language.Haskell.TH
 import           Sendfile ()
 import           System.Directory
@@ -20,14 +25,27 @@ import           System.Directory
 generateBlog :: Q [(FilePath,Exp)]
 generateBlog = do
   blogDir <- wrapStackRoot root
+  fps0 <-
+    fmap (filter (isSuffixOf ".md")) (liftIO (getDirectoryContents blogDir))
   fps <-
-    fmap (filter (not . all (== '.'))) (liftIO (getDirectoryContents blogDir))
+    runIO
+      (do ds <-
+            mapM
+              (\fp -> do
+                 bs <- S.readFile (blogDir ++ "/" ++ fp)
+                 let d = do
+                       Article {date} <- parseArticle bs
+                       pure date
+                 pure (d, fp))
+              fps0
+          pure (map snd (sortBy (comparing fst) ds)))
   traverse
     (\fp -> do
        contents <- openBlogFileFrom (root ++ "/" ++ fp)
        pure (fp, contents))
     fps
-  where root = "inflex-content/blog"
+  where
+    root = "inflex-content/blog"
 
 mkBlogDataType :: [(FilePath,Exp)] -> Q ([Dec], [(Name, Exp)])
 mkBlogDataType names =

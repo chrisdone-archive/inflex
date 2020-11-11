@@ -1,6 +1,6 @@
 Article {
  title = "The spreadsheet language is bad",
- date = 2020-09-18,
+ date = 2020-11-13,
  content = ""
 }
 

@@ -11,12 +11,12 @@
 
 module Inflex.Server.Handlers.Blog where
 
-import qualified Data.Text.Lazy as LT
 import           Control.Monad.Reader
 import           Data.Foldable
 import           Data.Function
 import           Data.List
 import qualified Data.List.NonEmpty as NE
+import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text.Lazy as LT
 import           Data.Time
@@ -45,7 +45,7 @@ getBlogR = do
     liftIO
       (traverse
          (\entryName -> fmap (entryName, ) (getArticleByEntryName entryName))
-         [minBound .. maxBound])
+         (reverse [minBound .. maxBound]))
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -122,6 +122,10 @@ getBlogEntryR entryName = do
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
   logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
   Article {..} <- liftIO (getArticleByEntryName entryName)
+  nextArticle <-
+    traverse
+      (\nextBlog -> fmap (nextBlog, ) (liftIO (getArticleByEntryName nextBlog)))
+      (listToMaybe (drop 1 [entryName ..]))
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -167,6 +171,15 @@ getBlogEntryR entryName = do
                      (markdown
                         defaultMarkdownSettings {msAddHeadingId = True}
                         (LT.fromStrict content))))
+             for_
+               nextArticle
+               (\(nextBlogName, Article {title = nextTitle}) -> do
+                  hr_ []
+                  p_
+                    (do strong_ "Next article: "
+                        a_
+                          [href_ (url (BlogEntryR nextBlogName))]
+                          (toHtml nextTitle)))
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"
