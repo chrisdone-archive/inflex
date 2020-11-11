@@ -135,10 +135,10 @@ an underwhelming untyped expression language. But they added
 JavaScript or Python to it, or added a "low-code" app generator on top
 of the spreadsheet, or some special views.
 
-We're working on a system that really does rethink the spreadsheet
-fundamentally from the ground up. And the first thing to be thrown out
-is the grid, the coordinate system and replace them with real data
-structures and a type system.
+We're working on [a system called Inflex](https://inflex.io/) that
+really does rethink the spreadsheet fundamentally from the ground
+up. And the first thing to be thrown out is the grid, the coordinate
+system and replace them with real data structures and a type system.
 
 We keep what's *good* about spreadsheets: the reactivity and
 "edit-in-place" user experience.
