@@ -51,7 +51,7 @@ getBlogR = do
        url <- ask
        head_ $ do
          link_ [href_ "#", rel_ "shortcut icon"]
-         title_ "Inflex"
+         title_ "Blog - Inflex"
          meta_ [content_ "utf-8", name_ "charset"]
          meta_
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
@@ -131,7 +131,7 @@ getBlogEntryR entryName = do
        url <- ask
        head_ $ do
          link_ [href_ "#", rel_ "shortcut icon"]
-         title_ "Inflex"
+         title_ (toHtml title)
          meta_ [content_ "utf-8", name_ "charset"]
          meta_
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
