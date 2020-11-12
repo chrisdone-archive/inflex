@@ -54,7 +54,7 @@ getHomeR = do
   (do msession <- lookupSession
       let state = maybe NoSessionState (sessionState . entityVal) msession
       case state of
-        Registered{} -> redirect AppDashboardR
+        Registered {} -> redirect AppDashboardR
         _ -> pure ()
       css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
       js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
@@ -85,7 +85,10 @@ getHomeR = do
                div_ [class_ "margin-wrapper"] $ do
                  div_ [class_ "logo"] (toHtmlRaw logo)
                  span_ [class_ "beta-badge"] "beta"
-                 div_ [class_ "rhs-nav"] $
+                 div_ [class_ "rhs-nav"] $ do
+                   form_
+                     []
+                     (do a_ [href_ (url BlogR), class_ "full-button"] "Blog")
                    case state of
                      Registered {} ->
                        form_ [action_ (url AppDashboardR), method_ "get"] $ do

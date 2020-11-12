@@ -60,10 +60,15 @@ body {
   font-size: 20px;
 }
 .navbar .rhs-nav .full-button {
+  height: 100%;
+  font-size: 20px;
   border: 0;
   background: #01203a;
   color: #fff;
   text-decoration: none;
+}
+.navbar form + form {
+  margin-left: 40px;
 }
 .navbar .rhs-nav .full-button:hover {
   text-decoration: underline;
@@ -159,6 +164,9 @@ body {
 }
 
 @media only screen and (max-width: 800px) {
+  .navbar form + form {
+  margin-left: 20px;
+}
   .hero {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -229,22 +237,22 @@ body {
 }
 
 .email-address {
-    margin-top: 30px;
-    border: 0;
-    radius: 5px;
+  margin-top: 30px;
+  border: 0;
+  radius: 5px;
 }
 
 .email-address input {
-    border: 0;
-    border-radius: 2px;
-    padding: 10px;
-    font-size: 18px;
-    width: 200px;
+  border: 0;
+  border-radius: 2px;
+  padding: 10px;
+  font-size: 18px;
+  width: 200px;
 }
 
 button.button.tagline-action {
-    width: 200px;
-    margin-top: 5px;
+  width: 200px;
+  margin-top: 5px;
 }
 
 .thanks {

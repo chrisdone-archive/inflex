@@ -171,15 +171,17 @@ getBlogEntryR entryName = do
                      (markdown
                         defaultMarkdownSettings {msAddHeadingId = True}
                         (LT.fromStrict content))))
-             for_
-               nextArticle
-               (\(nextBlogName, Article {title = nextTitle}) -> do
-                  hr_ []
-                  p_
-                    (do strong_ "Next article: "
-                        a_
-                          [href_ (url (BlogEntryR nextBlogName))]
-                          (toHtml nextTitle)))
+             case nextArticle of
+               Just (nextBlogName, Article {title = nextTitle}) -> do
+                 hr_ []
+                 p_
+                   (do strong_ "Next article: "
+                       a_
+                         [href_ (url (BlogEntryR nextBlogName))]
+                         (toHtml nextTitle))
+               Nothing -> do
+                 hr_ []
+                 p_ (do a_ [href_ (url BlogR)] "View more articles")
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"
