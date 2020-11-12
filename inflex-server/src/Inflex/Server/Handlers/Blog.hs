@@ -102,13 +102,22 @@ getBlogR = do
                           (\(blogEntryName, Article {..}) ->
                              li_
                                [class_ "article"]
-                               (do h2_
+                               (do p_
+                                     [class_ "date"]
+                                     (toHtml (showGregorian date))
+                                   h2_
                                      (a_
                                         [href_ (url (BlogEntryR blogEntryName))]
                                         (Lucid.toHtml title))
+                                   p_ [class_ "summary"] (toHtml summary)
                                    p_
-                                     [class_ "preview"]
-                                     (toHtml (showGregorian date)))))))
+                                     []
+                                     (strong_
+                                        (a_
+                                           [ href_
+                                               (url (BlogEntryR blogEntryName))
+                                           ]
+                                           "Continue reading →")))))))
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"

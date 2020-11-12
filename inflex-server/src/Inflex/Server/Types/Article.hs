@@ -18,6 +18,7 @@ data Article = Article
   { title :: Text
   , date :: Day
   , content :: Text
+  , summary :: Text
   } deriving (Read, Show, Lift)
 
 parseArticle :: ByteString -> Maybe Article

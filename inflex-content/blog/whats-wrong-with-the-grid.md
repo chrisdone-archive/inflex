@@ -1,7 +1,8 @@
 Article {
  title = "What’s wrong with the grid?",
  date = 2020-11-12,
- content = ""
+ content = "",
+ summary = "The grid system is a 40 year old staple of spreadsheets. Here's why we want to get rid of it entirely."
 }
 
 The grid system in spreadsheets is very simple. It’s also very

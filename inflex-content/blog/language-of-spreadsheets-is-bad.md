@@ -1,7 +1,8 @@
 Article {
  title = "The language of spreadsheets is bad",
  date = 2020-11-13,
- content = ""
+ content = "",
+ summary = "We take a critical view on the language used for formulas in traditional spreadsheets and propose a better solution."
 }
 
 The user interface in a spreadsheet is modal. There are two modes:
