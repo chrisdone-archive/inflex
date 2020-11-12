@@ -214,7 +214,7 @@ a {
     padding-bottom: 50px;
     min-height: 75%;
 
-    p {
+    p, li, ul, ol {
       font-size: 22px;
       font-family: serif;
       line-height: 1.6;
