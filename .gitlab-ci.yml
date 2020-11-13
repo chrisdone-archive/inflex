@@ -31,10 +31,10 @@ prod:
   when: manual # Later, enable on master?
   script:
     - sed -i.bak "s/git@gitlab.com:/https:\/\/gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com\//" stack.yaml
-    - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
     - IMAGE="${CI_REGISTRY_IMAGE}/prod:${CI_PIPELINE_ID}"
-    - docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
-    - docker push "$IMAGE"
+    - time docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
+    - time docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
+    - time docker push "$IMAGE"
 
 deploy-prod:
   stage: deploy
