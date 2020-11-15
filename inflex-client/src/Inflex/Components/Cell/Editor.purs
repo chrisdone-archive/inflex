@@ -623,13 +623,23 @@ editorCode =
            (map (\(Field {key, value}) -> key <> ":" <> editorCode value) fs) <>
          "}")
     ErrorE _ -> ""
-    TableE original _columns rows ->
-      editorCode
-        (ArrayE
-           original
-           (map
-              (\(Row {original: o, fields}) -> RecordE o fields)
-              rows))
+    TableE original columns rows ->
+      addTableTypeSig columns rows
+        (editorCode
+           (ArrayE
+              original
+              (map
+                 (\(Row {original: o, fields}) ->
+                    RecordE o fields)
+                 rows)))
+
+-- | Add a type signature if the rows are empty.
+-- TODO: Consider whether this is the right place for this. It might cause trouble.
+addTableTypeSig :: forall a. Array String -> Array a -> String -> String
+addTableTypeSig columns rows inner =
+  case rows of
+    [] -> "([] :: " <> " " <> joinWith "," columns <> ")"
+    _ -> inner
 
 originalOr :: Shared.OriginalSource -> String -> String
 originalOr Shared.NoOriginalSource s = s
