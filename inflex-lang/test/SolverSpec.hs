@@ -348,3 +348,41 @@ arrayHoles = do
                             }))
                 , location = ExpressionCursor
                 }))))
+  it
+    "[] :: [{a:_}]"
+    (shouldBe
+       (fmap Inflex.Solver.thing (solveText' mempty "" "[] :: [{a:_}]"))
+       (Right
+          (ArrayExpression
+             (Array
+                { expressions = []
+                , typ =
+                    ArrayType
+                      (RecordType
+                         (RowType
+                            (TypeRow
+                               { location = SignatureCursor TypeCursor
+                               , typeVariable = Nothing
+                               , fields =
+                                   [ Field
+                                       { location =
+                                           SignatureCursor
+                                             (RowFieldCursor TypeCursor)
+                                       , name = FieldName {unFieldName = "a"}
+                                       , typ =
+                                           VariableType
+                                             (TypeVariable
+                                                { location =
+                                                    SignatureCursor
+                                                      (RowFieldCursor
+                                                         (RowFieldType
+                                                            LambdaParamCursor))
+                                                , prefix = FreshPrefix
+                                                , index = 1
+                                                , kind = TypeKind
+                                                })
+                                       }
+                                   ]
+                               })))
+                , location = ExpressionCursor
+                }))))

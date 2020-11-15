@@ -444,11 +444,10 @@ paramParser = do
 typeParser :: Parser (Type Parsed)
 typeParser = do
   functionType <> decimalType <> integerType <> parensType <> arrayType <>
-    freshType
+    freshType <> recordType
   where
     freshType = do
-      Located {location} <-
-        token ExpectedHole (preview _HoleToken)
+      Located {location} <- token ExpectedHole (preview _HoleToken)
       pure (FreshType location)
     arrayType = do
       token_ ExpectedSquare (preview _OpenSquareToken)
@@ -515,3 +514,32 @@ typeParser = do
              _ -> Nothing)
       pure
         (ConstantType TypeConstant {location = integerLocation, name = typeName})
+    recordType = do
+      Located {location = SourceLocation {start}} <-
+        token ExpectedCurly (preview _OpenCurlyToken)
+      fields <-
+        let loop = do
+              name <- fieldNameParser
+              Located {location, thing = ()} <-
+                token ExpectedContinuation (preview _ColonToken)
+              typ <- typeParser
+              comma <-
+                fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
+                pure False
+              rest <-
+                if comma
+                  then loop
+                  else pure []
+              let field = Field {name, typ, location}
+              pure (field : rest)
+         in loop
+      Located {location = SourceLocation {end}} <-
+        token ExpectedCloseCurly (preview _CloseCurlyToken)
+      pure
+        (RecordType
+           (RowType
+              TypeRow
+                { location = SourceLocation {start, end}
+                , typeVariable = Nothing
+                , fields = fields
+                }))
