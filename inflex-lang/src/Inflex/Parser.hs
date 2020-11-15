@@ -219,19 +219,22 @@ recordParser = do
     token ExpectedCurly (preview _OpenCurlyToken)
   fields <-
     let loop = do
-          (name, _) <- fieldNameParser
-          Located {location, thing = ()} <-
-            token ExpectedContinuation (preview _ColonToken)
-          expression <- expressionParser
-          comma <-
-            fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
-            pure False
-          rest <-
-            if comma
-              then loop
-              else pure []
-          let field = FieldE {name, expression, location}
-          pure (field : rest)
+          nameResult <- fmap Just fieldNameParser <> pure Nothing
+          case nameResult of
+            Nothing -> pure []
+            Just (name, _) -> do
+              Located {location, thing = ()} <-
+                token ExpectedContinuation (preview _ColonToken)
+              expression <- expressionParser
+              comma <-
+                fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
+                pure False
+              rest <-
+                if comma
+                  then loop
+                  else pure []
+              let field = FieldE {name, expression, location}
+              pure (field : rest)
      in loop
   Located {location = SourceLocation {end}} <-
     token ExpectedCloseCurly (preview _CloseCurlyToken)
@@ -520,25 +523,30 @@ typeParser = do
         token ExpectedCurly (preview _OpenCurlyToken)
       fields <-
         let loop = do
-              (name, nameLocation) <- fieldNameParser
-              result <-
-                fmap Just (token ExpectedContinuation (preview _ColonToken)) <>
-                pure Nothing
-              (location, typ) <-
-                case result of
-                  Just (Located {location, thing = ()}) -> do
-                    typ <- typeParser
-                    pure (location, typ)
-                  Nothing -> pure (nameLocation, FreshType nameLocation)
-              comma <-
-                fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
-                pure False
-              rest <-
-                if comma
-                  then loop
-                  else pure []
-              let field = Field {name, typ, location}
-              pure (field : rest)
+              nameResult <- fmap Just fieldNameParser <> pure Nothing
+              case nameResult of
+                Nothing -> pure []
+                Just (name, nameLocation) -> do
+                  result <-
+                    fmap Just (token ExpectedContinuation (preview _ColonToken)) <>
+                    pure Nothing
+                  (location, typ) <-
+                    case result of
+                      Just (Located {location, thing = ()}) -> do
+                        typ <- typeParser
+                        pure (location, typ)
+                      Nothing -> pure (nameLocation, FreshType nameLocation)
+                  comma <-
+                    fmap
+                      (const True)
+                      (token_ ExpectedComma (preview _CommaToken)) <>
+                    pure False
+                  rest <-
+                    if comma
+                      then loop
+                      else pure []
+                  let field = Field {name, typ, location}
+                  pure (field : rest)
          in loop
       Located {location = SourceLocation {end}} <-
         token ExpectedCloseCurly (preview _CloseCurlyToken)
