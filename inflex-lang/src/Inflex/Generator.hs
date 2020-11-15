@@ -159,6 +159,13 @@ propGenerator Prop {..} = do
 arrayGenerator :: Array Filled -> Generate e (Array Generated)
 arrayGenerator Array {..} = do
   elementVariable <- generateVariableType location ArrayElementPrefix TypeKind
+  case typ of
+    Nothing -> pure ()
+    Just typ' -> do
+      fullTypeSig <- renamedToGenerated typ'
+      addEqualityConstraint
+        EqualityConstraint
+          {type1 = fullTypeSig, type2 = ArrayType elementVariable, ..}
   expressions' <-
     traverse
       (\e -> do
