@@ -386,3 +386,145 @@ arrayHoles = do
                                })))
                 , location = ExpressionCursor
                 }))))
+  it
+    "[] :: [{a,b}]"
+    (shouldBe
+       (fmap Inflex.Solver.thing (solveText' mempty "" "[] :: [{a,b}]"))
+       (Right
+          (ArrayExpression
+             (Array
+                { expressions = []
+                , typ =
+                    ArrayType
+                      (RecordType
+                         (RowType
+                            (TypeRow
+                               { location = SignatureCursor TypeCursor
+                               , typeVariable = Nothing
+                               , fields =
+                                   [ Field
+                                       { location =
+                                           SignatureCursor
+                                             (RowFieldCursor TypeCursor)
+                                       , name = FieldName {unFieldName = "a"}
+                                       , typ =
+                                           VariableType
+                                             (TypeVariable
+                                                { location =
+                                                    SignatureCursor
+                                                      (RowFieldCursor
+                                                         (RowFieldType
+                                                            LambdaParamCursor))
+                                                , prefix = FreshPrefix
+                                                , index = 1
+                                                , kind = TypeKind
+                                                })
+                                       }
+                                   , Field
+                                       { location =
+                                           SignatureCursor
+                                             (RowFieldCursor TypeCursor)
+                                       , name = FieldName {unFieldName = "b"}
+                                       , typ =
+                                           VariableType
+                                             (TypeVariable
+                                                { location =
+                                                    SignatureCursor
+                                                      (RowFieldCursor
+                                                         (RowFieldType
+                                                            LambdaParamCursor))
+                                                , prefix = FreshPrefix
+                                                , index = 2
+                                                , kind = TypeKind
+                                                })
+                                       }
+                                   ]
+                               })))
+                , location = ExpressionCursor
+                }))))
+  it
+    "[] :: [{a,b:{x}]"
+    (shouldBe
+       (fmap Inflex.Solver.thing (solveText' mempty "" "[] :: [{a,b:{x}}]"))
+       (Right
+          (ArrayExpression
+             (Array
+                { expressions = []
+                , typ =
+                    ArrayType
+                      (RecordType
+                         (RowType
+                            (TypeRow
+                               { location = SignatureCursor TypeCursor
+                               , typeVariable = Nothing
+                               , fields =
+                                   [ Field
+                                       { location =
+                                           SignatureCursor
+                                             (RowFieldCursor TypeCursor)
+                                       , name = FieldName {unFieldName = "a"}
+                                       , typ =
+                                           VariableType
+                                             (TypeVariable
+                                                { location =
+                                                    SignatureCursor
+                                                      (RowFieldCursor
+                                                         (RowFieldType
+                                                            LambdaParamCursor))
+                                                , prefix = FreshPrefix
+                                                , index = 1
+                                                , kind = TypeKind
+                                                })
+                                       }
+                                   , Field
+                                       { location =
+                                           SignatureCursor
+                                             (RowFieldCursor TypeCursor)
+                                       , name = FieldName {unFieldName = "b"}
+                                       , typ =
+                                           RecordType
+                                             (RowType
+                                                (TypeRow
+                                                   { location =
+                                                       SignatureCursor
+                                                         (RowFieldCursor
+                                                            (RowFieldType
+                                                               TypeCursor))
+                                                   , typeVariable = Nothing
+                                                   , fields =
+                                                       [ Field
+                                                           { location =
+                                                               SignatureCursor
+                                                                 (RowFieldCursor
+                                                                    (RowFieldType
+                                                                       (RowFieldCursor
+                                                                          TypeCursor)))
+                                                           , name =
+                                                               FieldName
+                                                                 { unFieldName =
+                                                                     "x"
+                                                                 }
+                                                           , typ =
+                                                               VariableType
+                                                                 (TypeVariable
+                                                                    { location =
+                                                                        SignatureCursor
+                                                                          (RowFieldCursor
+                                                                             (RowFieldType
+                                                                                (RowFieldCursor
+                                                                                   (RowFieldType
+                                                                                      LambdaParamCursor))))
+                                                                    , prefix =
+                                                                        FreshPrefix
+                                                                    , index = 2
+                                                                    , kind =
+                                                                        TypeKind
+                                                                    })
+                                                           }
+                                                       ]
+                                                   }))
+                                       }
+                                   ]
+                               })))
+                , location = ExpressionCursor
+                }))))

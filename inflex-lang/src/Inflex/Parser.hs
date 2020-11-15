@@ -219,7 +219,7 @@ recordParser = do
     token ExpectedCurly (preview _OpenCurlyToken)
   fields <-
     let loop = do
-          name <- fieldNameParser
+          (name, _) <- fieldNameParser
           Located {location, thing = ()} <-
             token ExpectedContinuation (preview _ColonToken)
           expression <- expressionParser
@@ -280,15 +280,15 @@ propParser = do
     (VariableExpression <$> variableParser) <>
     parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
-  name <- fieldNameParser
+  (name, _) <- fieldNameParser
   pure Prop {typ = Nothing, ..}
 
-fieldNameParser :: Parser FieldName
+fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
-  Located {thing = name} <-
+  Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken) <>
     token ExpectedVariable (preview _StringToken)
-  pure (FieldName name)
+  pure (FieldName name, location)
 
 letParser :: Parser (Let Parsed)
 letParser = do
@@ -444,7 +444,8 @@ paramParser = do
 typeParser :: Parser (Type Parsed)
 typeParser = do
   functionType <> decimalType <> integerType <> parensType <> arrayType <>
-    freshType <> recordType
+    freshType <>
+    recordType
   where
     freshType = do
       Located {location} <- token ExpectedHole (preview _HoleToken)
@@ -519,10 +520,16 @@ typeParser = do
         token ExpectedCurly (preview _OpenCurlyToken)
       fields <-
         let loop = do
-              name <- fieldNameParser
-              Located {location, thing = ()} <-
-                token ExpectedContinuation (preview _ColonToken)
-              typ <- typeParser
+              (name, nameLocation) <- fieldNameParser
+              result <-
+                fmap Just (token ExpectedContinuation (preview _ColonToken)) <>
+                pure Nothing
+              (location, typ) <-
+                case result of
+                  Just (Located {location, thing = ()}) -> do
+                    typ <- typeParser
+                    pure (location, typ)
+                  Nothing -> pure (nameLocation, FreshType nameLocation)
               comma <-
                 fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
                 pure False
