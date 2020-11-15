@@ -14,6 +14,8 @@ module Inflex.Display where
 import           Data.Coerce
 import           Data.List
 import qualified Data.Text as T
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Location
 import           Inflex.Types
@@ -224,8 +226,33 @@ instance Display (Prop Parsed) where
     display expression <> "." <> display name -- TODO: Manage parens.
 
 instance Display (Array Parsed) where
-  display (Array {expressions}) =
-    "[" <> mconcat (intersperse ", " (map display (toList expressions))) <> "]"
+  display (Array {expressions, typ}) =
+    addColumnsIfNeeded expressions typ ("[" <> mconcat (intersperse ", " (map display (toList expressions))) <> "]")
+
+addColumnsIfNeeded :: Display a => Vector e -> Maybe a -> Utf8Builder -> Utf8Builder
+addColumnsIfNeeded expressions typ inner =
+  case typ of
+    Just t | V.null expressions -> inner <> " :: " <> display t
+    _ -> inner
+
+instance Display (Type Parsed) where
+  display =
+    \case
+      ArrayType t -> "[" <> display t <> "]"
+      RecordType (RowType (TypeRow {fields})) ->
+        "{" <>
+        mconcat
+          (intersperse
+             ", "
+             (map
+                (\Field {name, typ} ->
+                   display name <>
+                   (case typ of
+                      FreshType {} -> ""
+                      t -> ":" <> display t))
+                fields)) <>
+        "}"
+      _ -> "_"
 
 instance Display (Record Parsed) where
   display (Record {fields}) =
