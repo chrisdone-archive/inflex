@@ -28,6 +28,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Data.Validation
+import           Data.Void
 import           Inflex.Filler
 import           Inflex.Instances ()
 import           Inflex.Location
@@ -279,7 +280,7 @@ applyGenerator Apply {..} = do
     case typ of
       Nothing ->
         generateVariableType (expressionLocation argument') ApplyPrefix TypeKind
-      Just typ' -> pure (renamedToGenerated typ')
+      Just typ' -> renamedToGenerated typ'
   let functionTemplate =
         ApplyType
           TypeApplication
@@ -491,29 +492,33 @@ funcType location inp out =
 --------------------------------------------------------------------------------
 -- Generation of renamed type
 
-renamedToGenerated :: Type Renamed -> Type Generated
+renamedToGenerated :: Type Renamed -> Generate e (Type Generated)
 renamedToGenerated =
   \case
-    RecordType t -> RecordType (renamedToGenerated t)
-    ArrayType t -> ArrayType (renamedToGenerated t)
-    VariableType TypeVariable {..} -> VariableType TypeVariable {..}
-    RowType TypeRow {..} ->
-      RowType
-        TypeRow
-          { fields = fmap fieldToGen fields
-          , typeVariable = fmap typeVarToGen typeVariable
-          , ..
-          }
-    ConstantType TypeConstant {..} -> ConstantType TypeConstant {..}
-    ApplyType TypeApplication {..} ->
-      ApplyType
-        TypeApplication
-          { function = renamedToGenerated function
-          , argument = renamedToGenerated argument
-          , ..
-          }
+    FreshType location -> generateVariableType location FreshPrefix TypeKind
+    RecordType t -> fmap RecordType (renamedToGenerated t)
+    ArrayType t -> fmap ArrayType (renamedToGenerated t)
+    VariableType TypeVariable {..} -> pure (VariableType TypeVariable {..})
+    RowType TypeRow {..} -> do
+      fields' <- traverse fieldToGen fields
+      pure
+        (RowType
+           TypeRow
+             { fields = fields'
+             , typeVariable = fmap typeVarToGen typeVariable
+             , ..
+             })
+    ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
+    ApplyType TypeApplication {..} -> do
+      function' <- renamedToGenerated function
+      argument' <- renamedToGenerated argument
+      pure
+        (ApplyType
+           TypeApplication {function = function', argument = argument', ..})
   where
-    fieldToGen Field {..} = Field {typ = renamedToGenerated typ, ..}
+    fieldToGen Field {..} = do
+      typ' <- renamedToGenerated typ
+      pure Field {typ = typ', ..}
     typeVarToGen TypeVariable {..} = TypeVariable {..}
 
 --------------------------------------------------------------------------------
@@ -542,6 +547,7 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
       -> StateT (Map (TypeVariable Polymorphic) (TypeVariable Generated)) (Generate e) (Type Generated)
     rewriteType =
       \case
+        FreshType v -> absurd v
         RecordType t -> fmap RecordType (rewriteType t)
         ArrayType t -> fmap ArrayType (rewriteType t)
         RowType TypeRow {..} -> do

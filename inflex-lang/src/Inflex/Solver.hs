@@ -24,6 +24,7 @@ import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Data.Void
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
@@ -258,6 +259,7 @@ bindTypeVariable typeVariable typ
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
 occursIn typeVariable =
   \case
+    FreshType v -> absurd v
     VariableType typeVariable' -> typeVariable == typeVariable'
     ApplyType TypeApplication {function, argument} ->
       occursIn typeVariable function || occursIn typeVariable argument
@@ -304,6 +306,7 @@ substituteType substitutions = go
   where
     go =
       \case
+        FreshType v -> absurd v
         RecordType t -> RecordType (go t)
         ArrayType t -> ArrayType (go t)
         typ@ConstantType {} -> typ
@@ -358,6 +361,7 @@ solveType substitutions = go . substituteType substitutions
   where
     go =
       \case
+        FreshType v -> absurd v
         RecordType t -> RecordType (go t)
         ArrayType t -> ArrayType (go t)
         VariableType TypeVariable {..} -> VariableType TypeVariable {..}

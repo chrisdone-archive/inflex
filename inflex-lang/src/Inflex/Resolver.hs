@@ -30,6 +30,7 @@ import           Data.Sequence (Seq(..))
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import           Data.Void
 import           Inflex.Defaulter.Suggest
 import           Inflex.Generaliser
 import           Inflex.Location
@@ -416,6 +417,7 @@ constrainPolymorphic defaulteds = go
   where
     go =
       \case
+        FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
         ArrayType t -> fmap ArrayType (go t)
         VariableType typeVariable ->

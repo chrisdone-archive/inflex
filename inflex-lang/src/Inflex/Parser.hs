@@ -53,6 +53,7 @@ data ParseError
   | ExpectedToken Token
   | ExpectedParam
   | ExpectedVariable
+  | ExpectedHole
   | ExpectedGlobal
   | ExpectedDecimal
   | ExpectedText
@@ -263,10 +264,11 @@ arrayParser = do
               token ExpectedCloseSquare (preview _CloseSquareToken)
             pure (ret, end)
           Just end -> pure ([], end)
+  typ <- optionalSignatureParser
   pure
     Array
       { expressions = V.fromList expressions
-      , typ = Nothing
+      , typ
       , location = SourceLocation {start, end}
       }
 
@@ -420,7 +422,7 @@ variableParser = do
 holeParser :: Parser (Hole Parsed)
 holeParser = do
   Located {thing = _name, location} <-
-    token ExpectedVariable (preview _HoleToken)
+    token ExpectedHole (preview _HoleToken)
   pure Hole {location, typ = Nothing}
 
 lambdaParser :: Parser (Lambda Parsed)
@@ -441,8 +443,13 @@ paramParser = do
 
 typeParser :: Parser (Type Parsed)
 typeParser = do
-  functionType <> decimalType <> integerType <> parensType <> arrayType
+  functionType <> decimalType <> integerType <> parensType <> arrayType <>
+    freshType
   where
+    freshType = do
+      Located {location} <-
+        token ExpectedHole (preview _HoleToken)
+      pure (FreshType location)
     arrayType = do
       token_ ExpectedSquare (preview _OpenSquareToken)
       typ <- typeParser

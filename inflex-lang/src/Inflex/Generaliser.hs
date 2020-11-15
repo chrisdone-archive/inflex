@@ -16,6 +16,7 @@ import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
+import           Data.Void
 import           Inflex.Solver
 import           Inflex.Type
 import           Inflex.Types
@@ -82,6 +83,7 @@ toPolymorphic =
   where
     go =
       \case
+        FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
         ArrayType t -> fmap ArrayType (go t)
         RowType TypeRow {..} -> do
@@ -130,6 +132,7 @@ generaliseType substitutions = go
   where
     go =
       \case
+        FreshType v -> absurd v
         RecordType t -> RecordType (go t)
         ArrayType t -> ArrayType (go t)
         VariableType typeVariable@TypeVariable {..} ->

@@ -10,14 +10,15 @@
 
 module Inflex.Types where
 
-import           Control.DeepSeq
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Sequence (Seq)
-import           Data.Text (Text)
-import           Data.Vector (Vector)
-import           GHC.Generics
-import           Inflex.Types.SHA512
-import           Numeric.Natural
+import Control.DeepSeq
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Sequence (Seq)
+import Data.Text (Text)
+import Data.Vector (Vector)
+import Data.Void
+import GHC.Generics
+import Inflex.Types.SHA512
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -225,6 +226,12 @@ data Type s where
   RowType :: TypeRow s -> Type s
   RecordType :: Type s -> Type s
   ArrayType :: Type s -> Type s
+  FreshType :: StagedFresh s -> Type s
+
+type family StagedFresh s where
+  StagedFresh Parsed = SourceLocation
+  StagedFresh Renamed = Cursor
+  StagedFresh s = Void
 
 -- | A row type.
 data TypeRow s = TypeRow
@@ -304,6 +311,7 @@ data TypeVariablePrefix
   | FieldTypePrefix
   | ArrayElementPrefix
   | HolePrefix
+  | FreshPrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint

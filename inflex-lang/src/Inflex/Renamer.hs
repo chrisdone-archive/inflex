@@ -344,8 +344,11 @@ renameSignature env =
     (fmap Just . renameType (over envCursorL (. SignatureCursor) env))
 
 renameType :: Env -> Type Parsed -> Renamer (Type Renamed)
-renameType env =
+renameType env@Env {cursor} =
   \case
+    FreshType location -> do
+      final <- finalizeCursor cursor LambdaParamCursor location
+      pure (FreshType final)
     VariableType typeVariable ->
       fmap VariableType (renameTypeVariable env typeVariable)
     ApplyType typeApplication ->

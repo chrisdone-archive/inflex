@@ -20,6 +20,7 @@ typeKind =
     RowType {} -> RowKind
     RecordType {} -> TypeKind
     ArrayType {} -> TypeKind
+    FreshType{} -> TypeKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind
