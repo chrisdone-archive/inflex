@@ -499,6 +499,9 @@ renderRecordEditor path fields =
                  ]
                  [HH.text "Add field"]
              ]) <>
+     (case fields of
+        [] -> [HH.text "(No fields yet)"]
+        _ -> []) <>
      mapWithIndex
        (\i (Field {key, value: editor'}) ->
           HH.tr
