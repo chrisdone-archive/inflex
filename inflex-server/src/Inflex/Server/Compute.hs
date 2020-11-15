@@ -58,7 +58,7 @@ loadInputDocument (Shared.InputDocument1 {cells}) =
 toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
 toTree original =
   \case
-    ArrayExpression Array {typ, expressions}
+    ArrayExpression Array {typ, expressions} -- Recognize a table.
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
         Shared.TableTree2
           Shared.versionRefl
