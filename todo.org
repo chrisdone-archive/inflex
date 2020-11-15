@@ -445,6 +445,8 @@ chris@precision:~$
     https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20
 
 * References
+  - Note taken on [2020-11-14 Sat 12:21] \\
+    https://lukeplant.me.uk/blog/posts/less-powerful-languages/
   - Note taken on [2020-06-07 Sun 19:00] \\
     Type Inference with Polymorphic Recursion
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3091&rep=rep1&type=pdf
@@ -493,6 +495,21 @@ chris@precision:~$
   - Note taken on [2020-06-07 Sun 11:01] \\
     https://pchiusano.github.io/2018-02-13/typeclasses.html
 * Comments
+  - Note taken on [2020-11-14 Sat 12:14] \\
+    Purescript partials currying
+
+    #+BEGIN_SRC
+    var rpcCall = function (dictMonadAff) {
+        return function (dictGenericEncode) {
+            return function (dictGenericDecode) {
+                return function (dictGeneric) {
+                    return function (dictGeneric1) {
+                        return function (dictShow) {
+                            return function (endpoint0) {
+                                return function (input) {
+                                    var endpoint = "/api/rpc/" + endpoint0;
+                                    return Effect_Aff_Class.liftAff(dictMonadAff)((function () {
+    #+END_SRC
   - Note taken on [2020-08-14 Fri 14:44] \\
     QuickJS
 
