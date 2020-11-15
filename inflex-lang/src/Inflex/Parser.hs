@@ -441,8 +441,13 @@ paramParser = do
 
 typeParser :: Parser (Type Parsed)
 typeParser = do
-  functionType <> decimalType <> integerType <> parensType
+  functionType <> decimalType <> integerType <> parensType <> arrayType
   where
+    arrayType = do
+      token_ ExpectedSquare (preview _OpenSquareToken)
+      typ <- typeParser
+      token_ ExpectedCloseSquare (preview _CloseSquareToken)
+      pure (ArrayType typ)
     atomicType = decimalType <> integerType <> parensType
     parensType = do
       token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
