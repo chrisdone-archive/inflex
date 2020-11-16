@@ -20,7 +20,7 @@ import           Yesod
 withBackendPool = withPostgresqlPool
 
 manualMigration :: (MonadIO m) => x -> ReaderT SqlBackend m ()
-manualMigration x = do
+manualMigration _x = do
   -- Set isolation, and validate it.
   run "BEGIN TRANSACTION; SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
   level <- fmap (fmap unSingle) (rawSql "SELECT CURRENT_SETTING('transaction_isolation');" [])
@@ -32,7 +32,8 @@ manualMigration x = do
   case version of
     0 -> schema0
     1 -> schema1
-    2 -> liftIO $ putStrLn "At correct schema version."
+    2 -> schema2
+    3 -> liftIO $ putStrLn "At correct schema version."
     _ -> error ("At mysterious schema version: " ++ show version)
   -- Commit transaction NOW.
   run "COMMIT;"
@@ -55,4 +56,9 @@ schema1 = run [s|
 INSERT INTO schema_versions VALUES (1);
 CREATE TABLE "early_access_request"("id" SERIAL8  PRIMARY KEY UNIQUE,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"email" VARCHAR NOT NULL,"approved" TIMESTAMP WITH TIME ZONE NULL);
 ALTER TABLE "early_access_request" ADD CONSTRAINT "early_access_request_early_access_email" UNIQUE("email");
+  |]
+
+schema2 = run [s|
+INSERT INTO schema_versions VALUES (1);
+ALTER TABLE "session" ADD CONSTRAINT "session_unique_uuid" UNIQUE (uuid);
   |]

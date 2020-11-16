@@ -32,7 +32,7 @@ handleLoginR = do
         Failure _errors -> htmlWithUrl (loginView NoSessionState v)
         Success (Entity key account) -> do
           _ <-
-            assumeSession
+            createSession
               (Registered
                  LoginState
                    { loginEmail = accountEmail account

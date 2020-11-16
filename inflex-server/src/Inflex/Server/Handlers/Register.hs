@@ -147,7 +147,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
       render <- getUrlRender
       Config {stripeConfig} <- fmap appConfig getYesod
       result <-
-        createSession
+        Stripe.createSession
           StripeSession
             { stripeConfig
             , successUrl = render CheckoutWaitingR

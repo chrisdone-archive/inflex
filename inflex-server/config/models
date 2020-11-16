@@ -10,6 +10,7 @@ Session
   uuid SessionUUID
   state SessionState
   nonce NonceUUID Maybe
+  Unique UniqueUuid uuid
   deriving Show
 
 Document

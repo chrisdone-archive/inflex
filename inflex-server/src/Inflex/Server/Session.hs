@@ -17,6 +17,7 @@ module Inflex.Server.Session
   , resetSessionNonce
   , HasLoginCookie(..)
   , hasLoginCookie
+  , createSession
   ) where
 
 import           Data.Text (Text)
@@ -55,18 +56,22 @@ assumeSession :: SessionState -> Handler (Entity Session)
 assumeSession sessionState = do
   result <- lookupSession
   case result of
-    Nothing -> do
-      session <- runDB (generateSession sessionState)
-      -- TODO: Set expiry, secure, etc.
-      -- <https://hackage.haskell.org/package/cookie-0.4.0/docs/Web-Cookie.html#t:SetCookie>
-      -- For some reason Set-Cookie sends two Set-Cookie headers, one
-      -- with an empty value which breaks everything.
-      addHeader
-        "Set-Cookie"
-        (sessionCookieKey <> "=" <>
-         UUID.toText (unSessionUUID (sessionUuid (entityVal session))) <> "; Path=/")
-      pure session
+    Nothing -> createSession sessionState
     Just session -> pure session
+
+-- | Inserts the session with the given state and adds cookie header.
+createSession :: SessionState -> HandlerFor App (Entity Session)
+createSession sessionState = do
+  session <- runDB (generateSession sessionState)
+  -- TODO: Set expiry, secure, etc.
+  -- <https://hackage.haskell.org/package/cookie-0.4.0/docs/Web-Cookie.html#t:SetCookie>
+  -- For some reason Set-Cookie sends two Set-Cookie headers, one
+  -- with an empty value which breaks everything.
+  addHeader
+    "Set-Cookie"
+    (sessionCookieKey <> "=" <>
+     UUID.toText (unSessionUUID (sessionUuid (entityVal session))) <> "; Path=/")
+  pure session
 
 updateSession :: SessionId -> SessionState -> YesodDB App ()
 updateSession sessionId state =
