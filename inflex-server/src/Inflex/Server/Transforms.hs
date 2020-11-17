@@ -12,6 +12,7 @@ import           Inflex.Parser
 import qualified Inflex.Schema as Shared
 import           Inflex.Types
 import qualified Inflex.Types as FieldE (FieldE(..))
+import qualified Inflex.Types as Field (Field(..))
 import           RIO
 
 applyUpdateToDocument :: Shared.Update -> Shared.InputDocument1 -> Shared.InputDocument1
@@ -93,9 +94,13 @@ addNewFieldInCode path0 name code =
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
       \case
-        ArrayExpression array@Array {expressions}
+        ArrayExpression array@Array {expressions, location}
           | Shared.DataElemOf _index path' <- path ->
-            ArrayExpression array {expressions = fmap (go path') expressions}
+            ArrayExpression
+              (withFields
+                 (\fields ->
+                    fields <> [Field {location, name, typ = FreshType location}])
+                 (array {expressions = fmap (go path') expressions}))
         RecordExpression record@Record {fields}
           | Shared.DataFieldOf index path' <- path ->
             RecordExpression
@@ -119,12 +124,19 @@ addNewFieldInCode path0 name code =
                     fields <>
                     [ FieldE
                         { name
-                        , expression = HoleExpression Hole {location, typ = Nothing}
+                        , expression =
+                            HoleExpression Hole {location, typ = Nothing}
                         , location
                         }
                     ]
                 }
         e -> e
+
+withFields :: ([Field Parsed] -> [Field Parsed]) -> Array Parsed -> Array Parsed
+withFields f array@Array {typ}
+  | Just (ArrayType (RecordType (RowType (row@TypeRow {fields})))) <- typ =
+    array { typ = Just (ArrayType (RecordType (RowType row {fields = f fields}))) }
+withFields _f array = array
 
 renameFieldInCode :: Shared.DataPath -> FieldName -> FieldName -> Text -> Text
 renameFieldInCode path0 from to' code =
@@ -137,7 +149,16 @@ renameFieldInCode path0 from to' code =
       \case
         ArrayExpression array@Array {expressions}
           | Shared.DataElemOf _index path' <- path ->
-            ArrayExpression array {expressions = fmap (go path') expressions}
+            ArrayExpression
+              (withFields
+                 (\fields ->
+                    map
+                      (\f@Field {name} ->
+                         if name == from
+                           then f {Field.name = to'}
+                           else f)
+                      fields)
+                 (array {expressions = fmap (go path') expressions}))
         RecordExpression record@Record {fields}
           | Shared.DataFieldOf index path' <- path ->
             RecordExpression
@@ -179,7 +200,10 @@ deleteFieldInCode path0 name0 code =
       \case
         ArrayExpression array@Array {expressions}
           | Shared.DataElemOf _index path' <- path ->
-            ArrayExpression array {expressions = fmap (go path') expressions}
+            ArrayExpression
+              (withFields
+                 (filter (not . (== name0) . Field.name))
+                 (array {expressions = fmap (go path') expressions}))
         RecordExpression record@Record {fields}
           | Shared.DataFieldOf index path' <- path ->
             RecordExpression
@@ -198,11 +222,5 @@ deleteFieldInCode path0 name0 code =
         RecordExpression record@Record {fields}
           | Shared.DataHere <- path ->
             RecordExpression
-              record
-                { fields =
-                    filter
-                      (\FieldE {name} ->
-                         name /= name0)
-                      fields
-                }
+              record {fields = filter (\FieldE {name} -> name /= name0) fields}
         e -> e
