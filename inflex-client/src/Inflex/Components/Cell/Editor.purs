@@ -634,11 +634,12 @@ editorCode =
                  rows)))
 
 -- | Add a type signature if the rows are empty.
--- TODO: Consider whether this is the right place for this. It might cause trouble.
+-- DONE: Consider whether this is the right place for this. It might cause trouble.
+-- UPDATE: considered, seems fine.
 addTableTypeSig :: forall a. Array String -> Array a -> String -> String
 addTableTypeSig columns rows inner =
   case rows of
-    [] -> "([] :: " <> " " <> joinWith "," columns <> ")"
+    [] -> "([] :: [{" <> joinWith "," columns <> "}])"
     _ -> inner
 
 originalOr :: Shared.OriginalSource -> String -> String
