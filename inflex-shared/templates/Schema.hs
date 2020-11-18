@@ -203,6 +203,11 @@ deriving instance Show Removal
 instance ToJSON Removal
 instance FromJSON Removal
 
+deriving instance Generic Code
+deriving instance Show Code
+instance ToJSON Code
+instance FromJSON Code
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath

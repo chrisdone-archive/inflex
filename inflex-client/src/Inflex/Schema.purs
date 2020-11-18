@@ -107,6 +107,9 @@ data PathUpdate
     -- ^ Remove an element from the container given by index.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
+  | CodeUpdate Code
+
+data Code = Code { text :: Text }
 
 data Removal = Removal { index :: Int }
 
@@ -350,6 +353,11 @@ derive instance genericRemoval :: Generic Removal _
 instance showRemoval :: Show Removal where show = genericShow
 instance decodeRemoval :: Decode Removal where decode = genericDecode opts
 instance encodeRemoval :: Encode Removal where encode = genericEncode opts
+
+derive instance genericCode :: Generic Code _
+instance showCode :: Show Code where show = genericShow
+instance decodeCode :: Decode Code where decode = genericDecode opts
+instance encodeCode :: Encode Code where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

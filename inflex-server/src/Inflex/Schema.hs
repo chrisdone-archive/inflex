@@ -111,6 +111,9 @@ data PathUpdate
     -- ^ Remove an element from the container given by index.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
+  | CodeUpdate Code
+
+data Code = Code { text :: Text }
 
 data Removal = Removal { index :: Int }
 
@@ -403,6 +406,11 @@ deriving instance Generic Removal
 deriving instance Show Removal
 instance ToJSON Removal
 instance FromJSON Removal
+
+deriving instance Generic Code
+deriving instance Show Code
+instance ToJSON Code
+instance FromJSON Code
 
 deriving instance Generic DataPath
 deriving instance Show DataPath
