@@ -213,3 +213,46 @@ deleteFieldInCode path0 name0 code =
             RecordExpression
               record {fields = filter (\FieldE {name} -> name /= name0) fields}
         e -> e
+
+--------------------------------------------------------------------------------
+-- Generic walkers
+
+data Mapping = Mapping
+  { mapArray :: Array Parsed -> Array Parsed
+  , mapRecord :: Record Parsed -> Record Parsed
+  }
+
+mapPath :: Shared.DataPath -> Mapping -> Text -> Text
+mapPath path0 Mapping {mapArray,mapRecord} code =
+  case parseText "" code of
+    Left {} -> code
+    Right expr -> textDisplay (go path0 expr)
+  where
+    go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
+    go path =
+      \case
+        ArrayExpression array@Array {expressions}
+          | Shared.DataElemOf _index path' <- path ->
+            ArrayExpression (array {expressions = fmap (go path') expressions})
+        RecordExpression record@Record {fields}
+          | Shared.DataFieldOf index path' <- path ->
+            RecordExpression
+              record
+                { fields =
+                    fmap
+                      (\(i, fielde@FieldE {expression}) ->
+                         fielde
+                           { FieldE.expression =
+                               if i == index
+                                 then go path' expression
+                                 else expression
+                           })
+                      (zip [0 ..] fields)
+                }
+        e
+          | Shared.DataHere <- path ->
+            case e of
+              ArrayExpression array -> ArrayExpression (mapArray array)
+              RecordExpression record -> RecordExpression (mapRecord record)
+              _ -> e
+          | otherwise -> e
