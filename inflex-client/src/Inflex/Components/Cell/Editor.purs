@@ -29,7 +29,7 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (class Show, Unit, bind, discard, map, max, pure, show, unit, (+), (<<<), (<>), (==))
+import Prelude
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -290,7 +290,8 @@ renderTableEditor path columns rows =
       [HP.class_ (HH.ClassName "table")]
       [ HH.thead
           [HP.class_ (HH.ClassName "table-header")]
-          (mapWithIndex
+          ([HH.th [HP.class_ (HH.ClassName "table-column"), HP.title ""] []] <>
+           mapWithIndex
              (\i text ->
                 HH.th
                   [ HP.class_ (HH.ClassName "table-column")
@@ -348,7 +349,8 @@ renderTableEditor path columns rows =
              (\rowIndex (Row {original, fields}) ->
                 HH.tr
                   []
-                  (mapWithIndex
+                  ([rowNumber rowIndex] <>
+                   mapWithIndex
                      (\fieldIndex (Field {key, value: editor'}) ->
                         HH.td
                           [HP.class_ (HH.ClassName "table-datum-value")]
@@ -401,11 +403,12 @@ renderTableEditor path columns rows =
       ]
   ]
   where
+    rowNumber rowIndex = HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
     addNewRow =
       [ HH.tr
           []
           [ HH.td
-              [HP.colSpan (Array.length columns)]
+              [HP.class_ (HH.ClassName "add-row")]
               [ HH.button
                   [ HP.class_ (HH.ClassName "add-row-button")
                   , HP.title "Add row"
@@ -417,11 +420,13 @@ renderTableEditor path columns rows =
                               (TriggerUpdatePath
                                  (Shared.UpdatePath
                                     { path: path Shared.DataHere
-                                    , update: Shared.AddToEndUpdate
+                                    , update:
+                                        Shared.AddToEndUpdate
                                     }))))
                   ]
                   [HH.text "+"]
               ]
+          , HH.td [HP.class_ (HH.ClassName "bottom-blank"), HP.colSpan (Array.length columns + 1)] []
           ]
       ]
     addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
