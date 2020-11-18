@@ -606,25 +606,27 @@ renderError msg =
 
 --------------------------------------------------------------------------------
 -- Code regenerators
+--
+-- TODO: delete these functions and move all updates to server-side
+-- path-based updates.
 
 editorCode :: Editor -> String
 editorCode =
   case _ of
     MiscE original s -> originalOr original s
-    TextE original s -> originalOr original (show s) -- TODO:Encoding strings is not easy. Fix this.
-    ArrayE original xs ->
-      originalOr original ("[" <> joinWith ", " (map editorCode xs) <> "]")
+    TextE original s -> (show s) -- TODO: Encoding strings is not easy. Fix this.
+    ArrayE original xs -> ("[" <> joinWith ", " (map editorCode xs) <> "]")
     RecordE original fs ->
-      originalOr
-        original
-        ("{" <>
-         joinWith
-           ", "
-           (map (\(Field {key, value}) -> key <> ":" <> editorCode value) fs) <>
-         "}")
+      ("{" <>
+       joinWith
+         ", "
+         (map (\(Field {key, value}) -> key <> ":" <> editorCode value) fs) <>
+       "}")
     ErrorE _ -> ""
     TableE original columns rows ->
-      addTableTypeSig columns rows
+      addTableTypeSig
+        columns
+        rows
         (editorCode
            (ArrayE
               original
