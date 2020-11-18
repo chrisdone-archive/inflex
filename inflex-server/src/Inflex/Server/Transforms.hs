@@ -16,26 +16,15 @@ import qualified Inflex.Types as Field (Field(..))
 import           RIO
 
 applyUpdateToDocument :: Shared.Update -> Shared.InputDocument1 -> Shared.InputDocument1
-applyUpdateToDocument =
-  \case
-    Shared.CellUpdate Shared.UpdateCell { uuid
-                                        , update = Shared.UpdatePath { path
-                                                                     , update = Shared.NewFieldUpdate newField
-                                                                     }
-                                        } ->
-      addNewFieldToDocument uuid path newField
-    Shared.CellUpdate Shared.UpdateCell { uuid
-                                        , update = Shared.UpdatePath { path
-                                                                     , update = Shared.DeleteFieldUpdate deleteField
-                                                                     }
-                                        } ->
+applyUpdateToDocument (Shared.CellUpdate Shared.UpdateCell {uuid, update}) =
+  case cmd of
+    Shared.NewFieldUpdate newField -> addNewFieldToDocument uuid path newField
+    Shared.DeleteFieldUpdate deleteField ->
       deleteFieldToDocument uuid path deleteField
-    Shared.CellUpdate Shared.UpdateCell { uuid
-                                        , update = Shared.UpdatePath { path
-                                                                     , update = Shared.RenameFieldUpdate renameField
-                                                                     }
-                                        } ->
+    Shared.RenameFieldUpdate renameField ->
       renameFieldToDocument uuid path renameField
+  where
+    Shared.UpdatePath {path, update = cmd} = update
 
 addNewFieldToDocument ::
      Shared.UUID

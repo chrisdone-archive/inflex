@@ -75,6 +75,16 @@ data UpdateDocument = UpdateDocument
 
 --------------------------------------------------------------------------------
 -- Update commands
+--
+-- * Adding a constructor to these types does NOT need a bump. A
+--   client will never send something _new_; it's always the server that
+--   brings something new.
+--
+-- * Renaming/changing/removing a constructor WOULD require a
+--   bump. (Think: client sends a constructor that the server considers
+--   removed; should have a migration.)
+--
+-- TODO: Find a way to automate this with TH?
 
 data Update
   = CellUpdate UpdateCell
@@ -93,6 +103,12 @@ data PathUpdate
   = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
+  | RemoveUpdate Removal
+    -- ^ Remove an element from the container given by index.
+  | AddToEndUpdate
+    -- ^ I.e. add a blank element at the end the container.
+
+data Removal = Removal { index :: Int }
 
 data NewField = NewField { name :: Text }
 
@@ -329,6 +345,11 @@ derive instance genericPathUpdate :: Generic PathUpdate _
 instance showPathUpdate :: Show PathUpdate where show = genericShow
 instance decodePathUpdate :: Decode PathUpdate where decode = genericDecode opts
 instance encodePathUpdate :: Encode PathUpdate where encode = genericEncode opts
+
+derive instance genericRemoval :: Generic Removal _
+instance showRemoval :: Show Removal where show = genericShow
+instance decodeRemoval :: Decode Removal where decode = genericDecode opts
+instance encodeRemoval :: Encode Removal where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

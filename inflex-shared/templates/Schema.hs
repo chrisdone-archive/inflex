@@ -198,6 +198,11 @@ deriving instance Show PathUpdate
 instance ToJSON PathUpdate
 instance FromJSON PathUpdate
 
+deriving instance Generic Removal
+deriving instance Show Removal
+instance ToJSON Removal
+instance FromJSON Removal
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath

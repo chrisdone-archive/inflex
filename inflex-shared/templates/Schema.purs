@@ -145,6 +145,11 @@ instance showPathUpdate :: Show PathUpdate where show = genericShow
 instance decodePathUpdate :: Decode PathUpdate where decode = genericDecode opts
 instance encodePathUpdate :: Encode PathUpdate where encode = genericEncode opts
 
+derive instance genericRemoval :: Generic Removal _
+instance showRemoval :: Show Removal where show = genericShow
+instance decodeRemoval :: Decode Removal where decode = genericDecode opts
+instance encodeRemoval :: Encode Removal where encode = genericEncode opts
+
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow
 instance decodeInputCell :: Decode InputCell where decode = genericDecode opts
