@@ -189,11 +189,54 @@ withFields f array@Array {typ}
 withFields _f array = array
 
 addArrayItem :: Array Parsed -> Array Parsed
-addArrayItem array@Array {location, expressions} =
-  array
-    { expressions =
-        expressions <> pure (HoleExpression Hole {location, typ = Nothing})
-    }
+addArrayItem array@Array {location, expressions, typ}
+  | Just (ArrayType (RecordType (RowType (TypeRow {fields})))) <- typ =
+    array
+      { expressions =
+          expressions <>
+          pure
+            (RecordExpression
+               Record
+                 { fields =
+                     map
+                       (\Field {name} ->
+                          FieldE
+                            { name
+                            , expression =
+                                HoleExpression Hole {location, typ = Nothing}
+                            , location
+                            })
+                       fields
+                 , location
+                 , typ = Nothing
+                 })
+      }
+  | Just (RecordExpression Record {fields}) <- expressions V.!? 0 =
+    array
+      { expressions =
+          expressions <>
+          pure
+            (RecordExpression
+               Record
+                 { fields =
+                     map
+                       (\FieldE {name} ->
+                          FieldE
+                            { name
+                            , expression =
+                                HoleExpression Hole {location, typ = Nothing}
+                            , location
+                            })
+                       fields
+                 , location
+                 , typ = Nothing
+                 })
+      }
+  | otherwise =
+    array
+      { expressions =
+          expressions <> pure (HoleExpression Hole {location, typ = Nothing})
+      }
 
 removeArrayItem :: Int -> Array Parsed -> Array Parsed
 removeArrayItem idx array@Array {expressions} =

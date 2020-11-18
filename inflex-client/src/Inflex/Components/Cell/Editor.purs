@@ -9,6 +9,7 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
+import Data.Array as Array
 import Data.Array (mapWithIndex)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -395,10 +396,34 @@ renderTableEditor path columns rows =
                           ])
                      fields <>
                    addColumnBlank))
-             rows)
+             rows <>
+           addNewRow)
       ]
   ]
   where
+    addNewRow =
+      [ HH.tr
+          []
+          [ HH.td
+              [HP.colSpan (Array.length columns)]
+              [ HH.button
+                  [ HP.class_ (HH.ClassName "add-row-button")
+                  , HP.title "Add row"
+                  , HE.onClick
+                      (\e ->
+                         pure
+                           (PreventDefault
+                              (Event' (toEvent e))
+                              (TriggerUpdatePath
+                                 (Shared.UpdatePath
+                                    { path: path Shared.DataHere
+                                    , update: Shared.AddToEndUpdate
+                                    }))))
+                  ]
+                  [HH.text "+"]
+              ]
+          ]
+      ]
     addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
     newColumnButton =
       HH.th

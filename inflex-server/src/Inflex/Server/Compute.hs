@@ -92,7 +92,7 @@ toTree original =
                                          })
                                     (V.fromList fieldEs)
                               }
-                      _ -> error "TODO: resolve this.")
+                      p -> error ("TODO: resolve this: " ++ show p))
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
