@@ -30,7 +30,9 @@ dependencies:
 - th-lift
 - markdown
 - blaze-markup
+- githash
 - unliftio
+- wai-extra
 - http-conduit
 - yaml
 - cookie
@@ -121,6 +123,12 @@ executables:
   inflex-server:
     main:                Main.hs
     source-dirs:         app
+    when:
+    - condition: flag(release)
+      then:
+        source-dirs: app/release
+      else:
+        source-dirs: app/debug
     ghc-options:
     - -threaded
     - -rtsopts

@@ -42,7 +42,6 @@ import           Yesod.Lucid
 data App = App
   { appPool :: !(Pool SqlBackend)
   , appConfig :: !Config
-  , appGALock :: MVar ()
   }
 
 instance Yesod App where
