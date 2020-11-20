@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: inflex-ingress
+  name: inflex-rpc-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Ingress: inflex-ingress";
+      more_set_headers "X-Ingress: inflex-rpc-ingress";
 spec:
   tls:
   - hosts:
@@ -17,10 +17,6 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: lbtest
-          servicePort: 80
-        path: /lbtest
-      - backend:
           serviceName: inflex-server
           servicePort: 80
-        path: /
+        path: /api/rpc/
