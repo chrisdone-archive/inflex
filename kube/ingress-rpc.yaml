@@ -8,7 +8,8 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "X-Ingress: inflex-rpc-ingress";
     nginx.ingress.kubernetes.io/limit-connections: "5"
-    nginx.ingress.kubernetes.io/limit-rps: "2"
+    nginx.ingress.kubernetes.io/limit-rps: "1"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "1"
 spec:
   tls:
   - hosts:
