@@ -1,7 +1,9 @@
-FROM registry.gitlab.com/sky-above/inflex/patch:189312240
+FROM registry.gitlab.com/sky-above/inflex/patch:220017033
 
 COPY . /inflex
 WORKDIR /inflex
+
+RUN mv /psc-package-output /inflex/inflex-client/output
 
 RUN stack build inflex-shared
 
