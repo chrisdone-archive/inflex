@@ -11,9 +11,22 @@
 
 -- | Solve equality constraints, updating all type variables in the AST.
 
-module Inflex.Solver where
+module Inflex.Solver
+  ( solveText
+  , solveGenerated
+  , unifyConstraints
+  , unifyAndSubstitute
+  , solveType
+  , runSolver
+  , Substitution(..)
+  , SolveError(..)
+  , IsSolved(..)
+  , GenerateSolveError(..)
+  ) where
 
 import           Control.Monad
+import           Control.Monad.Except
+import           Control.Monad.State.Strict
 import           Data.Bifunctor
 import           Data.Function
 import           Data.List
@@ -28,6 +41,7 @@ import           Data.Void
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- Solver types
@@ -54,6 +68,15 @@ data Substitution = Substitution
   , after :: !(Type Generated)
   } deriving (Show, Eq)
 
+newtype Solve a = Solve
+  { runSolve :: StateT Natural (Either (NonEmpty SolveError)) a
+  } deriving ( MonadState Natural
+             , Monad
+             , Functor
+             , Applicative
+             , MonadError (NonEmpty SolveError)
+             )
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -72,17 +95,20 @@ solveGenerated ::
 solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   first
     SolverErrors
-    (do substitutions <- unifyConstraints equalities
+    (do substitutions <- runSolver (unifyConstraints equalities)
         pure
           IsSolved
             { thing = expressionSolve substitutions expression
             , mappings
             })
 
+runSolver :: Solve a -> Either (NonEmpty SolveError) a
+runSolver = flip evalStateT 0 . runSolve
+
 unifyAndSubstitute ::
      Seq EqualityConstraint
   -> Type Generated
-  -> Either (NonEmpty SolveError) (Type Solved)
+  -> Solve (Type Solved)
 unifyAndSubstitute equalities typ = do
   substitutions <- unifyConstraints equalities
   pure (solveType substitutions typ)
@@ -95,7 +121,7 @@ unifyAndSubstitute equalities typ = do
 -- largest hit is in unifyConstraints with O(n^2) behavior.
 
 unifyConstraints ::
-     Seq EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+     Seq EqualityConstraint -> Solve (Seq Substitution)
 unifyConstraints =
   -- This is a large speed hit. If there are 1000 elements in an
   -- array, it will iterate at least 1000x times. So it performs
@@ -114,7 +140,7 @@ unifyConstraints =
             (substituteEqualityConstraint existing equalityConstraint)))
     mempty
 
-unifyEqualityConstraint :: EqualityConstraint -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyEqualityConstraint :: EqualityConstraint -> Solve (Seq Substitution)
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
@@ -131,12 +157,12 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
     (ArrayType a, ArrayType b) ->
       unifyEqualityConstraint
         EqualityConstraint {location, type1 = a, type2 = b}
-    _ -> Left (pure (TypeMismatch equalityConstraint))
+    _ -> throwError (pure (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
      TypeApplication Generated
   -> TypeApplication Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
+  -> Solve (Seq Substitution)
 unifyTypeApplications typeApplication1 typeApplication2 = do
   existing <-
     unifyEqualityConstraint
@@ -156,14 +182,14 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
       typeApplication2
 
 -- | Unify records -- must contain row types inside.
-unifyRecords :: Type Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyRecords :: Type Generated -> Type Generated -> Solve (Seq Substitution)
 unifyRecords (RowType x) (RowType y) = unifyRows x y
 unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
 
 unifyRows ::
      TypeRow Generated
   -> TypeRow Generated
-  -> Either (NonEmpty SolveError) (Seq Substitution)
+  -> Solve (Seq Substitution)
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
@@ -205,13 +231,19 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
             ]
       -- Below: Two open records, their fields must unify and we
       -- produce a union row type of both.
-      (_, Just {}, _, Just {}) -> do
-        pure []
+      (sd1, Just u1, sd2, Just u2) -> do
+        freshType <-
+          generateTypeVariable location RowUnifyPrefix RowKind
+        let mergedRowType =
+              RowType
+                (TypeRow
+                   {typeVariable = Just freshType, fields = union sd2 sd1, ..})
+        pure [(u2, mergedRowType), (u1, mergedRowType)]
       -- Below: If neither row has a variable, we have no row
       -- constraints to do. The fields will be unified below.
       (sd1, Nothing, sd2, Nothing)
         | sd1 `rowsExactMatch` sd2 -> do pure []
-      _ -> Left (pure (RowMismatch row1 row2))
+      _ -> throwError (pure (RowMismatch row1 row2))
   let common = intersect (map fieldName fs1) (map fieldName fs2)
       -- You have to make sure that the types of all the fields match
       -- up, obviously.
@@ -249,11 +281,11 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
 --------------------------------------------------------------------------------
 -- Binding
 
-bindTypeVariable :: TypeVariable Generated -> Type Generated -> Either (NonEmpty SolveError) (Seq Substitution)
+bindTypeVariable :: TypeVariable Generated -> Type Generated -> Solve (Seq Substitution)
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
-  | occursIn typeVariable typ = Left (pure (OccursCheckFail typeVariable typ))
-  | typeVariableKind typeVariable /= typeKind typ = Left (pure (KindMismatch typeVariable typ))
+  | occursIn typeVariable typ = throwError (pure (OccursCheckFail typeVariable typ))
+  | typeVariableKind typeVariable /= typeKind typ = throwError (pure (KindMismatch typeVariable typ))
   | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
@@ -532,3 +564,18 @@ holeSolve substitutions Hole {..} =
 
 substitutionKind :: Substitution -> Kind
 substitutionKind Substitution {before} = typeVariableKind before
+
+--------------------------------------------------------------------------------
+-- Generate type variable
+
+-- | Needed when unifying rows; we have to generate a fresh type at
+-- that point.  The indexing is different to the generating stage, but
+-- it doesn't matter, because the rest of the type variable's prefix
+-- will differ.
+generateTypeVariable ::
+     Cursor -> TypeVariablePrefix -> Kind -> Solve (TypeVariable Generated)
+generateTypeVariable location prefix kind = do
+  index <- get
+  modify succ
+  pure
+    TypeVariable {location, prefix = SolverGeneratedPrefix prefix, index, kind}

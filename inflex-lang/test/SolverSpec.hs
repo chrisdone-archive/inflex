@@ -11,6 +11,7 @@ module SolverSpec where
 
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
+import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Solver
@@ -24,6 +25,17 @@ solveText' :: (e ~ ()) =>
   -> Text
   -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
 solveText' = solveText
+
+unifyConstraints' ::
+     Seq EqualityConstraint
+  -> Either (NonEmpty SolveError) (Seq Substitution)
+unifyConstraints' = runSolver . unifyConstraints
+
+unifyAndSubstitute' ::
+     Seq EqualityConstraint
+  -> Type Generated
+  -> Either (NonEmpty SolveError) (Type Solved)
+unifyAndSubstitute' x = runSolver . unifyAndSubstitute x
 
 spec :: Spec
 spec = do
@@ -152,38 +164,38 @@ fineGrained :: Spec
 fineGrained = do
   describe
     "Successful"
-    (do it "a ~ a" (shouldBe (unifyConstraints [a .~ a]) (pure []))
+    (do it "a ~ a" (shouldBe (unifyConstraints' [a .~ a]) (pure []))
         it
           "Integer ~ Integer"
-          (shouldBe (unifyConstraints [_Integer .~ _Integer]) (pure []))
-        it "a ~ b" (shouldBe (unifyConstraints [a .~ b]) (pure [a' .+-> b]))
+          (shouldBe (unifyConstraints' [_Integer .~ _Integer]) (pure []))
+        it "a ~ b" (shouldBe (unifyConstraints' [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
-          (shouldBe (unifyConstraints [a .~ _Integer]) (pure [a' .+-> _Integer]))
+          (shouldBe (unifyConstraints' [a .~ _Integer]) (pure [a' .+-> _Integer]))
         it
           "F a b ~ F Text a"
           (shouldBe
-             (unifyConstraints [_F a b .~ _F _Text a])
+             (unifyConstraints' [_F a b .~ _F _Text a])
              (pure [a' .+-> _Text, b' .+-> _Text]))
         it
           "F a Text ~ F Text a"
           (shouldBe
-             (unifyConstraints [_F a _Text .~ _F _Text a])
+             (unifyConstraints' [_F a _Text .~ _F _Text a])
              (pure [a' .+-> _Text]))
         it
           "F a Text ~ F Integer b"
           (shouldBe
-             (unifyConstraints [_F a _Text .~ _F _Integer b])
+             (unifyConstraints' [_F a _Text .~ _F _Integer b])
              (pure [a' .+-> _Integer, b' .+-> _Text]))
         it
           "F a a ~ F (Option b) (Option Integer)"
           (shouldBe
-             (unifyConstraints [_F a a .~ _F (_Option b) (_Option _Integer)])
+             (unifyConstraints' [_F a a .~ _F (_Option b) (_Option _Integer)])
              (pure [a' .+-> _Option _Integer, b' .+-> _Integer]))
         it
           "(t ~ F a a, F a a ~ F (Option b) (Option Integer)) => t"
           (shouldBe
-             (unifyAndSubstitute
+             (unifyAndSubstitute'
                 [t .~ _F a a, _F a a .~ _F (_Option b) (_Option _Integer)]
                 t)
              (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer))))))
@@ -192,22 +204,22 @@ fineGrained = do
     (do it
           "Occurs check: F a b ~ a"
           (shouldBe
-             (unifyConstraints [_F a b .~ a])
+             (unifyConstraints' [_F a b .~ a])
              (Left (pure (OccursCheckFail a' (_F a b)))))
         it
           "Kind mismatch: F a ~ b"
           (shouldBe
-             (unifyConstraints [_F_partial a .~ b])
+             (unifyConstraints' [_F_partial a .~ b])
              (Left (pure (KindMismatch b' (_F_partial a)))))
         it
           "Constant mismatch: Integer ~ Text"
           (shouldBe
-             (unifyConstraints [_Integer .~ _Text])
+             (unifyConstraints' [_Integer .~ _Text])
              (Left (pure (TypeMismatch (_Integer .~ _Text)))))
         it
           "Type mismatch: F a a ~ F (Option Text) (Option Integer)"
           (shouldBe
-             (unifyConstraints [_F a a .~ _F (_Option _Text) (_Option _Integer)])
+             (unifyConstraints' [_F a a .~ _F (_Option _Text) (_Option _Integer)])
              (Left (pure (TypeMismatch (_Text .~ _Integer))))))
 
 --------------------------------------------------------------------------------

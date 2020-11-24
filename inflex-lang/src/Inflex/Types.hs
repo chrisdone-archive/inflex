@@ -312,6 +312,8 @@ data TypeVariablePrefix
   | ArrayElementPrefix
   | HolePrefix
   | FreshPrefix
+  | RowUnifyPrefix
+  | SolverGeneratedPrefix TypeVariablePrefix
   deriving (Show, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
