@@ -445,6 +445,9 @@ chris@precision:~$
     https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20
 
 * References
+  - Note taken on [2020-11-24 Tue 12:33] \\
+    On testing for fastness
+    https://fabiensanglard.net/silicone/index.html
   - Note taken on [2020-11-14 Sat 12:21] \\
     https://lukeplant.me.uk/blog/posts/less-powerful-languages/
   - Note taken on [2020-06-07 Sun 19:00] \\
