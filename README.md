@@ -56,3 +56,7 @@ Get these details from lastpass Note 'inflex azure gitlab service principal' .
           "type": "servicePrincipal"
         }
       }
+
+# ngrok
+
+    ngrok http -subdomain=inflex 3031
