@@ -237,7 +237,7 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
         let mergedRowType =
               RowType
                 (TypeRow
-                   {typeVariable = Just freshType, fields = union sd2 sd1, ..})
+                   {typeVariable = Just freshType, fields = shadowFields sd2 sd1, ..})
         pure [(u2, mergedRowType), (u1, mergedRowType)]
       -- Below: If neither row has a variable, we have no row
       -- constraints to do. The fields will be unified below.
