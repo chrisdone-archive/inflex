@@ -16,7 +16,7 @@ import Data.Either (Either(..))
 import Halogen as H
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (error)
+import Effect.Class.Console (error, log)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 import Inflex.Schema
 
@@ -34,6 +34,7 @@ rpcCall
   => Generic input i
   => Generic output o
   => Show output
+  => Show input
   => String
   -> input
   -> m (Either String output)
@@ -44,6 +45,7 @@ rpcCall endpoint0 input =
             error ("Own JSON was invalid! " <> e)
             pure (Left e)
           Right json -> do
+            log (show input)
             result <-
               H.liftAff
                 (AX.post

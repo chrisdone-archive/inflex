@@ -29,21 +29,28 @@ applyUpdateToDocument (Shared.CellUpdate Shared.UpdateCell {uuid, update}) =
       mapUuid uuid (addNewFieldInCode path (FieldName name0))
     Shared.DeleteFieldUpdate Shared.DeleteField {name = name0} ->
       mapUuid uuid (deleteFieldInCode path (FieldName name0))
-    Shared.RenameFieldUpdate Shared.RenameField {from,to=to0} ->
+    Shared.RenameFieldUpdate Shared.RenameField {from, to = to0} ->
       mapUuid uuid (renameFieldInCode path (FieldName from) (FieldName to0))
-    Shared.CodeUpdate (Shared.Code code) -> mapUuid uuid (const code)
+    Shared.CodeUpdate (Shared.Code code) ->
+      mapUuidPath uuid path (MapExpression (setParsed code))
     Shared.AddToEndUpdate ->
-      mapUuidPath uuid path Mapping {mapArray = addArrayItem, mapRecord = id}
+      mapUuidPath
+        uuid
+        path
+        (MapArray addArrayItem)
     Shared.RemoveUpdate (Shared.Removal {index}) ->
       mapUuidPath
         uuid
         path
-        Mapping {mapArray = removeArrayItem index, mapRecord = id}
+        (MapArray (removeArrayItem index))
   where
     Shared.UpdatePath {path, update = cmd} = update
 
 --------------------------------------------------------------------------------
 -- Code updaters
+
+setParsed :: Text -> Expression Parsed -> Expression Parsed
+setParsed new orig = either (const orig) id (parseText "" new)
 
 addNewFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 addNewFieldInCode path0 name code =
@@ -248,10 +255,10 @@ removeArrayItem idx array@Array {expressions} =
 --------------------------------------------------------------------------------
 -- Generic walkers
 
-data Mapping = Mapping
-  { mapArray :: Array Parsed -> Array Parsed
-  , mapRecord :: Record Parsed -> Record Parsed
-  }
+data Mapping
+  = MapArray (Array Parsed -> Array Parsed)
+  | MapRecord (Record Parsed -> Record Parsed)
+  | MapExpression (Expression Parsed -> Expression Parsed)
 
 -- | Change something at a path in a uuid in the document.
 mapUuidPath ::
@@ -278,7 +285,7 @@ mapUuid uuid0 f Shared.InputDocument1 {cells} =
 
 -- | Change something at a path in the source code.
 mapPath :: Shared.DataPath -> Mapping -> Text -> Text
-mapPath path0 Mapping {mapArray,mapRecord} code =
+mapPath path0 mapping code =
   case parseText "" code of
     Left {} -> code
     Right expr -> textDisplay (go path0 expr)
@@ -287,8 +294,17 @@ mapPath path0 Mapping {mapArray,mapRecord} code =
     go path =
       \case
         ArrayExpression array@Array {expressions}
-          | Shared.DataElemOf _index path' <- path ->
-            ArrayExpression (array {expressions = fmap (go path') expressions})
+          | Shared.DataElemOf index path' <- path ->
+            ArrayExpression
+              (array
+                 { expressions =
+                     V.imap
+                       (\i e ->
+                          if i == index
+                            then go path' e
+                            else e)
+                       expressions
+                 })
         RecordExpression record@Record {fields}
           | Shared.DataFieldOf index path' <- path ->
             RecordExpression
@@ -307,7 +323,13 @@ mapPath path0 Mapping {mapArray,mapRecord} code =
         e
           | Shared.DataHere <- path ->
             case e of
-              ArrayExpression array -> ArrayExpression (mapArray array)
-              RecordExpression record -> RecordExpression (mapRecord record)
+              ArrayExpression array
+                | MapArray mapArray <- mapping ->
+                  ArrayExpression (mapArray array)
+              RecordExpression record
+                | MapRecord mapRecord <- mapping ->
+                  RecordExpression (mapRecord record)
+              _
+                | MapExpression mapExpression <- mapping -> mapExpression e
               _ -> e
           | otherwise -> e

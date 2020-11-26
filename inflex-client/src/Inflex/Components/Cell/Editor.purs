@@ -372,29 +372,45 @@ renderTableEditor path columns rows =
                                      Just (TriggerUpdatePath update)
                                    NewCode rhs ->
                                      Just
-                                       (FinishEditing
-                                          (editorCode
-                                             (TableE
-                                                Shared.NoOriginalSource
-                                                columns
-                                                (editArray
-                                                   rowIndex
-                                                   (Row
-                                                      { original:
-                                                          Shared.NoOriginalSource
-                                                      , fields:
-                                                          editArray
-                                                            fieldIndex
-                                                            (Field
-                                                               { key
-                                                               , value:
-                                                                   MiscE
-                                                                     Shared.NoOriginalSource
-                                                                     rhs
-                                                               })
-                                                            fields
-                                                      })
-                                                   rows)))))
+                                       (if false
+                                          then FinishEditing
+                                                 (editorCode
+                                                    (TableE
+                                                       Shared.NoOriginalSource
+                                                       columns
+                                                       (editArray
+                                                          rowIndex
+                                                          (Row
+                                                             { original:
+                                                                 Shared.NoOriginalSource
+                                                             , fields:
+                                                                 editArray
+                                                                   fieldIndex
+                                                                   (Field
+                                                                      { key
+                                                                      , value:
+                                                                          MiscE
+                                                                            Shared.NoOriginalSource
+                                                                            rhs
+                                                                      })
+                                                                   fields
+                                                             })
+                                                          rows)))
+                                          else TriggerUpdatePath
+                                                 (Shared.UpdatePath
+                                                    { path:
+                                                        path
+                                                          (Shared.DataElemOf
+                                                             rowIndex
+                                                             (Shared.DataFieldOf
+                                                                fieldIndex
+                                                                Shared.DataHere))
+                                                    , update:
+                                                        Shared.CodeUpdate
+                                                          (Shared.Code
+                                                             { text: rhs
+                                                             })
+                                                    })))
                           ])
                      fields <>
                    addColumnBlank))
@@ -403,7 +419,8 @@ renderTableEditor path columns rows =
       ]
   ]
   where
-    rowNumber rowIndex = HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
+    rowNumber rowIndex =
+      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
     addNewRow =
       [ HH.tr
           []
@@ -426,7 +443,11 @@ renderTableEditor path columns rows =
                   ]
                   [HH.text "+"]
               ]
-          , HH.td [HP.class_ (HH.ClassName "bottom-blank"), HP.colSpan (Array.length columns + 1)] []
+          , HH.td
+              [ HP.class_ (HH.ClassName "bottom-blank")
+              , HP.colSpan (Array.length columns + 1)
+              ]
+              []
           ]
       ]
     addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
