@@ -30,7 +30,7 @@ rpcHandler name =
     "UpdateDocument" -> do
       input <- requireCheckJsonBody
       output <- rpcUpdateDocument (input :: UpdateDocument)
-      pure (toJSON (output :: OutputDocument))
+      pure (toJSON (output :: UpdateResult))
 
 
     _ -> error "Invalid RPC function."

@@ -51,6 +51,10 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
+data UpdateResult
+  = UpdatedDocument OutputDocument
+  | NestedError CellError
+
 --------------------------------------------------------------------------------
 -- Update commands
 --

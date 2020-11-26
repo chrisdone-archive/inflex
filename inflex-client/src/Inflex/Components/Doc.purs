@@ -15,7 +15,7 @@ import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (error)
+import Effect.Class.Console (error, log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -24,7 +24,7 @@ import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
+import Prelude
 import Web.Event.Event (preventDefault)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -250,13 +250,19 @@ update update' = do
   result <-
     rpcUpdateDocument
       (Shared.UpdateDocument
-         { documentId: DocumentId (meta.documentId)
+         { documentId: DocumentId (meta . documentId)
          , update: update'
          })
   case result of
     Left err -> do
       error err -- TODO:Display this to the user properly.
-    Right outputDocument -> setOutputDocument outputDocument
+    Right uresult ->
+      case uresult of
+        Shared.UpdatedDocument outputDocument ->
+          setOutputDocument outputDocument
+        Shared.NestedError cellError -> do
+          log (show cellError)
+          pure unit
 
 --------------------------------------------------------------------------------
 -- Internal state helpers

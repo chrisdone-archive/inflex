@@ -6,4 +6,4 @@ RefreshDocument:
   output: OutputDocument
 UpdateDocument:
   input: UpdateDocument
-  output: OutputDocument
+  output: UpdateResult

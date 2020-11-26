@@ -208,6 +208,11 @@ deriving instance Show Code
 instance ToJSON Code
 instance FromJSON Code
 
+deriving instance Generic UpdateResult
+deriving instance Show UpdateResult
+instance ToJSON UpdateResult
+instance FromJSON UpdateResult
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath

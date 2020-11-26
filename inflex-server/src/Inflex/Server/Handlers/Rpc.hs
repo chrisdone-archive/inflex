@@ -5,9 +5,11 @@
 
 module Inflex.Server.Handlers.Rpc where
 
+import           Data.Foldable
+import           Data.Maybe
 import           Data.Time
 import           Database.Persist.Sql
-import qualified Inflex.Schema as Schema
+import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
 import           Inflex.Server.Session
@@ -18,7 +20,7 @@ import           Yesod hiding (Html)
 --------------------------------------------------------------------------------
 -- Load document
 
-rpcLoadDocument :: Schema.DocumentId -> Handler Schema.OutputDocument
+rpcLoadDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
 rpcLoadDocument docId =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
@@ -37,8 +39,8 @@ rpcLoadDocument docId =
 --------------------------------------------------------------------------------
 -- Refresh document
 
-rpcRefreshDocument :: Schema.RefreshDocument -> Handler Schema.OutputDocument
-rpcRefreshDocument Schema.RefreshDocument {documentId, document} =
+rpcRefreshDocument :: Shared.RefreshDocument -> Handler Shared.OutputDocument
+rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        mdoc <-
@@ -61,8 +63,8 @@ rpcRefreshDocument Schema.RefreshDocument {documentId, document} =
 --------------------------------------------------------------------------------
 -- Update document
 
-rpcUpdateDocument :: Schema.UpdateDocument -> Handler Schema.OutputDocument
-rpcUpdateDocument Schema.UpdateDocument {documentId, update = update'} =
+rpcUpdateDocument :: Shared.UpdateDocument -> Handler Shared.UpdateResult
+rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        mdoc <-
@@ -75,12 +77,41 @@ rpcUpdateDocument Schema.UpdateDocument {documentId, update = update'} =
        case mdoc of
          Nothing -> notFound
          Just (Entity documentId' document) -> do
-           now <- liftIO getCurrentTime
-           -- TODO: Maybe check for errors before saving.
            let inputDocument =
                  applyUpdateToDocument update' (documentContent document)
-           runDB
-             (update
-                documentId'
-                [DocumentContent =. inputDocument, DocumentUpdated =. now])
-           pure (loadInputDocument inputDocument))
+               loadedDocument = loadInputDocument inputDocument
+           case update' of
+             Shared.CellUpdate Shared.UpdateCell { uuid
+                                                 , update = Shared.UpdatePath {path}
+                                                 } ->
+               case cellHadErrorInNestedPlace uuid path loadedDocument of
+                 Nothing -> do
+                   now <- liftIO getCurrentTime
+                   runDB
+                     (update
+                        documentId'
+                        [ DocumentContent =. inputDocument
+                        , DocumentUpdated =. now
+                        ])
+                   pure (Shared.UpdatedDocument loadedDocument)
+                 Just cellError -> pure (Shared.NestedError cellError))
+
+-- | Determine whether there was an error in the cell at the place of
+-- the update. If so, return it! We can then nicely display it to the
+-- user, rather than breaking the cell structure.
+cellHadErrorInNestedPlace ::
+     Shared.UUID
+  -> Shared.DataPath
+  -> Shared.OutputDocument
+  -> Maybe Shared.CellError
+cellHadErrorInNestedPlace uuid0 path (Shared.OutputDocument cells) =
+  case path of
+    Shared.DataHere -> Nothing
+    _ ->
+      listToMaybe
+        (mapMaybe
+           (\Shared.OutputCell {uuid, result} ->
+              case result of
+                Shared.ResultError cellError | uuid == uuid0 -> pure cellError
+                _ -> Nothing)
+           (toList cells))

@@ -77,6 +77,10 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
+data UpdateResult
+  = UpdatedDocument OutputDocument
+  | NestedError CellError
+
 --------------------------------------------------------------------------------
 -- Update commands
 --
@@ -411,6 +415,11 @@ deriving instance Generic Code
 deriving instance Show Code
 instance ToJSON Code
 instance FromJSON Code
+
+deriving instance Generic UpdateResult
+deriving instance Show UpdateResult
+instance ToJSON UpdateResult
+instance FromJSON UpdateResult
 
 deriving instance Generic DataPath
 deriving instance Show DataPath

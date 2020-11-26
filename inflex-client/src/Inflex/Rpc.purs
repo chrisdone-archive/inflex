@@ -26,7 +26,7 @@ rpcLoadDocument = rpcCall "LoadDocument"
 rpcRefreshDocument :: forall m. MonadAff m => RefreshDocument -> m (Either String OutputDocument)
 rpcRefreshDocument = rpcCall "RefreshDocument"
 
-rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String OutputDocument)
+rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String UpdateResult)
 rpcUpdateDocument = rpcCall "UpdateDocument"
 
 
