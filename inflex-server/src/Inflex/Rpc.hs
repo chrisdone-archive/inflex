@@ -33,5 +33,5 @@ rpcHandler name =
       pure (toJSON (output :: UpdateResult))
 
 
-    _ -> error "Invalid RPC function."
+    _ -> Prelude.error "Invalid RPC function."
 

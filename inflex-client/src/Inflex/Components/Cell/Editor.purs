@@ -6,6 +6,7 @@ module Inflex.Components.Cell.Editor
   , Output(..)
   , Field(..)
   , Row(..)
+  , Query(..)
   , component
   ) where
 
@@ -19,6 +20,7 @@ import Data.String (joinWith, length, trim)
 import Data.Symbol (SProxy(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -51,6 +53,7 @@ data State = State
   , editor :: Editor
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
+  , cellError :: Maybe CellError
   }
 
 data Command
@@ -59,14 +62,17 @@ data Command
   | FinishEditing String
   | PreventDefault Event'
                    Command
-  | Autoresize Event
+  -- | Autoresize Event
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
 
--- derive instance genericCommand :: Generic Command _
--- instance showCommand :: Show Command where show x = genericShow x
+data Query a =
+  NestedCellError Shared.NestedCellError
+
+derive instance genericCommand :: Generic Command _
+instance showCommand :: Show Command where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -123,25 +129,58 @@ editorRef = (H.RefLabel "editor")
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
+component :: forall m. MonadEffect m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
-    { initialState: (\(EditorAndCode{editor, code, path}) ->
-                       State {display: DisplayEditor, editor, code, path })
+    { initialState:
+        (\(EditorAndCode {editor, code, path}) ->
+           State {display: DisplayEditor, editor, code, path, cellError: Nothing})
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = eval, receive = pure <<< SetEditor }
+    , eval:
+        H.mkEval
+          H.defaultEval
+            { handleAction = eval
+            , receive = pure <<< SetEditor
+            , handleQuery = query
+            }
     }
+
+--------------------------------------------------------------------------------
+-- Query
+
+query ::
+     forall a action m t0 t1 x. Ord t1 => (MonadEffect m)
+  => Query a
+  -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
+query =
+  case _ of
+    NestedCellError cellError@(Shared.NestedCellError { path: errorPath
+                                                       , error
+                                                       }) -> do
+      State {path} <- H.get
+      let path' = path Shared.DataHere
+      if path' == errorPath
+        then do
+          log ("[Editor] Received error at my path!: " <> show error)
+          H.modify_
+            (\(State st) ->
+               State (st {display = DisplayCode, cellError = Just error}))
+        else do
+          _ <-
+            H.queryAll (SProxy :: SProxy "editor") (NestedCellError cellError)
+          pure unit
+      pure Nothing
 
 --------------------------------------------------------------------------------
 -- Eval
 
--- eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
--- eval' cmd = do
---   log (show cmd)
---   eval cmd
-
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
-eval =
+eval cmd = do
+  log (show cmd)
+  eval' cmd
+
+eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
+eval' =
   case _ of
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
@@ -163,10 +202,11 @@ eval =
              (if trim code == ""
                 then "_"
                 else code))
-      H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
+      -- H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
+      pure unit
     SetEditor (EditorAndCode {editor, code, path}) ->
-      H.put (State {path, editor, code, display: DisplayEditor})
-    Autoresize ev -> do
+      H.put (State {path, editor, code, display: DisplayEditor, cellError: Nothing})
+    {-Autoresize ev -> do
       case currentTarget ev of
         Nothing -> pure unit
         Just x ->
@@ -181,12 +221,12 @@ eval =
                        ("width:" <> show (max 3 (length v + 1)) <>
                         "ch")
                        htmlelement)
-            Nothing -> pure unit
+            Nothing -> pure unit-}
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
             stopPropagation e)
-      eval c
+      eval' c
     NoOp -> pure unit
 
 foreign import getValue :: Element -> Effect (Nullable String)
@@ -196,10 +236,10 @@ foreign import autosize :: HTMLElement -> Effect Unit
 --------------------------------------------------------------------------------
 -- Render main component
 
-render :: forall i a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
-render (State {display, code, editor, path}) =
+render :: forall a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+render (State {display, code, editor, path, cellError}) =
   case display of
-    DisplayCode -> wrapper renderControl
+    DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
       if trim code == ""
         then wrapper (renderControl)
@@ -207,7 +247,10 @@ render (State {display, code, editor, path}) =
   where
     renderControl =
       [ HH.input
-          [ HP.value (if code == "_" then "" else code)
+          [ HP.value
+              (if code == "_"
+                 then ""
+                 else code)
           , HP.class_ (HH.ClassName "form-control")
           , HP.placeholder "Type code here"
           , manage (InputElementChanged <<< ElemRef')
@@ -215,8 +258,7 @@ render (State {display, code, editor, path}) =
               (\k ->
                  case K.code k of
                    "Enter" -> Just (FinishEditing code)
-                   _ -> Nothing
-              )
+                   _ -> Nothing)
           , HE.onValueChange (\i -> pure (SetInput i))
           , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
           ]
@@ -228,10 +270,12 @@ render (State {display, code, editor, path}) =
           case editor of
             MiscE _ _ ->
               HH.div
-                [ HP.class_ (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                [ HP.class_
+                    (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                 , HP.title "Click to edit"
                 , HE.onClick
-                    (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
+                    (\e ->
+                       pure (PreventDefault (Event' (toEvent e)) StartEditor))
                 ]
                 inner
             _ ->
@@ -241,20 +285,26 @@ render (State {display, code, editor, path}) =
                      [ HP.class_ (HH.ClassName "ellipsis-button")
                      , HP.title "Edit this as code"
                      , HE.onClick
-                         (\e -> pure (PreventDefault (Event' (toEvent e)) StartEditor))
+                         (\e ->
+                            pure
+                              (PreventDefault (Event' (toEvent e)) StartEditor))
                      ]
                      []
                  ] <>
                  inner)
+    errorDisplay =
+      case cellError of
+        Nothing -> []
+        Just error -> [renderError error]
 
 --------------------------------------------------------------------------------
 -- Render inner editor
 
 renderEditor ::
-     forall i a. MonadEffect a
+     forall a. MonadEffect a
   => (Shared.DataPath -> Shared.DataPath)
   -> Editor
-  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderEditor path editor =
   case editor of
     MiscE _originalSource t ->
@@ -280,11 +330,11 @@ renderTextEditor _path t = HH.div [HP.class_ (HH.ClassName "text")] [HH.text t]
 -- Tables
 
 renderTableEditor ::
-     forall i a. MonadEffect a
+     forall a. MonadEffect a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Array Row
-  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command)
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderTableEditor path columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
@@ -491,10 +541,10 @@ renderTableEditor path columns rows =
 -- Render arrays
 
 renderArrayEditor ::
-     forall i a. MonadEffect a
+     forall a. MonadEffect a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array Editor
-  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderArrayEditor path editors =
   HH.div
     [HP.class_ (HH.ClassName "array")]
@@ -534,10 +584,10 @@ renderArrayEditor path editors =
 -- Records
 
 renderRecordEditor ::
-     forall i a. MonadEffect a
+     forall a. MonadEffect a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array Field
-  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderRecordEditor path fields =
   HH.table
     [HP.class_ (HH.ClassName "record")]

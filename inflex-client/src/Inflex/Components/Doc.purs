@@ -254,7 +254,7 @@ update :: forall t60 t74.
                                                    | t74
                                                    }
                                                    t60
-                                                  => Shared.Update -> t60 (Maybe Shared.CellError)
+                                                  => Shared.Update -> t60 (Maybe Shared.NestedCellError)
 update update' = do
   result <-
     rpcUpdateDocument

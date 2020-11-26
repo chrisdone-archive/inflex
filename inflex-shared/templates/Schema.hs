@@ -213,6 +213,11 @@ deriving instance Show UpdateResult
 instance ToJSON UpdateResult
 instance FromJSON UpdateResult
 
+deriving instance Generic NestedCellError
+deriving instance Show NestedCellError
+instance ToJSON NestedCellError
+instance FromJSON NestedCellError
+
 deriving instance Generic DataPath
 deriving instance Show DataPath
 instance ToJSON DataPath

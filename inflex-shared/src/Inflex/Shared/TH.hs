@@ -77,7 +77,7 @@ hsDispatch sigs =
     , "rpcHandler name ="
     , "  case name of"
     , dispatch
-    , "    _ -> error \"Invalid RPC function.\""
+    , "    _ -> Prelude.error \"Invalid RPC function.\""
     ]
   where
     dispatch =

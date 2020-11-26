@@ -94,7 +94,10 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                         , DocumentUpdated =. now
                         ])
                    pure (Shared.UpdatedDocument loadedDocument)
-                 Just cellError -> pure (Shared.NestedError cellError))
+                 Just cellError ->
+                   pure
+                     (Shared.NestedError
+                        (Shared.NestedCellError {Shared.error = cellError, path = path})))
 
 -- | Determine whether there was an error in the cell at the place of
 -- the update. If so, return it! We can then nicely display it to the

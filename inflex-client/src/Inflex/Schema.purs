@@ -75,7 +75,12 @@ data UpdateDocument = UpdateDocument
 
 data UpdateResult
   = UpdatedDocument OutputDocument
-  | NestedError CellError
+  | NestedError NestedCellError
+
+data NestedCellError = NestedCellError
+  { path :: DataPath
+  , error :: CellError
+  }
 
 --------------------------------------------------------------------------------
 -- Update commands
@@ -239,6 +244,7 @@ instance decodeNone :: Decode None where decode = genericDecode opts
 instance encodeNone :: Encode None where encode = genericEncode opts
 
 derive instance genericDataPath :: Generic DataPath _
+derive instance eqDataPath :: Eq DataPath
 instance showDataPath :: Show DataPath where show x = genericShow x
 instance decodeDataPath :: Decode DataPath where decode x = genericDecode opts x
 instance encodeDataPath :: Encode DataPath where encode x = genericEncode opts x
@@ -367,6 +373,11 @@ derive instance genericUpdateResult :: Generic UpdateResult _
 instance showUpdateResult :: Show UpdateResult where show = genericShow
 instance decodeUpdateResult :: Decode UpdateResult where decode = genericDecode opts
 instance encodeUpdateResult :: Encode UpdateResult where encode = genericEncode opts
+
+derive instance genericNestedCellError :: Generic NestedCellError _
+instance showNestedCellError :: Show NestedCellError where show = genericShow
+instance decodeNestedCellError :: Decode NestedCellError where decode = genericDecode opts
+instance encodeNestedCellError :: Encode NestedCellError where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

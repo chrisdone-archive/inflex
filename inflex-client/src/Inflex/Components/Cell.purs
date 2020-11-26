@@ -40,7 +40,7 @@ type Pos = { x :: Int, y :: Int }
 
 data Query a
   = SetXY Pos
-  | NestedCellError Shared.CellError
+  | NestedCellError Shared.NestedCellError
 
 data Output
   = CellUpdate { name :: String, code :: String}
@@ -149,13 +149,16 @@ toEditor =
 -- Query
 
 query ::
-     forall a action slots output m. (MonadEffect m)
+     forall a action output m t0 t1 x. Ord t1 => (MonadEffect m)
   => Query a
-  -> H.HalogenM State action slots output m (Maybe a)
+  -> H.HalogenM State action (editor :: H.Slot Editor.Query t0 t1 | x) output m (Maybe a)
 query =
   case _ of
-    NestedCellError cellError -> do log ("Received error: " <> show cellError)
-                                    pure Nothing
+    NestedCellError cellError -> do
+      log ("[Cell] Received error:" <> show cellError)
+      _ <- H.queryAll (SProxy :: SProxy "editor")
+                 (Editor.NestedCellError cellError)
+      pure Nothing
     SetXY xy -> do
       State s <- H.get
       H.modify_
@@ -163,9 +166,13 @@ query =
            State
              (s'
                 { pos =
-                    case s.offset of
+                    case s . offset of
                       Nothing -> Nothing
-                      Just off -> Just {x: (xy . x) - off.x - off.innerx, y: (xy . y) - off.y - off.innery}
+                      Just off ->
+                        Just
+                          { x: (xy . x) - off . x - off . innerx
+                          , y: (xy . y) - off . y - off . innery
+                          }
                 }))
       pure Nothing
 
@@ -224,7 +231,8 @@ eval =
 
 render :: forall keys q m. MonadEffect m =>
           State
-       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q Editor.Output Unit, declname :: H.Slot q String Unit | keys) m Command)
+       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
+                                             declname :: H.Slot q String Unit | keys) m Command)
                   Command
 render (State {cell: Cell {name, code, result}, pos}) =
   HH.div
