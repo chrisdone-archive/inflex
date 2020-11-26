@@ -408,7 +408,8 @@ renderTableEditor path columns rows =
                                                     , update:
                                                         Shared.CodeUpdate
                                                           (Shared.Code
-                                                             { text: rhs
+                                                             { text:
+                                                                 rhs
                                                              })
                                                     })))
                           ])
@@ -427,19 +428,27 @@ renderTableEditor path columns rows =
           [ HH.td
               [HP.class_ (HH.ClassName "add-row")]
               [ HH.button
-                  [ HP.class_ (HH.ClassName "add-row-button")
+                  [ HP.class_
+                      (HH.ClassName
+                         ("add-row-button " <>
+                          if disabled
+                            then "disabled"
+                            else ""))
                   , HP.title "Add row"
                   , HE.onClick
                       (\e ->
-                         pure
-                           (PreventDefault
-                              (Event' (toEvent e))
-                              (TriggerUpdatePath
-                                 (Shared.UpdatePath
-                                    { path: path Shared.DataHere
-                                    , update:
-                                        Shared.AddToEndUpdate
-                                    }))))
+                         if disabled
+                           then Nothing
+                           else pure
+                                  (PreventDefault
+                                     (Event' (toEvent e))
+                                     (TriggerUpdatePath
+                                        (Shared.UpdatePath
+                                           { path:
+                                               path Shared.DataHere
+                                           , update:
+                                               Shared.AddToEndUpdate
+                                           }))))
                   ]
                   [HH.text "+"]
               ]
@@ -450,6 +459,8 @@ renderTableEditor path columns rows =
               []
           ]
       ]
+      where
+        disabled = Array.null columns
     addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
     newColumnButton =
       HH.th

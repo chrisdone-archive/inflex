@@ -323,6 +323,11 @@ table.record {
       background: #15263b;
       color: #fff;
     }
+    .add-row-button.disabled, .add-row-button.disabled:hover {
+      background: inherit;
+      color: #aaa;
+      cursor: default;
+    }
     td.bottom-blank {
       background: #e9eef2;
       border-top: 1px solid #dadeea;
