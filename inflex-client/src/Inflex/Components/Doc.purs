@@ -15,7 +15,7 @@ import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (error, log)
+import Effect.Class.Console (error)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -164,12 +164,11 @@ eval =
               (Cell.SetXY {x, y})
           pure unit
     Initialize -> do
-      result <- rpcLoadDocument (DocumentId (meta.documentId))
+      result <- rpcLoadDocument (DocumentId (meta . documentId))
       case result of
         Left err -> do
-          error ("Error loading document: " <> err) -- TODO:Display this to the user properly.
-        Right outputDocument ->
-          setOutputDocument outputDocument
+          error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
+        Right outputDocument -> setOutputDocument outputDocument
     NewCell -> do
       uuid <- H.liftEffect genUUIDV4
       s <- H.get
@@ -212,10 +211,20 @@ eval =
            (filter
               (\(OutputCell {uuid: uuid'}) -> uuid' /= uuid)
               (state . cells)))
-    UpdatePath uuid update' ->
-      update (Shared.CellUpdate
-                (Shared.UpdateCell
-                  {uuid, update: update'}))
+    UpdatePath uuid update' -> do
+      result <-
+        update
+          (Shared.CellUpdate
+             (Shared.UpdateCell {uuid, update: update'}))
+      case result of
+        Nothing -> pure unit
+        Just cellError -> do
+          _ <-
+            H.query
+              (SProxy :: SProxy "Cell")
+              (uuidToString uuid)
+              (Cell.NestedCellError cellError)
+          pure unit
 
 --------------------------------------------------------------------------------
 -- API calls
@@ -245,7 +254,7 @@ update :: forall t60 t74.
                                                    | t74
                                                    }
                                                    t60
-                                                  => Shared.Update -> t60 Unit
+                                                  => Shared.Update -> t60 (Maybe Shared.CellError)
 update update' = do
   result <-
     rpcUpdateDocument
@@ -256,13 +265,14 @@ update update' = do
   case result of
     Left err -> do
       error err -- TODO:Display this to the user properly.
+      pure Nothing
     Right uresult ->
       case uresult of
-        Shared.UpdatedDocument outputDocument ->
+        Shared.UpdatedDocument outputDocument -> do
           setOutputDocument outputDocument
+          pure Nothing
         Shared.NestedError cellError -> do
-          log (show cellError)
-          pure unit
+          pure (Just cellError)
 
 --------------------------------------------------------------------------------
 -- Internal state helpers

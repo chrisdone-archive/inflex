@@ -15,6 +15,7 @@ import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Effect (Effect)
 import Halogen as H
 import Halogen.HTML as HH
@@ -37,7 +38,9 @@ type Input = Shared.OutputCell
 
 type Pos = { x :: Int, y :: Int }
 
-data Query a = SetXY Pos
+data Query a
+  = SetXY Pos
+  | NestedCellError Shared.CellError
 
 data Output
   = CellUpdate { name :: String, code :: String}
@@ -151,6 +154,8 @@ query ::
   -> H.HalogenM State action slots output m (Maybe a)
 query =
   case _ of
+    NestedCellError cellError -> do log ("Received error: " <> show cellError)
+                                    pure Nothing
     SetXY xy -> do
       State s <- H.get
       H.modify_
