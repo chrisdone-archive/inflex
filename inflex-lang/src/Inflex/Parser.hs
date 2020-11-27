@@ -24,6 +24,7 @@ import qualified Data.Reparsec as Reparsec
 import qualified Data.Reparsec.Sequence as Reparsec
 import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Vector as V
 import           Inflex.Instances ()
@@ -75,6 +76,7 @@ data ParseError
   | EmptyOperand
   | MissingOpRhs
   | OddNumberOfExpressions
+  | DuplicateRecordField FieldName
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -218,24 +220,26 @@ recordParser = do
   Located {location = SourceLocation {start}} <-
     token ExpectedCurly (preview _OpenCurlyToken)
   fields <-
-    let loop = do
+    let loop seen = do
           nameResult <- fmap Just fieldNameParser <> pure Nothing
           case nameResult of
             Nothing -> pure []
-            Just (name, _) -> do
-              Located {location, thing = ()} <-
-                token ExpectedContinuation (preview _ColonToken)
-              expression <- expressionParser
-              comma <-
-                fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
-                pure False
-              rest <-
-                if comma
-                  then loop
-                  else pure []
-              let field = FieldE {name, expression, location}
-              pure (field : rest)
-     in loop
+            Just (name, _)
+              | Set.member name seen -> Reparsec.failWith (liftError (DuplicateRecordField name))
+              | otherwise -> do
+                Located {location, thing = ()} <-
+                  token ExpectedContinuation (preview _ColonToken)
+                expression <- expressionParser
+                comma <-
+                  fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
+                  pure False
+                rest <-
+                  if comma
+                    then loop (Set.insert name seen)
+                    else pure []
+                let field = FieldE {name, expression, location}
+                pure (field : rest)
+     in loop mempty
   Located {location = SourceLocation {end}} <-
     token ExpectedCloseCurly (preview _CloseCurlyToken)
   pure Record {fields, typ = Nothing, location = SourceLocation {start, end}}
@@ -522,32 +526,37 @@ typeParser = do
       Located {location = SourceLocation {start}} <-
         token ExpectedCurly (preview _OpenCurlyToken)
       fields <-
-        let loop = do
+        let loop seen = do
               nameResult <- fmap Just fieldNameParser <> pure Nothing
               case nameResult of
                 Nothing -> pure []
-                Just (name, nameLocation) -> do
-                  result <-
-                    fmap Just (token ExpectedContinuation (preview _ColonToken)) <>
-                    pure Nothing
-                  (location, typ) <-
-                    case result of
-                      Just (Located {location, thing = ()}) -> do
-                        typ <- typeParser
-                        pure (location, typ)
-                      Nothing -> pure (nameLocation, FreshType nameLocation)
-                  comma <-
-                    fmap
-                      (const True)
-                      (token_ ExpectedComma (preview _CommaToken)) <>
-                    pure False
-                  rest <-
-                    if comma
-                      then loop
-                      else pure []
-                  let field = Field {name, typ, location}
-                  pure (field : rest)
-         in loop
+                Just (name, nameLocation)
+                  | Set.member name seen ->
+                    Reparsec.failWith (liftError (DuplicateRecordField name))
+                  | otherwise -> do
+                    result <-
+                      fmap
+                        Just
+                        (token ExpectedContinuation (preview _ColonToken)) <>
+                      pure Nothing
+                    (location, typ) <-
+                      case result of
+                        Just (Located {location, thing = ()}) -> do
+                          typ <- typeParser
+                          pure (location, typ)
+                        Nothing -> pure (nameLocation, FreshType nameLocation)
+                    comma <-
+                      fmap
+                        (const True)
+                        (token_ ExpectedComma (preview _CommaToken)) <>
+                      pure False
+                    rest <-
+                      if comma
+                        then loop (Set.insert name seen)
+                        else pure []
+                    let field = Field {name, typ, location}
+                    pure (field : rest)
+         in loop mempty
       Located {location = SourceLocation {end}} <-
         token ExpectedCloseCurly (preview _CloseCurlyToken)
       pure

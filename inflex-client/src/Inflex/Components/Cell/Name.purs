@@ -2,10 +2,13 @@
 
 module Inflex.Components.Cell.Name
   ( component
+  , Input(..)
   ) where
 
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String (trim)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -27,19 +30,26 @@ import Web.UIEvent.KeyboardEvent as K
 --------------------------------------------------------------------------------
 -- Component types
 
-type Input = String
+newtype Input = Input {
+  text :: String,
+  notThese :: Set String
+  }
 
 type Output = String
 
 data State = State
   { name :: String
   , display :: Display
+  , notThese :: Set String
+  , error :: Maybe Error
   }
+
+data Error = DuplicateName
 
 data Command
   = CodeUpdate Event
   | StartEditor
-  | SetInput String
+  | SetInput Input
   | InputElementChanged (ElemRef Element)
   | PreventDefault Event
                    Command
@@ -65,10 +75,17 @@ component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\name -> State {name, display: DisplayResult})
+        (\(Input {text: name, notThese}) ->
+           State
+             { name
+             , display: DisplayResult
+             , notThese: Set.delete name notThese
+             , error: Nothing
+             })
     , render
     , eval:
-        H.mkEval H.defaultEval {handleAction = eval, receive = pure <<< SetInput}
+        H.mkEval
+          H.defaultEval {handleAction = eval, receive = pure <<< SetInput}
     }
 
 --------------------------------------------------------------------------------
@@ -89,14 +106,27 @@ eval =
               mvalue <- H.liftEffect (getValue htmlelement)
               case toMaybe mvalue >>= cleanName of
                 Nothing -> pure unit
-                Just value -> do
-                  H.raise value
-                  eval (SetInput value)
+                Just text -> do
+                  State {notThese} <- H.get
+                  if Set.member text notThese
+                    then do
+                      H.modify_ (\(State s) -> State (s {error = Just DuplicateName}))
+                    else do
+                      H.raise text
+                      eval (SetInput (Input {text, notThese}))
             Nothing -> pure unit
     StartEditor ->
       void (H.modify (\(State s) -> State (s {display = DisplayEditor})))
-    SetInput i -> do
-      H.modify_ (\(State st) -> State (st {name = i, display = DisplayResult}))
+    SetInput (Input {text, notThese}) -> do
+      H.modify_
+        (\(State st) ->
+           State
+             (st
+                { name = text
+                , notThese = notThese
+                , display = DisplayResult
+                , error = Nothing
+                }))
     InputElementChanged elemRef ->
       case elemRef of
         Created element ->
@@ -108,13 +138,15 @@ eval =
       H.liftEffect
             -- log "Preventing default and propagation ..."
         (do preventDefault e
-            stopPropagation e) {-log "Triggering"-}
+            stopPropagation e {-log "Triggering"-}
+         )
       eval c
     StopPropagation e c -> do
       H.liftEffect
             -- log "Preventing default and propagation ..."
         (do preventDefault e
-            stopPropagation e) {-log "Triggering"-}
+            stopPropagation e {-log "Triggering"-}
+         )
       eval c
     NoOp -> pure unit
 
@@ -125,7 +157,7 @@ render :: forall keys q m. MonadEffect m =>
           State
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {display, name}) =
+render (State {display, name, error}) =
   case display of
     DisplayResult ->
       HH.div
@@ -138,25 +170,39 @@ render (State {display, name}) =
             Just x -> HH.text x
         ]
     DisplayEditor ->
-      HH.input
-        [ HP.class_ (HH.ClassName "form-control")
-        , HP.placeholder "Type name here"
-        , manage InputElementChanged
-        , HP.value name
-        , HE.onKeyDown
-            (\e ->
-               case K.code e of
-                 "Enter" -> Just (StopPropagation (K.toEvent e) NoOp)
-                 code -> Nothing)
-        , HE.onKeyUp
-            (\e ->
-               case K.code e of
-                 "Enter" ->
-                   Just
-                     (StopPropagation (K.toEvent e) (CodeUpdate (K.toEvent e)))
-                 code -> Nothing
-                         {-Just (StopPropagation (K.toEvent e) (PrintCode code))-})
-        ]
+      HH.div
+        []
+        ([ HH.input
+             [ HP.class_ (HH.ClassName "form-control")
+             , HP.placeholder "Type name here"
+             , manage InputElementChanged
+             , HP.value name
+             -- , HE.onKeyDown
+             --     (\e ->
+             --        case K.code e of
+             --          "Enter" -> Just (StopPropagation (K.toEvent e) NoOp)
+             --          code -> Nothing)
+             , HE.onKeyUp
+                 (\e ->
+                    case K.code e of
+                      "Enter" ->
+                        Just
+                          (StopPropagation
+                             (K.toEvent e)
+                             (CodeUpdate (K.toEvent e)))
+                      code -> Nothing {-Just (StopPropagation (K.toEvent e) (PrintCode code))-}
+                  )
+             ]
+         ] <>
+         case error of
+           Nothing -> []
+           Just err ->
+             [HH.div
+                [HP.class_ (HH.ClassName "error-message")]
+                [ HH.text
+                    (case err of
+                       DuplicateName -> "name already in use!")
+                ]])
 
 cleanName :: String -> Maybe String
 cleanName x =

@@ -259,7 +259,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                 (SProxy :: SProxy "declname")
                 unit
                 Name.component
-                name
+                (Name.Input {text: name, notThese: mempty})
                 (\name' ->
                    pure
                      (CodeUpdate

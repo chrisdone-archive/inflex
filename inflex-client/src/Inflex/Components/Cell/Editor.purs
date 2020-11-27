@@ -16,6 +16,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable)
+import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
@@ -482,7 +483,7 @@ tableHeading path columns emptyTable =
             [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
             [ HH.div
                 [HP.class_ (HH.ClassName "table-column-content")]
-                [columnNameSlot path i text, removeColumnButton path text]
+                [columnNameSlot (Set.fromFoldable columns) path i text, removeColumnButton path text]
             ])
        columns <>
      (if emptyTable
@@ -492,16 +493,16 @@ tableHeading path columns emptyTable =
 
 columnNameSlot :: forall t627 t628 t629.
     MonadEffect t628
- => (Shared.DataPath -> Shared.DataPath)
+ => Set String -> (Shared.DataPath -> Shared.DataPath)
  -> Int
  -> String
  -> HH.HTML (H.ComponentSlot HH.HTML ( fieldname :: H.Slot t627 String String | t629) t628 Command) Command
-columnNameSlot path i text =
+columnNameSlot columns path i text =
   HH.slot
     (SProxy :: SProxy "fieldname")
     (show i)
     Name.component
-    text
+    (Name.Input { text, notThese: columns } )
     (\name' ->
        pure
          (TriggerUpdatePath
@@ -682,7 +683,7 @@ renderRecordEditor path fields =
                     (SProxy :: SProxy "fieldname")
                     (show i)
                     Name.component
-                    key
+                    (Name.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
                     (\name' ->
                        pure
                          (TriggerUpdatePath
