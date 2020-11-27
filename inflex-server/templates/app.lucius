@@ -363,6 +363,9 @@ table.record {
     .table-datum-value + .add-column-blank {
       border-left: 1px solid #dadeea
     }
+    .row-number + .add-column-blank {
+      border-left: 1px solid #dadeea
+    }
     tr:first-of-type .add-column-blank {
       border-top: 1px solid #dadeea;
     }
