@@ -11,7 +11,7 @@
 
 -- | Parser for Inflex language.
 
-module Inflex.Parser (parseText, parseType, RenameParseError(..)) where
+module Inflex.Parser (parseText, parseType, LexParseError(..)) where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
@@ -35,7 +35,7 @@ import           Optics
 --------------------------------------------------------------------------------
 -- Parser types
 
-data RenameParseError
+data LexParseError
   = LexerError LexError
   | ParseError ParseErrors
   deriving (Eq, Show)
@@ -92,7 +92,7 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 -- size limits, record field limits, etc.
 
 -- | Parse a given block of text.
-parseText :: FilePath -> Text -> Either RenameParseError (Expression Parsed)
+parseText :: FilePath -> Text -> Either LexParseError (Expression Parsed)
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first
@@ -100,7 +100,7 @@ parseText fp bs = do
     (runIdentity (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens))
 
 -- | Parse a given block of type.
-parseType :: FilePath -> Text -> Either RenameParseError (Type Parsed)
+parseType :: FilePath -> Text -> Either LexParseError (Type Parsed)
 parseType fp bs = do
   tokens <- first LexerError (lexText fp bs)
   first

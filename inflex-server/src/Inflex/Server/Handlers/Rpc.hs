@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
@@ -77,27 +78,40 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
        case mdoc of
          Nothing -> notFound
          Just (Entity documentId' document) -> do
-           let inputDocument =
-                 applyUpdateToDocument update' (documentContent document)
-               loadedDocument = loadInputDocument inputDocument
            case update' of
              Shared.CellUpdate Shared.UpdateCell { uuid
                                                  , update = Shared.UpdatePath {path}
                                                  } ->
-               case cellHadErrorInNestedPlace uuid path loadedDocument of
-                 Nothing -> do
-                   now <- liftIO getCurrentTime
-                   runDB
-                     (update
-                        documentId'
-                        [ DocumentContent =. inputDocument
-                        , DocumentUpdated =. now
-                        ])
-                   pure (Shared.UpdatedDocument loadedDocument)
-                 Just cellError ->
+               case applyUpdateToDocument update' (documentContent document) of
+                 Left transformError -> do
+                   liftIO (print transformError)
                    pure
                      (Shared.NestedError
-                        (Shared.NestedCellError {Shared.error = cellError, path = path})))
+                        (Shared.NestedCellError
+                           { Shared.error =
+                               transformErrorToCellError transformError
+                           , path = path
+                           }))
+                 Right inputDocument ->
+                   case cellHadErrorInNestedPlace uuid path outputDocument of
+                     Nothing -> do
+                       now <- liftIO getCurrentTime
+                       runDB
+                         (update
+                            documentId'
+                            [ DocumentContent =. inputDocument
+                            , DocumentUpdated =. now
+                            ])
+                       pure (Shared.UpdatedDocument outputDocument)
+                     Just cellError -> do
+                       liftIO (print cellError)
+                       liftIO (print inputDocument)
+                       pure
+                         (Shared.NestedError
+                            (Shared.NestedCellError
+                               {Shared.error = cellError, path = path}))
+                   where outputDocument :: Shared.OutputDocument
+                         outputDocument = loadInputDocument inputDocument)
 
 -- | Determine whether there was an error in the cell at the place of
 -- the update. If so, return it! We can then nicely display it to the
@@ -118,3 +132,9 @@ cellHadErrorInNestedPlace uuid0 path (Shared.OutputDocument cells) =
                 Shared.ResultError cellError | uuid == uuid0 -> pure cellError
                 _ -> Nothing)
            (toList cells))
+
+transformErrorToCellError :: TransformError -> Shared.CellError
+transformErrorToCellError =
+  \case
+    TransformedParseError {} -> Shared.SyntaxError
+    OriginalSourceNotParsing {} -> Shared.SyntaxError -- TODO: Make explicit constructor.

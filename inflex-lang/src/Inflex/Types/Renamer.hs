@@ -42,7 +42,7 @@ newtype Renamer a = Renamer
 
 data ParseRenameError
   = RenamerErrors (NonEmpty RenameError)
-  | ParserErrored RenameParseError
+  | ParserErrored LexParseError
   deriving (Show, Eq)
 
 type CursorBuilder = Cursor -> Cursor

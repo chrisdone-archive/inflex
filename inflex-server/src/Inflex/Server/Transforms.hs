@@ -7,6 +7,8 @@
 
 module Inflex.Server.Transforms where
 
+import           Data.Bifunctor
+import           Data.Text (Text)
 import qualified Data.Vector as V
 import           Inflex.Display ()
 import           Inflex.Parser
@@ -14,43 +16,44 @@ import qualified Inflex.Schema as Shared
 import           Inflex.Types
 import qualified Inflex.Types as Field (Field(..))
 import qualified Inflex.Types as FieldE (FieldE(..))
-import           RIO
+import           RIO (textDisplay)
 
--- TODO: Do something about errors occurring. And possibly type-check
--- the result of the document afterwards?
+data TransformError
+  = TransformedParseError LexParseError
+  | OriginalSourceNotParsing Shared.DataPath LexParseError Text
+  deriving (Show)
 
 --------------------------------------------------------------------------------
 -- General dispatcher
 
-applyUpdateToDocument :: Shared.Update -> Shared.InputDocument1 -> Shared.InputDocument1
+applyUpdateToDocument ::
+     Shared.Update
+  -> Shared.InputDocument1
+  -> Either TransformError Shared.InputDocument1
 applyUpdateToDocument (Shared.CellUpdate Shared.UpdateCell {uuid, update}) =
   case cmd of
     Shared.NewFieldUpdate Shared.NewField {name = name0} ->
-      mapUuid uuid (addNewFieldInCode path (FieldName name0))
+      mapUuid uuid (pure . addNewFieldInCode path (FieldName name0))
     Shared.DeleteFieldUpdate Shared.DeleteField {name = name0} ->
-      mapUuid uuid (deleteFieldInCode path (FieldName name0))
+      mapUuid uuid (pure . deleteFieldInCode path (FieldName name0))
     Shared.RenameFieldUpdate Shared.RenameField {from, to = to0} ->
-      mapUuid uuid (renameFieldInCode path (FieldName from) (FieldName to0))
+      mapUuid
+        uuid
+        (pure . renameFieldInCode path (FieldName from) (FieldName to0))
     Shared.CodeUpdate (Shared.Code code) ->
       mapUuidPath uuid path (MapExpression (setParsed code))
     Shared.AddToEndUpdate ->
-      mapUuidPath
-        uuid
-        path
-        (MapArray addArrayItem)
+      mapUuidPath uuid path (MapArray (pure . addArrayItem))
     Shared.RemoveUpdate (Shared.Removal {index}) ->
-      mapUuidPath
-        uuid
-        path
-        (MapArray (removeArrayItem index))
+      mapUuidPath uuid path (MapArray (pure . removeArrayItem index))
   where
     Shared.UpdatePath {path, update = cmd} = update
 
 --------------------------------------------------------------------------------
 -- Code updaters
 
-setParsed :: Text -> Expression Parsed -> Expression Parsed
-setParsed new orig = either (const orig) id (parseText "" new)
+setParsed :: Text -> Expression Parsed -> Either TransformError (Expression Parsed)
+setParsed new _orig = first TransformedParseError (parseText "" new)
 
 addNewFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 addNewFieldInCode path0 name code =
@@ -256,9 +259,9 @@ removeArrayItem idx array@Array {expressions} =
 -- Generic walkers
 
 data Mapping
-  = MapArray (Array Parsed -> Array Parsed)
-  | MapRecord (Record Parsed -> Record Parsed)
-  | MapExpression (Expression Parsed -> Expression Parsed)
+  = MapArray (Array Parsed -> Either TransformError (Array Parsed))
+  | MapRecord (Record Parsed -> Either TransformError (Record Parsed))
+  | MapExpression (Expression Parsed -> Either TransformError (Expression Parsed))
 
 -- | Change something at a path in a uuid in the document.
 mapUuidPath ::
@@ -266,70 +269,74 @@ mapUuidPath ::
   -> Shared.DataPath
   -> Mapping
   -> Shared.InputDocument1
-  -> Shared.InputDocument1
+  -> Either TransformError Shared.InputDocument1
 mapUuidPath uuid path mapping = mapUuid uuid (mapPath path mapping)
 
 -- | Change something at a uuid in the document.
 mapUuid ::
      Shared.UUID
-  -> (Text -> Text)
+  -> (Text -> Either TransformError Text)
   -> Shared.InputDocument1
-  -> Shared.InputDocument1
+  -> Either TransformError Shared.InputDocument1
 mapUuid uuid0 f Shared.InputDocument1 {cells} =
-  Shared.InputDocument1 {cells = fmap apply cells}
+  do cells' <- traverse apply cells
+     pure (Shared.InputDocument1 {cells = cells'})
   where
     apply same@Shared.InputCell1 {..} =
       if uuid == uuid0
-        then Shared.InputCell1 {code = f code, ..}
-        else same
+        then do code' <- f code
+                pure Shared.InputCell1 {code = code', ..}
+        else pure same
 
 -- | Change something at a path in the source code.
-mapPath :: Shared.DataPath -> Mapping -> Text -> Text
+mapPath :: Shared.DataPath -> Mapping -> Text -> Either TransformError Text
 mapPath path0 mapping code =
   case parseText "" code of
-    Left {} -> code
-    Right expr -> textDisplay (go path0 expr)
+    Left err -> Left (OriginalSourceNotParsing path0 err code)
+    Right expr -> do
+      expr' <- go path0 expr
+      pure (textDisplay expr')
   where
-    go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
+    go ::
+         Shared.DataPath
+      -> Expression Parsed
+      -> Either TransformError (Expression Parsed)
     go path =
       \case
         ArrayExpression array@Array {expressions}
-          | Shared.DataElemOf index path' <- path ->
-            ArrayExpression
-              (array
-                 { expressions =
-                     V.imap
-                       (\i e ->
-                          if i == index
-                            then go path' e
-                            else e)
-                       expressions
-                 })
+          | Shared.DataElemOf index path' <- path -> do
+            expressions' <-
+              V.imapM
+                (\i e ->
+                   if i == index
+                     then go path' e
+                     else pure e)
+                expressions
+            pure (ArrayExpression (array {expressions = expressions'}))
         RecordExpression record@Record {fields}
-          | Shared.DataFieldOf index path' <- path ->
-            RecordExpression
-              record
-                { fields =
-                    fmap
-                      (\(i, fielde@FieldE {expression}) ->
-                         fielde
-                           { FieldE.expression =
-                               if i == index
-                                 then go path' expression
-                                 else expression
-                           })
-                      (zip [0 ..] fields)
-                }
+          | Shared.DataFieldOf index path' <- path -> do
+            fields' <-
+              traverse
+                (\(i, fielde@FieldE {expression}) ->
+                   do expression' <- if i == index
+                                       then go path' expression
+                                       else pure expression
+                      pure fielde
+                             { FieldE.expression =
+                                 expression'
+                             })
+                (zip [0 ..] fields)
+            pure (RecordExpression record {fields = fields'})
         e
           | Shared.DataHere <- path ->
             case e of
               ArrayExpression array
                 | MapArray mapArray <- mapping ->
-                  ArrayExpression (mapArray array)
+                  fmap ArrayExpression (mapArray array)
               RecordExpression record
                 | MapRecord mapRecord <- mapping ->
-                  RecordExpression (mapRecord record)
+                  fmap RecordExpression (mapRecord record)
               _
                 | MapExpression mapExpression <- mapping -> mapExpression e
-              _ -> e
-          | otherwise -> e
+              _ -> pure e
+          | otherwise -> pure e
