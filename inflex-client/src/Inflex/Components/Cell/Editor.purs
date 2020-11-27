@@ -10,13 +10,14 @@ module Inflex.Components.Cell.Editor
   , component
   ) where
 
-import Data.Array as Array
 import Data.Array (mapWithIndex)
+import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
-import Data.Nullable (Nullable, toMaybe)
-import Data.String (joinWith, length, trim)
+import Data.Nullable (Nullable)
+import Data.Set as Set
+import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -32,8 +33,8 @@ import Inflex.Components.Cell.Name as Name
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
 import Prelude
-import Web.DOM.Element (Element, fromEventTarget)
-import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
+import Web.DOM.Element (Element)
+import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.KeyboardEvent as K
@@ -557,12 +558,21 @@ renderTableEditor path columns rows =
                               , update:
                                   Shared.NewFieldUpdate
                                     (Shared.NewField
-                                       {name: "foo"})
+                                       {name: generateColumnName columns})
                               }))))
             ]
             [HH.text "+"]
         ]
 
+-- | Search for a unique column name of the form "columnN".
+generateColumnName :: Array String -> String
+generateColumnName columns = iterate 1
+  where
+    set = Set.fromFoldable columns
+    iterate i = if Set.member candidate set
+                 then iterate (i+1)
+                 else candidate
+      where candidate = "column" <> show i
 
 --------------------------------------------------------------------------------
 -- Render arrays
