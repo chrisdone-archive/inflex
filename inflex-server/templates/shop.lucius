@@ -155,3 +155,19 @@ body {
   background: #15263b;
   color: #fff;
 }
+
+.register-page {
+  font-family: sans-serif;
+  max-width: 50em;
+  margin: 0 auto;
+  .invalid-feedback {
+    color: red;
+    font-weight: bold;
+    padding: 0.5em 0;
+  }
+  label {
+    min-width: 8em;
+    display: inline-block;
+    margin-top: 1em;
+  }
+}

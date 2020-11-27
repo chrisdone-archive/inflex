@@ -11,7 +11,7 @@
 
 -- Shop
 / HomeR GET
-/hidden-register EnterDetailsR
+/register EnterDetailsR
 /register/checkout/create CheckoutCreateR GET
 /register/checkout/cancel CheckoutCancelR GET
 /register/checkout/waiting CheckoutWaitingR GET

@@ -33,7 +33,8 @@ manualMigration _x = do
     0 -> schema0
     1 -> schema1
     2 -> schema2
-    3 -> liftIO $ putStrLn "At correct schema version."
+    3 -> schema3
+    4 -> liftIO $ putStrLn "At correct schema version."
     _ -> error ("At mysterious schema version: " ++ show version)
   -- Commit transaction NOW.
   run "COMMIT;"
@@ -61,4 +62,9 @@ ALTER TABLE "early_access_request" ADD CONSTRAINT "early_access_request_early_ac
 schema2 = run [s|
 INSERT INTO schema_versions VALUES (1);
 ALTER TABLE "session" ADD CONSTRAINT "session_unique_uuid" UNIQUE (uuid);
+  |]
+
+schema3 = run [s|
+INSERT INTO schema_versions VALUES (1);
+ALTER TABLE "account" ALTER COLUMN "customer_id" DROP NOT NULL;
   |]

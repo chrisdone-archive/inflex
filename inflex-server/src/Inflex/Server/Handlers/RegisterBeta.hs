@@ -1,0 +1,176 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+-- |
+
+module Inflex.Server.Handlers.RegisterBeta
+  ( handleEnterDetailsR
+  ) where
+
+import           Control.Monad.Reader
+import           Data.Foldable
+import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as UUID
+import           Data.Validation
+import qualified Forge.Internal.Types as Forge
+import qualified Forge.Verify as Forge
+import           GA
+import           Inflex.Server.App
+import           Inflex.Server.Forge
+import           Inflex.Server.Forms
+import           Inflex.Server.Lucid
+import           Inflex.Server.Session
+import           Inflex.Server.Types
+import           Inflex.Server.View.Shop
+import           Lucid
+import           Optics
+import           Yesod hiding (Html, Field, toHtml)
+import           Yesod.Forge
+import           Yesod.Lucid
+
+intro_ :: Lucid App ()
+intro_ = do
+  h1_ "Welcome to the beta!"
+  p_
+    (do "You should have received an invite from our community forum at "
+        a_ [href_ "https://community.inflex.io/"] "community.inflex.io"
+        ".")
+  p_ "Please use the same email from your early access request."
+
+handleEnterDetailsR :: Handler (Html ())
+handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
+  where
+    go state sessionId mRegistrationDetails = do
+      submission <-
+        generateForm
+          (verifiedRegisterForm (Forge.maybeDefault mRegistrationDetails))
+      case submission of
+        NotSubmitted v -> htmlWithUrl (registerView state v)
+        Submitted parse -> do
+          Forge.Generated {generatedView = v, generatedValue = result} <-
+            runDB parse
+          case result of
+            Failure errors ->
+              htmlWithUrl
+                (do registerView
+                      state
+                      (do div_
+                            [class_ "invalid-feedback"]
+                            (traverse_ showError errors)
+                          v))
+            Success RegistrationDetails {..} -> do
+              void
+                (runDB
+                   (do resetSessionNonce sessionId
+                       salt <-
+                         fmap (Salt . UUID.toText) (liftIO UUID.nextRandom)
+                       key <-
+                         insert
+                           Account
+                             { accountUsername = Nothing
+                             , accountPassword =
+                                 sha256Password salt registerPassword
+                             , accountSalt = salt
+                             , accountEmail = registerEmail
+                             , accountCustomerId = Nothing
+                             }
+                       updateSession
+                         sessionId
+                         (Registered
+                            LoginState
+                              { loginEmail = registerEmail
+                              , loginUsername = Nothing
+                              , loginAccountId = fromAccountId key
+                              })))
+              htmlWithUrl
+                (shopTemplate
+                   state
+                   (div_
+                      [class_ "register-page"]
+                      (do h1_ "Registered!"
+                          p_ "Taking you to the dashboard..."
+                          redirect_ 3 AppDashboardR)))
+
+registerView :: SessionState -> Lucid App () -> Lucid App ()
+registerView sessionState formView =
+  shopTemplate
+    sessionState
+    (div_
+       [class_ "register-page"]
+       (do url <- ask
+           form_
+             [action_ (url EnterDetailsR), method_ "POST"]
+             (do intro_
+                 formView
+                 p_ (button_ [class_ "btn btn-primary"] "Continue"))))
+
+verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm RegisterError RegistrationDetails
+verifiedRegisterForm = $$($$(Forge.verify1 [||registerFormBeta||]))
+
+--------------------------------------------------------------------------------
+-- State to page mapping
+--
+-- This is copied from the real stripe-based registration, for the
+-- purpose of the beta.
+--
+-- There's currently only one beta registration state (entering
+-- details), but there may be others in the future!
+
+registerRedirect :: BetaRegistrationState -> Handler (Html ())
+registerRedirect state =
+  case state of
+    BetaEnterDetails {} -> redirect' EnterDetailsR
+  where
+    redirect' route =
+      htmlWithUrl -- TODO: Fix the below for real-world use.
+        (shopTemplate
+           (UnregisteredBeta state)
+           (do _url <- ask
+               h1_
+                 (do "Wrong page!"
+                     noscript_ (code_ (toHtml (show state))))
+               p_ "Taking you to the right one ..."
+               redirect_ 2 route))
+
+withRegistrationState ::
+     Iso' BetaRegistrationState a
+  -> (SessionState -> SessionId -> a -> Handler (Html ()))
+  -> Handler (Html ())
+withRegistrationState theCons cont = do
+  submitGA
+  session <- assumeSession registerStart
+  case session of
+    (Entity sessionId Session {sessionState = state}) ->
+      case state of
+        UnregisteredBeta registerState ->
+          case preview theCons registerState of
+            Nothing -> registerRedirect registerState
+            Just a -> cont state sessionId a
+        Registered {} ->
+          htmlWithUrl
+            (shopTemplate
+               state
+               (do h1_ "Registered!"
+                   p_
+                     "You are registered! Taking you to the dashboard..."
+                   spinner_
+                   redirect_ 2 AppDashboardR))
+        -- The real registration just starts a-fresh.
+        Unregistered {} -> do
+          runDB (updateSession sessionId registerStart)
+          redirect EnterDetailsR
+        NoSessionState {} -> do
+          runDB (updateSession sessionId registerStart)
+          redirect EnterDetailsR
+  where
+    registerStart = UnregisteredBeta (BetaEnterDetails Nothing)

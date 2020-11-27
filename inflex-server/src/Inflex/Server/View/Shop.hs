@@ -58,6 +58,10 @@ shopTemplate state body = do
                                    (button_
                                       [class_ "logout full-button"]
                                       "Logout")
+                               UnregisteredBeta {} ->
+                                 form_
+                                   [action_ (url LoginR), method_ "get"]
+                                   (button_ [class_ "login full-button"] "Login")
                                Unregistered {} ->
                                  form_
                                    [action_ (url LoginR), method_ "get"]

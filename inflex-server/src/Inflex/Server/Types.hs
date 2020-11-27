@@ -151,6 +151,7 @@ instance FromJSON DecIn where
 
 data SessionState
   = Unregistered RegistrationState
+  | UnregisteredBeta BetaRegistrationState
   | Registered LoginState
   | NoSessionState
   deriving (Show, Generic)
@@ -185,8 +186,21 @@ data RegistrationState
 instance FromJSON RegistrationState
 instance ToJSON RegistrationState
 
+--------------------------------------------------------------------------------
+-- Beta code
+
+data BetaRegistrationState
+  = BetaEnterDetails (Maybe RegistrationDetails)
+  deriving (Show, Generic)
+instance FromJSON BetaRegistrationState
+instance ToJSON BetaRegistrationState
+
+--------------------------------------------------------------------------------
+
 $(makePrisms ''RegistrationState)
+$(makePrisms ''BetaRegistrationState)
 $(makePrisms ''SessionState)
 
 $(derivePersistFieldJSON "SessionState")
 $(derivePersistFieldJSON "RegistrationState")
+$(derivePersistFieldJSON "BetaRegistrationState")

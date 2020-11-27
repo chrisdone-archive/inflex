@@ -22,7 +22,6 @@
 
 module Inflex.Server.App where
 
-import           Control.Concurrent
 import           Control.Monad.Reader
 import           Data.Pool
 import           Data.Text (Text)

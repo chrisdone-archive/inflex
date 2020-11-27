@@ -33,6 +33,7 @@ data RegisterError
   = RegisterError Error
   | UsernameTaken
   | EmailTaken
+  | BetaEmailNotThere
   deriving (Show, Eq)
 
 instance Forge.FormError RegisterError where
@@ -45,6 +46,7 @@ instance ShowError RegisterError where
       RegisterError e -> showError e
       UsernameTaken -> "That username is already in use, sorry!"
       EmailTaken -> "That email is already in use, sorry!" -- TODO: Add link to sign in.
+      BetaEmailNotThere -> "That email isn't on the beta list! Are you using the right one?"
 
 data LoginError
   = LoginError Error
@@ -60,6 +62,16 @@ instance ShowError LoginError where
     \case
       LoginError e -> showError e
       InvalidLogin -> "Invalid email/password combination." -- TODO: Add "forgot password" suggestion.
+
+registerFormBeta :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails
+registerFormBeta mregistrationDetails =
+  Forge.ParseForm
+    (\ok@RegistrationDetails {registerEmail} -> do
+       msomething <- selectFirst [EarlyAccessRequestEmail ==. registerEmail] []
+       case msomething of
+         Nothing -> pure (Left BetaEmailNotThere)
+         Just {} -> pure (Right ok))
+    (registerForm mregistrationDetails)
 
 registerForm :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails
 registerForm mregistrationDetails = do

@@ -189,7 +189,7 @@ postEarlyAccessRequestR = do
                  "When the time is right, we'll email you with an invitation link."
                p_
                  []
-                 (do "Don't worry, we don't spam you. Any emails will have an 'unsubscribe' button.")
+                 (do "Don't worry, we won't spam you. Any emails will have an 'unsubscribe' button.")
          div_ [class_ "footer"] $ do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"

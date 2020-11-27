@@ -14,8 +14,9 @@
 -- |
 
 module Inflex.Server.Handlers.Register
-  ( handleEnterDetailsR
-  , getCheckoutCreateR
+  ( -- Disabled while we're in beta. Alternative registration is provided by Inflex.Server.Handlers.RegisterBeta.
+    -- handleEnterDetailsR
+   getCheckoutCreateR
   , getCheckoutCancelR
   , getCheckoutWaitingR
   , getCheckoutSessionCompletedR
@@ -129,7 +130,7 @@ registerView sessionState formView =
        (do url <- ask
            h1_ "Register"
            form_
-             [action_ (url EnterDetailsR), method_ "POST", novalidate_ ""] -- TODO: remove novalidate.
+             [action_ (url EnterDetailsR), method_ "POST"]
              (do formView
                  p_ (button_ [class_ "btn btn-primary"] "Continue"))))
 
@@ -257,7 +258,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                              , accountPassword = sha256Password salt registerPassword
                              , accountSalt = salt
                              , accountEmail = registerEmail
-                             , accountCustomerId = customerId
+                             , accountCustomerId = pure customerId
                              }
                        updateSession
                          sessionId
