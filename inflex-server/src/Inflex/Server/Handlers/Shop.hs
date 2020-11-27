@@ -27,9 +27,11 @@ module Inflex.Server.Handlers.Shop
   , getFaviconR
   , getShopCssR
   , postEarlyAccessRequestR
+  , getEarlyAccessRequestsR
   ) where
 
 import           Control.Monad.Reader
+import           Data.Csv
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -194,6 +196,28 @@ postEarlyAccessRequestR = do
            div_ [class_ "margin-wrapper"] $ do
              p_ "© 2020 Sky Above Limited"
              p_ "Inflex® is a registered trademark of Sky Above Limited.")
+
+getEarlyAccessRequestsR :: Handler TypedContent
+getEarlyAccessRequestsR = do
+  withLogin
+    (\_ (LoginState {loginEmail}) ->
+       if loginEmail == Email "inflex@chrisdone.com"
+         then do
+           requests <- runDB (selectList [] [Asc EarlyAccessRequestCreated])
+           addHeader "Content-Disposition" $
+             T.concat ["attachment; filename=\"", filename, "\""]
+           pure
+             (TypedContent
+                "text/csv"
+                (toContent
+                   (encode
+                      (map
+                         (\Entity {entityVal = EarlyAccessRequest {earlyAccessRequestEmail}} ->
+                            Only (unEmail earlyAccessRequestEmail))
+                         requests))))
+         else permissionDenied "not admin")
+  where
+    filename = "early-access-requests.csv"
 
 --------------------------------------------------------------------------------
 -- Account

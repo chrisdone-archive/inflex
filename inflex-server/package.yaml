@@ -12,7 +12,6 @@ extra-source-files:
 - config/*
 - templates/*.lucius
 - svg/*.svg
-- html/*.html
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -25,6 +24,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - rio
+- cassava
 - formatting
 - time-qq
 - th-lift
