@@ -324,9 +324,9 @@ table.record {
       color: #fff;
     }
     .add-row-button.disabled, .add-row-button.disabled:hover {
+      cursor: not-allowed;
       background: inherit;
       color: #aaa;
-      cursor: default;
     }
     td.bottom-blank {
       background: #e9eef2;
@@ -338,6 +338,14 @@ table.record {
       background: #e9eef2;
       padding: 4px;
       text-align: center
+    }
+    .table-empty {
+      border-top: 1px solid #dadeea;
+      padding: 20px;
+      font-family: sans-serif;
+      color: #666;
+      cursor: default;
+      cursor: not-allowed;
     }
     tr > .row-number + .table-datum-value {
       border-left: 1px solid #dadeea

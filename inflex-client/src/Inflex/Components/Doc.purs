@@ -42,7 +42,7 @@ foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
 data Command
   = Initialize
   | UpdateCell UUID {name :: String, code :: String}
-  | NewCell
+  | NewCell String
   | DeleteCell UUID
   | UpdatePath UUID Shared.UpdatePath
   | DragStart UUID DE.DragEvent
@@ -87,9 +87,14 @@ render state =
             [HP.class_ (HH.ClassName "rhs-nav")]
             [ HH.button
                 [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\e -> pure NewCell)
+                , HE.onClick (\e -> pure (NewCell ""))
                 ]
                 [HH.text "New Cell"]
+            , HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\e -> pure (NewCell "[] :: [{}]"))
+                ]
+                [HH.text "New Table"]
             , HH.form
                 [HP.action (meta . logout), HP.method HP.POST]
                 [ HH.button
@@ -169,14 +174,14 @@ eval =
         Left err -> do
           error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
         Right outputDocument -> setOutputDocument outputDocument
-    NewCell -> do
+    NewCell code -> do
       uuid <- H.liftEffect genUUIDV4
       s <- H.get
       let cells' =
             [ InputCell1
                 { uuid: uuid
                 , name: ""
-                , code: ""
+                , code
                 , order:
                     fromMaybe
                       0

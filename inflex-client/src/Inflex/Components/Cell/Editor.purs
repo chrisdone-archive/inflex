@@ -392,10 +392,31 @@ renderTableEditor path columns rows =
                       ]
                   ])
              columns <>
+           (if emptyTable
+              then [HH.th [] []]
+              else []) <>
            [newColumnButton])
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (mapWithIndex
+          ((if emptyTable
+              then [ HH.tr
+                       []
+                       [ HH.td
+                           [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
+                           [HH.text "Hit the top-right button to add columns! ↗"]
+                       ]
+                   ]
+              else if emptyRows
+                      then [ HH.tr
+                               []
+                               [ HH.td
+                                   [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
+                                   [HH.text "↙ Hit the bottom-left button to add rows!"]
+                               ]
+                           ]
+                      else [
+                           ]) <>
+           mapWithIndex
              (\rowIndex (Row {original, fields}) ->
                 HH.tr
                   []
@@ -470,6 +491,8 @@ renderTableEditor path columns rows =
       ]
   ]
   where
+    emptyTable = Array.null columns && Array.null rows
+    emptyRows = Array.null rows
     rowNumber rowIndex =
       HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
     addNewRow =
@@ -504,7 +527,11 @@ renderTableEditor path columns rows =
               ]
           , HH.td
               [ HP.class_ (HH.ClassName "bottom-blank")
-              , HP.colSpan (Array.length columns + 1)
+              , HP.colSpan
+                  (Array.length columns + 1 +
+                   (if emptyTable
+                      then 1
+                      else 0))
               ]
               []
           ]
