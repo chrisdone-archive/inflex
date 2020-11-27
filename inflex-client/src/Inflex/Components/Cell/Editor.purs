@@ -339,163 +339,16 @@ renderTableEditor ::
 renderTableEditor path columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
-      [ HH.thead
-          [HP.class_ (HH.ClassName "table-header")]
-          ([HH.th [HP.class_ (HH.ClassName "table-column"), HP.title ""] []] <>
-           mapWithIndex
-             (\i text ->
-                HH.th
-                  [ HP.class_ (HH.ClassName "table-column")
-                  , HP.title "Click to edit"
-                  ]
-                  [ HH.div
-                      [HP.class_ (HH.ClassName "table-column-content")]
-                      [ HH.slot
-                          (SProxy :: SProxy "fieldname")
-                          (show i)
-                          Name.component
-                          text
-                          (\name' ->
-                             pure
-                               (TriggerUpdatePath
-                                  (Shared.UpdatePath
-                                     { path:
-                                         path
-                                           (Shared.DataElemOf 0 Shared.DataHere)
-                                     , update:
-                                         Shared.RenameFieldUpdate
-                                           (Shared.RenameField
-                                              { from: text
-                                              , to: name'
-                                              })
-                                     })))
-                      , HH.button
-                          [ HP.class_ (HH.ClassName "remove-column-button")
-                          , HE.onClick
-                              (\e ->
-                                 pure
-                                   (PreventDefault
-                                      (Event' (toEvent e))
-                                      (TriggerUpdatePath
-                                         (Shared.UpdatePath
-                                            { path:
-                                                path
-                                                  (Shared.DataElemOf
-                                                     0
-                                                     Shared.DataHere)
-                                            , update:
-                                                Shared.DeleteFieldUpdate
-                                                  (Shared.DeleteField
-                                                     {name: text})
-                                            }))))
-                          ]
-                          [HH.text "×"]
-                      ]
-                  ])
-             columns <>
-           (if emptyTable
-              then [HH.th [] []]
-              else []) <>
-           [newColumnButton])
+      [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          ((if emptyTable
-              then [ HH.tr
-                       []
-                       [ HH.td
-                           [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
-                           [HH.text "Hit the top-right button to add columns! ↗"]
-                       ]
-                   ]
-              else if emptyRows
-                      then [ HH.tr
-                               []
-                               [ HH.td
-                                   [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
-                                   [HH.text "↙ Hit the bottom-left button to add rows!"]
-                               ]
-                           ]
-                      else [
-                           ]) <>
-           mapWithIndex
-             (\rowIndex (Row {original, fields}) ->
-                HH.tr
-                  []
-                  ([rowNumber rowIndex] <>
-                   mapWithIndex
-                     (\fieldIndex (Field {key, value: editor'}) ->
-                        HH.td
-                          [HP.class_ (HH.ClassName "table-datum-value")]
-                          [ HH.slot
-                              (SProxy :: SProxy "editor")
-                              (show rowIndex <> "/" <> show fieldIndex)
-                              component
-                              (EditorAndCode
-                                 { editor: editor'
-                                 , code: editorCode editor'
-                                 , path:
-                                     path <<<
-                                     Shared.DataElemOf rowIndex <<<
-                                     Shared.DataFieldOf fieldIndex
-                                 })
-                              (\output ->
-                                 case output of
-                                   UpdatePath update ->
-                                     Just (TriggerUpdatePath update)
-                                   NewCode rhs ->
-                                     Just
-                                       (if false
-                                          then FinishEditing
-                                                 (editorCode
-                                                    (TableE
-                                                       Shared.NoOriginalSource
-                                                       columns
-                                                       (editArray
-                                                          rowIndex
-                                                          (Row
-                                                             { original:
-                                                                 Shared.NoOriginalSource
-                                                             , fields:
-                                                                 editArray
-                                                                   fieldIndex
-                                                                   (Field
-                                                                      { key
-                                                                      , value:
-                                                                          MiscE
-                                                                            Shared.NoOriginalSource
-                                                                            rhs
-                                                                      })
-                                                                   fields
-                                                             })
-                                                          rows)))
-                                          else TriggerUpdatePath
-                                                 (Shared.UpdatePath
-                                                    { path:
-                                                        path
-                                                          (Shared.DataElemOf
-                                                             rowIndex
-                                                             (Shared.DataFieldOf
-                                                                fieldIndex
-                                                                Shared.DataHere))
-                                                    , update:
-                                                        Shared.CodeUpdate
-                                                          (Shared.Code
-                                                             { text:
-                                                                 rhs
-                                                             })
-                                                    })))
-                          ])
-                     fields <>
-                   addColumnBlank))
-             rows <>
+          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow path) rows <>
            addNewRow)
       ]
   ]
   where
     emptyTable = Array.null columns && Array.null rows
     emptyRows = Array.null rows
-    rowNumber rowIndex =
-      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
     addNewRow =
       [ HH.tr
           []
@@ -539,30 +392,179 @@ renderTableEditor path columns rows =
       ]
       where
         disabled = Array.null columns
-    addColumnBlank = [HH.td [HP.class_ (HH.ClassName "add-column-blank")] []]
-    newColumnButton =
-      HH.th
-        [HP.class_ (HH.ClassName "add-column")]
-        [ HH.button
-            [ HP.class_ (HH.ClassName "add-column-button")
-            , HP.title "Add column to this table"
-            , HE.onClick
-                (\e ->
-                   pure
-                     (PreventDefault
-                        (Event' (toEvent e))
-                        (TriggerUpdatePath
-                           (Shared.UpdatePath
-                              { path:
-                                  path (Shared.DataElemOf 0 Shared.DataHere)
-                              , update:
-                                  Shared.NewFieldUpdate
-                                    (Shared.NewField
-                                       {name: generateColumnName columns})
-                              }))))
-            ]
-            [HH.text "+"]
+    fieldset = Set.fromFoldable columns
+
+tableRow ::
+     forall a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> Int
+  -> Row
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+tableRow path rowIndex (Row {original, fields}) =
+  HH.tr
+    []
+    ([rowNumber] <>
+     mapWithIndex
+       (\fieldIndex (Field {key, value: editor'}) ->
+          HH.td
+            [HP.class_ (HH.ClassName "table-datum-value")]
+            [ HH.slot
+                (SProxy :: SProxy "editor")
+                (show rowIndex <> "/" <> show fieldIndex)
+                component
+                (EditorAndCode
+                   { editor: editor'
+                   , code: editorCode editor'
+                   , path:
+                       path <<<
+                       Shared.DataElemOf rowIndex <<<
+                       Shared.DataFieldOf fieldIndex
+                   })
+                (\output ->
+                   case output of
+                     UpdatePath update -> Just (TriggerUpdatePath update)
+                     NewCode rhs ->
+                       Just
+                         (TriggerUpdatePath
+                            (Shared.UpdatePath
+                               { path:
+                                   path
+                                     (Shared.DataElemOf
+                                        rowIndex
+                                        (Shared.DataFieldOf
+                                           fieldIndex
+                                           Shared.DataHere))
+                               , update:
+                                   Shared.CodeUpdate
+                                     (Shared.Code {text: rhs})
+                               })))
+            ])
+       fields <>
+     [addColumnBlank])
+  where
+    addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
+    rowNumber =
+      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
+
+bodyGuide :: forall t651 t652. Boolean -> Boolean -> Array (HH.HTML t652 t651)
+bodyGuide emptyTable emptyRows =
+  if emptyTable
+    then [ HH.tr
+             []
+             [ HH.td
+                 [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
+                 [HH.text "Hit the top-right button to add columns! ↗"]
+             ]
+         ]
+    else if emptyRows
+           then [ HH.tr
+                    []
+                    [ HH.td
+                        [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
+                        [HH.text "↙ Hit the bottom-left button to add rows!"]
+                    ]
+                ]
+           else []
+
+tableHeading :: forall t627 t628 t629.
+   MonadEffect t628
+  => (Shared.DataPath -> Shared.DataPath)
+  -> Array String
+  -> Boolean
+  -> HH.HTML (H.ComponentSlot HH.HTML ( fieldname :: H.Slot t627 String String | t629) t628 Command) Command
+tableHeading path columns emptyTable =
+  HH.thead
+    [HP.class_ (HH.ClassName "table-header")]
+    ([HH.th [HP.class_ (HH.ClassName "table-column"), HP.title ""] []] <>
+     mapWithIndex
+       (\i text ->
+          HH.th
+            [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
+            [ HH.div
+                [HP.class_ (HH.ClassName "table-column-content")]
+                [columnNameSlot path i text, removeColumnButton path text]
+            ])
+       columns <>
+     (if emptyTable
+        then [HH.th [] []]
+        else []) <>
+     [newColumnButton path columns])
+
+columnNameSlot :: forall t627 t628 t629.
+    MonadEffect t628
+ => (Shared.DataPath -> Shared.DataPath)
+ -> Int
+ -> String
+ -> HH.HTML (H.ComponentSlot HH.HTML ( fieldname :: H.Slot t627 String String | t629) t628 Command) Command
+columnNameSlot path i text =
+  HH.slot
+    (SProxy :: SProxy "fieldname")
+    (show i)
+    Name.component
+    text
+    (\name' ->
+       pure
+         (TriggerUpdatePath
+            (Shared.UpdatePath
+               { path: path (Shared.DataElemOf 0 Shared.DataHere)
+               , update:
+                   Shared.RenameFieldUpdate
+                     (Shared.RenameField
+                        {from: text, to: name'})
+               })))
+
+removeColumnButton ::
+     forall t38.
+     (Shared.DataPath -> Shared.DataPath)
+  -> String
+  -> HH.HTML t38 Command
+removeColumnButton path text =
+  HH.button
+    [ HP.class_ (HH.ClassName "remove-column-button")
+    , HE.onClick
+        (\e ->
+           pure
+             (PreventDefault
+                (Event' (toEvent e))
+                (TriggerUpdatePath
+                   (Shared.UpdatePath
+                      { path:
+                          path (Shared.DataElemOf 0 Shared.DataHere)
+                      , update:
+                          Shared.DeleteFieldUpdate
+                            (Shared.DeleteField {name: text})
+                      }))))
+    ]
+    [HH.text "×"]
+
+newColumnButton ::
+     forall t478.
+     (Shared.DataPath -> Shared.DataPath)
+  -> Array String
+  -> HH.HTML t478 Command
+newColumnButton path columns =
+  HH.th
+    [HP.class_ (HH.ClassName "add-column")]
+    [ HH.button
+        [ HP.class_ (HH.ClassName "add-column-button")
+        , HP.title "Add column to this table"
+        , HE.onClick
+            (\e ->
+               pure
+                 (PreventDefault
+                    (Event' (toEvent e))
+                    (TriggerUpdatePath
+                       (Shared.UpdatePath
+                          { path:
+                              path (Shared.DataElemOf 0 Shared.DataHere)
+                          , update:
+                              Shared.NewFieldUpdate
+                                (Shared.NewField
+                                   {name: generateColumnName columns})
+                          }))))
         ]
+        [HH.text "+"]
+    ]
 
 -- | Search for a unique column name of the form "columnN".
 generateColumnName :: Array String -> String
