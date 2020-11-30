@@ -13,6 +13,7 @@ module Inflex.Types where
 import Control.DeepSeq
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
+import Data.String
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Void
@@ -258,7 +259,7 @@ data Field s = Field
 
 newtype FieldName = FieldName
   { unFieldName :: Text
-  } deriving (Eq, Ord, Generic, Show)
+  } deriving (Eq, Ord, Generic, Show, IsString)
 
 newtype TagName = TagName
   { unTagName :: Text
@@ -316,6 +317,7 @@ data TypeVariablePrefix
   | VariablePrefix
   | ApplyPrefix
   | IntegerPrefix
+  | EqualPrefix
   | DecimalPrefix
   | NatPrefix
   | InfixOutputPrefix
@@ -371,6 +373,7 @@ data ClassName
   | AddOpClassName
   | SubtractOpClassName
   | DivideOpClassName
+  | EqualClassName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -461,6 +464,7 @@ data GlobalRef s where
   FromIntegerGlobal :: GlobalRef s
   FromDecimalGlobal :: GlobalRef s
   NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
+  EqualGlobal :: GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
   FunctionGlobal :: !Function -> GlobalRef s
 

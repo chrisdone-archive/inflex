@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -197,10 +198,6 @@ variantGenerator Variant {..} = do
                 ]
             }
   pure Variant {typ = VariantType rowType, argument = argument', ..}
-
-nullType :: StagedLocation s -> Type s
-nullType location =
-  RowType TypeRow {location, typeVariable = Nothing, fields = []}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =
@@ -416,6 +413,51 @@ globalGenerator Global {name, location} = do
                     }
             , ..
             }
+      EqualGlobal -> do
+        typeVariable <- generateVariableType location EqualPrefix TypeKind
+        pure
+          Scheme
+            { constraints =
+                [ ClassConstraint
+                    {className = EqualClassName, typ = pure typeVariable, ..}
+                ]
+            , typ =
+                ApplyType
+                  TypeApplication
+                    { function =
+                        ApplyType
+                          TypeApplication
+                            { function =
+                                ConstantType
+                                  TypeConstant
+                                    {name = FunctionTypeName, location}
+                            , argument = typeVariable
+                            , kind = FunKind TypeKind TypeKind
+                            , ..
+                            }
+                    , argument =
+                        ApplyType
+                          TypeApplication
+                            { function =
+                                ApplyType
+                                  TypeApplication
+                                    { function =
+                                        ConstantType
+                                          TypeConstant
+                                            {name = FunctionTypeName, location}
+                                    , argument = typeVariable
+                                    , kind = FunKind TypeKind TypeKind
+                                    , ..
+                                    }
+                            , argument = boolType location
+                            , kind = TypeKind
+                            , ..
+                            }
+                    , kind = TypeKind
+                    , ..
+                    }
+            , ..
+            }
       FromDecimalGlobal -> do
         numberVar <- generateVariableType location DecimalPrefix TypeKind
         precisionVar <- generateVariableType location NatPrefix NatKind
@@ -466,6 +508,7 @@ globalGenerator Global {name, location} = do
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         HashGlobal h -> HashGlobal h
+        EqualGlobal -> EqualGlobal
         FunctionGlobal f -> FunctionGlobal f
 
 --------------------------------------------------------------------------------
@@ -618,3 +661,23 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
             lift (generateTypeVariable location0 PolyPrefix kind)
           modify (M.insert typeVariable generatedTypeVariable)
           pure generatedTypeVariable
+
+--------------------------------------------------------------------------------
+-- Convenient names for types
+
+nullType :: StagedLocation s -> Type s
+nullType location =
+  RowType TypeRow {location, typeVariable = Nothing, fields = []}
+
+boolType :: StagedLocation s -> Type s
+boolType location =
+  VariantType
+    (RowType
+       (TypeRow
+          { location
+          , typeVariable = Nothing
+          , fields =
+              [ Field {location, name = "true", typ = nullType location}
+              , Field {location, name = "false", typ = nullType location}
+              ]
+          }))

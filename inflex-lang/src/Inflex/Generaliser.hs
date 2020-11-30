@@ -198,6 +198,7 @@ globalGeneralise substitutions Global {scheme = SolvedScheme scheme, ..} =
       case name of
         FunctionGlobal f -> FunctionGlobal f
         FromIntegerGlobal -> FromIntegerGlobal
+        EqualGlobal -> EqualGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         HashGlobal x -> HashGlobal x

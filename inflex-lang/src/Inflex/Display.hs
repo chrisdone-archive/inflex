@@ -101,6 +101,7 @@ instance Display (GlobalRef Resolved) where
                HashGlobal (Hash hash) -> "#" <> displayShow hash
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
+               EqualGlobal -> "="
                NumericBinOpGlobal op -> display op
                InstanceGlobal r -> display r
                FunctionGlobal function -> display function
@@ -191,6 +192,7 @@ instance Display (GlobalRef Renamed) where
                HashGlobal (Hash hash) -> "#" <> displayShow hash
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
+               EqualGlobal -> "="
                NumericBinOpGlobal op -> display op
                FunctionGlobal function -> display function
 
@@ -344,6 +346,7 @@ instance Display (GlobalRef Parsed) where
                HashGlobal (Hash hash) -> "#" <> displayShow hash
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
+               EqualGlobal -> "="
                NumericBinOpGlobal op -> display op
                FunctionGlobal function -> display function
 

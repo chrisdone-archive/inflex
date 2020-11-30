@@ -134,7 +134,7 @@ token_ err parser =
 
 -- Precedence from loosest to tightest.
 operatorPrecedence :: [Text]
-operatorPrecedence = ["-", "+", "*", "/"]
+operatorPrecedence = ["=", "-", "+", "*", "/"]
 
 expressionParser :: Parser (Expression Parsed)
 expressionParser = do
