@@ -109,7 +109,11 @@ instance showEvent :: Show Event' where show _ = "Event"
 newtype ElemRef' a = ElemRef' (ElemRef a)
 instance showElemRef :: Show (ElemRef' a) where show _ = "ElemRef"
 
-type Slots i = (editor :: H.Slot i Output String, fieldname :: H.Slot i String String)
+type Slots i =
+  ( editor :: H.Slot i Output String
+  , fieldname :: H.Slot i String String
+  , textEditor :: H.Slot i String Unit
+  )
 
 newtype Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
 derive instance genericRow :: Generic Row _
@@ -326,7 +330,24 @@ renderTextEditor ::
   => (Shared.DataPath -> Shared.DataPath)
   -> String
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
-renderTextEditor _path t = HH.div [HP.class_ (HH.ClassName "text")] [HH.text t]
+renderTextEditor path text =
+  HH.div
+    [HP.class_ (HH.ClassName "text")]
+    [ HH.slot
+        (SProxy :: SProxy "textEditor")
+        unit
+        Name.component
+        (Name.Input {text, notThese: mempty})
+        (\text' ->
+           pure
+             (TriggerUpdatePath
+                (Shared.UpdatePath
+                   { path: path Shared.DataHere
+                   , update:
+                       Shared.CodeUpdate
+                         (Shared.Code {text: show text'})
+                   })))
+    ]
 
 --------------------------------------------------------------------------------
 -- Tables

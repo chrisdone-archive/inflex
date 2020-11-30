@@ -135,9 +135,8 @@ tokensLexer =
     string =
       located
         (do void (Mega.char '"')
-            contents <- Mega.takeWhileP Nothing (/= '"')
-            void (Mega.char '"')
-            pure (StringToken contents))
+            contents <- Mega.manyTill Lexer.charLiteral (Mega.char '"')
+            pure (StringToken (T.pack contents)))
     lowerWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)

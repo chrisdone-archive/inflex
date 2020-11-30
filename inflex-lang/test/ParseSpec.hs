@@ -16,6 +16,7 @@ import           Test.Hspec
 
 spec :: Spec
 spec = do
+  strings
   sigs
   types
   literals
@@ -1251,3 +1252,44 @@ records =
                       }
                 , typ = Nothing
                 }))))
+
+strings :: SpecWith ()
+strings =
+  describe
+    "Strings"
+    (do it
+          "\"a\""
+          (shouldBe
+             (parseText "" "\"a\"")
+             (Right
+                (LiteralExpression
+                   (TextLiteral
+                      (LiteralText
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 4, name = ""}
+                               }
+                         , text = "a"
+                         , typ = Nothing
+                         })))))
+        it
+          "\"speech \\\" \\\\ here\""
+          (shouldBe
+             (parseText "" "\"speech \\\" \\\\ here\"")
+             (Right
+                (LiteralExpression
+                   (TextLiteral
+                      (LiteralText
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 20, name = ""}
+                               }
+                         , text = "speech \" \\ here"
+                         , typ = Nothing
+                         }))))))
