@@ -102,6 +102,8 @@ expressionResolver nesting =
       fmap PropExpression (propResolver nesting prop)
     ArrayExpression array ->
       fmap ArrayExpression (arrayResolver nesting array)
+    VariantExpression variant ->
+      fmap VariantExpression (variantResolver nesting variant)
     VariableExpression variable ->
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda ->
@@ -154,6 +156,11 @@ arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved
 arrayResolver nesting Array {..} = do
   expressions' <- traverse (expressionResolver nesting) expressions
   pure Array {expressions = expressions', ..}
+
+variantResolver :: DeBrujinNesting -> Variant Generalised -> Resolve (Variant Resolved)
+variantResolver nesting Variant {..} = do
+  argument' <- traverse (expressionResolver nesting) argument
+  pure Variant {argument = argument', ..}
 
 variableResolver :: Variable Generalised -> Variable Resolved
 variableResolver Variable {..} = Variable {..}
@@ -454,6 +461,7 @@ expressionCollect =
     PropExpression prop -> propCollect prop
     HoleExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
+    VariantExpression variant -> variantCollect variant
     RecordExpression record -> recordCollect record
     LambdaExpression lambda -> lambdaCollect lambda
     LetExpression let' -> letCollect let'
@@ -478,6 +486,9 @@ propCollect Prop {..} = expressionCollect expression
 
 arrayCollect :: Array Generalised -> Set (ClassConstraint Generalised)
 arrayCollect Array {..} = foldMap expressionCollect expressions
+
+variantCollect :: Variant Generalised -> Set (ClassConstraint Generalised)
+variantCollect Variant {..} = foldMap expressionCollect argument
 
 lambdaCollect :: Lambda Generalised -> Set (ClassConstraint Generalised)
 lambdaCollect Lambda {..} = expressionCollect body

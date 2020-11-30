@@ -31,6 +31,7 @@ instance Display (Expression Resolved) where
       PropExpression prop -> display prop
       HoleExpression hole -> display hole
       ArrayExpression array -> display array
+      VariantExpression variant -> display variant
       LiteralExpression literal -> display literal
       LambdaExpression lambda -> display lambda
       ApplyExpression apply -> display apply
@@ -49,6 +50,15 @@ instance Display (Prop Resolved) where
 instance Display (Array Resolved) where
   display (Array {expressions}) =
     "[" <> mconcat (intersperse ", " (map display (toList expressions))) <> "]"
+
+instance Display (Variant Resolved) where
+  display (Variant {tag, argument}) =
+    display tag <> (if not (null argument)
+                       then "(" <> mconcat (intersperse ", " (map display (toList argument))) <> ")"
+                       else mempty)
+
+instance Display TagName where
+  display (TagName s) ="#" <> display s
 
 instance Display (Record Resolved) where
   display (Record {fields}) =
@@ -105,10 +115,19 @@ instance Display (Apply Resolved) where
 --------------------------------------------------------------------------------
 -- Renamed
 
+instance Display (Variant Renamed) where
+  display (Variant {tag, argument}) =
+    display tag <>
+    (if not (null argument)
+       then "(" <> mconcat (intersperse ", " (map display (toList argument))) <>
+            ")"
+       else mempty)
+
 instance Display (Expression Renamed) where
   display =
     \case
       RecordExpression record -> display record
+      VariantExpression variant -> display variant
       PropExpression prop -> display prop
       HoleExpression hole -> display hole
       ArrayExpression array -> display array
@@ -204,10 +223,17 @@ instance Display (Apply Renamed) where
 --------------------------------------------------------------------------------
 -- Parsed
 
+instance Display (Variant Parsed) where
+  display (Variant {tag, argument}) =
+    display tag <> (if not (null argument)
+                       then "(" <> mconcat (intersperse ", " (map display (toList argument))) <> ")"
+                       else mempty)
+
 instance Display (Expression Parsed) where
   display =
     \case
       RecordExpression record -> display record
+      VariantExpression variant -> display variant
       PropExpression prop -> display prop
       HoleExpression hole -> display hole
       ArrayExpression array -> display array

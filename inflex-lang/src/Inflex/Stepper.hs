@@ -114,6 +114,7 @@ stepExpression expression = do
         ApplyExpression apply -> stepApply apply
         PropExpression prop -> stepProp prop
         ArrayExpression array -> stepArray array
+        VariantExpression variant -> stepVariant variant
         RecordExpression record -> stepRecord record
         InfixExpression infix' -> stepInfix infix'
         GlobalExpression global -> stepGlobal global
@@ -154,6 +155,11 @@ stepArray :: Array Resolved -> Step e (Expression Resolved)
 stepArray Array {..} = do
   expressions' <- traverse stepExpression expressions
   pure (ArrayExpression Array {expressions = expressions', ..})
+
+stepVariant :: Variant Resolved -> Step e (Expression Resolved)
+stepVariant Variant {..} = do
+  argument' <- traverse stepExpression argument
+  pure (VariantExpression Variant {argument = argument', ..})
 
 --------------------------------------------------------------------------------
 -- Globals
@@ -389,6 +395,9 @@ betaReduce Lambda {body = body0} arg = go 0 body0
         ArrayExpression Array {..} -> do
           expressions' <- traverse (go deBrujinNesting) expressions
           pure (ArrayExpression Array {expressions = expressions', ..})
+        VariantExpression Variant {..} -> do
+          argument' <- traverse (go deBrujinNesting) argument
+          pure (VariantExpression Variant {argument = argument', ..})
         RecordExpression Record {..} -> do
           fields' <-
             traverse

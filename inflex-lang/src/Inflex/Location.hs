@@ -15,6 +15,7 @@ expressionLocation =
     RecordExpression record -> recordLocation record
     PropExpression prop -> propLocation prop
     HoleExpression hole -> holeLocation hole
+    VariantExpression variant -> variantLocation variant
     ArrayExpression array -> arrayLocation array
     LambdaExpression lambda -> lambdaLocation lambda
     LetExpression let' -> letLocation let'
@@ -34,6 +35,9 @@ propLocation Prop {location} = location
 
 holeLocation :: Hole s -> StagedLocation s
 holeLocation Hole {location} = location
+
+variantLocation :: Variant s -> StagedLocation s
+variantLocation Variant {location} = location
 
 arrayLocation :: Array s -> StagedLocation s
 arrayLocation Array {location} = location

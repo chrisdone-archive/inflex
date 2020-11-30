@@ -78,6 +78,7 @@ renameExpression env =
     RecordExpression record -> fmap RecordExpression (renameRecord env record)
     PropExpression prop -> fmap PropExpression (renameProp env prop)
     ArrayExpression array -> fmap ArrayExpression (renameArray env array)
+    VariantExpression variant -> fmap VariantExpression (renameVariant env variant)
     LetExpression let' -> fmap LetExpression (renameLet env let')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
@@ -199,6 +200,16 @@ renameArray env@Env {cursor} Array {..} = do
       expressions
   typ' <- renameSignature env typ
   pure Array {expressions = expressions', location = final, typ = typ', ..}
+
+renameVariant :: Env -> Variant Parsed -> Renamer (Variant Renamed)
+renameVariant env@Env {cursor} Variant {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  argument' <-
+    traverse
+      (renameExpression (over envCursorL (. VariantElementCursor) env))
+      argument
+  typ' <- renameSignature env typ
+  pure Variant {argument = argument', location = final, typ = typ', ..}
 
 renameFieldE :: Env -> FieldE Parsed -> Renamer (FieldE Renamed)
 renameFieldE env@Env {cursor} FieldE {..} = do

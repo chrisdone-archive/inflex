@@ -169,6 +169,8 @@ expressionGeneralise substitutions =
       HoleExpression (holeGeneralise substitutions hole)
     ArrayExpression array ->
       ArrayExpression (arrayGeneralise substitutions array)
+    VariantExpression variant ->
+      VariantExpression (variantGeneralise substitutions variant)
     RecordExpression record ->
       RecordExpression (recordGeneralise substitutions record)
     LambdaExpression lambda ->
@@ -262,6 +264,17 @@ arrayGeneralise ::
 arrayGeneralise substitutions Array {..} =
   Array
     { expressions = fmap (expressionGeneralise substitutions) expressions
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+variantGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Variant Solved
+  -> Variant Generalised
+variantGeneralise substitutions Variant {..} =
+  Variant
+    { argument = fmap (expressionGeneralise substitutions) argument
     , typ = generaliseType substitutions typ
     , ..
     }

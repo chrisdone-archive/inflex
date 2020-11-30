@@ -30,6 +30,7 @@ expressionFill globals =
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
     ArrayExpression array -> fmap ArrayExpression (arrayFill globals array)
+    VariantExpression variant -> fmap VariantExpression (variantFill globals variant)
     LiteralExpression literal -> pure (LiteralExpression (literalFill literal))
     LambdaExpression lambda -> fmap LambdaExpression (lambdaFill globals lambda)
     LetExpression let' -> fmap LetExpression (letFill globals let')
@@ -51,6 +52,11 @@ arrayFill :: Map Text (Either e Hash) -> Array Renamed -> Filler e (Array Filled
 arrayFill globals Array {..} = do
   expressions' <- traverse (expressionFill globals) expressions
   pure Array {expressions = expressions', ..}
+
+variantFill :: Map Text (Either e Hash) -> Variant Renamed -> Filler e (Variant Filled)
+variantFill globals Variant {..} = do
+  argument' <- traverse (expressionFill globals) argument
+  pure Variant {argument = argument', ..}
 
 recordFill :: Map Text (Either e Hash) -> Record Renamed -> Filler e (Record Filled)
 recordFill globals Record {..} = do

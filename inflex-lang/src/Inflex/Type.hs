@@ -45,6 +45,7 @@ expressionType =
     RecordExpression record -> recordType record
     PropExpression prop -> propType prop
     HoleExpression hole -> holeType hole
+    VariantExpression variant -> variantType variant
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
@@ -57,6 +58,9 @@ propType Prop {typ} = typ
 
 holeType :: Hole s -> StagedType s
 holeType Hole {typ} = typ
+
+variantType :: Variant s -> StagedType s
+variantType Variant {typ} = typ
 
 globalType :: Global s -> StagedType s
 globalType Global {scheme} =

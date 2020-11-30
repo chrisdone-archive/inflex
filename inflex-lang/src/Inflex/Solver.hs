@@ -425,6 +425,8 @@ expressionSolve substitutions =
       HoleExpression (holeSolve substitutions hole)
     ArrayExpression array ->
       ArrayExpression (arraySolve substitutions array)
+    VariantExpression variant ->
+      VariantExpression (variantSolve substitutions variant)
     RecordExpression record ->
       RecordExpression (recordSolve substitutions record)
     LambdaExpression lambda ->
@@ -461,6 +463,14 @@ arraySolve :: Seq Substitution -> Array Generated -> Array Solved
 arraySolve substitutions Array {..} =
   Array
     { expressions = fmap (expressionSolve substitutions) expressions
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+variantSolve :: Seq Substitution -> Variant Generated -> Variant Solved
+variantSolve substitutions Variant {..} =
+  Variant
+    { argument = fmap (expressionSolve substitutions) argument
     , typ = solveType substitutions typ
     , ..
     }

@@ -35,6 +35,14 @@ data Expression s where
   PropExpression :: !(Prop s) -> Expression s
   ArrayExpression :: !(Array s) -> Expression s
   HoleExpression :: !(Hole s) -> Expression s
+  VariantExpression :: !(Variant s) -> Expression s
+
+data Variant s = Variant
+  { location :: !(StagedLocation s)
+  , typ :: !(StagedType s)
+  , tag :: !TagName
+  , argument :: !(Maybe (Expression s))
+  }
 
 data Hole s = Hole
   { location :: !(StagedLocation s)
@@ -252,6 +260,10 @@ newtype FieldName = FieldName
   { unFieldName :: Text
   } deriving (Eq, Ord, Generic, Show)
 
+newtype TagName = TagName
+  { unTagName :: Text
+  } deriving (Eq, Ord, Generic, Show)
+
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
   , name :: !TypeName
@@ -309,6 +321,7 @@ data TypeVariablePrefix
   | InfixOutputPrefix
   | PolyPrefix
   | RowVarPrefix
+  | VariantRowVarPrefix
   | FieldTypePrefix
   | ArrayElementPrefix
   | HolePrefix
@@ -407,6 +420,7 @@ data Cursor
   | RowFieldExpression Cursor
   | PropExpressionCursor Cursor
   | ArrayElementCursor Int Cursor
+  | VariantElementCursor Cursor
   deriving (Show, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.

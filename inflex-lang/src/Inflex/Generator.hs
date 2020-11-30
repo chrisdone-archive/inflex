@@ -96,6 +96,8 @@ expressionGenerator =
       fmap PropExpression (propGenerator prop)
     ArrayExpression array ->
       fmap ArrayExpression (arrayGenerator array)
+    VariantExpression variant ->
+      fmap VariantExpression (variantGenerator variant)
     RecordExpression record ->
       fmap RecordExpression (recordGenerator record)
     LambdaExpression lambda ->
@@ -176,6 +178,29 @@ arrayGenerator Array {..} = do
          pure e')
       expressions
   pure Array {typ = ArrayType elementVariable, expressions = expressions', ..}
+
+variantGenerator :: Variant Filled -> Generate e (Variant Generated)
+variantGenerator Variant {..} = do
+  rowVariable <- generateTypeVariable location VariantRowVarPrefix RowKind
+  argument' <- traverse expressionGenerator argument
+  let rowType =
+        RowType
+          TypeRow
+            { location
+            , typeVariable = Just rowVariable
+            , fields =
+                [ Field
+                    { location
+                    , name = FieldName (unTagName tag)
+                    , typ = maybe (nullType location) expressionType argument'
+                    }
+                ]
+            }
+  pure Variant {typ = VariantType rowType, argument = argument', ..}
+
+nullType :: StagedLocation s -> Type s
+nullType location =
+  RowType TypeRow {location, typeVariable = Nothing, fields = []}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =
