@@ -106,32 +106,6 @@ body {
   }
 }
 
-.documents {
-  margin-top: 5px;
-  font-family: sans-serif;
-  display: flex;
-  flex-direction: row;
-
-  a {
-    color: #174783;
-    text-decoration: none;
-  }
-  .document {
-    padding: 10px;
-    box-shadow: 0px 0px 3px #9fb6c8;
-    border-radius: 5px;
-    margin-right: 10px;
-    margin-top: 10px;
-    .document-title {
-      margin-top: 0;
-      margin-bottom: 1em;
-      padding: 0;
-    }
-    .document-date {
-    }
-  }
-}
-
 .dashboard {
   margin: 10px;
   h1 {
@@ -141,19 +115,77 @@ body {
     margin-top: 0;
     margin-bottom: 10px;
   }
-}
-.dashboard button {
-  background: #e9eef2;
-  padding: 5px;
-  box-shadow: 0px 0px 3px #9fb6c8;
-  border: 0;
-  border-radius: 5px;
-  cursor: pointer;
-}
+  .new-document {
+    background: #e9eef2;
+    padding: 5px;
+    box-shadow: 0px 0px 3px #9fb6c8;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .new-document:hover {
+    background: #15263b;
+    color: #fff;
+  }
 
-.dashboard button:hover {
-  background: #15263b;
-  color: #fff;
+  .documents {
+    margin-top: 5px;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: row;
+
+    a {
+      color: #174783;
+      text-decoration: none;
+    }
+    .document {
+      padding: 0;
+      box-shadow: 0px 0px 3px #9fb6c8;
+      border-radius: 5px;
+      margin-right: 10px;
+      margin-top: 10px;
+
+      .document-header {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+
+        .document-title {
+          margin: 0;
+          padding: 0;
+          a {
+            padding: 10px;
+            display: inline-block;
+          }
+          a:hover {
+            background: #15263b;
+            color: #fff;
+            border-top-left-radius: 3px;
+          }
+        }
+        .delete-document {
+          margin-left: auto;
+          button {
+            border: none;
+            background: inherit;
+            color: #15263b;
+            font-weight: bold;
+            padding: 10px;
+          }
+          button:hover {
+            background: #902f2f;
+            color: #fff;
+            border-top-right-radius: 3px;
+            cursor: pointer;
+          }
+        }
+      }
+      .document-date {
+        padding:0 10px
+      }
+    }
+  }
+
 }
 
 .register-page {

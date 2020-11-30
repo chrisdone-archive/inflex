@@ -46,7 +46,7 @@ getAppDashboardR =
                (do url <- ask
                    form_
                      [action_ (url NewDocumentR), method_ "post"]
-                     (button_ [class_ "btn-primary btn"] "New Document")
+                     (button_ [class_ "new-document"] "New Document")
                    unless
                      (null documents)
                      (div_
@@ -56,12 +56,25 @@ getAppDashboardR =
                            (\(Entity documentId Document {..}) ->
                               div_
                                 [class_ "document"]
-                                (do p_
-                                      [class_ "document-title"]
-                                      (a_
-                                         [href_ (url (AppEditorR documentName))]
-                                         (toHtml documentName))
-
+                                (do div_
+                                      [class_ "document-header"]
+                                      (do p_
+                                            [class_ "document-title"]
+                                            (a_
+                                               [ href_
+                                                   (url
+                                                      (AppEditorR documentName))
+                                               ]
+                                               (toHtml documentName))
+                                          form_
+                                            [ action_
+                                                (url
+                                                   (DeleteDocumentR documentId))
+                                            , method_ "post"
+                                            , class_ "delete-document"
+                                            , onsubmit_ "return confirm('Do you really want to delete this document?');"
+                                            ]
+                                            (button_ [title_ "Delete this document permanently"] "×"))
                                     p_
                                       [ class_ "document-date"
                                       , title_ (T.pack (show documentCreated))
@@ -69,15 +82,7 @@ getAppDashboardR =
                                       (toHtml
                                          (format
                                             (diff True)
-                                            (diffUTCTime documentCreated now')))
-                                    form_
-                                      [ action_
-                                          (url (DeleteDocumentR documentId))
-                                      , method_ "post"
-                                      ]
-                                      (button_
-                                         [class_ "delete-document"]
-                                         "Delete")))))))))
+                                            (diffUTCTime documentCreated now')))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())
