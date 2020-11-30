@@ -158,6 +158,18 @@ decimalT nat =
       , kind = TypeKind
       }
 
+decimalTVar :: (StagedLocation s ~ Cursor) => Type s -> Type s
+decimalTVar nat =
+  ApplyType
+    TypeApplication
+      { function =
+          ConstantType TypeConstant {location = BuiltIn, name = DecimalTypeName}
+      , argument = nat
+      , location = BuiltIn
+      , kind = TypeKind
+      }
+
+
 infixr .->
 (.->) :: (StagedLocation s ~ Cursor) => Type s -> Type s -> Type s
 (.->) i o =

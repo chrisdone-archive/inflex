@@ -284,7 +284,7 @@ infixGenerator Infix {typ = _, ..} = do
     EqualityConstraint {type1 = expressionType right', type2 = ty, ..}
   addEqualityConstraint
     EqualityConstraint
-      {type1 = globalType global', type2 = funcType location ty ty, ..}
+      {type1 = globalType global', type2 = ty .-> ty .-> ty, ..}
   pure Infix {global = global', right = right', left = left', typ = ty, ..}
 
 bindGenerator :: Bind Filled -> Generate e (Bind Generated)
@@ -376,7 +376,7 @@ globalGenerator Global {name, location} = do
                     , ..
                     }
                 ]
-            , typ = funcType location a a
+            , typ = a .-> a .-> a
             , ..
             }
       FromIntegerGlobal -> do
@@ -390,27 +390,7 @@ globalGenerator Global {name, location} = do
                     , ..
                     }
                 ]
-            , typ =
-                ApplyType
-                  TypeApplication
-                    { function =
-                        ApplyType
-                          TypeApplication
-                            { function =
-                                ConstantType
-                                  TypeConstant
-                                    {name = FunctionTypeName, location}
-                            , argument =
-                                ConstantType
-                                  TypeConstant
-                                    {name = IntegerTypeName, location}
-                            , kind = FunKind TypeKind TypeKind
-                            , ..
-                            }
-                    , argument = typeVariable
-                    , kind = TypeKind
-                    , ..
-                    }
+            , typ = integerT .-> typeVariable
             , ..
             }
       EqualGlobal -> do
@@ -421,41 +401,7 @@ globalGenerator Global {name, location} = do
                 [ ClassConstraint
                     {className = EqualClassName, typ = pure typeVariable, ..}
                 ]
-            , typ =
-                ApplyType
-                  TypeApplication
-                    { function =
-                        ApplyType
-                          TypeApplication
-                            { function =
-                                ConstantType
-                                  TypeConstant
-                                    {name = FunctionTypeName, location}
-                            , argument = typeVariable
-                            , kind = FunKind TypeKind TypeKind
-                            , ..
-                            }
-                    , argument =
-                        ApplyType
-                          TypeApplication
-                            { function =
-                                ApplyType
-                                  TypeApplication
-                                    { function =
-                                        ConstantType
-                                          TypeConstant
-                                            {name = FunctionTypeName, location}
-                                    , argument = typeVariable
-                                    , kind = FunKind TypeKind TypeKind
-                                    , ..
-                                    }
-                            , argument = boolType location
-                            , kind = TypeKind
-                            , ..
-                            }
-                    , kind = TypeKind
-                    , ..
-                    }
+            , typ = typeVariable .-> typeVariable .-> boolType location
             , ..
             }
       FromDecimalGlobal -> do
@@ -470,34 +416,7 @@ globalGenerator Global {name, location} = do
                     , ..
                     }
                 ]
-            , typ =
-                ApplyType
-                  TypeApplication
-                    { function =
-                        ApplyType
-                          TypeApplication
-                            { function =
-                                ConstantType
-                                  TypeConstant
-                                    {name = FunctionTypeName, location}
-                            , argument =
-                                ApplyType
-                                  TypeApplication
-                                    { function =
-                                        ConstantType
-                                          TypeConstant
-                                            {name = DecimalTypeName, location}
-                                    , argument = precisionVar
-                                    , kind = TypeKind
-                                    , ..
-                                    }
-                            , kind = FunKind TypeKind TypeKind
-                            , ..
-                            }
-                    , argument = numberVar
-                    , kind = TypeKind
-                    , ..
-                    }
+            , typ = decimalTVar precisionVar .-> numberVar
             , ..
             }
   pure Global {scheme = GeneratedScheme scheme, name = refl, ..}
@@ -545,28 +464,6 @@ generateVariableType location prefix kind =
 addEqualityConstraint :: EqualityConstraint -> Generate e ()
 addEqualityConstraint constraint =
   modify' (over generateStateEqualityConstraintsL (Seq.|> constraint))
-
-funcType :: StagedLocation s -> Type s -> Type s -> Type s
-funcType location inp out =
-  ApplyType
-    TypeApplication
-      { function =
-          ApplyType
-            TypeApplication
-              { function =
-                  ConstantType TypeConstant {name = FunctionTypeName, ..}
-              , argument = inp
-              , kind = TypeKind -- Fix: should be *->*, it doesn't
-                                -- seem to affect the type checker,
-                                -- but it's wrong. But the test suite
-                                -- has loads of instances of
-                                -- it... Maybe a sed?
-              , ..
-              }
-      , argument = out
-      , kind = TypeKind
-      , ..
-      }
 
 --------------------------------------------------------------------------------
 -- Generation of renamed type
