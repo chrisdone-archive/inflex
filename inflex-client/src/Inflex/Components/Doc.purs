@@ -89,12 +89,17 @@ render state =
                 [ HP.class_ (HH.ClassName "new-cell full-button")
                 , HE.onClick (\e -> pure (NewCell ""))
                 ]
-                [HH.text "New Cell"]
+                [HH.text "Formula"]
             , HH.button
                 [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\e -> pure (NewCell "[] :: [{}]"))
+                , HE.onClick (\_ -> pure (NewCell "\"\""))
                 ]
-                [HH.text "New Table"]
+                [HH.text "Text"]
+            , HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
+                ]
+                [HH.text "Table"]
             , HH.form
                 [HP.action (meta . logout), HP.method HP.POST]
                 [ HH.button
