@@ -54,6 +54,7 @@ data ParseError
   | ExpectedToken Token
   | ExpectedParam
   | ExpectedVariable
+  | ExpectedVariant
   | ExpectedHole
   | ExpectedGlobal
   | ExpectedDecimal
@@ -234,6 +235,7 @@ operatorlessExpressionParser =
        , LambdaExpression <$> lambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
+       , VariantExpression <$> variantParser
        , parensParser
        ])
 
@@ -447,6 +449,25 @@ variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (preview _LowerWordToken)
   pure Variable {name, location, typ = Nothing}
+
+variantParser :: Parser (Variant Parsed)
+variantParser = do
+  token_ ExpectedVariant (preview _HashToken)
+  Located {thing = name, location} <-
+    token ExpectedVariant (preview _LowerWordToken)
+  argument <-
+    do parens <-
+         fmap
+           (const True)
+           (token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)) <>
+         pure False
+       if parens
+         then do
+           e <- expressionParser
+           token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+           pure (pure e)
+         else pure Nothing
+  pure Variant {tag = TagName name, location, typ = Nothing, argument}
 
 holeParser :: Parser (Hole Parsed)
 holeParser = do

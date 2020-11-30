@@ -17,6 +17,7 @@ import           Test.Hspec
 spec :: Spec
 spec = do
   strings
+  variants
   sigs
   types
   literals
@@ -1293,3 +1294,64 @@ strings =
                          , text = "speech \" \\ here"
                          , typ = Nothing
                          }))))))
+
+variants :: SpecWith ()
+variants =
+  describe
+    "Variants"
+    (do it
+          "#true"
+          (shouldBe
+             (parseText "" "#true")
+             (Right
+                (VariantExpression
+                   (Variant
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            }
+                      , typ = Nothing
+                      , tag = TagName {unTagName = "true"}
+                      , argument = Nothing
+                      }))))
+        it
+          "#ok(1)"
+          (shouldBe
+             (parseText "" "#ok(1)")
+             (Right
+                (VariantExpression
+                   (Variant
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 4, name = ""}
+                            }
+                      , typ = Nothing
+                      , tag = TagName {unTagName = "ok"}
+                      , argument =
+                          Just
+                            (LiteralExpression
+                               (NumberLiteral
+                                  (Number
+                                     { location =
+                                         SourceLocation
+                                           { start =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 5
+                                                 , name = ""
+                                                 }
+                                           , end =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 6
+                                                 , name = ""
+                                                 }
+                                           }
+                                     , number = IntegerNumber 1
+                                     , typ = Nothing
+                                     })))
+                      })))))

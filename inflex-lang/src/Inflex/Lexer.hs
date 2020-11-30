@@ -43,6 +43,7 @@ module Inflex.Lexer
   , _CommaToken
   , _StringToken
   , _HoleToken
+  , _HashToken
   ) where
 
 import           Data.Bifunctor
@@ -93,6 +94,7 @@ data Token
   | OperatorToken !Text
   | StringToken !Text
   | HoleToken
+  | HashToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -173,6 +175,7 @@ tokensLexer =
       located
         (Mega.choice
            [ HoleToken <$ Mega.char '_'
+           , HashToken <$ Mega.char '#'
            , OpenSquareToken <$ Mega.char '['
            , CloseSquareToken <$ Mega.char ']'
            , OpenCurlyToken <$ Mega.char '{'
