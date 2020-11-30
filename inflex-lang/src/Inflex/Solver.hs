@@ -154,6 +154,7 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
       | typeConstant1 == typeConstant2 -> pure mempty
     (RowType x, RowType y) -> unifyRows x y
     (RecordType r1, RecordType r2) -> unifyRecords r1 r2
+    (VariantType r1, VariantType r2) -> unifyRecords r1 r2
     (ArrayType a, ArrayType b) ->
       unifyEqualityConstraint
         EqualityConstraint {location, type1 = a, type2 = b}
