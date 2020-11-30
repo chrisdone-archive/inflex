@@ -1,13 +1,16 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 
 module StepSpec where
 
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Inflex.Display ()
 import           Inflex.Stepper
 import           RIO (textDisplay)
 import           Test.Hspec
+import           Test.QuickCheck
 
 stepTextly :: Text -> Either (ResolveStepError ()) Text
 stepTextly text = fmap textDisplay (stepText mempty mempty "" text)
@@ -113,3 +116,14 @@ spec = do
         it "10/3.0" (shouldBe (stepDefaultedTextly "10/3.0") (Right "3.3"))
         it "10.0/0.0" pending
         it "10.0/0" pending)
+  describe
+    "Variants"
+    (do it "#true" (shouldBe (stepDefaultedTextly "#true") (Right "#true"))
+        it
+          "#ok(x*y)"
+          (property
+             (\(x :: Integer) y ->
+                shouldBe
+                  (stepDefaultedTextly
+                     (T.pack ("#ok(" <> show x <> "*" <> show y <> ")")))
+                  (Right (T.pack ("#ok(" <> show (x * y) <> ")"))))))

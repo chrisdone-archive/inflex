@@ -32,6 +32,7 @@ spec :: Spec
 spec = do
   globals
   signatures
+  variants
   it
     "Literal"
     (do shouldBe
@@ -665,3 +666,62 @@ signatures =
        (shouldBe
           (generateText' mempty "" "fromInteger (123 :: Integer) :: Decimal 2")
           (Right (HasConstraints {equalities = Seq.fromList [EqualityConstraint {type1 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), type2 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), location = ExpressionCursor}], thing = ApplyExpression (Apply {location = ExpressionCursor, function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ApplyFuncCursor ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ApplyFuncCursor ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = IntegerTypeName}), location = ApplyFuncCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 14, name = ""}, end = SourcePos {line = 1, column = 17, name = ""}}),(ApplyFuncCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}),(ApplyArgCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 14, name = ""}, end = SourcePos {line = 1, column = 17, name = ""}}),(ApplyArgCursor (SignatureCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 21, name = ""}, end = SourcePos {line = 1, column = 28, name = ""}}),(SignatureCursor TypeCursor,SourceLocation {start = SourcePos {line = 1, column = 33, name = ""}, end = SourcePos {line = 1, column = 42, name = ""}}),(SignatureCursor (TypeApplyCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 41, name = ""}, end = SourcePos {line = 1, column = 42, name = ""}})]}))))
+
+variants :: SpecWith ()
+variants =
+  describe
+    "Variants"
+    (it
+       "#true"
+       (shouldBe
+          (generateText' mempty "" "#true")
+          (Right
+             (HasConstraints
+                { equalities = mempty
+                , thing =
+                    VariantExpression
+                      (Variant
+                         { location = ExpressionCursor
+                         , typ =
+                             VariantType
+                               (RowType
+                                  (TypeRow
+                                     { location = ExpressionCursor
+                                     , typeVariable =
+                                         Just
+                                           (TypeVariable
+                                              { location = ExpressionCursor
+                                              , prefix = VariantRowVarPrefix
+                                              , index = 0
+                                              , kind = RowKind
+                                              })
+                                     , fields =
+                                         [ Field
+                                             { location = ExpressionCursor
+                                             , name =
+                                                 FieldName
+                                                   {unFieldName = "true"}
+                                             , typ =
+                                                 RowType
+                                                   (TypeRow
+                                                      { location =
+                                                          ExpressionCursor
+                                                      , typeVariable = Nothing
+                                                      , fields = []
+                                                      })
+                                             }
+                                         ]
+                                     }))
+                         , tag = TagName {unTagName = "true"}
+                         , argument = Nothing
+                         })
+                , mappings =
+                    M.fromList
+                      [ ( ExpressionCursor
+                        , SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 6, name = ""}
+                            })
+                      ]
+                }))))
