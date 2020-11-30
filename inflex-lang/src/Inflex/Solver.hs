@@ -297,6 +297,7 @@ occursIn typeVariable =
       occursIn typeVariable function || occursIn typeVariable argument
     ConstantType {} -> False
     RecordType x -> occursIn typeVariable x
+    VariantType x -> occursIn typeVariable x
     ArrayType x -> occursIn typeVariable x
     RowType TypeRow{typeVariable=mtypeVariable, fields} ->
       maybe False (occursIn typeVariable . VariableType) mtypeVariable ||
@@ -340,6 +341,7 @@ substituteType substitutions = go
       \case
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
+        VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
@@ -395,6 +397,7 @@ solveType substitutions = go . substituteType substitutions
       \case
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
+        VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
         VariableType TypeVariable {..} -> VariableType TypeVariable {..}
         ApplyType TypeApplication {function, argument, ..} ->

@@ -225,6 +225,7 @@ data Type s where
   ConstantType :: TypeConstant s -> Type s
   RowType :: TypeRow s -> Type s
   RecordType :: Type s -> Type s
+  VariantType :: Type s -> Type s
   ArrayType :: Type s -> Type s
   FreshType :: StagedFresh s -> Type s
 

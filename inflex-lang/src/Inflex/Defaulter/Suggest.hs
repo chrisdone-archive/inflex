@@ -130,6 +130,7 @@ constraintsTypeVariablesGeneric constraints =
       \case
         FreshType {} -> mempty
         RecordType t -> typeVariables t
+        VariantType t -> typeVariables t
         ArrayType t -> typeVariables t
         -- For s=Polymorphic, this is not possible. For s=Generalised,
         -- this is not relevant. In both cases we only want

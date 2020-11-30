@@ -19,6 +19,7 @@ typeKind =
     PolyType typePoly -> typeVariableKind typePoly
     RowType {} -> RowKind
     RecordType {} -> TypeKind
+    VariantType {} -> TypeKind
     ArrayType {} -> TypeKind
     FreshType{} -> TypeKind
 

@@ -15,7 +15,6 @@ import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Defaulter
 import           Inflex.Types
-import           Inflex.Types.Resolver
 import           Test.Hspec
 
 defaultText' :: (e~ ()) =>

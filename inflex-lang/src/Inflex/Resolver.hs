@@ -419,6 +419,7 @@ constrainPolymorphic defaulteds = go
       \case
         FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
+        VariantType t -> fmap VariantType (go t)
         ArrayType t -> fmap ArrayType (go t)
         VariableType typeVariable ->
           case M.lookup typeVariable defaulteds of

@@ -85,6 +85,7 @@ toPolymorphic =
       \case
         FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
+        VariantType t -> fmap VariantType (go t)
         ArrayType t -> fmap ArrayType (go t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
@@ -134,6 +135,7 @@ generaliseType substitutions = go
       \case
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
+        VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
         VariableType typeVariable@TypeVariable {..} ->
           case M.lookup typeVariable substitutions of

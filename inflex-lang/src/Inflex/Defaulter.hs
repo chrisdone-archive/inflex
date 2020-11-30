@@ -220,6 +220,7 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
       \case
         FreshType v -> absurd v
         RecordType t -> typeVariables t
+        VariantType t -> typeVariables t
         ArrayType t -> typeVariables t
         VariableType typeVariable -> Set.singleton typeVariable
         ApplyType TypeApplication {function, argument} ->
@@ -254,6 +255,7 @@ substituteType substitutions = go
       \case
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
+        VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->

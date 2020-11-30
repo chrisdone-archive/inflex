@@ -504,6 +504,7 @@ renamedToGenerated =
   \case
     FreshType location -> generateVariableType location FreshPrefix TypeKind
     RecordType t -> fmap RecordType (renamedToGenerated t)
+    VariantType t -> fmap VariantType (renamedToGenerated t)
     ArrayType t -> fmap ArrayType (renamedToGenerated t)
     VariableType TypeVariable {..} -> pure (VariableType TypeVariable {..})
     RowType TypeRow {..} -> do
@@ -556,6 +557,7 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
       \case
         FreshType v -> absurd v
         RecordType t -> fmap RecordType (rewriteType t)
+        VariantType t -> fmap VariantType (rewriteType t)
         ArrayType t -> fmap ArrayType (rewriteType t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
