@@ -37,7 +37,6 @@ module Inflex.Lexer
   , _DoubleColonToken
   , _ColonToken
   , _SemiColonToken
-  , _EqualsToken
   , _OperatorToken
   , _PeriodToken
   , _CommaToken
@@ -86,7 +85,6 @@ data Token
   | SemiColonToken
   | CommaToken
   | PeriodToken
-  | EqualsToken
   | LetToken
   | InToken
   | OpenCurlyToken
@@ -180,7 +178,6 @@ tokensLexer =
            , CloseSquareToken <$ Mega.char ']'
            , OpenCurlyToken <$ Mega.char '{'
            , CloseCurlyToken <$ Mega.char '}'
-           , EqualsToken <$ Mega.char '='
            , OpenRoundToken <$ Mega.char '('
            , CloseRoundToken <$ Mega.char ')'
            , RightArrowToken <$ Mega.try (Mega.string "->")
@@ -188,6 +185,7 @@ tokensLexer =
            , OperatorToken <$> Mega.string "/"
            , OperatorToken <$> Mega.string "+"
            , OperatorToken <$> Mega.string "-"
+           , OperatorToken <$> Mega.string "="
            , BackslashToken <$ Mega.char '\\'
            , DoubleColonToken <$ Mega.try (Mega.string "::")
            , SemiColonToken <$ Mega.try (Mega.string ";")

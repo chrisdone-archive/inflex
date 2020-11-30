@@ -351,12 +351,16 @@ letParser = do
 bindParser :: Parser (Bind Parsed)
 bindParser = do
   param <- paramParser
-  token_ ExpectedEquals (preview _EqualsToken)
-  value <- expressionParser
-  let SourceLocation {start} = paramLocation param
-      SourceLocation {end} = expressionLocation value
-  pure
-    Bind {param, location = SourceLocation {start, end}, value, typ = Nothing}
+  Located {thing} <- operatorParser
+  if thing == "="
+    then do
+      value <- expressionParser
+      let SourceLocation {start} = paramLocation param
+          SourceLocation {end} = expressionLocation value
+      pure
+        Bind
+          {param, location = SourceLocation {start, end}, value, typ = Nothing}
+    else Reparsec.failWith (liftError ExpectedEquals)
 
 applyParser :: Parser (Expression Parsed)
 applyParser = do
