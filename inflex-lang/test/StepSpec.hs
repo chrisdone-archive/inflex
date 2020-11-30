@@ -64,14 +64,9 @@ spec = do
   describe
     "Defaulted single expressions"
     (do it "6" (shouldBe (stepDefaultedTextly "6") (Right "6"))
-        it
-          "-6"
-          (do pendingWith "Need parser for negative numbers"
-              shouldBe (stepDefaultedTextly "-6") (Right "-6"))
-        it
-          "-6.0"
-          (do pendingWith "Need parser for negative numbers"
-              shouldBe (stepDefaultedTextly "-6.0") (Right "-6.0"))
+        it "-6" (shouldBe (stepDefaultedTextly "-6") (Right "-6"))
+        it "-6.0" (shouldBe (stepDefaultedTextly "-6.0") (Right "-6.0"))
+        it "-6.0 * 2" (shouldBe (stepDefaultedTextly "-6.0*2") (Right "-12.0"))
         it "6 + 3" (shouldBe (stepDefaultedTextly "6 + 3") (Right "9"))
         it "6 * 3" (shouldBe (stepDefaultedTextly "6 * 3") (Right "18"))
         it "6 / 3" (shouldBe (stepDefaultedTextly "6 / 3") (Right "2"))

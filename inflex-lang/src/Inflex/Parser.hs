@@ -77,6 +77,7 @@ data ParseError
   | MissingOpRhs
   | OddNumberOfExpressions
   | DuplicateRecordField FieldName
+  | InvalidUnaryExpression
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -154,7 +155,7 @@ infixChainParser = do
 -- higher precedence operator.
 resolveChain ::
      [Either (Located Text) (Expression Parsed)] -> Parser (Expression Parsed)
-resolveChain = go operatorPrecedence
+resolveChain xs0 = go operatorPrecedence xs0
   where
     go ::
          [Text]
@@ -200,7 +201,28 @@ operatorParser :: Parser (Located Text)
 operatorParser = token ExpectedOperator (preview _OperatorToken)
 
 unchainedExpressionParser :: Parser (Expression Parsed)
-unchainedExpressionParser =
+unchainedExpressionParser = unary <> operatorlessExpressionParser
+  where
+    unary = do
+      operator <- operatorParser
+      expr <- operatorlessExpressionParser
+      case (operator, expr) of
+        (Located {thing = "-"}, LiteralExpression (NumberLiteral Number {..})) ->
+          pure
+            (LiteralExpression
+               (NumberLiteral
+                  Number
+                    { number =
+                        case number of
+                          IntegerNumber i -> IntegerNumber (negate i)
+                          DecimalNumber Decimal {integer, ..} ->
+                            DecimalNumber Decimal {integer = negate integer, ..}
+                    , ..
+                    }))
+        _ -> Reparsec.failWith (liftError InvalidUnaryExpression)
+
+operatorlessExpressionParser :: Parser (Expression Parsed)
+operatorlessExpressionParser =
   fold1
     (NE.fromList
        [ PropExpression <$> propParser

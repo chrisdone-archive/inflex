@@ -759,9 +759,7 @@ literals =
           (Right
              (ArrayExpression
                 (Array
-                   { expressions =
-                       V.fromList
-                         []
+                   { expressions = V.fromList []
                    , typ = Nothing
                    , location =
                        SourceLocation
@@ -815,6 +813,21 @@ literals =
                          }
                    })))
         shouldBe
+          (parseText "" "-123")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 5, name = ""}
+                            }
+                      , number = IntegerNumber (-123)
+                      , typ = Nothing
+                      }))))
+        shouldBe
           (parseText "" "123")
           (Right
              (LiteralExpression
@@ -828,6 +841,22 @@ literals =
                      , number = IntegerNumber 123
                      , typ = Nothing
                      })))
+        shouldBe
+          (parseText "" "-123.0")
+          (Right
+             (LiteralExpression
+                (NumberLiteral
+                   (Number
+                      { location =
+                          SourceLocation
+                            { start =
+                                SourcePos {line = 1, column = 2, name = ""}
+                            , end = SourcePos {line = 1, column = 7, name = ""}
+                            }
+                      , number =
+                          DecimalNumber (Decimal {places = 1, integer = -1230})
+                      , typ = Nothing
+                      }))))
         shouldBe
           (parseText "" "123.0")
           (Right
