@@ -556,7 +556,11 @@ funcType location inp out =
               { function =
                   ConstantType TypeConstant {name = FunctionTypeName, ..}
               , argument = inp
-              , kind = TypeKind
+              , kind = TypeKind -- Fix: should be *->*, it doesn't
+                                -- seem to affect the type checker,
+                                -- but it's wrong. But the test suite
+                                -- has loads of instances of
+                                -- it... Maybe a sed?
               , ..
               }
       , argument = out
