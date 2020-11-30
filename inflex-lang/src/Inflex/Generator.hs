@@ -279,12 +279,11 @@ infixGenerator Infix {typ = _, ..} = do
   left' <- expressionGenerator left
   right' <- expressionGenerator right
   addEqualityConstraint
-    EqualityConstraint {type1 = expressionType left', type2 = ty, ..}
-  addEqualityConstraint
-    EqualityConstraint {type1 = expressionType right', type2 = ty, ..}
-  addEqualityConstraint
     EqualityConstraint
-      {type1 = globalType global', type2 = ty .-> ty .-> ty, ..}
+      { type1 = globalType global'
+      , type2 = expressionType left' .-> expressionType right' .-> ty
+      , ..
+      }
   pure Infix {global = global', right = right', left = left', typ = ty, ..}
 
 bindGenerator :: Bind Filled -> Generate e (Bind Generated)
