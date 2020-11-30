@@ -199,6 +199,8 @@ instance Display (GlobalRef Renamed) where
 instance Display InstanceName where
   display =
     \case
+      EqualIntegerInstance -> "<Equal Integer>"
+      EqualDecimalInstance n -> "<Equal (Decimal " <> displayShow n <> ")>"
       FromIntegerIntegerInstance -> "<FromInteger Integer>"
       FromIntegerDecimalInstance {} -> "<FromInteger Decimal>"
       FromDecimalDecimalInstance FromDecimalInstance { supersetPlaces

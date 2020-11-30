@@ -350,6 +350,8 @@ data InstanceName
   | FromDecimalDecimalInstance !FromDecimalInstance
   | IntegerOpInstance !NumericBinOp
   | DecimalOpInstance !Natural !NumericBinOp
+  | EqualIntegerInstance
+  | EqualDecimalInstance !Natural
   deriving (Show, Eq, Ord)
 
 data FromDecimalInstance = FromDecimalInstance

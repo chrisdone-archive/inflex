@@ -661,23 +661,3 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
             lift (generateTypeVariable location0 PolyPrefix kind)
           modify (M.insert typeVariable generatedTypeVariable)
           pure generatedTypeVariable
-
---------------------------------------------------------------------------------
--- Convenient names for types
-
-nullType :: StagedLocation s -> Type s
-nullType location =
-  RowType TypeRow {location, typeVariable = Nothing, fields = []}
-
-boolType :: StagedLocation s -> Type s
-boolType location =
-  VariantType
-    (RowType
-       (TypeRow
-          { location
-          , typeVariable = Nothing
-          , fields =
-              [ Field {location, name = "true", typ = nullType location}
-              , Field {location, name = "false", typ = nullType location}
-              ]
-          }))

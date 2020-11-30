@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -116,9 +117,29 @@ instanceNameType =
       integerT .-> integerT .-> integerT
     DecimalOpInstance n (_op :: NumericBinOp) ->
       decimalT n .-> decimalT n .-> decimalT n
+    EqualIntegerInstance -> integerT .-> integerT .-> boolType BuiltIn
+    EqualDecimalInstance nat ->
+      decimalT nat .-> decimalT nat .-> boolType BuiltIn
 
 --------------------------------------------------------------------------------
 -- Convenience DSL for built-in types
+
+nullType :: StagedLocation s -> Type s
+nullType location =
+  RowType TypeRow {location, typeVariable = Nothing, fields = []}
+
+boolType :: StagedLocation s -> Type s
+boolType location =
+  VariantType
+    (RowType
+       (TypeRow
+          { location
+          , typeVariable = Nothing
+          , fields =
+              [ Field {location, name = "true", typ = nullType location}
+              , Field {location, name = "false", typ = nullType location}
+              ]
+          }))
 
 integerT :: (StagedLocation s ~ Cursor) => Type s
 integerT =
