@@ -86,6 +86,9 @@ render state =
         , HH.div
             [HP.class_ (HH.ClassName "rhs-nav")]
             [ HH.button
+                [HP.class_ (HH.ClassName "new-prefix full-button")]
+                [HH.text "New"]
+            , HH.button
                 [ HP.class_ (HH.ClassName "new-cell full-button")
                 , HE.onClick (\e -> pure (NewCell ""))
                 ]
@@ -131,8 +134,7 @@ render state =
                         Cell.CellUpdate update' -> UpdateCell uuid update'
                         Cell.RemoveCell -> DeleteCell uuid
                         Cell.CellDragStart dragEvent -> DragStart uuid dragEvent
-                        Cell.UpdatePath update' -> UpdatePath uuid update'
-                        )))
+                        Cell.UpdatePath update' -> UpdatePath uuid update')))
            (state . cells))
     ]
 

@@ -64,6 +64,10 @@ body {
     flex-direction: row;
     margin-right: 5px;
 
+    button+form {
+      margin-left: 10px;
+      padding-left: 10px;
+    }
     .logout, .full-button {
       font-size: 20px;
     }
@@ -78,6 +82,14 @@ body {
     .full-button:hover {
       background: #224064;
       cursor: pointer;
+    }
+    .new-prefix {
+      color: #3783e4
+    }
+    .new-prefix:hover {
+      background: inherit;
+      color: #3783e4;
+      cursor: default
     }
   }
 }
