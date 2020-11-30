@@ -336,7 +336,12 @@ renderTextEditor path text =
     [ HH.slot
         (SProxy :: SProxy "textEditor")
         unit
-        TextInput.component
+        (TextInput.component
+           (TextInput.Config
+              { placeholder: "Type text here"
+              , unfilled: "(empty text)"
+              , title: "Click to edit text"
+              }))
         (TextInput.Input {text, notThese: mempty})
         (\text' ->
            pure
@@ -522,7 +527,12 @@ columnNameSlot columns path i text =
   HH.slot
     (SProxy :: SProxy "fieldname")
     (show i)
-    TextInput.component
+    (TextInput.component
+       (TextInput.Config
+          { placeholder: "Type column name here"
+          , unfilled: "(empty column name)"
+          , title: "Click to edit column name"
+          }))
     (TextInput.Input { text, notThese: columns } )
     (\name' ->
        pure
@@ -703,7 +713,12 @@ renderRecordEditor path fields =
                 , HH.slot
                     (SProxy :: SProxy "fieldname")
                     (show i)
-                    TextInput.component
+                    (TextInput.component
+                      (TextInput.Config
+                         { placeholder: "Type field name here"
+                         , unfilled: "(empty field name)"
+                         , title: "Click to edit field name"
+                         }))
                     (TextInput.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
                     (\name' ->
                        pure

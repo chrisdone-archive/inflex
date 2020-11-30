@@ -258,7 +258,12 @@ render (State {cell: Cell {name, code, result}, pos}) =
             [ HH.slot
                 (SProxy :: SProxy "declname")
                 unit
-                TextInput.component
+                (TextInput.component
+                  (TextInput.Config
+                     { placeholder: "Type a name here"
+                     , unfilled: "(unnamed)"
+                     , title: "Click to edit cell's name"
+                     }))
                 (TextInput.Input {text: name, notThese: mempty})
                 (\name' ->
                    pure

@@ -2,6 +2,7 @@
 
 module Inflex.Components.Cell.TextInput
   ( component
+  , Config(..)
   , Input(..)
   ) where
 
@@ -29,6 +30,12 @@ import Web.UIEvent.KeyboardEvent as K
 
 --------------------------------------------------------------------------------
 -- Component types
+
+data Config = Config {
+    placeholder :: String -- "Type name here"
+  , unfilled :: String -- "(unnamed)"
+  , title :: String -- "Click to edit name"
+  }
 
 newtype Input = Input {
   text :: String,
@@ -71,8 +78,8 @@ data Display
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Output m
-component =
+component :: forall q m. MonadEffect m => Config -> H.Component HH.HTML q Input Output m
+component config =
   H.mkComponent
     { initialState:
         (\(Input {text: name, notThese}) ->
@@ -82,7 +89,7 @@ component =
              , notThese: Set.delete name notThese
              , error: Nothing
              })
-    , render
+    , render: render config
     , eval:
         H.mkEval
           H.defaultEval {handleAction = eval, receive = pure <<< SetInput}
@@ -154,19 +161,19 @@ eval =
 -- Render
 
 render :: forall keys q m. MonadEffect m =>
-          State
+          Config -> State
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {display, name, error}) =
+render (Config config) (State {display, name, error}) =
   case display of
     DisplayResult ->
       HH.div
         [ HP.class_ (HH.ClassName "cell-name")
-        , HP.title "Click to edit name"
+        , HP.title (config.title)
         , HE.onClick (\e -> pure StartEditor)
         ]
         [ case cleanName name of
-            Nothing -> HH.text "(unnamed)"
+            Nothing -> HH.text (config.unfilled)
             Just x -> HH.text x
         ]
     DisplayEditor ->
@@ -174,7 +181,7 @@ render (State {display, name, error}) =
         []
         ([ HH.input
              [ HP.class_ (HH.ClassName "form-control")
-             , HP.placeholder "Type name here"
+             , HP.placeholder (config.placeholder)
              , manage InputElementChanged
              , HP.value name
              -- , HE.onKeyDown
@@ -201,7 +208,7 @@ render (State {display, name, error}) =
                 [HP.class_ (HH.ClassName "error-message")]
                 [ HH.text
                     (case err of
-                       DuplicateName -> "name already in use!")
+                       DuplicateName -> "already in use!")
                 ]])
 
 cleanName :: String -> Maybe String
