@@ -97,6 +97,11 @@ render state =
                 [HH.text "Text"]
             , HH.button
                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\_ -> pure (NewCell "[]"))
+                ]
+                [HH.text "List"]
+            , HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
                 , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
                 ]
                 [HH.text "Table"]
