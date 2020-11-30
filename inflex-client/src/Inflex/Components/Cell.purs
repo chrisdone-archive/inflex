@@ -22,7 +22,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
-import Inflex.Components.Cell.Name as Name
+import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Schema as Shared
 import Prelude
 import Web.DOM.Node as Node
@@ -258,8 +258,8 @@ render (State {cell: Cell {name, code, result}, pos}) =
             [ HH.slot
                 (SProxy :: SProxy "declname")
                 unit
-                Name.component
-                (Name.Input {text: name, notThese: mempty})
+                TextInput.component
+                (TextInput.Input {text: name, notThese: mempty})
                 (\name' ->
                    pure
                      (CodeUpdate

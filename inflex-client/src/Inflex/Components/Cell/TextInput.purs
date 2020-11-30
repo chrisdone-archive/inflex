@@ -1,6 +1,6 @@
 -- | A declaration in a document.
 
-module Inflex.Components.Cell.Name
+module Inflex.Components.Cell.TextInput
   ( component
   , Input(..)
   ) where

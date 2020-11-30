@@ -30,7 +30,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
-import Inflex.Components.Cell.Name as Name
+import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
 import Prelude
@@ -336,8 +336,8 @@ renderTextEditor path text =
     [ HH.slot
         (SProxy :: SProxy "textEditor")
         unit
-        Name.component
-        (Name.Input {text, notThese: mempty})
+        TextInput.component
+        (TextInput.Input {text, notThese: mempty})
         (\text' ->
            pure
              (TriggerUpdatePath
@@ -522,8 +522,8 @@ columnNameSlot columns path i text =
   HH.slot
     (SProxy :: SProxy "fieldname")
     (show i)
-    Name.component
-    (Name.Input { text, notThese: columns } )
+    TextInput.component
+    (TextInput.Input { text, notThese: columns } )
     (\name' ->
        pure
          (TriggerUpdatePath
@@ -703,8 +703,8 @@ renderRecordEditor path fields =
                 , HH.slot
                     (SProxy :: SProxy "fieldname")
                     (show i)
-                    Name.component
-                    (Name.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
+                    TextInput.component
+                    (TextInput.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
                     (\name' ->
                        pure
                          (TriggerUpdatePath
