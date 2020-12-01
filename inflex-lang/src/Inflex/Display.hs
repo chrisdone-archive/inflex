@@ -104,6 +104,11 @@ instance Display (GlobalRef Resolved) where
                EqualGlobal equality -> case equality of
                                          Equal -> "="
                                          NotEqual -> "/="
+               CompareGlobal compareity -> case compareity of
+                                         LessThan -> "<"
+                                         GreaterThan -> ">"
+                                         GreaterEqualTo -> ">="
+                                         LessEqualTo -> "="
                NumericBinOpGlobal op -> display op
                InstanceGlobal r -> display r
                FunctionGlobal function -> display function
@@ -194,6 +199,11 @@ instance Display (GlobalRef Renamed) where
                HashGlobal (Hash hash) -> "#" <> displayShow hash
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
+               CompareGlobal compareity -> case compareity of
+                                         LessThan -> "<"
+                                         GreaterThan -> ">"
+                                         GreaterEqualTo -> ">="
+                                         LessEqualTo -> "<="
                EqualGlobal equality -> case equality of
                                          Equal -> "="
                                          NotEqual -> "/="
@@ -206,6 +216,9 @@ instance Display InstanceName where
       EqualIntegerInstance -> "<Equal Integer>"
       EqualTextInstance -> "<Equal Text>"
       EqualDecimalInstance n -> "<Equal (Decimal " <> displayShow n <> ")>"
+      CompareIntegerInstance -> "<Compare Integer>"
+      CompareTextInstance -> "<Compare Text>"
+      CompareDecimalInstance n -> "<Compare (Decimal " <> displayShow n <> ")>"
       FromIntegerIntegerInstance -> "<FromInteger Integer>"
       FromIntegerDecimalInstance {} -> "<FromInteger Decimal>"
       FromDecimalDecimalInstance FromDecimalInstance { supersetPlaces
@@ -353,6 +366,11 @@ instance Display (GlobalRef Parsed) where
                HashGlobal (Hash hash) -> "#" <> displayShow hash
                FromIntegerGlobal -> "fromInteger"
                FromDecimalGlobal -> "fromDecimal"
+               CompareGlobal compareity -> case compareity of
+                                         LessThan -> "<"
+                                         GreaterThan -> ">"
+                                         GreaterEqualTo -> ">="
+                                         LessEqualTo -> "<="
                EqualGlobal equality -> case equality of
                                          Equal -> "="
                                          NotEqual -> "/="

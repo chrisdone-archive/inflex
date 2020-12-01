@@ -129,6 +129,11 @@ spec = do
                   (stepDefaultedTextly
                      (T.pack ("#ok(" <> show x <> "*" <> show y <> ")")))
                   (Right (T.pack ("#ok(" <> show (x * y) <> ")"))))))
+  equality
+  ordering
+
+equality :: SpecWith ()
+equality =
   describe
     "Equality"
     (do describe
@@ -193,6 +198,47 @@ spec = do
                       shouldBe
                         (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
                         (Right (quoteBool (x == y)))))))
+
+ordering :: SpecWith ()
+ordering =
+  describe
+    "Ordering"
+    (do describe
+          "Numbers"
+          (do it
+                "1.0>1.0"
+                (shouldBe (stepDefaultedTextly "1.0>1.0") (Right "#false"))
+              it
+                "1.0>0.0"
+                (shouldBe (stepDefaultedTextly "1.0>0.0") (Right "#true"))
+              it "1>1" (shouldBe (stepDefaultedTextly "1>1") (Right "#false"))
+              it "1>0" (shouldBe (stepDefaultedTextly "1>0") (Right "#true"))
+              it "1<0" (shouldBe (stepDefaultedTextly "1<0") (Right "#false"))
+              it "1<=0" (shouldBe (stepDefaultedTextly "1<=0") (Right "#false"))
+              it "0<=1" (shouldBe (stepDefaultedTextly "0<=1") (Right "#true"))
+              it "0<=0" (shouldBe (stepDefaultedTextly "0<=0") (Right "#true"))
+              it "1>=0" (shouldBe (stepDefaultedTextly "1>=0") (Right "#true"))
+              it "0>=1" (shouldBe (stepDefaultedTextly "0>=1") (Right "#false"))
+              it "0>=0" (shouldBe (stepDefaultedTextly "0>=0") (Right "#true")))
+        describe
+          "Text"
+          (do it
+                "\"x\"<\"y\""
+                (shouldBe (stepDefaultedTextly "\"x\"<\"y\"") (Right "#true"))
+              it
+                "\"abc\">\"abb\""
+                (shouldBe
+                   (stepDefaultedTextly "\"abc\">\"abb\"")
+                   (Right "#true"))
+              it
+                "\"x\"<=\"x\""
+                (shouldBe (stepDefaultedTextly "\"x\"<=\"x\"") (Right "#true"))
+              it
+                "\"x\">\"x\""
+                (shouldBe (stepDefaultedTextly "\"x\">\"x\"") (Right "#false"))
+              it
+                "\"x\">\"y\""
+                (shouldBe (stepDefaultedTextly "\"x\">\"y\"") (Right "#false"))))
 
 quoteBool :: Bool -> Text
 quoteBool True = "#true"

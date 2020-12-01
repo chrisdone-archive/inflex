@@ -247,6 +247,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
         HashGlobal g -> HashGlobal g
         FromIntegerGlobal -> FromIntegerGlobal
         EqualGlobal e -> EqualGlobal e
+        CompareGlobal e -> CompareGlobal e
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         FunctionGlobal f -> FunctionGlobal f
@@ -335,9 +336,12 @@ resolvePolyConstraint polymorphicConstraint@ClassConstraint {typ, className} = d
     [typ']
       | EqualClassName <- className ->
         fmap InstanceFound (resolveEqualInstance typ')
+    [typ']
+      | CompareClassName <- className ->
+        fmap InstanceFound (resolveCompareInstance typ')
     _ -> Left (UnsupportedInstanceHead polymorphicConstraint)
 
--- | Return the instance
+-- | Return the instance for Equality.
 resolveEqualInstance :: Type Polymorphic -> Either ResolutionError InstanceName
 resolveEqualInstance =
   \case
@@ -349,6 +353,19 @@ resolveEqualInstance =
                               , argument = ConstantType TypeConstant {name = NatTypeName places}
                               } -> pure (EqualDecimalInstance places)
     numberType -> Left (NoInstanceForType EqualClassName numberType)
+
+-- | Return the instance for Compare.
+resolveCompareInstance :: Type Polymorphic -> Either ResolutionError InstanceName
+resolveCompareInstance =
+  \case
+    ConstantType TypeConstant {name = IntegerTypeName} ->
+      pure CompareIntegerInstance
+    ConstantType TypeConstant {name = TextTypeName} ->
+      pure CompareTextInstance
+    ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                              , argument = ConstantType TypeConstant {name = NatTypeName places}
+                              } -> pure (CompareDecimalInstance places)
+    numberType -> Left (NoInstanceForType CompareClassName numberType)
 
 -- | Given a class constraint, produce the operation that would be run
 -- eventually. Immediately, we put it in the InstanceName, either

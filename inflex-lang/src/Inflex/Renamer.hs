@@ -271,6 +271,10 @@ renameGlobal Env {cursor} Global {..} = do
       "/" -> op DivideOp
       "=" -> pure (EqualGlobal Equal)
       "/=" -> pure (EqualGlobal NotEqual)
+      ">" -> pure (CompareGlobal GreaterThan)
+      "<" -> pure (CompareGlobal LessThan)
+      "<=" -> pure (CompareGlobal LessEqualTo)
+      ">=" -> pure (CompareGlobal GreaterEqualTo)
       _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
   pure Global {location = final, scheme = RenamedScheme, name = GlobalRef name'}
 

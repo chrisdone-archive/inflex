@@ -541,6 +541,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
       case name of
         HashGlobal x -> HashGlobal x
         EqualGlobal e -> EqualGlobal e
+        CompareGlobal e -> CompareGlobal e
         FromIntegerGlobal -> FromIntegerGlobal
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n

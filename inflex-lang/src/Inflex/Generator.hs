@@ -403,6 +403,17 @@ globalGenerator Global {name, location} = do
             , typ = typeVariable .-> typeVariable .-> boolType location
             , ..
             }
+      CompareGlobal _compareity -> do
+        typeVariable <- generateVariableType location ComparePrefix TypeKind
+        pure
+          Scheme
+            { constraints =
+                [ ClassConstraint
+                    {className = CompareClassName, typ = pure typeVariable, ..}
+                ]
+            , typ = typeVariable .-> typeVariable .-> boolType location
+            , ..
+            }
       FromDecimalGlobal -> do
         numberVar <- generateVariableType location DecimalPrefix TypeKind
         precisionVar <- generateVariableType location NatPrefix NatKind
@@ -427,6 +438,7 @@ globalGenerator Global {name, location} = do
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         HashGlobal h -> HashGlobal h
         EqualGlobal e -> EqualGlobal e
+        CompareGlobal e -> CompareGlobal e
         FunctionGlobal f -> FunctionGlobal f
 
 --------------------------------------------------------------------------------

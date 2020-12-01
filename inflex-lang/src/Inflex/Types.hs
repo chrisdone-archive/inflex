@@ -318,6 +318,7 @@ data TypeVariablePrefix
   | ApplyPrefix
   | IntegerPrefix
   | EqualPrefix
+  | ComparePrefix
   | DecimalPrefix
   | NatPrefix
   | InfixOutputPrefix
@@ -353,6 +354,9 @@ data InstanceName
   | EqualIntegerInstance
   | EqualTextInstance
   | EqualDecimalInstance !Natural
+  | CompareIntegerInstance
+  | CompareTextInstance
+  | CompareDecimalInstance !Natural
   deriving (Show, Eq, Ord)
 
 data FromDecimalInstance = FromDecimalInstance
@@ -377,6 +381,7 @@ data ClassName
   | SubtractOpClassName
   | DivideOpClassName
   | EqualClassName
+  | CompareClassName
   deriving (Show, Eq, Ord)
 
 --------------------------------------------------------------------------------
@@ -468,8 +473,16 @@ data GlobalRef s where
   FromDecimalGlobal :: GlobalRef s
   NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
   EqualGlobal :: !Equality -> GlobalRef s
+  CompareGlobal :: !Comparison -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
   FunctionGlobal :: !Function -> GlobalRef s
+
+data Comparison
+  = LessThan
+  | GreaterThan
+  | GreaterEqualTo
+  | LessEqualTo
+  deriving (Show, Eq, Ord)
 
 data Equality
   = Equal

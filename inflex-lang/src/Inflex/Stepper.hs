@@ -286,6 +286,7 @@ stepInfix Infix {..} = do
         (_, HoleExpression {}) -> pure asis
         _ ->
           case global' of
+            -- Arithmetic
             ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                                   , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
                                   } ->
@@ -294,6 +295,7 @@ stepInfix Infix {..} = do
                                   , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
                                   } ->
               stepDecimalOp asis precision numericBinOp left' right'
+            -- Equality
             ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
                                   , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
                                   , location = location'
@@ -309,6 +311,22 @@ stepInfix Infix {..} = do
                                   , location = location'
                                   } ->
               stepAtomicEquality asis location' equality left' right'
+            -- Compareity
+            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareIntegerInstance}
+                                  , location = location'
+                                  } ->
+              stepAtomicComparison asis location' compareity left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareTextInstance}
+                                  , location = location'
+                                  } ->
+              stepAtomicComparison asis location' compareity left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareDecimalInstance {}}
+                                  , location = location'
+                                  } ->
+              stepAtomicComparison asis location' compareity left' right'
             _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
@@ -341,6 +359,39 @@ stepAtomicEquality asis location equality left' right' =
       case equality of
         Equal -> (==)
         NotEqual -> (/=)
+
+--------------------------------------------------------------------------------
+-- Compareity
+
+stepAtomicComparison ::
+     Applicative f
+  => Expression Resolved
+  -> Cursor
+  -> Comparison
+  -> Expression s1
+  -> Expression s2
+  -> f (Expression Resolved)
+stepAtomicComparison asis location compareity left' right' =
+  case (left', right') of
+    (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
+      pure
+        (if comparator left right
+           then trueVariant location
+           else falseVariant location)
+    (LiteralExpression (TextLiteral LiteralText {text = left}), LiteralExpression (TextLiteral LiteralText {text = right})) -> do
+      pure
+        (if comparator left right
+           then trueVariant location
+           else falseVariant location)
+    _ -> pure asis
+  where
+    comparator :: Ord a => a -> a -> Bool
+    comparator =
+      case compareity of
+        GreaterThan -> (>)
+        LessThan -> (<)
+        GreaterEqualTo -> (>=)
+        LessEqualTo -> (<=)
 
 --------------------------------------------------------------------------------
 -- Numeric operations

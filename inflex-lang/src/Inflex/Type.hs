@@ -121,6 +121,10 @@ instanceNameType =
     EqualTextInstance -> textT .-> textT .-> boolType BuiltIn
     EqualDecimalInstance nat ->
       decimalT nat .-> decimalT nat .-> boolType BuiltIn
+    CompareIntegerInstance -> integerT .-> integerT .-> boolType BuiltIn
+    CompareTextInstance -> textT .-> textT .-> boolType BuiltIn
+    CompareDecimalInstance nat ->
+      decimalT nat .-> decimalT nat .-> boolType BuiltIn
 
 --------------------------------------------------------------------------------
 -- Convenience DSL for built-in types
