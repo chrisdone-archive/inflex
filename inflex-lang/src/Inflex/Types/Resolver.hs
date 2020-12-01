@@ -39,7 +39,7 @@ data ResolutionSuccess
 -- 4. Invalid type for class instance heads.
 data ResolutionError
   = LiteralDecimalPrecisionMismatch PrecisionMismatch
-  | UnsupportedInstanceHead
+  | UnsupportedInstanceHead (ClassConstraint Polymorphic)
   | NoInstanceAndMono ClassName (TypeVariable Generalised)
   | NoInstanceForType ClassName (Type Polymorphic)
   deriving (Show, Eq)

@@ -23,6 +23,7 @@ import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types as Apply (Apply(..))
+import           Inflex.Variants
 import           Numeric.Natural
 
 --------------------------------------------------------------------------------
@@ -287,12 +288,42 @@ stepInfix Infix {..} = do
           case global' of
             ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                                   , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
-                                  } -> stepIntegerOp asis numericBinOp left' right'
+                                  } ->
+              stepIntegerOp asis numericBinOp left' right'
             ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
                                   , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
                                   } ->
               stepDecimalOp asis precision numericBinOp left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
+                                  , location = location'
+                                  } ->
+                stepAtomicEquality asis location' left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance{}}
+                                  , location = location'
+                                  } ->
+                stepAtomicEquality asis location' left' right'
             _ -> error ("stepInfix: " ++ show global')
+
+--------------------------------------------------------------------------------
+-- Equality
+
+stepAtomicEquality ::
+     Applicative f
+  => Expression Resolved
+  -> Cursor
+  -> Expression s1
+  -> Expression s2
+  -> f (Expression Resolved)
+stepAtomicEquality asis location left' right' =
+  case (left', right') of
+    (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
+      pure
+        (if left == right
+           then trueVariant location
+           else falseVariant location)
+    _ -> pure asis
 
 --------------------------------------------------------------------------------
 -- Numeric operations

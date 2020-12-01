@@ -332,7 +332,21 @@ resolvePolyConstraint polymorphicConstraint@ClassConstraint {typ, className} = d
         fmap
           InstanceFound
           (resolveNumericBinOp numericBinOp className numberType)
-    _ -> Left UnsupportedInstanceHead
+    [typ']
+      | EqualClassName <- className ->
+        fmap InstanceFound (resolveEqualInstance typ')
+    _ -> Left (UnsupportedInstanceHead polymorphicConstraint)
+
+-- | Return the instance
+resolveEqualInstance :: Type Polymorphic -> Either ResolutionError InstanceName
+resolveEqualInstance =
+  \case
+    ConstantType TypeConstant {name = IntegerTypeName} ->
+      pure EqualIntegerInstance
+    ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                              , argument = ConstantType TypeConstant {name = NatTypeName places}
+                              } -> pure (EqualDecimalInstance places)
+    numberType -> Left (NoInstanceForType EqualClassName numberType)
 
 -- | Given a class constraint, produce the operation that would be run
 -- eventually. Immediately, we put it in the InstanceName, either

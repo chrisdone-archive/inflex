@@ -127,3 +127,14 @@ spec = do
                   (stepDefaultedTextly
                      (T.pack ("#ok(" <> show x <> "*" <> show y <> ")")))
                   (Right (T.pack ("#ok(" <> show (x * y) <> ")"))))))
+  describe
+    "Equality"
+    (do it "1=1" (shouldBe (stepDefaultedTextly "1=1") (Right "#true"))
+        it "1=2" (shouldBe (stepDefaultedTextly "1=2") (Right "#false"))
+        it "2*3=6" (shouldBe (stepDefaultedTextly "2*3=6") (Right "#true"))
+        it "1.0=1.0" (shouldBe (stepDefaultedTextly "1.0=1.0") (Right "#true"))
+        it "1.0=1" (shouldBe (stepDefaultedTextly "1.0=1") (Right "#true"))
+        it "1.0=1.00" (shouldBe (stepDefaultedTextly "1.0=1.00") (Right "#true"))
+        it "1.0*6=3.00*2" (shouldBe (stepDefaultedTextly "1.0*6=3.00*2") (Right "#true"))
+        it "1.0*6=3.00*3" (shouldBe (stepDefaultedTextly "1.0*6=3.00*3") (Right "#false"))
+        )
