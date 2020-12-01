@@ -118,6 +118,7 @@ instanceNameType =
     DecimalOpInstance n (_op :: NumericBinOp) ->
       decimalT n .-> decimalT n .-> decimalT n
     EqualIntegerInstance -> integerT .-> integerT .-> boolType BuiltIn
+    EqualTextInstance -> textT .-> textT .-> boolType BuiltIn
     EqualDecimalInstance nat ->
       decimalT nat .-> decimalT nat .-> boolType BuiltIn
 
@@ -145,6 +146,11 @@ integerT :: (StagedLocation s ~ Cursor) => Type s
 integerT =
   ConstantType
     TypeConstant {location = BuiltIn, name = IntegerTypeName}
+
+textT :: (StagedLocation s ~ Cursor) => Type s
+textT =
+  ConstantType
+    TypeConstant {location = BuiltIn, name = TextTypeName}
 
 decimalT :: (StagedLocation s ~ Cursor) => Natural -> Type s
 decimalT nat =

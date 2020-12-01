@@ -200,6 +200,7 @@ instance Display InstanceName where
   display =
     \case
       EqualIntegerInstance -> "<Equal Integer>"
+      EqualTextInstance -> "<Equal Text>"
       EqualDecimalInstance n -> "<Equal (Decimal " <> displayShow n <> ")>"
       FromIntegerIntegerInstance -> "<FromInteger Integer>"
       FromIntegerDecimalInstance {} -> "<FromInteger Decimal>"

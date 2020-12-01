@@ -132,6 +132,17 @@ spec = do
   describe
     "Equality"
     (do describe
+          "Text"
+          (do it
+                "\"x\"=\"x\""
+                (shouldBe (stepDefaultedTextly "\"x\"=\"x\"") (Right "#true"))
+              it
+                "\"x\"=\"y\""
+                (shouldBe (stepDefaultedTextly "\"x\"=\"y\"") (Right "#false"))
+              it
+                "\"\"=\"\""
+                (shouldBe (stepDefaultedTextly "\"\"=\"\"") (Right "#true")))
+        describe
           "Integer"
           (do it "1=1" (shouldBe (stepDefaultedTextly "1=1") (Right "#true"))
               it "1=2" (shouldBe (stepDefaultedTextly "1=2") (Right "#false"))

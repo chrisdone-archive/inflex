@@ -351,6 +351,7 @@ data InstanceName
   | IntegerOpInstance !NumericBinOp
   | DecimalOpInstance !Natural !NumericBinOp
   | EqualIntegerInstance
+  | EqualTextInstance
   | EqualDecimalInstance !Natural
   deriving (Show, Eq, Ord)
 

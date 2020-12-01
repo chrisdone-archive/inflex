@@ -298,12 +298,17 @@ stepInfix Infix {..} = do
                                   , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
                                   , location = location'
                                   } ->
-                stepAtomicEquality asis location' left' right'
+              stepAtomicEquality asis location' left' right'
             ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance{}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualTextInstance}
                                   , location = location'
                                   } ->
-                stepAtomicEquality asis location' left' right'
+              stepAtomicEquality asis location' left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance {}}
+                                  , location = location'
+                                  } ->
+              stepAtomicEquality asis location' left' right'
             _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
@@ -319,6 +324,11 @@ stepAtomicEquality ::
 stepAtomicEquality asis location left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
+      pure
+        (if left == right
+           then trueVariant location
+           else falseVariant location)
+    (LiteralExpression (TextLiteral LiteralText {text = left}), LiteralExpression (TextLiteral LiteralText {text = right})) -> do
       pure
         (if left == right
            then trueVariant location

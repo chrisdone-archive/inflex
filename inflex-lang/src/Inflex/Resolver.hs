@@ -343,6 +343,8 @@ resolveEqualInstance =
   \case
     ConstantType TypeConstant {name = IntegerTypeName} ->
       pure EqualIntegerInstance
+    ConstantType TypeConstant {name = TextTypeName} ->
+      pure EqualTextInstance
     ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
                               , argument = ConstantType TypeConstant {name = NatTypeName places}
                               } -> pure (EqualDecimalInstance places)
