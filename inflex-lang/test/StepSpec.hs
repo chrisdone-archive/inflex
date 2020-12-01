@@ -250,7 +250,7 @@ functions =
   describe
     "Functions"
     (do describe
-          "Map"
+          "map"
           (do it
                 "map(r:r*2,[1,2,3])"
                 (shouldBe
@@ -261,4 +261,10 @@ functions =
                 (shouldBe
                    (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
                    (Right "[2, 4, 6]")))
-                )
+        describe
+          "filter"
+          (do it
+                "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+                (shouldBe
+                   (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+                   (Right "[{x: 2}, {x: 3}]"))))

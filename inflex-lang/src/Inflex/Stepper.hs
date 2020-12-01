@@ -17,6 +17,8 @@ import           Data.List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Resolver
@@ -224,47 +226,91 @@ stepApply Apply {..} = do
                        , typ = typ'
                        , ..
                        })))
-        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal MapFunction}
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
                                     , argument = functionExpression
                                     , location = applyLocation
                                     } ->
-          case argument' of
-            ArrayExpression Array {expressions} -> do
-              expressions' <-
-                traverse
-                  (\arrayItem ->
-                     stepExpression
-                       (ApplyExpression
-                          (Apply
-                             { function = functionExpression
-                             , argument = arrayItem
-                             , location = location
-                             , typ = typeOutput (expressionType functionExpression)
-                             })))
-                  expressions
-              stepped' <- get
-              case stepped' of
-                Stepped ->
-                  error "TODO: stepped form."
-                Continue ->
-                  pure
-                    (ArrayExpression
-                       Array
-                         { typ =
-                             ArrayType
-                               (typeOutput (expressionType functionExpression))
-                         , location = applyLocation
-                         , expressions = expressions'
-                         })
-            _ ->
-              pure
-                (ApplyExpression
-                   Apply {function = function', argument = argument', ..} -- TODO: error here.
-                 )
+          stepFunction functionName argument' functionExpression location applyLocation typ
         _ ->
           pure
             (ApplyExpression
                Apply {function = function', argument = argument', ..})
+
+--------------------------------------------------------------------------------
+-- Function stepper
+
+stepFunction ::
+     Function
+  -> Expression Resolved
+  -> Expression Resolved
+  -> Cursor
+  -> Cursor
+  -> Type Generalised
+  -> Step e (Expression Resolved)
+stepFunction function argument' functionExpression location applyLocation originalArrayType =
+  case function of
+    MapFunction ->
+      case argument' of
+        ArrayExpression Array {expressions} -> do
+          expressions' <-
+            traverse
+              (\arrayItem ->
+                 stepExpression
+                   (ApplyExpression
+                      (Apply
+                         { function = functionExpression
+                         , argument = arrayItem
+                         , location = location
+                         , typ = typeOutput (expressionType functionExpression)
+                         })))
+              expressions
+          stepped' <- get
+          case stepped' of
+            Stepped -> error "TODO: stepped form."
+            Continue ->
+              pure
+                (ArrayExpression
+                   Array
+                     { typ =
+                         ArrayType
+                           (typeOutput (expressionType functionExpression))
+                     , location = applyLocation
+                     , expressions = expressions'
+                     })
+        _ -> error "Invalid argument to function."
+    FilterFunction ->
+      case argument' of
+        ArrayExpression Array {expressions} -> do
+          expressions' <-
+            concatMapM
+              (\arrayItem -> do
+                 arrayItem' <- stepExpression arrayItem
+                 bool <-
+                   stepExpression
+                     (ApplyExpression
+                        (Apply
+                           { function = functionExpression
+                           , argument = arrayItem'
+                           , location = location
+                           , typ =
+                               typeOutput (expressionType functionExpression)
+                           }))
+                 if reifyBool bool
+                   then pure (pure arrayItem')
+                   else pure Nothing)
+              expressions
+          stepped' <- get
+          case stepped' of
+            Stepped -> error "TODO: stepped form."
+            Continue ->
+              pure
+                (ArrayExpression
+                   Array
+                     { typ = originalArrayType
+                     , location = applyLocation
+                     , expressions = expressions'
+                     })
+        _ -> error "Invalid argument to function."
 
 --------------------------------------------------------------------------------
 -- Infix stepper
@@ -546,3 +592,9 @@ fromDecimalStep fromDecimalInstance decimal =
   where
     Decimal {places = thisSubsetPlaces} = decimal
     FromDecimalInstance {supersetPlaces, subsetPlaces} = fromDecimalInstance
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+concatMapM :: Monad m => (a -> m (Maybe b)) -> Vector a -> m (Vector b)
+concatMapM f v = V.mapMaybe id <$> traverse f v

@@ -381,6 +381,7 @@ instance Display (GlobalRef Parsed) where
 instance Display Function where
   display = \case
     MapFunction -> "map"
+    FilterFunction -> "filter"
 
 instance Display NumericBinOp where
   display =

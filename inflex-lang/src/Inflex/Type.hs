@@ -212,6 +212,12 @@ functionScheme location =
         , constraints = []
         , typ = (a .-> b) .-> ArrayType a .-> ArrayType b
         }
+    FilterFunction ->
+      Scheme
+        { location
+        , constraints = []
+        , typ = (a .-> boolType location) .-> ArrayType a .-> ArrayType a
+        }
   where
     a = typeVariable 0
     b = typeVariable 1

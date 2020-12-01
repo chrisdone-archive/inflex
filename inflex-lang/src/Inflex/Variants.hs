@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,6 +14,15 @@ import Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Bool
+
+reifyBool :: Expression Resolved -> Bool
+reifyBool =
+  \case
+    VariantExpression Variant {tag = TagName "true", argument = Nothing} ->
+      True
+    VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
+      False
+    _ -> error "reifyBool: Invalid bool!"
 
 trueVariant :: StagedLocation Resolved -> Expression Resolved
 trueVariant location =

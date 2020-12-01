@@ -65,6 +65,7 @@ wiredInGlobals =
     [ ("fromInteger", FromIntegerGlobal)
     , ("fromDecimal", FromDecimalGlobal)
     , ("map", FunctionGlobal MapFunction)
+    , ("filter", FunctionGlobal FilterFunction)
     ]
 
 --------------------------------------------------------------------------------

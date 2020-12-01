@@ -498,9 +498,10 @@ data NumericBinOp
   | DivideOp
   deriving (Show, Eq, Ord)
 
-data Function =
-  MapFunction
-  deriving (Show, Eq, Ord)
+data Function
+  = MapFunction
+  | FilterFunction
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 --------------------------------------------------------------------------------
 -- Stages
