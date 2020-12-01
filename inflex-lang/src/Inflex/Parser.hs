@@ -456,7 +456,7 @@ variantParser :: Parser (Variant Parsed)
 variantParser = do
   token_ ExpectedVariant (preview _HashToken)
   Located {thing = name, location} <-
-    token ExpectedVariant (preview _LowerWordToken)
+    token ExpectedVariant (preview _LowerWordToken) <> operatorParser
   argument <-
     do parens <-
          fmap
