@@ -185,6 +185,11 @@ tokensLexer =
            , OperatorToken <$> Mega.string "/"
            , OperatorToken <$> Mega.string "+"
            , OperatorToken <$> Mega.string "-"
+           , OperatorToken <$> Mega.string ">="
+           , OperatorToken <$> Mega.string "<="
+           , OperatorToken <$> Mega.string "/="
+           , OperatorToken <$> Mega.string "<"
+           , OperatorToken <$> Mega.string ">"
            , OperatorToken <$> Mega.string "="
            , BackslashToken <$ Mega.char '\\'
            , DoubleColonToken <$ Mega.try (Mega.string "::")
