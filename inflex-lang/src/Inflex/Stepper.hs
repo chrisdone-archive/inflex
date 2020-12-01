@@ -335,6 +335,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                            , typ =
                                typeOutput (expressionType functionExpression)
                            }))
+                 -- TODO: handle holes here!!!
                  if reifyBool bool
                    then pure (pure arrayItem')
                    else pure Nothing)

@@ -22,7 +22,7 @@ reifyBool =
       True
     VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
       False
-    _ -> error "reifyBool: Invalid bool!"
+    _ -> False -- TODO: Should be an error, or in the case of hole, nothing.
 
 trueVariant :: StagedLocation Resolved -> Expression Resolved
 trueVariant location =
