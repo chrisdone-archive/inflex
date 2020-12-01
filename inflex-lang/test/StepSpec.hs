@@ -131,6 +131,7 @@ spec = do
                   (Right (T.pack ("#ok(" <> show (x * y) <> ")"))))))
   equality
   ordering
+  functions
 
 equality :: SpecWith ()
 equality =
@@ -243,3 +244,21 @@ ordering =
 quoteBool :: Bool -> Text
 quoteBool True = "#true"
 quoteBool False = "#false"
+
+functions :: SpecWith ()
+functions =
+  describe
+    "Functions"
+    (do describe
+          "Map"
+          (do it
+                "map(r:r*2,[1,2,3])"
+                (shouldBe
+                   (stepDefaultedTextly "map(r:r*2,[1,2,3])")
+                   (Right "[2, 4, 6]"))
+              it
+                "map(r:r.x*2,[{x:1},{x:2},{x:3}])"
+                (shouldBe
+                   (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
+                   (Right "[2, 4, 6]")))
+                )
