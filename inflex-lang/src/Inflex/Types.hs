@@ -467,9 +467,14 @@ data GlobalRef s where
   FromIntegerGlobal :: GlobalRef s
   FromDecimalGlobal :: GlobalRef s
   NumericBinOpGlobal :: NumericBinOp -> GlobalRef s
-  EqualGlobal :: GlobalRef s
+  EqualGlobal :: !Equality -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
   FunctionGlobal :: !Function -> GlobalRef s
+
+data Equality
+  = Equal
+  | NotEqual
+  deriving (Show, Eq, Ord)
 
 -- | Numeric binary operator.
 data NumericBinOp

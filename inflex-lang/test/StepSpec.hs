@@ -140,12 +140,19 @@ spec = do
                 "\"x\"=\"y\""
                 (shouldBe (stepDefaultedTextly "\"x\"=\"y\"") (Right "#false"))
               it
+                "\"x\"/=\"y\""
+                (shouldBe (stepDefaultedTextly "\"x\"/=\"y\"") (Right "#true"))
+              it
                 "\"\"=\"\""
-                (shouldBe (stepDefaultedTextly "\"\"=\"\"") (Right "#true")))
+                (shouldBe (stepDefaultedTextly "\"\"=\"\"") (Right "#true"))
+              it
+                "\"\"/=\"\""
+                (shouldBe (stepDefaultedTextly "\"\"/=\"\"") (Right "#false")))
         describe
           "Integer"
           (do it "1=1" (shouldBe (stepDefaultedTextly "1=1") (Right "#true"))
               it "1=2" (shouldBe (stepDefaultedTextly "1=2") (Right "#false"))
+              it "1/=2" (shouldBe (stepDefaultedTextly "1/=2") (Right "#true"))
               it
                 "2*3=6"
                 (shouldBe (stepDefaultedTextly "2*3=6") (Right "#true"))
@@ -164,6 +171,12 @@ spec = do
               it
                 "1.0=1"
                 (shouldBe (stepDefaultedTextly "1.0=1") (Right "#true"))
+              it
+                "1.0=2"
+                (shouldBe (stepDefaultedTextly "1.0=2") (Right "#false"))
+              it
+                "1.0/=2"
+                (shouldBe (stepDefaultedTextly "1.0/=2") (Right "#true"))
               it
                 "1.0=1.00"
                 (shouldBe (stepDefaultedTextly "1.0=1.00") (Right "#true"))

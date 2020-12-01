@@ -392,7 +392,7 @@ globalGenerator Global {name, location} = do
             , typ = integerT .-> typeVariable
             , ..
             }
-      EqualGlobal -> do
+      EqualGlobal _equality -> do
         typeVariable <- generateVariableType location EqualPrefix TypeKind
         pure
           Scheme
@@ -426,7 +426,7 @@ globalGenerator Global {name, location} = do
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         HashGlobal h -> HashGlobal h
-        EqualGlobal -> EqualGlobal
+        EqualGlobal e -> EqualGlobal e
         FunctionGlobal f -> FunctionGlobal f
 
 --------------------------------------------------------------------------------

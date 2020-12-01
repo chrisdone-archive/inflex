@@ -246,7 +246,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
       case name of
         HashGlobal g -> HashGlobal g
         FromIntegerGlobal -> FromIntegerGlobal
-        EqualGlobal -> EqualGlobal
+        EqualGlobal e -> EqualGlobal e
         FromDecimalGlobal -> FromDecimalGlobal
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         FunctionGlobal f -> FunctionGlobal f

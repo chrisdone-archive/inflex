@@ -294,21 +294,21 @@ stepInfix Infix {..} = do
                                   , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
                                   } ->
               stepDecimalOp asis precision numericBinOp left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
                                   , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
                                   , location = location'
                                   } ->
-              stepAtomicEquality asis location' left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+              stepAtomicEquality asis location' equality left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
                                   , argument = GlobalExpression Global {name = InstanceGlobal EqualTextInstance}
                                   , location = location'
                                   } ->
-              stepAtomicEquality asis location' left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal {}}
+              stepAtomicEquality asis location' equality left' right'
+            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
                                   , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance {}}
                                   , location = location'
                                   } ->
-              stepAtomicEquality asis location' left' right'
+              stepAtomicEquality asis location' equality left' right'
             _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
@@ -318,22 +318,29 @@ stepAtomicEquality ::
      Applicative f
   => Expression Resolved
   -> Cursor
+  -> Equality
   -> Expression s1
   -> Expression s2
   -> f (Expression Resolved)
-stepAtomicEquality asis location left' right' =
+stepAtomicEquality asis location equality left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
       pure
-        (if left == right
+        (if comparator left right
            then trueVariant location
            else falseVariant location)
     (LiteralExpression (TextLiteral LiteralText {text = left}), LiteralExpression (TextLiteral LiteralText {text = right})) -> do
       pure
-        (if left == right
+        (if comparator left right
            then trueVariant location
            else falseVariant location)
     _ -> pure asis
+  where
+    comparator :: Eq a => a -> a -> Bool
+    comparator =
+      case equality of
+        Equal -> (==)
+        NotEqual -> (/=)
 
 --------------------------------------------------------------------------------
 -- Numeric operations
