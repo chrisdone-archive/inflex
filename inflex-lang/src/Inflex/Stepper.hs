@@ -308,7 +308,7 @@ stepFunction function argument' functionExpression location applyLocation origin
                    Array
                      { typ = originalArrayType
                      , location = applyLocation
-                     , expressions = expressions'
+                     , expressions = V.force expressions'
                      })
         _ -> error "Invalid argument to function."
 
