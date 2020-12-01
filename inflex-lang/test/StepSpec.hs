@@ -131,32 +131,45 @@ spec = do
                   (Right (T.pack ("#ok(" <> show (x * y) <> ")"))))))
   describe
     "Equality"
-    (do it "1=1" (shouldBe (stepDefaultedTextly "1=1") (Right "#true"))
-        it "1=2" (shouldBe (stepDefaultedTextly "1=2") (Right "#false"))
-        it "2*3=6" (shouldBe (stepDefaultedTextly "2*3=6") (Right "#true"))
-        it "1.0=1.0" (shouldBe (stepDefaultedTextly "1.0=1.0") (Right "#true"))
-        it "1.0=1" (shouldBe (stepDefaultedTextly "1.0=1") (Right "#true"))
-        it
-          "1.0=1.00"
-          (shouldBe (stepDefaultedTextly "1.0=1.00") (Right "#true"))
-        it
-          "1.0*6=3.00*2"
-          (shouldBe (stepDefaultedTextly "1.0*6=3.00*2") (Right "#true"))
-        it
-          "1.0*6=3.00*3"
-          (shouldBe (stepDefaultedTextly "1.0*6=3.00*3") (Right "#false"))
-        let quoteBool True = "#true"; quoteBool False = "#false"
-        it
-          "n=y (integer)"
-          (property
-             (\(x :: Integer) y ->
-                shouldBe
-                  (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
-                  (Right (quoteBool (x == y)))))
-        it
-          "n=y (decimal 2)"
-          (property
-             (\(x :: Centi) y ->
-                shouldBe
-                  (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
-                  (Right (quoteBool (x == y))))))
+    (do describe
+          "Integer"
+          (do it "1=1" (shouldBe (stepDefaultedTextly "1=1") (Right "#true"))
+              it "1=2" (shouldBe (stepDefaultedTextly "1=2") (Right "#false"))
+              it
+                "2*3=6"
+                (shouldBe (stepDefaultedTextly "2*3=6") (Right "#true"))
+              it
+                "n=y (integer)"
+                (property
+                   (\(x :: Integer) y ->
+                      shouldBe
+                        (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
+                        (Right (quoteBool (x == y))))))
+        describe
+          "Decimal"
+          (do it
+                "1.0=1.0"
+                (shouldBe (stepDefaultedTextly "1.0=1.0") (Right "#true"))
+              it
+                "1.0=1"
+                (shouldBe (stepDefaultedTextly "1.0=1") (Right "#true"))
+              it
+                "1.0=1.00"
+                (shouldBe (stepDefaultedTextly "1.0=1.00") (Right "#true"))
+              it
+                "1.0*6=3.00*2"
+                (shouldBe (stepDefaultedTextly "1.0*6=3.00*2") (Right "#true"))
+              it
+                "1.0*6=3.00*3"
+                (shouldBe (stepDefaultedTextly "1.0*6=3.00*3") (Right "#false"))
+              it
+                "n=y (decimal 2)"
+                (property
+                   (\(x :: Centi) y ->
+                      shouldBe
+                        (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
+                        (Right (quoteBool (x == y)))))))
+
+quoteBool :: Bool -> Text
+quoteBool True = "#true"
+quoteBool False = "#false"
