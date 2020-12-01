@@ -438,12 +438,10 @@ numberParser = do
   typ <- optionalSignatureParser
   pure (Number {typ, ..})
 
--- TODO: Add negation.
 integerParser :: Parser (Located SomeNumber)
 integerParser =
   fmap (fmap (IntegerNumber . fromIntegral)) (token ExpectedInteger (preview _NaturalToken))
 
--- TODO: Add negation.
 decimalParser :: Parser (Located SomeNumber)
 decimalParser =
   fmap (fmap DecimalNumber) (token ExpectedDecimal (preview _DecimalToken))
