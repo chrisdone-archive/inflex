@@ -359,7 +359,8 @@ instance Display IncompleteGlobalRef where
   display =
     \case
       UnresolvedGlobal text -> display text
-      GlobalRef ref -> display ref
+      ExactGlobalRef ref -> display ref
+      ResolvedGlobalRef text _ -> display text
 
 instance Display (GlobalRef Parsed) where
   display = \case

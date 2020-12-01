@@ -79,7 +79,16 @@ globalFill globals Global {..} = do
             Right globalRef ->
               pure
                 Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
-    GlobalRef globalRef ->
+    ResolvedGlobalRef textName globalRef ->
+      case M.lookup textName globals of
+        Nothing -> pure Global {scheme = FilledScheme, name = globalRef, ..}
+        Just result -> do
+          case result of
+            Left e -> Filler (Failure (pure (OtherCellError textName e)))
+            Right globalRef' ->
+              pure
+                Global {name = HashGlobal globalRef', scheme = FilledScheme, ..}
+    ExactGlobalRef globalRef ->
       pure Global {scheme = FilledScheme, name = globalRef, ..}
 
 lambdaFill ::

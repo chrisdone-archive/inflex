@@ -65,7 +65,7 @@ spec = do
                              GlobalExpression
                                (Global
                                   { location = BuiltIn
-                                  , name = GlobalRef FromDecimalGlobal
+                                  , name = ExactGlobalRef FromDecimalGlobal
                                   , scheme = RenamedScheme
                                   })
                          , argument =
@@ -147,7 +147,7 @@ spec = do
                        GlobalExpression
                          (Global
                             { location = ExpressionCursor
-                            , name = GlobalRef FromIntegerGlobal
+                            , name = ResolvedGlobalRef "fromInteger" FromIntegerGlobal
                             , scheme = RenamedScheme
                             })
                    , mappings =
@@ -172,7 +172,7 @@ spec = do
                        GlobalExpression
                          (Global
                             { location = ExpressionCursor
-                            , name = GlobalRef FromDecimalGlobal
+                            , name = ResolvedGlobalRef "fromDecimal" FromDecimalGlobal
                             , scheme = RenamedScheme
                             })
                    , mappings =

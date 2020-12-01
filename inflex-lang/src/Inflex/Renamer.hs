@@ -130,9 +130,9 @@ renameLiteral env@Env {cursor} =
                              let Number {number = someNumber} = number'
                               in case someNumber of
                                    IntegerNumber {} ->
-                                     GlobalRef FromIntegerGlobal
+                                     ExactGlobalRef FromIntegerGlobal
                                    DecimalNumber {} ->
-                                     GlobalRef FromDecimalGlobal
+                                     ExactGlobalRef FromDecimalGlobal
                          , scheme = RenamedScheme
                          }
                  })
@@ -276,7 +276,7 @@ renameGlobal Env {cursor} Global {..} = do
       "<=" -> pure (CompareGlobal LessEqualTo)
       ">=" -> pure (CompareGlobal GreaterEqualTo)
       _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
-  pure Global {location = final, scheme = RenamedScheme, name = GlobalRef name'}
+  pure Global {location = final, scheme = RenamedScheme, name = ExactGlobalRef name'}
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
 renameBind env@Env {cursor} Bind {param, value, location, typ} = do
@@ -324,7 +324,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
             (GlobalExpression
                (Global
                   { location = final
-                  , name = GlobalRef globalRef
+                  , name = ResolvedGlobalRef name globalRef
                   , scheme = RenamedScheme
                   }))
     Just (index, binding) -> do

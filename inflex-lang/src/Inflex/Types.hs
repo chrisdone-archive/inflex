@@ -149,7 +149,8 @@ data Global s = Global
   }
 
 data IncompleteGlobalRef
-  = GlobalRef (GlobalRef Renamed)
+  = ExactGlobalRef (GlobalRef Renamed)
+  | ResolvedGlobalRef Text (GlobalRef Renamed)
   | UnresolvedGlobal Text
 
 data Lambda s = Lambda
