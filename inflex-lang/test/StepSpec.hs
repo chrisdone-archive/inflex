@@ -267,4 +267,16 @@ functions =
                 "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
                 (shouldBe
                    (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
-                   (Right "[{x: 2}, {x: 3}]"))))
+                   (Right "[{x: 2}, {x: 3}]")))
+        describe
+          "length"
+          (do it
+                "length([1,2,3])"
+                (shouldBe
+                   (stepDefaultedTextly "length([1,2,3])")
+                   (Right "3"))
+              it
+                "null([1,2,3])"
+                (shouldBe
+                   (stepDefaultedTextly "null([1,2,3])")
+                   (Right "#false"))))

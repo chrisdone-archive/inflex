@@ -35,6 +35,7 @@ dependencies:
 - parallel
 - vector
 - deepseq
+- th-lift
 
 ghc-options: -Wall
 

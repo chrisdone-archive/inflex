@@ -146,6 +146,22 @@ boolType location =
               ]
           }))
 
+boolT :: Type Polymorphic
+boolT = boolType BuiltIn
+
+maybeType :: StagedLocation s -> Type s -> Type s
+maybeType location a =
+  VariantType
+    (RowType
+       (TypeRow
+          { location
+          , typeVariable = Nothing
+          , fields =
+              [ Field {location, name = "some", typ = a}
+              , Field {location, name = "none", typ = nullType location}
+              ]
+          }))
+
 integerT :: (StagedLocation s ~ Cursor) => Type s
 integerT =
   ConstantType
@@ -203,22 +219,34 @@ infixr .->
 --------------------------------------------------------------------------------
 -- Schemes
 
+functionOutput :: Function -> Type Polymorphic
+functionOutput func =
+  let Scheme {typ} = functionScheme BuiltIn func
+   in typeOutput typ
+
 functionScheme :: Cursor -> Function -> Scheme Polymorphic
 functionScheme location =
   \case
-    MapFunction ->
-      Scheme
-        { location
-        , constraints = []
-        , typ = (a .-> b) .-> ArrayType a .-> ArrayType b
-        }
-    FilterFunction ->
-      Scheme
-        { location
-        , constraints = []
-        , typ = (a .-> boolType location) .-> ArrayType a .-> ArrayType a
-        }
+    MapFunction -> mono ((a .-> b) .-> ArrayType a .-> ArrayType b)
+    FilterFunction -> mono ((a .-> boolT) .-> ArrayType a .-> ArrayType a)
+    DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
+    SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
+    AndFunction -> mono (ArrayType boolT .-> boolT)
+    OrFunction -> mono (ArrayType boolT .-> integerT)
+    SumFunction -> mono (ArrayType a .-> a)
+    MinimumFunction -> mono (ArrayType a .-> a)
+    MaximumFunction -> mono (ArrayType a .-> a)
+    AverageFunction -> mono (ArrayType a .-> a)
+    LengthFunction -> mono (ArrayType a .-> integerT)
+    NullFunction -> mono (ArrayType a .-> boolT)
+    FindFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location a)
+    LookupFunction -> undefined
+    AllFunction -> mono ((a .-> boolT) .-> ArrayType a .-> boolT)
+    AnyFunction -> mono ((a .-> boolT) .-> ArrayType a .-> boolT)
   where
+    mono t = Scheme {location, constraints = [], typ = t}
+    poly p t = Scheme {location, constraints = p, typ = t}
+    comparable t = ClassConstraint {className = CompareClassName, typ = pure t, location}
     a = typeVariable 0
     b = typeVariable 1
     typeVariable index =

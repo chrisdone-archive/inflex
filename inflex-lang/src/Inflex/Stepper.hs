@@ -13,7 +13,7 @@ module Inflex.Stepper where
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Bifunctor
-import           Data.List
+import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Text (Text)
@@ -21,6 +21,7 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Defaulter
+import           Inflex.Derived
 import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
@@ -194,6 +195,8 @@ stepApply Apply {..} = do
         LambdaExpression lambda -> do
           body' <- betaReduce lambda argument'
           stepExpression body'
+        GlobalExpression (Global {name = FunctionGlobal func}) | elem func [LengthFunction,NullFunction] ->
+          stepFunction1 typ func argument'
         ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
                               , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
                               }
@@ -227,10 +230,16 @@ stepApply Apply {..} = do
                        , ..
                        })))
         ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
-                                    , argument = functionExpression
-                                    , location = applyLocation
-                                    } ->
-          stepFunction functionName argument' functionExpression location applyLocation typ
+                              , argument = functionExpression
+                              , location = applyLocation
+                              } ->
+          stepFunction2
+            functionName
+            argument'
+            functionExpression
+            location
+            applyLocation
+            typ
         _ ->
           pure
             (ApplyExpression
@@ -239,7 +248,38 @@ stepApply Apply {..} = do
 --------------------------------------------------------------------------------
 -- Function stepper
 
-stepFunction ::
+stepFunction1 ::
+     Type Generalised
+  -> Function
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepFunction1 returnType func argument =
+  case func of
+    LengthFunction ->
+      case argument of
+        ArrayExpression Array {expressions} -> do
+          pure
+            (LiteralExpression
+               (NumberLiteral
+                  Number
+                    { number =
+                        IntegerNumber (fromIntegral (V.length expressions))
+                    , location = SteppedCursor
+                    , typ = returnType
+                    }))
+        _ -> error "Invalid argument to function."
+    NullFunction ->
+      do result <- stepApply
+           Apply
+             { location = BuiltIn
+             , function = nullFunction
+             , argument
+             , typ = returnType
+             }
+         pure result
+    _ -> error "bad 1-ary function."
+
+stepFunction2 ::
      Function
   -> Expression Resolved
   -> Expression Resolved
@@ -247,7 +287,7 @@ stepFunction ::
   -> Cursor
   -> Type Generalised
   -> Step e (Expression Resolved)
-stepFunction function argument' functionExpression location applyLocation originalArrayType =
+stepFunction2 function argument' functionExpression location applyLocation originalArrayType =
   case function of
     MapFunction ->
       case argument' of
@@ -311,6 +351,7 @@ stepFunction function argument' functionExpression location applyLocation origin
                      , expressions = V.force expressions'
                      })
         _ -> error "Invalid argument to function."
+    _ -> error "bad arity"
 
 --------------------------------------------------------------------------------
 -- Infix stepper
@@ -383,8 +424,8 @@ stepAtomicEquality ::
   => Expression Resolved
   -> Cursor
   -> Equality
-  -> Expression s1
-  -> Expression s2
+  -> Expression Resolved
+  -> Expression Resolved
   -> f (Expression Resolved)
 stepAtomicEquality asis location equality left' right' =
   case (left', right') of

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -19,6 +20,7 @@ import Data.Vector (Vector)
 import Data.Void
 import GHC.Generics
 import Inflex.Types.SHA512
+import Language.Haskell.TH.Lift
 import Numeric.Natural
 
 --------------------------------------------------------------------------------
@@ -97,11 +99,11 @@ data Named a = Named
   , order :: Int
   , code :: Text
   , thing :: a
-  } deriving (Show, Eq, Ord, Functor, Generic)
+  } deriving (Show, Lift, Eq, Ord, Functor, Generic)
 instance NFData a => NFData (Named a)
 
 newtype Uuid = Uuid Text
- deriving (Eq, Ord, Show, NFData)
+ deriving (Eq, Ord, Show, Lift, NFData)
 
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
@@ -211,14 +213,14 @@ data Number s = Number
 data SomeNumber
   = IntegerNumber !Integer -- ^ Any whole number.
   | DecimalNumber !Decimal
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 -- | Decimal backed by an Integer with N decimal places. Precision is
 -- determined at runtime.
 data Decimal = Decimal
   { places :: !Natural
   , integer :: !Integer
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Lift, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Type system types
@@ -260,11 +262,11 @@ data Field s = Field
 
 newtype FieldName = FieldName
   { unFieldName :: Text
-  } deriving (Eq, Ord, Generic, Show, IsString)
+  } deriving (Eq, Ord, Generic, Show, Lift, IsString)
 
 newtype TagName = TagName
   { unTagName :: Text
-  } deriving (Eq, Ord, Generic, Show)
+  } deriving (Eq, Ord, Generic, Show, Lift)
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)
@@ -299,12 +301,12 @@ data Kind
             Kind
   | NatKind
   | RowKind
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data TypePoly = TypePoly
   { location :: !(StagedLocation Generated)
   , index :: !Integer
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Lift, Eq, Ord)
 
 data TypeVariable s = TypeVariable
   { location :: !(StagedTyVarLocation s)
@@ -332,7 +334,7 @@ data TypeVariablePrefix
   | FreshPrefix
   | RowUnifyPrefix
   | SolverGeneratedPrefix TypeVariablePrefix
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data EqualityConstraint = EqualityConstraint
   { type1 :: Type Generated
@@ -358,12 +360,12 @@ data InstanceName
   | CompareIntegerInstance
   | CompareTextInstance
   | CompareDecimalInstance !Natural
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data FromDecimalInstance = FromDecimalInstance
   { supersetPlaces :: !Natural
   , subsetPlaces :: !Natural
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Lift, Eq, Ord)
 
 data TypeName
   = FunctionTypeName
@@ -372,7 +374,7 @@ data TypeName
   | TextTypeName
   | OptionTypeName
   | NatTypeName !Natural
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data ClassName
   = FromIntegerClassName
@@ -383,7 +385,7 @@ data ClassName
   | DivideOpClassName
   | EqualClassName
   | CompareClassName
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Source location information
@@ -392,14 +394,14 @@ data ClassName
 data SourceLocation = SourceLocation
   { start :: !SourcePos
   , end :: !SourcePos
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Lift, Eq, Ord)
 
 -- | Position in source code.
 data SourcePos = SourcePos
   { line :: !Int
   , column :: !Int
   , name :: !FilePath
-  } deriving (Show, Eq, Ord, Generic)
+  } deriving (Show, Lift, Eq, Ord, Generic)
 
 --------------------------------------------------------------------------------
 -- Tree location information
@@ -433,7 +435,7 @@ data Cursor
   | PropExpressionCursor Cursor
   | ArrayElementCursor Int Cursor
   | VariantElementCursor Cursor
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.
 --
@@ -443,7 +445,7 @@ data DeBrujinIndex
   = DeBrujinIndex !DeBrujinNesting
   | DeBrujinIndexOfLet !DeBrujinNesting
                        !IndexInLet
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 deBrujinIndexNesting :: DeBrujinIndex -> DeBrujinNesting
 deBrujinIndexNesting =
@@ -455,16 +457,16 @@ deBrujinIndexNesting =
 -- to?
 newtype IndexInLet =
   IndexInLet Int
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 -- | How many lambdas away are we from the binding lambda?
 newtype DeBrujinNesting =
   DeBrujinNesting Int
-  deriving (Show, Eq, Ord, Num)
+  deriving (Show, Lift, Eq, Ord, Num)
 
 -- | Hash used for CAS referencing.
 newtype Hash = Hash SHA512
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 -- | A global reference, which may either be a hash, or a built-in
 -- thing.
@@ -483,12 +485,12 @@ data Comparison
   | GreaterThan
   | GreaterEqualTo
   | LessEqualTo
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data Equality
   = Equal
   | NotEqual
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 -- | Numeric binary operator.
 data NumericBinOp
@@ -496,12 +498,32 @@ data NumericBinOp
   | AddOp
   | SubtractOp
   | DivideOp
-  deriving (Show, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord)
 
 data Function
   = MapFunction
   | FilterFunction
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  | DistinctFunction
+  | SortFunction
+
+  | AndFunction
+  | OrFunction
+
+  | SumFunction
+  | MinimumFunction
+  | MaximumFunction
+  | AverageFunction
+  | LengthFunction
+
+  | FindFunction
+  | LookupFunction
+
+  | AllFunction
+  | AnyFunction
+
+  | NullFunction
+
+  deriving (Show, Lift, Eq, Ord, Enum, Bounded)
 
 --------------------------------------------------------------------------------
 -- Stages

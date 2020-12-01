@@ -363,25 +363,42 @@ instance Display IncompleteGlobalRef where
       ResolvedGlobalRef text _ -> display text
 
 instance Display (GlobalRef Parsed) where
-  display = \case
-               HashGlobal (Hash hash) -> "#" <> displayShow hash
-               FromIntegerGlobal -> "fromInteger"
-               FromDecimalGlobal -> "fromDecimal"
-               CompareGlobal compareity -> case compareity of
-                                         LessThan -> "<"
-                                         GreaterThan -> ">"
-                                         GreaterEqualTo -> ">="
-                                         LessEqualTo -> "<="
-               EqualGlobal equality -> case equality of
-                                         Equal -> "="
-                                         NotEqual -> "/="
-               NumericBinOpGlobal op -> display op
-               FunctionGlobal function -> display function
+  display =
+    \case
+      HashGlobal (Hash hash) -> "#" <> displayShow hash
+      FromIntegerGlobal -> "fromInteger"
+      FromDecimalGlobal -> "fromDecimal"
+      CompareGlobal compareity ->
+        case compareity of
+          LessThan -> "<"
+          GreaterThan -> ">"
+          GreaterEqualTo -> ">="
+          LessEqualTo -> "<="
+      EqualGlobal equality ->
+        case equality of
+          Equal -> "="
+          NotEqual -> "/="
+      NumericBinOpGlobal op -> display op
+      FunctionGlobal function -> display function
 
 instance Display Function where
   display = \case
     MapFunction -> "map"
     FilterFunction -> "filter"
+    DistinctFunction -> "distinct"
+    SortFunction -> "sort"
+    AndFunction -> "and"
+    OrFunction -> "or"
+    SumFunction -> "sum"
+    MinimumFunction -> "minimum"
+    MaximumFunction -> "maximum"
+    AverageFunction -> "average"
+    LengthFunction -> "length"
+    FindFunction -> "find"
+    LookupFunction -> "lookup"
+    AllFunction -> "all"
+    AnyFunction -> "any"
+    NullFunction -> "null"
 
 instance Display NumericBinOp where
   display =
