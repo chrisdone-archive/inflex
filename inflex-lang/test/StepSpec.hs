@@ -310,13 +310,38 @@ case' =
     "Case"
     (do it
           "case 2>4 { #true: 1, #false: 0 }"
-          (shouldBe (stepDefaultedTextly "case 2>4 { #true: 1, #false: 0 }") (Right "0"))
+          (shouldBe
+             (stepDefaultedTextly "case 2>4 { #true: 1, #false: 0 }")
+             (Right "0"))
         it
           "case 2>1 { #true: 1, #false: 0 }"
-          (shouldBe (stepDefaultedTextly "case 2>1 { #true: 1, #false: 0 }") (Right "1"))
+          (shouldBe
+             (stepDefaultedTextly "case 2>1 { #true: 1, #false: 0 }")
+             (Right "1"))
         it
           "case #some(1) { #some(n): n, #none: 0 }"
-          (shouldBe (stepDefaultedTextly "case #some(1) { #some(n): n, #none: 0 }") (Right "1"))
+          (shouldBe
+             (stepDefaultedTextly "case #some(1) { #some(n): n, #none: 0 }")
+             (Right "1"))
         it
           "case #none { #some(n): n, #none: 0 }"
-          (shouldBe (stepDefaultedTextly "case #none { #some(n): n, #none: 0 }") (Right "0")))
+          (shouldBe
+             (stepDefaultedTextly "case #none { #some(n): n, #none: 0 }")
+             (Right "0"))
+        it
+          "case #some(2*3) { #some(n): n, #none: 0 }"
+          (shouldBe
+             (stepDefaultedTextly "case #some(2*3) { #some(n): n, #none: 0 }")
+             (Right "6"))
+        -- This sneaky test checks that all the types unify properly and defaulting working:
+        it
+          "case #some(2*3) { #some(n): n, #none: 0.0 } -- check unification"
+          (shouldBe
+             (stepDefaultedTextly "case #some(2*3) { #some(n): n, #none: 0.0 }")
+             (Right "6.0"))
+        it
+          "nested cases"
+          (shouldBe
+             (stepDefaultedTextly
+                "case 2>4 { #true: \"early\", #false: case 2=2 { #true: \"ok\", #false: \"nope\" } }")
+             (Right "\"ok\"")))
