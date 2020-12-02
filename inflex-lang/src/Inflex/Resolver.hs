@@ -34,6 +34,7 @@ import           Data.Void
 import           Inflex.Defaulter.Suggest
 import           Inflex.Generaliser
 import           Inflex.Location
+import           Inflex.Renamer (patternParam)
 import           Inflex.Type (expressionType, instanceNameType, typeOutput)
 import           Inflex.Types
 import           Inflex.Types.Resolver
@@ -109,6 +110,8 @@ expressionResolver nesting =
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaResolver nesting lambda)
     LetExpression let' -> fmap LetExpression (letResolver nesting let')
+    CaseExpression case' -> fmap CaseExpression (caseResolver nesting case')
+    IfExpression if' -> fmap IfExpression (ifResolver nesting if')
     ApplyExpression apply -> fmap ApplyExpression (applyResolver nesting apply)
     GlobalExpression global -> globalResolver nesting global
     InfixExpression infix' ->
@@ -125,6 +128,38 @@ letResolver (DeBrujinNesting nesting) Let {..} = do
   body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
   pure Let {binds = binds', body = body', ..}
 
+caseResolver :: DeBrujinNesting -> Case Generalised -> Resolve (Case Resolved)
+caseResolver nesting  Case {..} = do
+  scrutinee' <- expressionResolver nesting scrutinee
+  alternatives' <- traverse (alternativeResolver nesting) alternatives
+  pure
+    Case
+      { alternatives = alternatives'
+      , scrutinee = scrutinee'
+      , ..
+      }
+
+alternativeResolver :: DeBrujinNesting -> Alternative Generalised -> Resolve (Alternative Resolved)
+alternativeResolver nesting@(DeBrujinNesting nestingInner) Alternative {..} = do
+  pattern'' <- patternResolver nesting pattern'
+  let adjustedNesting =
+        case patternParam pattern'' of
+          Nothing -> DeBrujinNesting nestingInner
+          Just {} -> DeBrujinNesting (nestingInner + 1)
+  expression' <- expressionResolver adjustedNesting expression
+  pure Alternative {pattern' = pattern'', expression = expression', ..}
+
+patternResolver :: DeBrujinNesting -> Pattern Generalised -> Resolve (Pattern Resolved)
+patternResolver nesting =
+  \case
+    ParamPattern param -> fmap ParamPattern (pure (paramResolver param))
+    VariantPattern variant -> fmap VariantPattern (variantpResolver nesting variant)
+
+variantpResolver :: DeBrujinNesting -> VariantP Generalised -> Resolve (VariantP Resolved)
+variantpResolver _nesting VariantP {..} = do
+  argument' <- traverse (pure . paramResolver) argument
+  pure VariantP {argument = argument', ..}
+
 bindResolver :: DeBrujinNesting -> Bind Generalised -> Resolve (Bind Resolved)
 bindResolver nesting Bind {..} = do
   let param' = paramResolver param
@@ -136,6 +171,19 @@ applyResolver nesting Apply {..} = do
   function' <- expressionResolver nesting function
   argument' <- expressionResolver nesting argument
   pure Apply {function = function', argument = argument', ..}
+
+ifResolver :: DeBrujinNesting -> If Generalised -> Resolve (If Resolved)
+ifResolver nesting If {..} = do
+  condition' <- expressionResolver nesting condition
+  consequent' <- expressionResolver nesting consequent
+  alternative' <- expressionResolver nesting alternative
+  pure
+    If
+      { condition = condition'
+      , consequent = consequent'
+      , alternative = alternative'
+      , ..
+      }
 
 recordResolver :: DeBrujinNesting -> Record Generalised -> Resolve (Record Resolved)
 recordResolver nesting Record {..} = do
@@ -499,6 +547,8 @@ expressionCollect =
     RecordExpression record -> recordCollect record
     LambdaExpression lambda -> lambdaCollect lambda
     LetExpression let' -> letCollect let'
+    IfExpression if' -> ifCollect if'
+    CaseExpression case' -> caseCollect case'
     InfixExpression infix' -> infixCollect infix'
     ApplyExpression apply -> applyCollect apply
     VariableExpression {} -> mempty
@@ -541,3 +591,15 @@ bindCollect Bind {..} = expressionCollect value
 applyCollect :: Apply Generalised -> Set (ClassConstraint Generalised)
 applyCollect Apply {..} =
   expressionCollect function <> expressionCollect argument
+
+ifCollect :: If Generalised -> Set (ClassConstraint Generalised)
+ifCollect If {..} =
+  expressionCollect condition <> expressionCollect consequent <>
+  expressionCollect alternative
+
+caseCollect :: Case Generalised -> Set (ClassConstraint Generalised)
+caseCollect Case {..} =
+  expressionCollect scrutinee <>
+  foldMap
+    (\Alternative {expression} -> expressionCollect expression)
+    alternatives

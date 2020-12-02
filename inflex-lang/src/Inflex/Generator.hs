@@ -105,6 +105,10 @@ expressionGenerator =
       fmap LambdaExpression (lambdaGenerator lambda)
     LetExpression let' ->
       fmap LetExpression (letGenerator let')
+    CaseExpression case' ->
+      fmap CaseExpression (caseGenerator case')
+    IfExpression if' ->
+      fmap IfExpression (ifGenerator if')
     InfixExpression infix' ->
       fmap InfixExpression (infixGenerator infix')
     ApplyExpression apply ->
@@ -115,6 +119,98 @@ expressionGenerator =
       fmap GlobalExpression (globalGenerator global)
     HoleExpression hole ->
       fmap HoleExpression (holeGenerator hole)
+
+caseGenerator :: Case Filled -> Generate e (Case Generated)
+caseGenerator Case {..} = do
+  scrutinee' <- expressionGenerator scrutinee
+  alternatives' <- traverse alternativeGenerator alternatives
+  commonResult <- generateVariableType location CasePrefix TypeKind
+  traverse_
+    (\Alternative {expression, pattern'} -> do
+       addEqualityConstraint
+         EqualityConstraint
+           {location, type1 = commonResult, type2 = expressionType expression}
+       patternType' <- patternType pattern'
+       addEqualityConstraint
+         EqualityConstraint
+           {location, type1 = expressionType scrutinee', type2 = patternType'})
+    alternatives'
+  pure
+    Case
+      { scrutinee = scrutinee'
+      , alternatives = alternatives'
+      , typ = commonResult
+      , ..
+      }
+
+patternType :: Pattern Generated -> Generate e (Type Generated)
+patternType =
+  \case
+    ParamPattern p -> pure (paramType p)
+    VariantPattern variantP -> variantPType variantP
+
+variantPType :: VariantP Generated -> Generate e (Type Generated)
+variantPType VariantP {tag = TagName name, argument, location} = do
+  rowVariable <- generateTypeVariable location AltPrefix RowKind
+  pure
+    (VariantType
+       (RowType
+          (TypeRow
+             { location
+             , typeVariable = Just rowVariable
+             , fields =
+                 [ Field
+                     { location
+                     , name = FieldName name
+                     , typ = maybe (nullType location) paramType argument
+                     }
+                 ]
+             })))
+
+alternativeGenerator :: Alternative Filled -> Generate e (Alternative Generated)
+alternativeGenerator Alternative {..} = do
+  pattern'' <- patternGenerator pattern'
+  let addParam =
+        case Renamer.patternParam pattern'' of
+          Nothing -> id
+          Just param -> over envScopeL (CaseBinding param :)
+  expression' <- local addParam (expressionGenerator expression)
+  pure Alternative {pattern' = pattern'', expression = expression', ..}
+
+patternGenerator :: Pattern Filled -> Generate e (Pattern Generated)
+patternGenerator =
+  \case
+    ParamPattern param -> fmap ParamPattern (paramGenerator param)
+    VariantPattern variantP -> fmap VariantPattern (variantPGenerator variantP)
+
+variantPGenerator :: VariantP Filled -> Generate e (VariantP Generated)
+variantPGenerator VariantP {..} = do
+  argument' <- traverse paramGenerator argument
+  pure VariantP {argument = argument', ..}
+
+ifGenerator :: If Filled -> Generate e (If Generated)
+ifGenerator If {..} = do
+  condition' <- expressionGenerator condition
+  consequent' <- expressionGenerator consequent
+  alternative' <- expressionGenerator alternative
+  common <- generateVariableType location IfPrefix TypeKind
+  addEqualityConstraint
+    EqualityConstraint
+      {location, type1 = boolType location, type2 = expressionType condition'}
+  addEqualityConstraint
+    EqualityConstraint
+      {location, type1 = common, type2 = expressionType consequent'}
+  addEqualityConstraint
+    EqualityConstraint
+      {location, type1 = common, type2 = expressionType alternative'}
+  pure
+    If
+      { consequent = consequent'
+      , condition = condition'
+      , alternative = alternative'
+      , typ = common
+      , ..
+      }
 
 holeGenerator :: Hole Filled -> Generate e (Hole Generated)
 holeGenerator Hole {..} = do
@@ -340,10 +436,12 @@ variableGenerator variable@Variable {typ = _, name = index, ..} = do
               (zip (map DeBrujinNesting [0 ..]) scope)
           case binding of
             LambdaBinding param -> pure param
+            CaseBinding param -> pure param
             LetBinding params
               | DeBrujinIndexOfLet _ (IndexInLet subIndex) <- index ->
                 lookup subIndex (zip [0..] (toList params))
-            _ -> Nothing of
+              | otherwise -> Nothing
+             of
     Nothing -> Generate (refute (pure (MissingVariableG variable)))
     Just Param {typ = type2} -> do
       type1 <- generateVariableType location VariablePrefix TypeKind

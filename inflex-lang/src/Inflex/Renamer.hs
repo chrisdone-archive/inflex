@@ -15,6 +15,7 @@ module Inflex.Renamer
   , IsRenamed(..)
   , RenameError(..)
   , ParseRenameError(..)
+  , patternParam
   ) where
 
 import           Control.Monad.State
@@ -22,6 +23,7 @@ import           Control.Monad.Validate
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.List
+import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -83,6 +85,8 @@ renameExpression env =
     ArrayExpression array -> fmap ArrayExpression (renameArray env array)
     VariantExpression variant -> fmap VariantExpression (renameVariant env variant)
     LetExpression let' -> fmap LetExpression (renameLet env let')
+    CaseExpression case' -> fmap CaseExpression (renameCase env case')
+    IfExpression if' -> fmap IfExpression (renameIf env if')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable -> renameVariable env variable
@@ -245,6 +249,59 @@ renameLet env@Env {cursor} Let {..} = do
   typ' <- renameSignature env typ
   pure Let {body = body', location = final, binds = binds', typ = typ', ..}
 
+renameCase :: Env -> Case Parsed -> Renamer (Case Renamed)
+renameCase env@Env {cursor} Case {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  typ' <- renameSignature env typ
+  scrutinee' <- renameExpression env scrutinee
+  alternatives' <- traverse (renameAlternative env) alternatives
+  pure
+    Case
+      { location = final
+      , typ = typ'
+      , alternatives = alternatives'
+      , scrutinee = scrutinee'
+      , ..
+      }
+
+renameAlternative :: Env -> Alternative Parsed -> Renamer (Alternative Renamed)
+renameAlternative env@Env {cursor} Alternative {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  pattern'' <- renamePattern env pattern'
+  let addParam =
+        case patternParam pattern' of
+          Nothing -> id
+          Just param -> over envScopeL (CaseBinding param :)
+  expression' <- renameExpression (addParam env) expression
+  pure
+    Alternative
+      {pattern' = pattern'', expression = expression', location = final, ..}
+
+renamePattern :: Env -> Pattern Parsed -> Renamer (Pattern Renamed)
+renamePattern env =
+  \case
+    ParamPattern param -> fmap ParamPattern (renameParam env param)
+    VariantPattern variant -> fmap VariantPattern (renameVariantP env variant)
+
+bindingParam :: Binding s -> NonEmpty (Param s)
+bindingParam =
+  \case
+    LambdaBinding p -> pure p
+    LetBinding p -> p
+    CaseBinding p -> pure p
+
+patternParam :: Pattern s -> Maybe (Param s)
+patternParam =
+  \case
+    ParamPattern param -> pure param
+    VariantPattern VariantP {argument} -> argument
+
+renameVariantP :: Env -> VariantP Parsed -> Renamer (VariantP Renamed)
+renameVariantP env@Env {cursor} VariantP {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  argument' <- traverse (renameParam env) argument
+  pure VariantP {location = final, argument = argument', ..}
+
 renameInfix :: Env -> Infix Parsed -> Renamer (Infix Renamed)
 renameInfix env@Env {cursor} Infix {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
@@ -299,6 +356,22 @@ renameApply env@Env {cursor} Apply {..} = do
   typ' <- renameSignature env typ
   pure Apply {function = function', argument = argument', location = final, typ = typ'}
 
+renameIf :: Env -> If Parsed -> Renamer (If Renamed)
+renameIf env@Env {cursor} If {..} = do
+  condition' <- renameExpression (over envCursorL (. IfCursor) env) condition
+  consequent' <- renameExpression (over envCursorL (. IfCursor) env) consequent
+  alternative' <- renameExpression (over envCursorL (. IfCursor) env) alternative
+  final <- finalizeCursor cursor ExpressionCursor location
+  typ' <- renameSignature env typ
+  pure
+    If
+      { consequent = consequent'
+      , alternative = alternative'
+      , condition = condition'
+      , location = final
+      , typ = typ'
+      }
+
 renameVariable ::
      Env
   -> Variable Parsed
@@ -336,6 +409,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
       deBrujinIndex <-
         case binding of
           LambdaBinding {} -> pure (DeBrujinIndex (DeBrujinNesting index))
+          CaseBinding {} -> pure (DeBrujinIndex (DeBrujinNesting index))
           LetBinding params ->
             case findIndex
                    (\Param {name = name'} -> name' == name)

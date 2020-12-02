@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -14,14 +15,16 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Functor.Identity
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import           Data.Maybe
 import           Data.Text (Text)
-import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Derived
+import           Inflex.Renamer (patternParam)
 import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
@@ -121,6 +124,8 @@ stepExpression expression = do
         VariantExpression variant -> stepVariant variant
         RecordExpression record -> stepRecord record
         InfixExpression infix' -> stepInfix infix'
+        IfExpression if' -> stepIf if'
+        CaseExpression case' -> stepCase case'
         GlobalExpression global -> stepGlobal global
         LiteralExpression {} -> pure expression
         LambdaExpression {} -> pure expression
@@ -165,6 +170,40 @@ stepVariant Variant {..} = do
   argument' <- traverse stepExpression argument
   pure (VariantExpression Variant {argument = argument', ..})
 
+stepIf :: If Resolved -> Step e (Expression Resolved)
+stepIf If {..} = do
+  condition' <- stepExpression condition
+  case reifyBool condition' of
+    Nothing -> pure (IfExpression If {condition = condition', ..})
+    Just True -> stepExpression consequent
+    Just False -> stepExpression alternative
+
+stepCase :: Case Resolved -> Step e (Expression Resolved)
+stepCase Case {..} = do
+  scrutinee' <- stepExpression scrutinee
+  case listToMaybe (mapMaybe (match scrutinee') (toList alternatives)) of
+    Just e -> stepExpression e
+    -- TODO: warn about unmatched case?
+    Nothing -> pure (CaseExpression (Case {scrutinee = scrutinee', ..}))
+
+-- | Finds a match, if any, and the result must be stepped again.
+match :: Expression Resolved -> Alternative Resolved -> Maybe (Expression Resolved)
+match scrutinee Alternative {..} =
+  case pattern' of
+    ParamPattern {} -> pure (runIdentity (betaReduce expression scrutinee))
+    VariantPattern VariantP {tag = expectedTag, argument = namedArgument} ->
+      case scrutinee of
+        VariantExpression Variant {tag = actualTag, argument = actualArgument} ->
+          if expectedTag == actualTag
+            then case namedArgument of
+                   Nothing -> pure expression
+                   Just {}
+                     | Just slot <- actualArgument ->
+                       pure (runIdentity (betaReduce expression slot))
+                     | otherwise -> Nothing -- TODO: This would indicate a bug.
+            else Nothing
+        _ -> Nothing
+
 --------------------------------------------------------------------------------
 -- Globals
 
@@ -192,8 +231,8 @@ stepApply Apply {..} = do
         (ApplyExpression Apply {function = function', argument = argument', ..})
     Continue -> do
       case function' of
-        LambdaExpression lambda -> do
-          body' <- betaReduce lambda argument'
+        LambdaExpression Lambda{body} -> do
+          body' <- betaReduce body argument'
           stepExpression body'
         GlobalExpression (Global {name = FunctionGlobal func}) | elem func [LengthFunction,NullFunction] ->
           stepFunction1 typ func argument'
@@ -322,7 +361,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
       case argument' of
         ArrayExpression Array {expressions} -> do
           expressions' <-
-            concatMapM
+            traverse
               (\arrayItem -> do
                  arrayItem' <- stepExpression arrayItem
                  bool <-
@@ -335,10 +374,10 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                            , typ =
                                typeOutput (expressionType functionExpression)
                            }))
-                 -- TODO: handle holes here!!!
-                 if reifyBool bool
-                   then pure (pure arrayItem')
-                   else pure Nothing)
+                 case reifyBool bool of
+                   Just True -> pure (Just arrayItem')
+                   Just False -> pure Nothing
+                   Nothing -> pure (Just (holeExpression (expressionType arrayItem))))
               expressions
           stepped' <- get
           case stepped' of
@@ -349,7 +388,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                    Array
                      { typ = originalArrayType
                      , location = applyLocation
-                     , expressions = V.force expressions'
+                     , expressions = (V.mapMaybe id expressions')
                      })
         _ -> error "Invalid argument to function."
     _ -> error "bad arity"
@@ -558,10 +597,10 @@ stepDecimalOp asis places numericBinOp left' right' =
 -- Beta reduction
 
 betaReduce ::
-     Lambda Resolved -> Expression Resolved -> Step e (Expression Resolved)
-betaReduce Lambda {body = body0} arg = go 0 body0
+     forall m. Monad m => Expression Resolved -> Expression Resolved -> m (Expression Resolved)
+betaReduce body0 arg = go 0 body0
   where
-    go :: DeBrujinNesting -> Expression Resolved -> Step e (Expression Resolved)
+    go :: DeBrujinNesting -> Expression Resolved -> m (Expression Resolved)
     go deBrujinNesting =
       \case
         e@(VariableExpression Variable {name})
@@ -570,12 +609,41 @@ betaReduce Lambda {body = body0} arg = go 0 body0
         LambdaExpression Lambda {..} -> do
           body' <- go (deBrujinNesting + 1) body
           pure (LambdaExpression Lambda {body = body', ..})
+        CaseExpression Case {..} -> do
+          scrutinee' <- go deBrujinNesting scrutinee
+          alternatives' <-
+            traverse
+              (\Alternative {location = altloc, ..} -> do
+                 expression' <-
+                   go
+                     (deBrujinNesting +
+                     -- TODO: check this arithmetic.
+                      case patternParam pattern' of
+                        Just {} -> 1
+                        Nothing -> 0)
+                     expression
+                 pure
+                   Alternative {expression = expression', location = altloc, ..})
+              alternatives
+          pure (CaseExpression Case {scrutinee = scrutinee', alternatives = alternatives', ..})
         ApplyExpression Apply {..} -> do
           argument' <- go deBrujinNesting argument
           function' <- go deBrujinNesting function
           pure
             (ApplyExpression
                Apply {argument = argument', function = function', ..})
+        IfExpression If {..} -> do
+          condition' <- go deBrujinNesting condition
+          consequent' <- go deBrujinNesting consequent
+          alternative' <- go deBrujinNesting alternative
+          pure
+            (IfExpression
+               If
+                 { condition = condition'
+                 , consequent = consequent'
+                 , alternative = alternative'
+                 , ..
+                 })
         PropExpression Prop {..} -> do
           expression' <- go deBrujinNesting expression
           pure (PropExpression Prop {expression = expression', ..})
@@ -638,5 +706,5 @@ fromDecimalStep fromDecimalInstance decimal =
 --------------------------------------------------------------------------------
 -- Helpers
 
-concatMapM :: Monad m => (a -> m (Maybe b)) -> Vector a -> m (Vector b)
-concatMapM f v = V.mapMaybe id <$> traverse f v
+holeExpression :: (StagedLocation s ~ Cursor) => StagedType s -> Expression s
+holeExpression typ = HoleExpression Hole {location = BuiltIn, typ}

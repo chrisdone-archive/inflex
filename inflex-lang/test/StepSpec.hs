@@ -132,6 +132,8 @@ spec = do
   equality
   ordering
   functions
+  if'
+  case'
 
 equality :: SpecWith ()
 equality =
@@ -280,3 +282,41 @@ functions =
                 (shouldBe
                    (stepDefaultedTextly "null([1,2,3])")
                    (Right "#false"))))
+
+if' :: SpecWith ()
+if' =
+  describe
+    "If"
+    (do it
+          "if #false then 1 else 0"
+          (shouldBe (stepDefaultedTextly "if #false then 1 else 0")
+                    (Right "0"))
+        it
+          "if #true then 1 else 0"
+          (shouldBe (stepDefaultedTextly "if #true then 1 else 0")
+                    (Right "1"))
+        it
+          "if 2*2>1 then 1 else 0"
+          (shouldBe (stepDefaultedTextly "if 2>1 then 1 else 0")
+                    (Right "1"))
+        it
+          "if 2>4 then 1 else 0"
+          (shouldBe (stepDefaultedTextly "if 2>4 then 1 else 0")
+                    (Right "0")))
+
+case' :: SpecWith ()
+case' =
+  describe
+    "Case"
+    (do it
+          "case 2>4 { #true: 1, #false: 0 }"
+          (shouldBe (stepDefaultedTextly "case 2>4 { #true: 1, #false: 0 }") (Right "0"))
+        it
+          "case 2>1 { #true: 1, #false: 0 }"
+          (shouldBe (stepDefaultedTextly "case 2>1 { #true: 1, #false: 0 }") (Right "1"))
+        it
+          "case #some(1) { #some(n): n, #none: 0 }"
+          (shouldBe (stepDefaultedTextly "case #some(1) { #some(n): n, #none: 0 }") (Right "1"))
+        it
+          "case #none { #some(n): n, #none: 0 }"
+          (shouldBe (stepDefaultedTextly "case #none { #some(n): n, #none: 0 }") (Right "0")))

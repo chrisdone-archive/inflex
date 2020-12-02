@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -27,6 +28,8 @@ expressionFill ::
 expressionFill globals =
   \case
     RecordExpression record -> fmap RecordExpression (recordFill globals record)
+    CaseExpression case' -> fmap CaseExpression (caseFill globals case')
+    IfExpression if' -> fmap IfExpression (ifFill globals if')
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
     ArrayExpression array -> fmap ArrayExpression (arrayFill globals array)
@@ -66,6 +69,30 @@ recordFill globals Record {..} = do
     fieldFill FieldE {location = l, ..} = do
       expression' <- expressionFill globals expression
       pure FieldE {expression = expression', location = l, ..}
+
+caseFill :: Map Text (Either e Hash) -> Case Renamed -> Filler e (Case Filled)
+caseFill globals Case {..} = do
+  scrutinee' <- expressionFill globals scrutinee
+  alternatives' <- traverse (alternativeFill globals) alternatives
+  pure Case {alternatives = alternatives', scrutinee = scrutinee', ..}
+
+alternativeFill ::
+     Map Text (Either e Hash)
+  -> Alternative Renamed
+  -> Filler e (Alternative Filled)
+alternativeFill globals Alternative {location = l, ..} = do
+  let pattern'' = patternFill pattern'
+  expression' <- expressionFill globals expression
+  pure
+    Alternative
+      {expression = expression', location = l, pattern' = pattern'', ..}
+  where
+    patternFill :: Pattern Renamed -> Pattern Filled
+    patternFill =
+      \case
+        ParamPattern Param {..} -> ParamPattern Param {..}
+        VariantPattern VariantP {argument, ..} ->
+          VariantPattern VariantP {argument = fmap paramFill argument, ..}
 
 globalFill :: Map Text (Either e Hash) -> Global Renamed -> Filler e (Global Filled)
 globalFill globals Global {..} = do
@@ -141,6 +168,21 @@ applyFill globals Apply {..} = do
   pure Apply
     { function = function'
     , argument = argument'
+    , ..
+    }
+
+ifFill ::
+     Map Text (Either e Hash)
+  -> If Renamed
+  -> Filler e (If Filled)
+ifFill globals If {..} = do
+  condition' <- expressionFill globals condition
+  consequent' <- expressionFill globals consequent
+  alternative' <- expressionFill globals alternative
+  pure If
+    { condition = condition'
+    , consequent = consequent'
+    , alternative = alternative'
     , ..
     }
 

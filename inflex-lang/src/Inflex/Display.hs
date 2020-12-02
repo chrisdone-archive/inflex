@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# OPTIONS -fno-warn-orphans #-}
@@ -20,7 +21,7 @@ import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Location
 import           Inflex.Types
-import           RIO
+import           RIO hiding(Alternative)
 
 -- TODO: Avoid unneeded parens.
 
@@ -38,7 +39,37 @@ instance Display (Expression Resolved) where
       VariableExpression variable -> display variable
       GlobalExpression global -> display global
       LetExpression let' -> display let'
+      IfExpression if' -> display if'
+      CaseExpression case' -> display case'
       InfixExpression infix' -> display infix'
+
+instance Display (Case Resolved) where
+  display Case{..} = "case " <> display scrutinee <> " {" <>
+    mconcat (intersperse ", " (map display (toList alternatives)))
+    <> "}"
+
+instance Display (If Resolved) where
+  display If {..} =
+    "if " <> display condition <> " then " <> display consequent <> " else " <>
+    display alternative <>
+    "}"
+
+instance Display (Alternative Resolved) where
+  display Alternative {..} =
+    case pattern' of
+      ParamPattern _param ->
+        "_" -- TODO: need to resolve from mappings.
+         <>
+        ": " <>
+        display expression
+      VariantPattern variant -> display variant <> ": " <> display expression
+
+instance Display (VariantP Resolved) where
+  display VariantP {..} =
+    display tag <>
+    (case argument of
+       Nothing -> mempty
+       Just _param -> "(_)") -- TODO: need to resolve from mappings.
 
 instance Display (Hole Resolved) where
   display (Hole{}) = "_"
@@ -135,6 +166,8 @@ instance Display (Expression Renamed) where
   display =
     \case
       RecordExpression record -> display record
+      IfExpression if' -> display if'
+      CaseExpression case' -> display case'
       VariantExpression variant -> display variant
       PropExpression prop -> display prop
       HoleExpression hole -> display hole
@@ -146,6 +179,34 @@ instance Display (Expression Renamed) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Case Renamed) where
+  display Case{..} = "case " <> display scrutinee <> " {" <>
+    mconcat (intersperse ", " (map display (toList alternatives)))
+    <> "}"
+
+instance Display (If Renamed) where
+  display If {..} =
+    "if " <> display condition <> " then " <> display consequent <> " else " <>
+    display alternative <>
+    "}"
+
+instance Display (Alternative Renamed) where
+  display Alternative {..} =
+    case pattern' of
+      ParamPattern _param ->
+        "_" -- TODO: need to resolve from mappings.
+         <>
+        ": " <>
+        display expression
+      VariantPattern variant -> display variant <> ": " <> display expression
+
+instance Display (VariantP Renamed) where
+  display VariantP {..} =
+    display tag <>
+    (case argument of
+       Nothing -> mempty
+       Just _param -> "(_)") -- TODO: need to resolve from mappings.
 
 instance Display (Hole Renamed) where
   display (Hole{}) = "_"
@@ -255,6 +316,8 @@ instance Display (Expression Parsed) where
   display =
     \case
       RecordExpression record -> display record
+      IfExpression if' -> display if'
+      CaseExpression case' -> display case'
       VariantExpression variant -> display variant
       PropExpression prop -> display prop
       HoleExpression hole -> display hole
@@ -266,6 +329,34 @@ instance Display (Expression Parsed) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Case Parsed) where
+  display Case{..} = "case " <> display scrutinee <> " {" <>
+    mconcat (intersperse ", " (map display (toList alternatives)))
+    <> "}"
+
+instance Display (If Parsed) where
+  display If {..} =
+    "if " <> display condition <> " then " <> display consequent <> " else " <>
+    display alternative <>
+    "}"
+
+instance Display (Alternative Parsed) where
+  display Alternative {..} =
+    case pattern' of
+      ParamPattern param ->
+        display param
+         <>
+        ": " <>
+        display expression
+      VariantPattern variant -> display variant <> ": " <> display expression
+
+instance Display (VariantP Parsed) where
+  display VariantP {..} =
+    display tag <>
+    (case argument of
+       Nothing -> mempty
+       Just param -> "(" <> display param <> ")")
 
 instance Display (Hole Parsed) where
   display (Hole{}) = "_"

@@ -47,12 +47,6 @@ data ParseRenameError
 
 type CursorBuilder = Cursor -> Cursor
 
-bindingParam :: Binding s -> NonEmpty (Param s)
-bindingParam =
-  \case
-    LambdaBinding p -> pure p
-    LetBinding p -> p
-
 data Env = Env
   { cursor :: !CursorBuilder
   , scope :: ![Binding Parsed]

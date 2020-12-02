@@ -177,6 +177,10 @@ expressionGeneralise substitutions =
       LambdaExpression (lambdaGeneralise substitutions lambda)
     LetExpression let' ->
       LetExpression (letGeneralise substitutions let')
+    IfExpression if' ->
+      IfExpression (ifGeneralise substitutions if')
+    CaseExpression case' ->
+      CaseExpression (caseGeneralise substitutions case')
     InfixExpression infix' ->
       InfixExpression (infixGeneralise substitutions infix')
     ApplyExpression apply ->
@@ -338,6 +342,50 @@ applyGeneralise substitutions Apply {..} =
   Apply
     { function = expressionGeneralise substitutions function
     , argument = expressionGeneralise substitutions argument
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+caseGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Case Solved
+  -> Case Generalised
+caseGeneralise substitutions Case {..} =
+  Case
+    { location
+    , scrutinee = expressionGeneralise substitutions scrutinee
+    , typ = generaliseType substitutions typ
+    , alternatives =
+        fmap
+          (\Alternative {location = loc, ..} ->
+             Alternative
+               { pattern' =
+                   case pattern' of
+                     ParamPattern param ->
+                       ParamPattern (paramGeneralise substitutions param)
+                     VariantPattern VariantP {location = locp, ..} ->
+                       VariantPattern
+                         VariantP
+                           { location = locp
+                           , tag
+                           , argument = fmap (paramGeneralise substitutions) argument
+                           }
+               , expression = expressionGeneralise substitutions expression
+               , location = loc
+               , ..
+               })
+          alternatives
+    }
+
+ifGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> If Solved
+  -> If Generalised
+ifGeneralise substitutions If {..} =
+  If
+    { condition = expressionGeneralise substitutions condition
+    , consequent = expressionGeneralise substitutions consequent
+    , alternative = expressionGeneralise substitutions alternative
     , typ = generaliseType substitutions typ
     , ..
     }

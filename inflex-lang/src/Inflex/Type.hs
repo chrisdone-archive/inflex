@@ -35,6 +35,8 @@ typeInput =
 expressionType :: Expression s -> StagedType s
 expressionType =
   \case
+    CaseExpression case' -> caseType case'
+    IfExpression if' -> ifType if'
     LiteralExpression literal -> literalType literal
     ArrayExpression array -> arrayType array
     LambdaExpression lambda -> lambdaType lambda
@@ -50,6 +52,12 @@ expressionType =
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
+
+ifType :: If s -> StagedType s
+ifType If {typ} = typ
+
+caseType :: Case s -> StagedType s
+caseType Case {typ} = typ
 
 arrayType :: Array s -> StagedType s
 arrayType Array {typ} = typ

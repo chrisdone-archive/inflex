@@ -434,6 +434,10 @@ expressionSolve substitutions =
       LambdaExpression (lambdaSolve substitutions lambda)
     LetExpression let' ->
       LetExpression (letSolve substitutions let')
+    IfExpression if' ->
+      IfExpression (ifSolve substitutions if')
+    CaseExpression case' ->
+      CaseExpression (caseSolve substitutions case')
     InfixExpression infix' ->
       InfixExpression (infixSolve substitutions infix')
     ApplyExpression apply ->
@@ -524,6 +528,44 @@ applySolve substitutions Apply {..} =
   Apply
     { function = expressionSolve substitutions function
     , argument = expressionSolve substitutions argument
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+caseSolve :: Seq Substitution -> Case Generated -> Case Solved
+caseSolve substitutions Case {..} =
+  Case
+    { location
+    , scrutinee = expressionSolve substitutions scrutinee
+    , typ = solveType substitutions typ
+    , alternatives =
+        fmap
+          (\Alternative {location = loc, ..} ->
+             Alternative
+               { pattern' =
+                   case pattern' of
+                     ParamPattern param ->
+                       ParamPattern (paramSolve substitutions param)
+                     VariantPattern VariantP {location = locp, ..} ->
+                       VariantPattern
+                         VariantP
+                           { location = locp
+                           , tag
+                           , argument = fmap (paramSolve substitutions) argument
+                           }
+               , expression = expressionSolve substitutions expression
+               , location = loc
+               , ..
+               })
+          alternatives
+    }
+
+ifSolve :: Seq Substitution -> If Generated -> If Solved
+ifSolve substitutions If {..} =
+  If
+    { condition = expressionSolve substitutions condition
+    , consequent = expressionSolve substitutions consequent
+    , alternative = expressionSolve substitutions alternative
     , typ = solveType substitutions typ
     , ..
     }

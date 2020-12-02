@@ -78,7 +78,9 @@ data ParseError
   | MissingOpRhs
   | OddNumberOfExpressions
   | DuplicateRecordField FieldName
+  | DuplicateCaseAlternative (Param Parsed)
   | InvalidUnaryExpression
+  | ExpectedKeyword Text
   deriving (Eq, Show)
 
 instance Reparsec.NoMoreInput ParseErrors where
@@ -138,9 +140,94 @@ operatorPrecedence =
   concat [["=", "/=", "<", ">", "<=", ">="], ["-", "+"], ["*", "/"]]
 
 expressionParser :: Parser (Expression Parsed)
-expressionParser = do
-  chain <- infixChainParser
-  resolveChain chain
+expressionParser = caseParser <> ifParser <> chainParser
+  where
+    chainParser = do
+      chain <- infixChainParser
+      resolveChain chain
+
+ifParser :: Parser (Expression Parsed)
+ifParser = do
+  Located {location} <- keyword "if"
+  condition <- expressionParser
+  keyword_ "then"
+  consequent <- expressionParser
+  keyword_ "else"
+  alternative <- expressionParser
+  pure (IfExpression (If {typ=Nothing, ..}))
+
+-- Examples
+-- case x { #true: p*2, #false: 12 }
+-- case x {#some(p): p*1, #none: 12 }
+--
+caseParser :: Parser (Expression Parsed)
+caseParser = do
+  Located {location} <- keyword "case"
+  scrutinee <- expressionParser
+  token_ ExpectedCurly (preview _OpenCurlyToken)
+  alternatives <-
+    let loop seen = do
+          alternative@Alternative {pattern'} <- alterativeParser
+          mparam <-
+            case patternParam pattern' of
+              Nothing -> pure Nothing
+              Just param -> do
+                when
+                  (Set.member param seen)
+                  (Reparsec.failWith
+                     (liftError (DuplicateCaseAlternative param)))
+                pure (Just param)
+          comma <-
+            fmap (const True) (token_ ExpectedComma (preview _CommaToken)) <>
+            pure False
+          rest <-
+            if comma
+              then fmap toList (loop (maybe seen (flip Set.insert seen) mparam))
+              else pure []
+          pure (alternative :| rest)
+     in loop mempty
+  token_ ExpectedCurly (preview _CloseCurlyToken)
+  pure (CaseExpression (Case {typ = Nothing, ..}))
+
+alterativeParser :: Parser (Alternative Parsed)
+alterativeParser = do
+  pattern' <- patternParser
+  Located {location} <- token ExpectedContinuation (preview _ColonToken)
+  expression <- expressionParser
+  pure Alternative {location, ..}
+
+patternParser :: Parser (Pattern Parsed)
+patternParser =
+  fmap ParamPattern paramParser <> fmap VariantPattern variantPattern
+
+variantPattern :: Parser (VariantP Parsed)
+variantPattern = do
+  token_ ExpectedVariant (preview _HashToken)
+  Located {thing = name, location} <-
+    token ExpectedVariant (preview _LowerWordToken) <> operatorParser
+  argument <-
+    do parens <-
+         fmap
+           (const True)
+           (token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)) <>
+         pure False
+       if parens
+         then do
+           e <- paramParser
+           token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+           pure (pure e)
+         else pure Nothing
+  pure VariantP {tag = TagName name, location, argument}
+
+keyword_ :: Text -> Parser ()
+keyword_ = void . keyword
+
+keyword :: Text -> Parser (Located ())
+keyword word = do
+  located@Located {thing} <- token ExpectedVariable (preview _LowerWordToken)
+  if thing == word
+    then pure (void located)
+    else Reparsec.failWith (liftError (ExpectedKeyword word))
 
 infixChainParser :: Parser [Either (Located Text) (Expression Parsed)]
 infixChainParser = do
@@ -613,3 +700,9 @@ typeParser = do
                 , typeVariable = Nothing
                 , fields = fields
                 }))
+
+patternParam :: Pattern s -> Maybe (Param s)
+patternParam =
+  \case
+    ParamPattern param -> pure param
+    VariantPattern VariantP {argument} -> argument

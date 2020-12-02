@@ -15,14 +15,14 @@ import Inflex.Types
 --------------------------------------------------------------------------------
 -- Bool
 
-reifyBool :: Expression Resolved -> Bool
+reifyBool :: Expression Resolved -> Maybe Bool
 reifyBool =
   \case
     VariantExpression Variant {tag = TagName "true", argument = Nothing} ->
-      True
+      Just True
     VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
-      False
-    _ -> False -- TODO: Should be an error, or in the case of hole, nothing.
+      Just False
+    _ -> Nothing
 
 trueVariant :: StagedLocation Resolved -> Expression Resolved
 trueVariant location =

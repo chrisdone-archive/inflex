@@ -39,6 +39,39 @@ data Expression s where
   ArrayExpression :: !(Array s) -> Expression s
   HoleExpression :: !(Hole s) -> Expression s
   VariantExpression :: !(Variant s) -> Expression s
+  IfExpression :: !(If s) -> Expression s
+  CaseExpression :: !(Case s) -> Expression s
+
+data Case s = Case
+  { location :: !(StagedLocation s)
+  , typ :: !(StagedType s)
+  , scrutinee :: !(Expression s)
+  , alternatives :: !(NonEmpty (Alternative s))
+  }
+
+data Alternative s = Alternative
+  { location :: !(StagedLocation s)
+  , pattern' :: !(Pattern s)
+  , expression :: !(Expression s)
+  }
+
+data Pattern s
+  = ParamPattern (Param s)
+  | VariantPattern (VariantP s)
+
+data VariantP s = VariantP
+  { location :: !(StagedLocation s)
+  , tag :: !TagName
+  , argument :: !(Maybe (Param s))
+  }
+
+data If s = If
+  { location :: !(StagedLocation s)
+  , typ :: !(StagedType s)
+  , condition :: !(Expression s)
+  , consequent :: !(Expression s)
+  , alternative :: !(Expression s)
+  }
 
 data Variant s = Variant
   { location :: !(StagedLocation s)
@@ -178,6 +211,7 @@ data Param s = Param
 data Binding s
   = LambdaBinding !(Param s)
   | LetBinding !(NonEmpty (Param s))
+  | CaseBinding !(Param s)
 
 data Variable s = Variable
   { location :: !(StagedLocation s)
@@ -331,6 +365,9 @@ data TypeVariablePrefix
   | FieldTypePrefix
   | ArrayElementPrefix
   | HolePrefix
+  | IfPrefix
+  | CasePrefix
+  | AltPrefix
   | FreshPrefix
   | RowUnifyPrefix
   | SolverGeneratedPrefix TypeVariablePrefix
@@ -435,6 +472,7 @@ data Cursor
   | PropExpressionCursor Cursor
   | ArrayElementCursor Int Cursor
   | VariantElementCursor Cursor
+  | IfCursor Cursor
   deriving (Show, Lift, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.
