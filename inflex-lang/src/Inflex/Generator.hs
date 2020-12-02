@@ -135,6 +135,37 @@ caseGenerator Case {..} = do
          EqualityConstraint
            {location, type1 = expressionType scrutinee', type2 = patternType'})
     alternatives'
+  scrutineeType <-
+    do rowVariable <- generateTypeVariable location AltPrefix RowKind
+       pure
+         (VariantType
+            (RowType
+               (TypeRow
+                  { location
+                  , typeVariable =
+                      case find
+                             (\Alternative {pattern'} ->
+                                case pattern' of
+                                  ParamPattern {} -> True
+                                  _ -> False)
+                             alternatives' of
+                        Just {} -> Just rowVariable
+                        Nothing -> Nothing
+                  , fields =
+                      [ Field
+                        { location
+                        , name = FieldName name
+                        , typ = maybe (nullType location) paramType argument
+                        }
+                      | Alternative {pattern' = VariantPattern VariantP { tag = TagName name
+                                                                        , argument
+                                                                        }} <-
+                          toList alternatives'
+                      ]
+                  })))
+  addEqualityConstraint
+    EqualityConstraint
+      {location, type1 = expressionType scrutinee', type2 = scrutineeType}
   pure
     Case
       { scrutinee = scrutinee'
