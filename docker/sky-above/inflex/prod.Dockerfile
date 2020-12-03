@@ -3,7 +3,7 @@ FROM registry.gitlab.com/sky-above/inflex/patch:224792358
 COPY . /inflex
 WORKDIR /inflex
 
-RUN mv /psc-package-output /inflex/inflex-client/output
+# RUN mv /psc-package-output /inflex/inflex-client/output
 
 RUN stack build inflex-shared
 
