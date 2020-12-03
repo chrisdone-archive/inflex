@@ -56,10 +56,11 @@ data State = State
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe CellError
+  , lastInput :: Maybe EditorAndCode
   }
 
 data Command
-  = SetEditor EditorAndCode
+  = SetEditorInput EditorAndCode
   | StartEditor
   | FinishEditing String
   | PreventDefault Event'
@@ -101,6 +102,9 @@ data EditorAndCode = EditorAndCode
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
   }
+instance editorAndCodeEq :: Eq EditorAndCode where
+  eq (EditorAndCode x) (EditorAndCode y) =
+    show (x.editor)==show (y.editor) && x.code==y.code && x.path Shared.DataHere == y.path Shared.DataHere
 
 instance showEditorAndCode :: Show EditorAndCode where show _ = "EditorAndCode{}"
 newtype Event' = Event' Event
@@ -139,14 +143,14 @@ component :: forall m. MonadEffect m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\(EditorAndCode {editor, code, path}) ->
-           State {display: DisplayEditor, editor, code, path, cellError: Nothing})
+        (\input@(EditorAndCode {editor, code, path}) ->
+           State {display: DisplayEditor, editor, code, path, cellError: Nothing, lastInput: Just input})
     , render
     , eval:
         H.mkEval
           H.defaultEval
             { handleAction = eval
-            , receive = pure <<< SetEditor
+            , receive = pure <<< SetEditorInput
             , handleQuery = query
             }
     }
@@ -182,7 +186,7 @@ query =
 
 eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval cmd = do
-  log (show cmd)
+  -- log (show cmd)
   eval' cmd
 
 eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
@@ -202,6 +206,7 @@ eval' =
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
       State {display, editor} <- H.get
+      H.modify_ (\(State s) -> State (s {lastInput= Nothing}))
       _result <-
         H.raise
           (NewCode
@@ -210,8 +215,13 @@ eval' =
                 else code))
       -- H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
       pure unit
-    SetEditor (EditorAndCode {editor, code, path}) ->
-      H.put (State {path, editor, code, display: DisplayEditor, cellError: Nothing})
+    SetEditorInput input@(EditorAndCode {editor, code, path}) -> do
+           State state <- H.get
+           if Just input /= state.lastInput
+              then H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing, lastInput:Just input})
+              else pure unit
+      -- do undefined
+      --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})
     {-Autoresize ev -> do
       case currentTarget ev of
         Nothing -> pure unit

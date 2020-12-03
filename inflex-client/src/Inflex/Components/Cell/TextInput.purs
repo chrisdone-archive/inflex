@@ -41,6 +41,7 @@ newtype Input = Input {
   text :: String,
   notThese :: Set String
   }
+derive instance genericInput :: Eq Input
 
 type Output = String
 
@@ -49,6 +50,7 @@ data State = State
   , display :: Display
   , notThese :: Set String
   , error :: Maybe Error
+  , lastInput :: Input
   }
 
 data Error = DuplicateName
@@ -57,6 +59,7 @@ data Command
   = CodeUpdate Event
   | StartEditor
   | SetInput Input
+  | SetInputInternal Input
   | InputElementChanged (ElemRef Element)
   | PreventDefault Event
                    Command
@@ -82,12 +85,13 @@ component :: forall q m. MonadEffect m => Config -> H.Component HH.HTML q Input 
 component config =
   H.mkComponent
     { initialState:
-        (\(Input {text: name, notThese}) ->
+        (\(lastInput@(Input {text: name, notThese})) ->
            State
              { name
              , display: DisplayResult
              , notThese: Set.delete name notThese
              , error: Nothing
+             , lastInput
              })
     , render: render config
     , eval:
@@ -120,11 +124,16 @@ eval =
                       H.modify_ (\(State s) -> State (s {error = Just DuplicateName}))
                     else do
                       H.raise text
-                      eval (SetInput (Input {text, notThese}))
+                      eval (SetInputInternal (Input {text, notThese}))
             Nothing -> pure unit
     StartEditor ->
       void (H.modify (\(State s) -> State (s {display = DisplayEditor})))
-    SetInput (Input {text, notThese}) -> do
+    SetInput input -> do
+      do State state <- H.get
+         if state.lastInput == input
+            then pure unit
+            else eval (SetInputInternal input)
+    SetInputInternal (Input {text, notThese}) -> do
       H.modify_
         (\(State st) ->
            State
