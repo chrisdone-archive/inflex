@@ -106,7 +106,8 @@ instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
     show (x.editor)==show (y.editor) && x.code==y.code && x.path Shared.DataHere == y.path Shared.DataHere
 
-instance showEditorAndCode :: Show EditorAndCode where show _ = "EditorAndCode{}"
+instance showEditorAndCode :: Show EditorAndCode where
+  show (EditorAndCode e) = "EditorAndCode{code=" <> show (e.code) <> "}"
 newtype Event' = Event' Event
 instance showEvent :: Show Event' where show _ = "Event"
 
@@ -205,21 +206,26 @@ eval' =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      State {display, editor} <- H.get
-      H.modify_ (\(State s) -> State (s {lastInput= Nothing}))
-      _result <-
-        H.raise
-          (NewCode
-             (if trim code == ""
-                then "_"
-                else code))
-      -- H.modify_ (\(State st') -> State (st' {display = DisplayEditor}))
-      pure unit
+      H.modify_ (\(State s) -> State (s {lastInput = Nothing}))
+      H.raise
+        (NewCode
+           (if trim code == ""
+              then "_"
+              else code))
     SetEditorInput input@(EditorAndCode {editor, code, path}) -> do
-           State state <- H.get
-           if Just input /= state.lastInput
-              then H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing, lastInput:Just input})
-              else pure unit
+      State state <- H.get
+      case state . display of
+        DisplayCode | pure input == state.lastInput -> pure unit -- Ignore if we're editing and input is the same.
+        _ ->
+          H.put
+            (State
+               { path
+               , editor
+               , code
+               , display: DisplayEditor
+               , cellError: Nothing
+               , lastInput: Just input
+               })
       -- do undefined
       --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})
     {-Autoresize ev -> do
@@ -634,6 +640,8 @@ renderArrayEditor path editors =
        _ ->
          mapWithIndex
            (\i editor' ->
+              let childPath = path <<< Shared.DataElemOf i
+              in
               HH.div
                 [HP.class_ (HH.ClassName "array-item")]
                 [ HH.slot
@@ -643,21 +651,20 @@ renderArrayEditor path editors =
                     (EditorAndCode
                        { editor: editor'
                        , code: editorCode editor'
-                       , path: path <<< Shared.DataElemOf i
+                       , path: childPath
                        })
                     (\output ->
                        case output of
                          UpdatePath update -> Just (TriggerUpdatePath update)
                          NewCode rhs ->
                            Just
-                             (FinishEditing
-                                (editorCode
-                                   (ArrayE
-                                      Shared.NoOriginalSource
-                                      (editArray
-                                         i
-                                         (MiscE Shared.NoOriginalSource rhs)
-                                         editors)))))
+                             (TriggerUpdatePath
+                                (Shared.UpdatePath
+                                   { path: childPath Shared.DataHere
+                                   , update:
+                                       Shared.CodeUpdate
+                                         (Shared.Code {text: rhs})
+                                   })))
                 ])
            editors)
 
@@ -697,7 +704,8 @@ renderRecordEditor path fields =
         _ -> []) <>
      mapWithIndex
        (\i (Field {key, value: editor'}) ->
-          HH.tr
+          let childPath = path <<< Shared.DataFieldOf i
+          in HH.tr
             [HP.class_ (HH.ClassName "record-field")]
             [ HH.td
                 [HP.class_ (HH.ClassName "record-field-name")]
@@ -759,20 +767,13 @@ renderRecordEditor path fields =
                          UpdatePath update -> Just (TriggerUpdatePath update)
                          NewCode rhs ->
                            Just
-                             (FinishEditing
-                                (editorCode
-                                   (RecordE
-                                      Shared.NoOriginalSource
-                                      (editArray
-                                         i
-                                         (Field
-                                            { key
-                                            , value:
-                                                MiscE
-                                                  Shared.NoOriginalSource
-                                                  rhs
-                                            })
-                                         fields)))))
+                             (TriggerUpdatePath
+                                (Shared.UpdatePath
+                                   { path: childPath Shared.DataHere
+                                   , update:
+                                       Shared.CodeUpdate
+                                         (Shared.Code {text: rhs})
+                                   })))
                 ]
             ])
        fields)
