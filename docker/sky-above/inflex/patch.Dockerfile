@@ -3,10 +3,10 @@ FROM registry.gitlab.com/sky-above/inflex/base:2020-09-13@sha256:45dfc53d2bfb392
 COPY . /inflex
 WORKDIR /inflex
 
-WORKDIR /inflex/inflex-client
+# WORKDIR /inflex/inflex-client
 
-RUN stack exec -- psc-package build --only-dependencies && \
-    cp -r output/ /psc-package-output
+# RUN stack exec -- psc-package build --only-dependencies && \
+#     cp -r output/ /psc-package-output
 
 WORKDIR /inflex/inflex-server
 
