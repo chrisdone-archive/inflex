@@ -116,8 +116,9 @@ spec = do
           (shouldBe (stepDefaultedTextly "5/2/2.0/2") (Right "0.6"))
         it "1/3" (shouldBe (stepDefaultedTextly "1/3.000") (Right "0.333"))
         it "10/3.0" (shouldBe (stepDefaultedTextly "10/3.0") (Right "3.3"))
-        it "10.0/0.0" pending
-        it "10.0/0" pending)
+        it "10.0/0.0" (shouldBe (stepDefaultedTextly "10.0/0.0") (Right "(10.0 / 0.0)"))
+        it "10/0" (shouldBe (stepDefaultedTextly "10/0") (Right "(10 / 0)"))
+        it "10.0/0" (shouldBe (stepDefaultedTextly "10.0/0") (Right "(10.0 / 0.0)")))
   describe
     "Variants"
     (do it "#true" (shouldBe (stepDefaultedTextly "#true") (Right "#true"))

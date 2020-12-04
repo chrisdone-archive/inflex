@@ -531,23 +531,26 @@ stepIntegerOp ::
   -> Step e (Expression Resolved)
 stepIntegerOp asis numericBinOp left' right' =
   case (left', right') of
-    (LiteralExpression (NumberLiteral Number {number = IntegerNumber left, typ}), LiteralExpression (NumberLiteral Number {number = IntegerNumber right})) -> do
-      pure
-        (LiteralExpression
-           (NumberLiteral
-              Number
-                { number =
-                    IntegerNumber
-                      (case numericBinOp of
-                         AddOp -> left + right
-                         SubtractOp -> left - right
-                         MulitplyOp -> left * right
-                         DivideOp -> div left right)
-                , location = SteppedCursor
-                , ..
-                }))
-    _ -> {-Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))-} -- warn
-      pure asis
+    (LiteralExpression (NumberLiteral Number {number = IntegerNumber left, typ}), LiteralExpression (NumberLiteral Number {number = IntegerNumber right}))
+      | DivideOp <- numericBinOp, 0 <- right -> pure asis -- Nothing to do for division by zero.
+      | otherwise -> do
+        pure
+          (LiteralExpression
+             (NumberLiteral
+                Number
+                  { number =
+                      IntegerNumber
+                        (case numericBinOp of
+                           AddOp -> left + right
+                           SubtractOp -> left - right
+                           MulitplyOp -> left * right
+                           DivideOp -> div left right)
+                  , location = SteppedCursor
+                  , ..
+                  }))
+    _ {-Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))-}
+     -- warn
+     -> pure asis
 
 stepDecimalOp ::
      Expression Resolved
@@ -564,21 +567,20 @@ stepDecimalOp asis places numericBinOp left' right' =
       case sameFixed
              left
              right
-             (\x y ->
-                fixedToDecimal
-                  (SomeFixed
-                     places
-                     (case numericBinOp of
-                        AddOp -> x + y
-                        SubtractOp -> x - y
-                        MulitplyOp -> x * y
-                        -- TODO: Catch x/0 and stop the
-                        -- evaluator. Possibly later, we could print
-                        -- the origin of the 0. See SteppedCursor
-                        -- below.
-                        DivideOp -> x / y))) of
+             (\x y -> do
+                result <-
+                  case numericBinOp of
+                    AddOp -> pure (x + y)
+                    SubtractOp -> pure (x - y)
+                    MulitplyOp -> pure (x * y)
+                    DivideOp ->
+                      if y == 0
+                        then Left () -- We stop due to division by zero.
+                        else pure (x / y)
+                pure (fixedToDecimal (SomeFixed places result))) of
         Nothing -> Step (lift (lift (Left MismatchingPrecisionsInOp)))
-        Just result ->
+        Just (Left ()) -> pure asis -- Division by zero has no answer, so we stop.
+        Just (Right result) ->
           pure
             (LiteralExpression
                (NumberLiteral
