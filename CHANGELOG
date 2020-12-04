@@ -1,4 +1,4 @@
-#
+# 225466161
 
-* Allow uppercase names for field names and cell/variable names.
-* Division by zero simply stops evaluation: `10/0` => `(2*5)/0`
+* Allow uppercase names for field names and cell/variable names. @marcosh
+* Division by zero simply stops evaluation: `(2*5)/0` => `10/0`
