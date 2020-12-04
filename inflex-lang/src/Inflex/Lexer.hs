@@ -25,7 +25,8 @@ module Inflex.Lexer
   , _DecimalToken
   , _BackslashToken
   , _RightArrowToken
-  , _LowerWordToken
+  , _CamelCaseToken
+  , _AnyWordToken
   , _OpenRoundToken
   , _CloseRoundToken
   , _OpenSquareToken
@@ -70,8 +71,8 @@ type Lexer = Mega.Parsec Void Text
 
 -- | Lexical tokens for the Inflex language.
 data Token
-  = LowerWordToken !Text
-  | UpperWordToken !Text
+  = CamelCaseToken !Text
+  | AnyWordToken !Text
   | OpenSquareToken
   | CloseSquareToken
   | OpenRoundToken
@@ -124,8 +125,8 @@ tokensLexer =
     (Mega.many
        (Mega.choice
           [ fmap pure string
-          , fmap pure lowerWord
-          , fmap pure upperWord
+          , fmap pure camelWord
+          , fmap pure anyWord
           , fmap pure symbol
           , fmap pure integer
           , fmap pure decimal
@@ -137,7 +138,7 @@ tokensLexer =
         (do void (Mega.char '"')
             contents <- Mega.manyTill Lexer.charLiteral (Mega.char '"')
             pure (StringToken (T.pack contents)))
-    lowerWord =
+    camelWord =
       located
         (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isLower)
             cs <-
@@ -146,13 +147,13 @@ tokensLexer =
             case text of
               "let" -> pure LetToken
               "in" -> pure InToken
-              _ -> pure (LowerWordToken text))
-    upperWord =
+              _ -> pure (CamelCaseToken text))
+    anyWord =
       located
-        (do c <- Mega.takeWhile1P Nothing ((&&) <$> isAlpha <*> isUpper)
+        (do c <- Mega.takeWhile1P Nothing isAlpha
             cs <-
               Mega.takeWhileP Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
-            pure (UpperWordToken (c <> cs)))
+            pure (AnyWordToken (c <> cs)))
     integer =
       Mega.try
         (located (NaturalToken <$> Lexer.decimal) <*

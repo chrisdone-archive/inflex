@@ -13,6 +13,7 @@
 
 module Inflex.Parser (parseText, parseType, LexParseError(..)) where
 
+import           Control.Applicative ((<|>))
 import           Control.Monad.Reader
 import           Data.Bifunctor
 import           Data.Foldable
@@ -204,7 +205,7 @@ variantPattern :: Parser (VariantP Parsed)
 variantPattern = do
   token_ ExpectedVariant (preview _HashToken)
   Located {thing = name, location} <-
-    token ExpectedVariant (preview _LowerWordToken) <> operatorParser
+    token ExpectedVariant anyWordTokenPreview <> operatorParser
   argument <-
     do parens <-
          fmap
@@ -224,7 +225,7 @@ keyword_ = void . keyword
 
 keyword :: Text -> Parser (Located ())
 keyword word = do
-  located@Located {thing} <- token ExpectedVariable (preview _LowerWordToken)
+  located@Located {thing} <- token ExpectedVariable (preview _CamelCaseToken)
   if thing == word
     then pure (void located)
     else Reparsec.failWith (liftError (ExpectedKeyword word))
@@ -405,7 +406,7 @@ propParser = do
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
   Located {thing = name, location} <-
-    token ExpectedVariable (preview _LowerWordToken) <>
+    token ExpectedVariable (anyWordTokenPreview) <>
     token ExpectedVariable (preview _StringToken)
   pure (FieldName name, location)
 
@@ -537,14 +538,14 @@ decimalParser =
 variableParser :: Parser (Variable Parsed)
 variableParser = do
   Located {thing = name, location} <-
-    token ExpectedVariable (preview _LowerWordToken)
+    token ExpectedVariable (anyWordTokenPreview)
   pure Variable {name, location, typ = Nothing}
 
 variantParser :: Parser (Variant Parsed)
 variantParser = do
   token_ ExpectedVariant (preview _HashToken)
   Located {thing = name, location} <-
-    token ExpectedVariant (preview _LowerWordToken) <> operatorParser
+    token ExpectedVariant (anyWordTokenPreview) <> operatorParser
   argument <-
     do parens <-
          fmap
@@ -578,7 +579,7 @@ lambdaParser = do
 
 paramParser :: Parser (Param Parsed)
 paramParser = do
-  Located {location, thing} <- token ExpectedParam (preview _LowerWordToken)
+  Located {location, thing} <- token ExpectedParam (anyWordTokenPreview)
   pure Param {name = thing, location, typ = Nothing}
 
 typeParser :: Parser (Type Parsed)
@@ -629,7 +630,7 @@ typeParser = do
         token
           ExpectedDecimalType
           (\case
-             UpperWordToken "Decimal" -> pure DecimalTypeName
+             AnyWordToken "Decimal" -> pure DecimalTypeName
              _ -> Nothing)
       Located {location = placesLocation@SourceLocation {end}, thing = places} <-
         token ExpectedDecimalType (preview _NaturalToken)
@@ -651,7 +652,7 @@ typeParser = do
         token
           ExpectedIntegerType
           (\case
-             UpperWordToken "Integer" -> pure IntegerTypeName
+             AnyWordToken "Integer" -> pure IntegerTypeName
              _ -> Nothing)
       pure
         (ConstantType TypeConstant {location = integerLocation, name = typeName})
@@ -706,3 +707,6 @@ patternParam =
   \case
     ParamPattern param -> pure param
     VariantPattern VariantP {argument} -> argument
+
+anyWordTokenPreview :: Token -> Maybe Text
+anyWordTokenPreview = \c -> preview _AnyWordToken c <|> preview _CamelCaseToken c
