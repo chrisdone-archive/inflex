@@ -155,7 +155,14 @@ component =
   H.mkComponent
     { initialState:
         (\input@(EditorAndCode {editor, code, path}) ->
-           State {display: DisplayEditor, editor, code, path, cellError: Nothing, lastInput: Just input})
+           State
+             { display: DisplayEditor
+             , editor
+             , code
+             , path
+             , cellError: Nothing
+             , lastInput: Just input
+             })
     , render
     , eval:
         H.mkEval
@@ -300,28 +307,47 @@ render (State {display, code, editor, path, cellError}) =
         DisplayCode -> HH.div [] inner
         DisplayEditor ->
           case editor of
-            MiscE _ _ ->
+            MiscE originalSource _ ->
               HH.div
-                [ HP.class_
-                    (HH.ClassName "editor-boundary-wrap clickable-to-edit")
-                , HP.title "Click to edit"
-                , HE.onClick
-                    (\e ->
-                       pure (PreventDefault (Event' (toEvent e)) StartEditor))
-                ]
+                ([ HP.class_
+                     (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                 , case originalSource of
+                     Shared.NoOriginalSource ->
+                       HP.title "This is a computed result."
+                     Shared.OriginalSource _ -> HP.title "Click to edit"
+                 ] <>
+                 case originalSource of
+                   Shared.NoOriginalSource -> []
+                   Shared.OriginalSource _ ->
+                     [ HE.onClick
+                         (\e ->
+                            pure
+                              (PreventDefault (Event' (toEvent e)) StartEditor))
+                     ])
                 inner
             _ ->
               HH.div
                 [HP.class_ (HH.ClassName "editor-boundary-wrap")]
-                ([ HH.div
-                     [ HP.class_ (HH.ClassName "ellipsis-button")
-                     , HP.title "Edit this as code"
-                     , HE.onClick
-                         (\e ->
-                            pure
-                              (PreventDefault (Event' (toEvent e)) StartEditor))
-                     ]
-                     []
+                ([ let originalSource = editorOriginalSource editor
+                    in HH.div
+                         ([ HP.class_ (HH.ClassName "ellipsis-button")
+                          , case originalSource of
+                              Shared.OriginalSource _ ->
+                                HP.title "Edit this as code"
+                              Shared.NoOriginalSource ->
+                                HP.title "This is a computed result."
+                          ] <>
+                          case originalSource of
+                            Shared.NoOriginalSource -> []
+                            Shared.OriginalSource _ ->
+                              [ HE.onClick
+                                  (\e ->
+                                     pure
+                                       (PreventDefault
+                                          (Event' (toEvent e))
+                                          StartEditor))
+                              ])
+                         []
                  ] <>
                  inner)
     errorDisplay =
