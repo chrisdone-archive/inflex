@@ -90,6 +90,16 @@ data Editor
            (Array String)
            (Array Row)
 
+editorOriginalSource :: Editor -> Shared.OriginalSource
+editorOriginalSource =
+  case _ of
+    MiscE o _ -> o
+    TextE o _ -> o
+    ErrorE _ -> Shared.NoOriginalSource
+    ArrayE o _ -> o
+    RecordE o _ -> o
+    TableE o _ _ -> o
+
 derive instance genericEditor :: Generic Editor _
 instance showEditor :: Show Editor where show x = genericShow x
 
