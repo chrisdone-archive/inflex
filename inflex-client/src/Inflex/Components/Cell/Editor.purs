@@ -11,6 +11,7 @@ module Inflex.Components.Cell.Editor
   ) where
 
 import Data.Array (mapWithIndex)
+import Inflex.FieldName (validFieldName)
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -367,6 +368,7 @@ renderTextEditor path text =
               { placeholder: "Type text here"
               , unfilled: "(empty text)"
               , title: "Click to edit text"
+              , validator: const true
               }))
         (TextInput.Input {text, notThese: mempty})
         (\text' ->
@@ -558,6 +560,7 @@ columnNameSlot columns path i text =
           { placeholder: "Type column name here"
           , unfilled: "(empty column name)"
           , title: "Click to edit column name"
+          , validator: validFieldName
           }))
     (TextInput.Input { text, notThese: columns } )
     (\name' ->
@@ -746,6 +749,7 @@ renderRecordEditor path fields =
                          { placeholder: "Type field name here"
                          , unfilled: "(empty field name)"
                          , title: "Click to edit field name"
+                         , validator: validFieldName
                          }))
                     (TextInput.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
                     (\name' ->

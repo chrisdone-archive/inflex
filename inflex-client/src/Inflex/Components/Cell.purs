@@ -24,7 +24,8 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Schema as Shared
-import Prelude
+import Inflex.FieldName (validFieldName)
+import Prelude (class Ord, class Show, Unit, bind, discard, identity, map, mempty, pure, show, unit, (-), (<<<), (<>), (>>=))
 import Web.DOM.Node as Node
 import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
@@ -263,6 +264,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                      { placeholder: "Type a name here"
                      , unfilled: "(unnamed)"
                      , title: "Click to edit cell's name"
+                     , validator: validFieldName
                      }))
                 (TextInput.Input {text: name, notThese: mempty})
                 (\name' ->

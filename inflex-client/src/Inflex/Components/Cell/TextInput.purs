@@ -35,6 +35,7 @@ data Config = Config {
     placeholder :: String -- "Type name here"
   , unfilled :: String -- "(unnamed)"
   , title :: String -- "Click to edit name"
+  , validator :: String -> Boolean
   }
 
 newtype Input = Input {
@@ -53,7 +54,9 @@ data State = State
   , lastInput :: Input
   }
 
-data Error = DuplicateName
+data Error
+  = DuplicateName
+  | InvalidValidation
 
 data Command
   = CodeUpdate Event
@@ -96,7 +99,7 @@ component config =
     , render: render config
     , eval:
         H.mkEval
-          H.defaultEval {handleAction = eval, receive = pure <<< SetInput}
+          H.defaultEval {handleAction = eval config, receive = pure <<< SetInput}
     }
 
 --------------------------------------------------------------------------------
@@ -104,8 +107,8 @@ component config =
 
 foreign import getValue :: Element -> Effect (Nullable String)
 
-eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
-eval =
+eval :: forall q i m. MonadEffect m => Config -> Command -> H.HalogenM State q i Output m Unit
+eval config@(Config{validator}) =
   case _ of
     PrintCode string -> H.liftEffect (log string)
     CodeUpdate event -> do
@@ -121,18 +124,23 @@ eval =
                   State {notThese} <- H.get
                   if Set.member text notThese
                     then do
-                      H.modify_ (\(State s) -> State (s {error = Just DuplicateName}))
-                    else do
-                      H.raise text
-                      eval (SetInputInternal (Input {text, notThese}))
+                      H.modify_
+                        (\(State s) -> State (s {error = Just DuplicateName}))
+                    else if validator text
+                           then do
+                             H.raise text
+                             eval config (SetInputInternal (Input {text, notThese}))
+                           else H.modify_
+                                  (\(State s) ->
+                                     State (s {error = Just InvalidValidation}))
             Nothing -> pure unit
     StartEditor ->
       void (H.modify (\(State s) -> State (s {display = DisplayEditor})))
     SetInput input -> do
       do State state <- H.get
-         if state.lastInput == input
-            then pure unit
-            else eval (SetInputInternal input)
+         if state . lastInput == input
+           then pure unit
+           else eval config (SetInputInternal input)
     SetInputInternal (Input {text, notThese}) -> do
       H.modify_
         (\(State st) ->
@@ -156,14 +164,14 @@ eval =
         (do preventDefault e
             stopPropagation e {-log "Triggering"-}
          )
-      eval c
+      eval config c
     StopPropagation e c -> do
       H.liftEffect
             -- log "Preventing default and propagation ..."
         (do preventDefault e
             stopPropagation e {-log "Triggering"-}
          )
-      eval c
+      eval config c
     NoOp -> pure unit
 
 --------------------------------------------------------------------------------
@@ -217,7 +225,8 @@ render (Config config) (State {display, name, error}) =
                 [HP.class_ (HH.ClassName "error-message")]
                 [ HH.text
                     (case err of
-                       DuplicateName -> "already in use!")
+                       DuplicateName -> "already in use!"
+                       InvalidValidation -> "invalid characters")
                 ]])
 
 cleanName :: String -> Maybe String
