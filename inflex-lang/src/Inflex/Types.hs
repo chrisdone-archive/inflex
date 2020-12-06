@@ -411,6 +411,7 @@ data TypeName
   | TextTypeName
   | OptionTypeName
   | NatTypeName !Natural
+  | VegaTypeName
   deriving (Show, Lift, Eq, Ord)
 
 data ClassName
@@ -560,6 +561,8 @@ data Function
   | AnyFunction
 
   | NullFunction
+
+  | VegaFunction
 
   deriving (Show, Lift, Eq, Ord, Enum, Bounded)
 

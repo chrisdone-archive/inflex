@@ -11,7 +11,6 @@ module Inflex.Components.Cell.Editor
   ) where
 
 import Data.Array (mapWithIndex)
-import Inflex.FieldName (validFieldName)
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -21,17 +20,20 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
+import Halogen.HTML.Elements.Keyed as Keyed
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
+import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
 import Prelude
@@ -70,6 +72,7 @@ data Command
   | NoOp
   | SetInput String
   | InputElementChanged (ElemRef' Element)
+  | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
 
 data Query a =
@@ -84,6 +87,7 @@ instance showCommand :: Show Command where show x = genericShow x
 data Editor
   = MiscE Shared.OriginalSource String
   | TextE Shared.OriginalSource String
+  | VegaE Shared.OriginalSource String
   | ErrorE CellError
   | ArrayE Shared.OriginalSource (Array Editor)
   | RecordE Shared.OriginalSource (Array Field)
@@ -96,6 +100,7 @@ editorOriginalSource =
   case _ of
     MiscE o _ -> o
     TextE o _ -> o
+    VegaE o _ -> o
     ErrorE _ -> Shared.NoOriginalSource
     ArrayE o _ -> o
     RecordE o _ -> o
@@ -204,6 +209,7 @@ eval cmd = do
 eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
+
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
@@ -212,6 +218,13 @@ eval' =
         Created (element) ->
           case fromElement element of
             Just htmlelement -> H.liftEffect (autosize htmlelement)
+            Nothing -> pure unit
+        Removed _ -> pure unit
+    VegaElementChanged vegaSpec (ElemRef' elemRef) ->
+      case elemRef of
+        Created (element) ->
+          case fromElement element of
+            Just htmlelement -> H.liftEffect (vegaInPlace htmlelement vegaSpec)
             Nothing -> pure unit
         Removed _ -> pure unit
     StartEditor -> do
@@ -265,6 +278,7 @@ eval' =
 foreign import getValue :: Element -> Effect (Nullable String)
 foreign import setStyle :: String -> Element -> Effect Unit
 foreign import autosize :: HTMLElement -> Effect Unit
+foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
 
 --------------------------------------------------------------------------------
 -- Render main component
@@ -344,10 +358,31 @@ renderEditor path editor =
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]]
     TextE _originalSource t ->
       [renderTextEditor path t]
+    VegaE _originalSource t ->
+      [renderVegaEditor path t]
     ErrorE msg -> [renderError msg]
     ArrayE _originalSource editors -> [renderArrayEditor path editors]
     RecordE _originalSource fields -> [renderRecordEditor path fields]
     TableE _originalSource columns rows -> renderTableEditor path columns rows
+
+--------------------------------------------------------------------------------
+-- Vega display
+
+renderVegaEditor ::
+     forall i a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> String
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
+renderVegaEditor path vegaSpec =
+  Keyed.div
+    [HP.class_ (HH.ClassName "vega-keyed")]
+    [ Tuple vegaSpec
+            (HH.div
+               [ HP.class_ (HH.ClassName "vega")
+               , manage (VegaElementChanged vegaSpec <<< ElemRef')
+               ]
+               [])
+    ]
 
 --------------------------------------------------------------------------------
 -- Text editor
@@ -827,6 +862,7 @@ editorCode :: Editor -> String
 editorCode =
   case _ of
     MiscE original s -> originalOr original s
+    VegaE original s -> originalOr original s
     TextE original s -> (show s) -- TODO: Encoding strings is not easy. Fix this.
     ArrayE original xs -> ("[" <> joinWith ", " (map editorCode xs) <> "]")
     RecordE original fs ->

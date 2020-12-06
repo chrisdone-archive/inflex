@@ -122,6 +122,8 @@ toTree original =
                (V.fromList fields))
     LiteralExpression (TextLiteral (LiteralText {text})) ->
       Shared.TextTree2 Shared.versionRefl originalSource text
+    ApplyExpression Apply{typ = ConstantType TypeConstant{name=VegaTypeName}, argument} ->
+      Shared.VegaTree2 Shared.versionRefl Shared.NoOriginalSource (textDisplay argument)
     expression ->
       Shared.MiscTree2
         Shared.versionRefl

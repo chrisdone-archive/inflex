@@ -22,4 +22,14 @@ exports.autosize = function(e) {
     e.focus();
     return {};
   }
+};
+
+exports.vegaInPlace = function(e){
+  return function(jsonString){
+    return function(){
+      var spec = JSON.parse(jsonString);
+      vegaEmbed(e, spec, {"actions": false});
+      return {};
+    }
+  }
 }

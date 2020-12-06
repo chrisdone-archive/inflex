@@ -179,6 +179,7 @@ data Tree2
   | RecordTree2 Version2 OriginalSource (Vector Field2)
   | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
+  | VegaTree2 Version2 OriginalSource Text
   | MiscTree2 Version2 OriginalSource Text
 
 data Row = Row

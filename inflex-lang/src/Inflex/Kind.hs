@@ -41,3 +41,4 @@ typeNameKind =
     OptionTypeName -> FunKind TypeKind TypeKind
     FunctionTypeName -> FunKind TypeKind (FunKind TypeKind TypeKind)
     NatTypeName{} -> NatKind
+    VegaTypeName -> TypeKind

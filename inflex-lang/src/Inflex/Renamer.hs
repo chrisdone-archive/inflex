@@ -70,6 +70,7 @@ wiredInGlobals =
     , ("filter", FunctionGlobal FilterFunction)
     , ("length", FunctionGlobal LengthFunction)
     , ("null", FunctionGlobal NullFunction)
+    , ("vega", FunctionGlobal VegaFunction)
     ]
 
 --------------------------------------------------------------------------------

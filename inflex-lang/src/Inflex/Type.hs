@@ -180,6 +180,11 @@ textT =
   ConstantType
     TypeConstant {location = BuiltIn, name = TextTypeName}
 
+vegaT :: (StagedLocation s ~ Cursor) => Type s
+vegaT =
+  ConstantType
+    TypeConstant {location = BuiltIn, name = VegaTypeName}
+
 decimalT :: (StagedLocation s ~ Cursor) => Natural -> Type s
 decimalT nat =
   ApplyType
@@ -235,6 +240,7 @@ functionOutput func =
 functionScheme :: Cursor -> Function -> Scheme Polymorphic
 functionScheme location =
   \case
+    VegaFunction -> mono (a .-> vegaT)
     MapFunction -> mono ((a .-> b) .-> ArrayType a .-> ArrayType b)
     FilterFunction -> mono ((a .-> boolT) .-> ArrayType a .-> ArrayType a)
     DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)

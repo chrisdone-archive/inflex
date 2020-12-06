@@ -35,6 +35,7 @@
 /dashboard/del/#DocumentId DeleteDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
 /app/js AppJsR GET
+/app/vega VegaJsR GET
 /app/css AppCssR GET
 
 -- Vanity URLs for user documents

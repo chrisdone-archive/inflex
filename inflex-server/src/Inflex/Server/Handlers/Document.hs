@@ -72,10 +72,14 @@ getAppEditorR slug =
                               , "logout" .= url LogoutR
                               , "dashboard" .= url AppDashboardR
                               ])))
+                script_ [type_ "text/javascript", src_ (url VegaJsR)] ""
                 script_ [type_ "text/javascript", src_ (url AppJsR)] "")))
 
 getAppJsR :: Handler TypedContent
 getAppJsR = $(sendFileFrom "application/javascript" "inflex-client/app.js")
+
+getVegaJsR :: Handler TypedContent
+getVegaJsR = $(sendFileFrom "application/javascript" "inflex-server/js/vega-all.js")
 
 getLogoR :: Handler TypedContent
 getLogoR = $(sendFileFrom "image/svg+xml" "inflex-server/svg/inflex-logo.svg")

@@ -13,6 +13,9 @@
 
 module Inflex.Display where
 
+import           Data.Aeson (encode)
+import qualified Data.ByteString.Lazy as L
+import           Data.Char (isAlphaNum)
 import           Data.Coerce
 import           Data.List
 import qualified Data.Text as T
@@ -113,7 +116,7 @@ instance Display (Let Resolved) where
 instance Display (Literal Resolved) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> display (T.pack (show text))
+               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
 
 instance Display (Number Resolved) where
   display (Number {number}) = display number
@@ -253,7 +256,7 @@ instance Display (Let Renamed) where
 instance Display (Literal Renamed) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> display (T.pack (show text))
+               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
 
 instance Display (Number Renamed) where
   display (Number {number}) = display number
@@ -425,8 +428,17 @@ instance Display (Record Parsed) where
             fields)) <>
     "}"
 
+-- TODO: Make much more robust.
 instance Display FieldName where
-  display (FieldName t) = display t
+  display (FieldName t) =
+    if True -- Applying this for graph support. TODO: remove it.
+            || T.any (not . printableNameChar) t
+      then displayBytesUtf8 (L.toStrict (encode t))
+      else display t
+
+printableNameChar :: Char -> Bool
+printableNameChar '_' = True
+printableNameChar c = isAlphaNum c
 
 instance Display (Infix Parsed) where
   display (Infix {left, global, right}) =
@@ -438,7 +450,7 @@ instance Display (Let Parsed) where
 instance Display (Literal Parsed) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> display (T.pack (show text))
+               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
 
 instance Display (Number Parsed) where
   display (Number {number}) = display number
@@ -494,6 +506,7 @@ instance Display (GlobalRef Parsed) where
 instance Display Function where
   display = \case
     MapFunction -> "map"
+    VegaFunction -> "vega"
     FilterFunction -> "filter"
     DistinctFunction -> "distinct"
     SortFunction -> "sort"

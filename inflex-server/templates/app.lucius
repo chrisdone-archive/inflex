@@ -418,6 +418,10 @@ table.record {
   cursor: pointer;
 }
 
+.editor-boundary-wrap > .vega-keyed > .vega-embed {
+  margin: 5px;
+}
+
 .cell-body > .editor-boundary-wrap > .array {
   border: 0;
   box-shadow: 0;
