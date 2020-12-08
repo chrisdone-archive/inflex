@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -6,8 +8,10 @@
 
 module Inflex.Server.Handlers.Rpc where
 
+import           Control.DeepSeq
 import           Data.Foldable
 import           Data.Maybe
+import qualified Data.Text as T
 import           Data.Time
 import           Database.Persist.Sql
 import qualified Inflex.Schema as Shared
@@ -16,6 +20,7 @@ import           Inflex.Server.Compute
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
+import           System.Timeout
 import           Yesod hiding (Html)
 
 --------------------------------------------------------------------------------
@@ -35,7 +40,15 @@ rpcLoadDocument docId =
        case mdoc of
          Nothing -> notFound
          Just (Entity _ Document {documentContent = document}) ->
-           pure (loadInputDocument document))
+           do mloaded <-
+                liftIO
+                  (timeout
+                     (1000 * milliseconds)
+                     (do let !x = force (loadInputDocument document)
+                         pure x))
+              case mloaded of
+                Just loaded -> pure loaded
+                Nothing -> invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
 
 --------------------------------------------------------------------------------
 -- Refresh document
@@ -55,11 +68,22 @@ rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
          Nothing -> notFound
          Just documentEntity -> do
            now <- liftIO getCurrentTime
+           mloaded <-
+             liftIO
+               (timeout
+                  (1000 * milliseconds)
+                  (do let !x = force (loadInputDocument document)
+                      pure x))
            runDB
              (update
                 (entityKey documentEntity)
                 [DocumentContent =. document, DocumentUpdated =. now])
-           pure (loadInputDocument document))
+           case mloaded of
+             Just loaded -> pure loaded
+             Nothing -> invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+
+milliseconds :: Int
+milliseconds = 1000
 
 --------------------------------------------------------------------------------
 -- Update document

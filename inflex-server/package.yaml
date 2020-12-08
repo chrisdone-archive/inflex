@@ -25,6 +25,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - rio
 - cassava
+- deepseq
 - formatting
 - time-qq
 - th-lift
