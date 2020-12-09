@@ -90,6 +90,9 @@ getHomeR = do
                  div_ [class_ "rhs-nav"] $ do
                    form_
                      []
+                     (do a_ [href_ "https://community.inflex.io", class_ "full-button"] "Community")
+                   form_
+                     []
                      (do a_ [href_ (url BlogR), class_ "full-button"] "Blog")
                    case state of
                      Registered {} ->
