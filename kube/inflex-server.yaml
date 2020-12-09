@@ -22,7 +22,7 @@ spec:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        image: registry.gitlab.com/sky-above/inflex/prod:226912986
+        image: registry.gitlab.com/sky-above/inflex/prod:227239173
         env:
           - name: PORT
             value: "80"
@@ -38,7 +38,7 @@ spec:
             path: "/health"
             port: 80
           initialDelaySeconds: 1
-          periodSeconds: 1
+          periodSeconds: 15
         livenessProbe:
           httpGet:
             path: "/health"
