@@ -11,8 +11,9 @@ import qualified Data.Text as T
 import           Inflex.Display ()
 import           Inflex.Stepper
 import           RIO (textDisplay)
-import           Test.Syd
 import           Test.QuickCheck
+import           Test.Syd
+import           Test.Validity
 
 stepTextly :: Text -> Either (ResolveStepError ()) Text
 stepTextly text = fmap textDisplay (stepText mempty mempty "" text)
@@ -166,8 +167,15 @@ equality =
                 "2*3=6"
                 (shouldBe (stepDefaultedTextly "2*3=6") (Right "#true"))
               it
-                "n=y (integer)"
+                "n=y (integer) (QuickCheck)"
                 (property
+                   (\(x :: Integer) y ->
+                      shouldBe
+                        (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))
+                        (Right (quoteBool (x == y)))))
+              it
+                "n=y (integer) (Validity)"
+                (forAllValid
                    (\(x :: Integer) y ->
                       shouldBe
                         (stepDefaultedTextly (T.pack (show x ++ "=" ++ show y)))

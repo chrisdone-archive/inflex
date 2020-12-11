@@ -8,6 +8,7 @@ dependencies:
 # - hspec
 - sydtest
 - sydtest-discover
+- genvalidity-hspec
 - validity
 - cryptonite
 # - genvalidity-property
