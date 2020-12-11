@@ -270,7 +270,7 @@ functions =
                 "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
                 (shouldBe
                    (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
-                   (Right "[{x: 2}, {x: 3}]")))
+                   (Right "[{\"x\": 2}, {\"x\": 3}]")))
         describe
           "length"
           (do it
