@@ -5,11 +5,13 @@ dependencies:
 - base >= 4.7 && < 5
 - genvalidity
 - QuickCheck
-- hspec
+# - hspec
+- sydtest
+- sydtest-discover
 - validity
 - cryptonite
-- genvalidity-property
-- genvalidity-hspec
+# - genvalidity-property
+# - genvalidity-hspec
 - text
 - megaparsec
 - reparsec

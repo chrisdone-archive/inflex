@@ -19,7 +19,7 @@ import           Inflex.Generator
 import           Inflex.Instances ()
 import           Inflex.Types
 import           Optics
-import           Test.Hspec
+import           Test.Syd
 
 generateText' :: (e~ ()) =>
      Map Hash (Either e (Scheme Polymorphic))

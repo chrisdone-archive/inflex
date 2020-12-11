@@ -12,13 +12,6 @@ packages:
   original:
     hackage: monad-validate-1.2.0.0@sha256:9850f408431098b28806dd464b6825a88a0b56c84f380d7fe0454c1df9d6f881,3505
 - completed:
-    hackage: happy-1.19.9@sha256:f8c774230735a390c287b2980cfcd2703d24d8dde85a01ea721b7b4b4c82944f,4667
-    pantry-tree:
-      size: 7980
-      sha256: 1f1d622f6e773e7a674da6364b755714c76c3fbb3c7a4e65deaf07242fc15211
-  original:
-    hackage: happy-1.19.9
-- completed:
     hackage: megaparsec-8.0.0@sha256:362f85e243ecbcb550e1de6e5c74ba5a50c09edaa1208c99bc5b9fd242227fc6,3808
     pantry-tree:
       size: 1446
@@ -146,9 +139,49 @@ packages:
       sha256: d291028785ad39f8d05cde91594f6b313e35ff76af66c0452ab599b1f1f59e5f
   original:
     hackage: string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
+- completed:
+    size: 149012
+    subdir: sydtest
+    url: https://github.com/NorfairKing/sydtest/archive/c892119eae47f627ee4a9d9e1645802e17b4c2a7.tar.gz
+    name: sydtest
+    version: 0.0.0.0
+    sha256: d5b115c80f4febdcb9c076e4d744d7140fc2ddd7f6af3a057f24c24cd3e5786d
+    pantry-tree:
+      size: 2096
+      sha256: 7f38c3b4e6dc837a4cb1dd9925825ce5399cb0e89ada6b2f935f6c497956dd43
+  original:
+    subdir: sydtest
+    url: https://github.com/NorfairKing/sydtest/archive/c892119eae47f627ee4a9d9e1645802e17b4c2a7.tar.gz
+- completed:
+    size: 149012
+    subdir: sydtest-discover
+    url: https://github.com/NorfairKing/sydtest/archive/c892119eae47f627ee4a9d9e1645802e17b4c2a7.tar.gz
+    name: sydtest-discover
+    version: 0.0.0.0
+    sha256: d5b115c80f4febdcb9c076e4d744d7140fc2ddd7f6af3a057f24c24cd3e5786d
+    pantry-tree:
+      size: 283
+      sha256: 4508aff22cfae158199c4db3cf56f5e8b04a9bb140633c1056c1f04fa22d7465
+  original:
+    subdir: sydtest-discover
+    url: https://github.com/NorfairKing/sydtest/archive/c892119eae47f627ee4a9d9e1645802e17b4c2a7.tar.gz
+- completed:
+    hackage: envparse-0.4.1@sha256:989902e6368532548f61de1fa245ad2b39176cddd8743b20071af519a709ce30,2842
+    pantry-tree:
+      size: 1180
+      sha256: 35044d67979fe2a5cff05cf8736a06a265592433cdd03e13a72908ceed892612
+  original:
+    hackage: envparse-0.4.1@sha256:989902e6368532548f61de1fa245ad2b39176cddd8743b20071af519a709ce30,2842
+- completed:
+    hackage: yamlparse-applicative-0.1.0.2@sha256:bda91f2818c1b5b124963931cb7f9a4e5758d026c09713e9ae2234534062747d,2133
+    pantry-tree:
+      size: 799
+      sha256: d7f9dc8e45e6c100a902f0595e6090169705d9451793ef1cb896237334a1b529
+  original:
+    hackage: yamlparse-applicative-0.1.0.2@sha256:bda91f2818c1b5b124963931cb7f9a4e5758d026c09713e9ae2234534062747d,2133
 snapshots:
 - completed:
-    size: 524154
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/20.yaml
-    sha256: 2f5099f69ddb6abfe64400fe1e6a604e8e628f55e6837211cd70a81eb0a8fa4d
-  original: lts-14.20
+    size: 496112
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/15.yaml
+    sha256: 86169722ad0056ffc9eacc157ef80ee21d7024f92c0d2961c89ccf432db230a3
+  original: lts-15.15

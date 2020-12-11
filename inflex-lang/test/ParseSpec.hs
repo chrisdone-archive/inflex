@@ -12,7 +12,7 @@ import           Inflex.Instances ()
 import           Inflex.Lexer
 import           Inflex.Parser
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 spec :: Spec
 spec = do

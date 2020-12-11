@@ -17,7 +17,7 @@ import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Type
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 solveText' :: (e ~ ()) =>
      M.Map Hash (Either e (Scheme Polymorphic))

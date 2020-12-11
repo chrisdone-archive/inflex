@@ -20,7 +20,7 @@ import           Inflex.Solver
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
-import           Test.Hspec
+import           Test.Syd
 
 spec :: Spec
 spec = do
@@ -1501,28 +1501,29 @@ table_map_defaulting =
 
 error_while_evaluating_with_annotation :: SpecWith ()
 error_while_evaluating_with_annotation =
-  it
-    "Error while evaluating with annotation"
-    (do u1 <- nextRandom'
-        u2 <- nextRandom'
-        let _loaded =
-              loadDocument
-                [ Named
-                    { uuid = Uuid u1
-                    , name = "x"
-                    , thing = "193 :: Decimal 2"
-                    , code = "193 :: Decimal 2"
-                    , order = 0
-                    }
-                , Named
-                    { uuid = Uuid u2
-                    , name = "z"
-                    , thing = "x+2"
-                    , code = "x+2"
-                    , order = 1
-                    }
-                ]
-        pendingWith "Need to fix the evaluator") -- TODO: Fix this!
+  pending "Need to fix the evaluator"
+  -- it
+  --   "Error while evaluating with annotation"
+  --   (do u1 <- nextRandom'
+  --       u2 <- nextRandom'
+  --       let _loaded =
+  --             loadDocument
+  --               [ Named
+  --                   { uuid = Uuid u1
+  --                   , name = "x"
+  --                   , thing = "193 :: Decimal 2"
+  --                   , code = "193 :: Decimal 2"
+  --                   , order = 0
+  --                   }
+  --               , Named
+  --                   { uuid = Uuid u2
+  --                   , name = "z"
+  --                   , thing = "x+2"
+  --                   , code = "x+2"
+  --                   , order = 1
+  --                   }
+  --               ]
+  --       undefined) -- TODO: Fix this!
 
 duplicate_empty_names_ok :: Spec
 duplicate_empty_names_ok =
@@ -1610,7 +1611,7 @@ eval_it_pending ::
   -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
   -> String
   -> SpecWith ()
-eval_it_pending desc xs result t = eval_it_with desc xs result (pendingWith t)
+eval_it_pending desc xs result t = pending t -- eval_it_with desc xs result (pendingWith t)
 
 eval_it_with ::
      String -> [(Text, Text)]

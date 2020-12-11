@@ -15,7 +15,7 @@ import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Defaulter
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 defaultText' :: (e~ ()) =>
      Map Hash (Either e (Scheme Polymorphic))

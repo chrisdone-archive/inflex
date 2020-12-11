@@ -8,7 +8,7 @@ module LexSpec where
 import qualified Data.Sequence as Seq
 import           Inflex.Lexer
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 spec :: Spec
 spec =

@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import           Inflex.Display ()
 import           Inflex.Stepper
 import           RIO (textDisplay)
-import           Test.Hspec
+import           Test.Syd
 import           Test.QuickCheck
 
 stepTextly :: Text -> Either (ResolveStepError ()) Text

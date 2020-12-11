@@ -15,7 +15,7 @@ import           Data.Text (Text)
 import           Inflex.Generaliser
 import           Inflex.Instances ()
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 generaliseText' :: (e~ ())=>
      M.Map Hash (Either e (Scheme Polymorphic))

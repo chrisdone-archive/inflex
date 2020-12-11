@@ -11,7 +11,7 @@ import qualified Data.Set as Set
 import           Inflex.Instances ()
 import           Inflex.Renamer
 import           Inflex.Types
-import           Test.Hspec
+import           Test.Syd
 
 spec :: Spec
 spec = do

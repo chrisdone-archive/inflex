@@ -1,4 +1,4 @@
-resolver: lts-14.20
+resolver: lts-15.15
 allow-newer: true
 ghc-options:
   purescript: '-j4 -O2'
@@ -15,7 +15,7 @@ packages:
 - inflex-shared
 extra-deps:
 - monad-validate-1.2.0.0@sha256:9850f408431098b28806dd464b6825a88a0b56c84f380d7fe0454c1df9d6f881,3505
-- happy-1.19.9
+# - happy-1.19.9
 - megaparsec-8.0.0
 - github: chrisdone/streaming-parsers
   commit: 955675a074e8443ab9a65cc1bcb7abd7e49e188f
@@ -39,3 +39,12 @@ extra-deps:
 - github: chrisdone/safe-decimal
   commit: 7d12d7b326d7ca544306e2b3244b5e3bfd9b856b
 - string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
+
+- github: NorfairKing/sydtest
+  commit: c892119eae47f627ee4a9d9e1645802e17b4c2a7
+  subdirs:
+    - sydtest
+    - sydtest-discover
+
+- envparse-0.4.1@sha256:989902e6368532548f61de1fa245ad2b39176cddd8743b20071af519a709ce30,2842
+- yamlparse-applicative-0.1.0.2@sha256:bda91f2818c1b5b124963931cb7f9a4e5758d026c09713e9ae2234534062747d,2133
