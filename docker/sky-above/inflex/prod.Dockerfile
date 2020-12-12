@@ -10,6 +10,7 @@ RUN stack build inflex-shared
 WORKDIR /inflex/inflex-client
 
 RUN stack build \
+    purescript
     inflex-client \
     --exec ./bundle-full.sh
 
