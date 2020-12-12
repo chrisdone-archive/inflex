@@ -25,3 +25,11 @@ kubectl create secret generic inflex-server-config --from-file=$HOME/Work/skyabo
 # Redeploy
 
 kubectl apply -f kube/inflex-server.yaml --namespace ingress-basic
+
+# Setup grafana
+
+kubectl create deployment grafana --image=docker.io/grafana/grafana:7.3.5 --namespace ingress-basic
+
+# Prometheus
+
+https://gist.github.com/chrisdone/95296d4fb63aee7dd35892111973bfd4
