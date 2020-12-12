@@ -23,6 +23,8 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/inflex-server#readme>
 
 dependencies:
+- prometheus
+- async
 - rio
 - cassava
 - deepseq

@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Main (main) where
 
+import           Control.Concurrent.Async
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -25,6 +26,10 @@ import           Network.Wai.Middleware.Gzip
 import           System.Environment
 import           Yesod hiding (Html)
 
+import qualified System.Metrics.Prometheus.Concurrent.Registry as Prometheus.Registry
+import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
+import qualified System.Metrics.Prometheus.Metric.Counter as Counter
+
 --------------------------------------------------------------------------------
 -- Main entry point
 
@@ -41,6 +46,9 @@ main = do
   fp <- getEnv "CONFIG"
   config <- decodeFileEither fp >>= either throwIO return
   port <- fmap read (getEnv "PORT")
+  registry <- Prometheus.Registry.new
+  connectCounter <- Prometheus.Registry.registerCounter "example_connection_total" mempty registry
+  Counter.inc connectCounter
   withDBPool
     config
     (\pool -> do
@@ -49,21 +57,17 @@ main = do
          (runReaderT
             (do when False (printMigration migrateAll) -- Enable when updating the DB.
                 manualMigration migrateAll))
-       app <-
-         liftIO
-           (toWaiApp
-              App {appPool = pool, appConfig = config} {-Plain-}
-            )
-       -- Not important for local dev, but will be important when deploying online.
-       -- TODO: Middleware for password-protecting the site
-       --    <https://hackage.haskell.org/package/wai-extra-3.0.29.1/docs/Network-Wai-Middleware-HttpAuth.html>
-       -- TODO: Middleware for blocking non-load-balancer requests
-       --   remoteHost = 109.175.148.125:56616,
-       --     vs
-       --   remoteHost = 10.106.0.4:39350,
-       -- TODO: Middleware for blocking abusive connections?
+       app <- liftIO (toWaiApp App {appPool = pool, appConfig = config})
        liftIO
-         (run port (addServerHeader (gzip def {gzipFiles = GzipCompress} app))))
+         (concurrently_
+            (run
+               9090
+               (Prometheus.prometheusApp
+                  ["metrics"]
+                  (Prometheus.Registry.sample registry)))
+            (run
+               port
+               (addServerHeader (gzip def {gzipFiles = GzipCompress} app)))))
 
 withDBPool ::
      (IsPersistBackend b, BaseBackend b ~ SqlBackend)
