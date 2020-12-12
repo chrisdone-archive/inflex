@@ -21,6 +21,7 @@ dependencies:
 - typed-process
 - directory
 - vector
+- purescript
 
 extra-source-files:
   - test/src/Spec.purs
