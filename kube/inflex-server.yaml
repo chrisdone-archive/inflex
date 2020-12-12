@@ -47,6 +47,9 @@ spec:
           periodSeconds: 30
         ports:
           - containerPort: 80
+            name: nginx-port
+          - containerPort: 9090
+            name: metrics-port
 ---
 apiVersion: v1
 kind: Service
@@ -56,5 +59,6 @@ spec:
   type: ClusterIP
   ports:
   - port: 80
+    targetPort: nginx-port
   selector:
     app: inflex-server
