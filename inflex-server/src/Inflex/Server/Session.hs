@@ -106,7 +106,7 @@ querySession sessionUuid = do
   case result of
     Left (_ :: PersistException) -> pure Nothing
     Right ok -> do
-      liftIO (print ok)
+      -- liftIO (print ok)
       pure ok
 
 queryNonceSession :: NonceUUID -> YesodDB App (Maybe (Entity Session))
@@ -115,7 +115,7 @@ queryNonceSession nonce = do
   case result of
     Left (_ :: PersistException) -> pure Nothing
     Right ok -> do
-      liftIO (print ok)
+      -- liftIO (print ok)
       pure ok
 
 generateSession :: SessionState -> YesodDB App (Entity Session)

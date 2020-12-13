@@ -23,6 +23,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/inflex-server#readme>
 
 dependencies:
+- criterion-measurement
 - prometheus
 - async
 - yesod-core

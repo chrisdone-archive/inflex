@@ -9,6 +9,7 @@
 module Inflex.Server.Handlers.Rpc where
 
 import           Control.DeepSeq
+import           Criterion.Measurement
 import           Data.Foldable
 import           Data.Maybe
 import qualified Data.Text as T
@@ -41,15 +42,17 @@ rpcLoadDocument docId =
        case mdoc of
          Nothing -> notFound
          Just (Entity _ Document {documentContent = document}) -> do
+           start <- liftIO getTime
            mloaded <-
              liftIO
                (timeout
                   (1000 * milliseconds)
                   (do let !x = force (loadInputDocument document)
                       pure x))
+           end <- liftIO getTime
            case mloaded of
              Just loaded -> do
-               glog DocumentLoaded
+               glog (DocumentLoaded (end-start))
                pure loaded
              Nothing -> do
                glog TimeoutExceeded
@@ -74,19 +77,21 @@ rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
          Nothing -> notFound
          Just documentEntity -> do
            now <- liftIO getCurrentTime
+           start <- liftIO getTime
            mloaded <-
              liftIO
                (timeout
                   (1000 * milliseconds)
                   (do let !x = force (loadInputDocument document)
                       pure x))
+           end <- liftIO getTime
            runDB
              (update
                 (entityKey documentEntity)
                 [DocumentContent =. document, DocumentUpdated =. now])
            case mloaded of
              Just loaded -> do
-               glog DocumentRefreshed
+               glog (DocumentRefreshed (end-start))
                pure loaded
              Nothing -> do
                glog TimeoutExceeded
@@ -116,7 +121,8 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
            case update' of
              Shared.CellUpdate Shared.UpdateCell { uuid
                                                  , update = Shared.UpdatePath {path}
-                                                 } ->
+                                                 } -> do
+               start <- liftIO getTime
                case applyUpdateToDocument update' (documentContent document) of
                  Left transformError -> do
                    glog UpdateTransformError
@@ -130,6 +136,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                  Right inputDocument ->
                    case cellHadErrorInNestedPlace uuid path outputDocument of
                      Nothing -> do
+                       end <- liftIO getTime
                        now <- liftIO getCurrentTime
                        runDB
                          (update
@@ -137,7 +144,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                             [ DocumentContent =. inputDocument
                             , DocumentUpdated =. now
                             ])
-                       glog CellUpdated
+                       glog (CellUpdated (end-start))
                        pure (Shared.UpdatedDocument outputDocument)
                      Just cellError -> do
                        glog CellErrorInNestedPlace

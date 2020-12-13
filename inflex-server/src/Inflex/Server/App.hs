@@ -77,11 +77,11 @@ data AppMsg
   deriving (Show)
 
 data ServerMsg
-  = DocumentLoaded
+  = DocumentLoaded Double
   | TimeoutExceeded
-  | DocumentRefreshed
+  | DocumentRefreshed Double
   | UpdateTransformError
-  | CellUpdated
+  | CellUpdated Double
   | CellErrorInNestedPlace
   | OpenDocument
   | CreateDocument

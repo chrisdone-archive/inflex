@@ -9,6 +9,7 @@ import qualified Buffering
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
+import           Criterion.Measurement
 import qualified Data.ByteString.Char8 as S8
 import           Data.Functor.Contravariant
 import           Data.Pool
@@ -40,6 +41,7 @@ import qualified System.Metrics.Prometheus.Metric.Counter as Counter
 main :: IO ()
 main = do
   Buffering.setAppBuffering
+  initializeTime
   now <- getCurrentTime
   let addServerHeader :: Middleware
       addServerHeader =
@@ -118,17 +120,17 @@ makeAppLogFunc registry = do
           \case
             ServerMsg msg ->
               case msg of
-                DocumentLoaded -> Counter.inc documentLoaded
+                DocumentLoaded ms -> Counter.inc documentLoaded
                 TimeoutExceeded -> Counter.inc timeoutExceeded
-                DocumentRefreshed -> Counter.inc documentRefreshed
+                DocumentRefreshed ms -> Counter.inc documentRefreshed
                 UpdateTransformError -> Counter.inc updateTransformError
-                CellUpdated -> Counter.inc cellUpdated
+                CellUpdated ms -> Counter.inc cellUpdated
                 CellErrorInNestedPlace -> Counter.inc cellErrorInNestedPlace
                 OpenDocument -> Counter.inc openDocument
                 CreateDocument -> Counter.inc createDocument
                 DeleteDocument -> Counter.inc deleteDocument
-            YesodMsg msg -> when True (prettyWrite msg)
-            DatabaseMsg msg -> when True (prettyWrite msg)
+            YesodMsg msg -> when False (prettyWrite msg)
+            DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))
 
 prettyWrite :: Show a => a -> IO ()
