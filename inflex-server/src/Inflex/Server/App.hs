@@ -1,22 +1,28 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE Strict #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 -- |
 
@@ -26,7 +32,6 @@ import           Control.Monad.Logger as MonadLogger
 import           Control.Monad.Reader
 import           Data.Functor.Contravariant
 import           Data.Pool
-import           Data.Profunctor
 import           Data.Text (Text)
 import           Data.Time
 import           Database.Persist.Quasi
@@ -38,10 +43,12 @@ import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Sha256
-import           RIO hiding (Handler)
+import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
+import           RIO hiding (Handler, preview)
 import           RIO.Warp
 import           RIO.Yesod
 import           Yesod hiding (Html, Field)
+import qualified Yesod.Core.Types as Yesod
 import           Yesod.Lucid
 
 data App = App
@@ -66,6 +73,19 @@ data AppMsg
   = YesodMsg YesodLog
   | AppWaiMsg WaiMsg
   | DatabaseMsg DatabaseLog
+  | ServerMsg ServerMsg
+  deriving (Show)
+
+data ServerMsg
+  = DocumentLoaded
+  | TimeoutExceeded
+  | DocumentRefreshed
+  | UpdateTransformError
+  | CellUpdated
+  | CellErrorInNestedPlace
+  | OpenDocument
+  | CreateDocument
+  | DeleteDocument
   deriving (Show)
 
 -- | A generic log output.
@@ -75,6 +95,19 @@ data DatabaseLog =
               MonadLogger.LogLevel
               MonadLogger.LogStr
   deriving (Show)
+
+$(makePrisms ''AppMsg)
+$(makeLensesFor [("appLogFunc","appLogFuncLens")] ''App)
+
+instance HasGLogFunc (Yesod.HandlerData App App) where
+  type GMsg (Yesod.HandlerData App App) = ServerMsg
+  gLogFuncL =
+    glogFuncLYesod
+      (\f ->
+         toLensVL
+           appLogFuncLens
+           (fmap (contramapMaybeGLogFunc (preview _ServerMsg)) .
+            f . contramap ServerMsg))
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]

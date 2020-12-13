@@ -52,12 +52,6 @@ main = do
   config <- decodeFileEither fp >>= either throwIO return
   port <- fmap read (getEnv "PORT")
   registry <- Prometheus.Registry.new
-  connectCounter <-
-    Prometheus.Registry.registerCounter
-      "example_connection_total"
-      mempty
-      registry
-  Counter.inc connectCounter
   runRIO
     databaseLogFunc
     (withDBPool
@@ -67,7 +61,7 @@ main = do
             (do when False (printMigration migrateAll) -- Enable when updating the DB.
                 manualMigration migrateAll)
             pool
-          let logFunc = makeAppLogFunc
+          logFunc <- liftIO (makeAppLogFunc registry)
           app <-
             liftIO
               (toWaiAppPlain
@@ -107,14 +101,35 @@ withDBPool config cont = do
        (\loc lsrc llevel lstr ->
           runReaderT (glog (DatabaseLog loc lsrc llevel lstr)) e))
 
-makeAppLogFunc :: GLogFunc AppMsg
-makeAppLogFunc =
-  mkGLogFunc
-    (\_callStack ->
-       \case
-         YesodMsg msg -> when True (prettyWrite msg)
-         DatabaseMsg msg -> when True (prettyWrite msg)
-         AppWaiMsg msg -> when False (prettyWrite msg))
+makeAppLogFunc :: Prometheus.Registry.Registry -> IO (GLogFunc AppMsg)
+makeAppLogFunc registry = do
+  documentLoaded <- Prometheus.Registry.registerCounter "inflex_DocumentLoaded" mempty registry
+  timeoutExceeded <- Prometheus.Registry.registerCounter "inflex_TimeoutExceeded" mempty registry
+  documentRefreshed <- Prometheus.Registry.registerCounter "inflex_DocumentRefreshed" mempty registry
+  updateTransformError <- Prometheus.Registry.registerCounter "inflex_UpdateTransformError" mempty registry
+  cellUpdated <- Prometheus.Registry.registerCounter "inflex_CellUpdated" mempty registry
+  cellErrorInNestedPlace <- Prometheus.Registry.registerCounter "inflex_CellErrorInNestedPlace" mempty registry
+  openDocument <- Prometheus.Registry.registerCounter "inflex_OpenDocument" mempty registry
+  createDocument <- Prometheus.Registry.registerCounter "inflex_CreateDocument" mempty registry
+  deleteDocument <- Prometheus.Registry.registerCounter "inflex_DeleteDocument" mempty registry
+  pure
+    (mkGLogFunc
+       (\_callStack ->
+          \case
+            ServerMsg msg ->
+              case msg of
+                DocumentLoaded -> Counter.inc documentLoaded
+                TimeoutExceeded -> Counter.inc timeoutExceeded
+                DocumentRefreshed -> Counter.inc documentRefreshed
+                UpdateTransformError -> Counter.inc updateTransformError
+                CellUpdated -> Counter.inc cellUpdated
+                CellErrorInNestedPlace -> Counter.inc cellErrorInNestedPlace
+                OpenDocument -> Counter.inc openDocument
+                CreateDocument -> Counter.inc createDocument
+                DeleteDocument -> Counter.inc deleteDocument
+            YesodMsg msg -> when True (prettyWrite msg)
+            DatabaseMsg msg -> when True (prettyWrite msg)
+            AppWaiMsg msg -> when False (prettyWrite msg)))
 
 prettyWrite :: Show a => a -> IO ()
 prettyWrite x = do

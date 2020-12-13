@@ -24,6 +24,7 @@ import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
+import           RIO (glog)
 import           Yesod hiding (Html, toHtml)
 import           Yesod.Lucid
 
@@ -109,6 +110,7 @@ postNewDocumentR =
                        ("document-" <> fromString (show (fromSqlKey key)))
                update key [DocumentName =. slug] -- TODO: Check uniqueness
                pure slug)
+       glog CreateDocument
        redirect (AppEditorR slug))
 
 postDeleteDocumentR :: DocumentId -> Handler ()
@@ -118,4 +120,5 @@ postDeleteDocumentR documentId =
        runDB
          (deleteWhere
             [DocumentId ==. documentId, DocumentAccount ==. toSqlKey accountId])
+       glog DeleteDocument
        redirect AppDashboardR)

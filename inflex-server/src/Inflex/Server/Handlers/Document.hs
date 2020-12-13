@@ -36,6 +36,7 @@ import Inflex.Server.Session
 import Inflex.Server.Types
 import Inflex.Server.View.App
 import Lucid
+import RIO (glog)
 import Sendfile
 import Shakespearean
 import Text.Lucius
@@ -57,7 +58,8 @@ getAppEditorR slug =
                    [])
             case mdoc of
               Nothing -> notFound
-              Just (Entity documentId _) -> pure (documentId)
+              Just (Entity documentId _) -> do glog OpenDocument
+                                               pure (documentId)
        htmlWithUrl
          (appTemplate
             (Registered state)

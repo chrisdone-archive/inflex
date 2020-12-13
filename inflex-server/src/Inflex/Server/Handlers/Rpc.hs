@@ -20,6 +20,7 @@ import           Inflex.Server.Compute
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
+import           RIO (glog)
 import           System.Timeout
 import           Yesod hiding (Html)
 
@@ -39,16 +40,21 @@ rpcLoadDocument docId =
               [])
        case mdoc of
          Nothing -> notFound
-         Just (Entity _ Document {documentContent = document}) ->
-           do mloaded <-
-                liftIO
-                  (timeout
-                     (1000 * milliseconds)
-                     (do let !x = force (loadInputDocument document)
-                         pure x))
-              case mloaded of
-                Just loaded -> pure loaded
-                Nothing -> invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+         Just (Entity _ Document {documentContent = document}) -> do
+           mloaded <-
+             liftIO
+               (timeout
+                  (1000 * milliseconds)
+                  (do let !x = force (loadInputDocument document)
+                      pure x))
+           case mloaded of
+             Just loaded -> do
+               glog DocumentLoaded
+               pure loaded
+             Nothing -> do
+               glog TimeoutExceeded
+               invalidArgs
+                 ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
 
 --------------------------------------------------------------------------------
 -- Refresh document
@@ -79,8 +85,13 @@ rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
                 (entityKey documentEntity)
                 [DocumentContent =. document, DocumentUpdated =. now])
            case mloaded of
-             Just loaded -> pure loaded
-             Nothing -> invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+             Just loaded -> do
+               glog DocumentRefreshed
+               pure loaded
+             Nothing -> do
+               glog TimeoutExceeded
+               invalidArgs
+                 ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
 
 milliseconds :: Int
 milliseconds = 1000
@@ -108,7 +119,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                                                  } ->
                case applyUpdateToDocument update' (documentContent document) of
                  Left transformError -> do
-                   liftIO (print transformError)
+                   glog UpdateTransformError
                    pure
                      (Shared.NestedError
                         (Shared.NestedCellError
@@ -126,10 +137,10 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                             [ DocumentContent =. inputDocument
                             , DocumentUpdated =. now
                             ])
+                       glog CellUpdated
                        pure (Shared.UpdatedDocument outputDocument)
                      Just cellError -> do
-                       liftIO (print cellError)
-                       liftIO (print inputDocument)
+                       glog CellErrorInNestedPlace
                        pure
                          (Shared.NestedError
                             (Shared.NestedCellError
