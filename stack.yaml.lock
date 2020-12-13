@@ -153,6 +153,32 @@ packages:
       sha256: 3b1cb27cf8cb0a8da83b5730e85132e058e808f8dd1be349ea3dbb162c7f14c3
   original:
     hackage: prometheus-2.2.2@sha256:d794f5fe975be2f3ca7d7af71a7aeeb006615ad7d98835fa42caba9457a51936,4288
+- completed:
+    size: 67654
+    subdir: rio
+    url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
+    name: rio
+    version: 0.1.19.0
+    sha256: f6a5ed84d8582968acfe25ea9eccea96361b3304f8463098793b05b873ee5681
+    pantry-tree:
+      size: 4854
+      sha256: a0b17853ca21584119764a182dfba8c7a273180cda2ec63191fec7e2ad45f066
+  original:
+    subdir: rio
+    url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
+- completed:
+    size: 67654
+    subdir: rio-orphans
+    url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
+    name: rio-orphans
+    version: 0.1.1.0
+    sha256: f6a5ed84d8582968acfe25ea9eccea96361b3304f8463098793b05b873ee5681
+    pantry-tree:
+      size: 480
+      sha256: 0ea2b455f8d51d1740b914e42b4c7b2f6d94af12ac7488944fe84887b4787916
+  original:
+    subdir: rio-orphans
+    url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
 snapshots:
 - completed:
     size: 524154

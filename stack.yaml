@@ -40,3 +40,8 @@ extra-deps:
   commit: 7d12d7b326d7ca544306e2b3244b5e3bfd9b856b
 - string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
 - prometheus-2.2.2@sha256:d794f5fe975be2f3ca7d7af71a7aeeb006615ad7d98835fa42caba9457a51936,4288
+- github: commercialhaskell/rio
+  commit: 91c379f29b158dc91e7bea059fe7874d9a16973c
+  subdirs:
+    - rio
+    - rio-orphans
