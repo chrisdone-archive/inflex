@@ -32,4 +32,4 @@ OR
 
 IDE:
 
-    stack exec purs ide server
+    $ stack build purescript --exec 'purs ide server'
