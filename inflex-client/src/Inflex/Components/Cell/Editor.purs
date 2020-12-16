@@ -681,40 +681,86 @@ renderArrayEditor ::
   -> Array Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderArrayEditor path editors =
-  HH.div
+  HH.table
     [HP.class_ (HH.ClassName "array")]
-    (case editors of
-       [] -> [HH.text "(No items)"]
-       _ ->
-         mapWithIndex
-           (\i editor' ->
-              let childPath = path <<< Shared.DataElemOf i
-              in
-              HH.div
-                [HP.class_ (HH.ClassName "array-item")]
-                [ HH.slot
-                    (SProxy :: SProxy "editor")
-                    (show i)
-                    component
-                    (EditorAndCode
-                       { editor: editor'
-                       , code: editorCode editor'
-                       , path: childPath
-                       })
-                    (\output ->
-                       case output of
-                         UpdatePath update -> Just (TriggerUpdatePath update)
-                         NewCode rhs ->
-                           Just
-                             (TriggerUpdatePath
-                                (Shared.UpdatePath
-                                   { path: childPath Shared.DataHere
-                                   , update:
-                                       Shared.CodeUpdate
-                                         (Shared.Code {text: rhs})
-                                   })))
-                ])
-           editors)
+    [HH.tbody [HP.class_ (HH.ClassName "array-body")] (body <> addNewRow)]
+  where
+    body =
+      case editors of
+        [] ->
+          [ HH.tr
+              []
+              [ HH.td
+                  [HP.colSpan 3, HP.class_ (HH.ClassName "array-empty")]
+                  [HH.text "↙ Hit the bottom-left button to add rows!"]
+              ]
+          ]
+        _ -> rows
+    rows =
+      mapWithIndex
+        (\i editor' ->
+           let childPath = path <<< Shared.DataElemOf i
+               rowNumber =
+                 HH.td
+                   [HP.class_ (HH.ClassName "row-number")]
+                   [HH.text (show i)]
+            in HH.tr
+                 []
+                 [ rowNumber
+                 , HH.td
+                     [HP.class_ (HH.ClassName "array-datum-value")]
+                     [ HH.slot
+                         (SProxy :: SProxy "editor")
+                         (show i)
+                         component
+                         (EditorAndCode
+                            { editor: editor'
+                            , code: editorCode editor'
+                            , path: childPath
+                            })
+                         (\output ->
+                            case output of
+                              UpdatePath update ->
+                                Just (TriggerUpdatePath update)
+                              NewCode rhs ->
+                                Just
+                                  (TriggerUpdatePath
+                                     (Shared.UpdatePath
+                                        { path:
+                                            childPath Shared.DataHere
+                                        , update:
+                                            Shared.CodeUpdate
+                                              (Shared.Code
+                                                 {text: rhs})
+                                        })))
+                     ]
+                 ])
+        editors
+    addNewRow =
+      [ HH.tr
+          []
+          [ HH.td
+              [HP.class_ (HH.ClassName "add-row")]
+              [ HH.button
+                  [ HP.class_ (HH.ClassName ("add-row-button "))
+                  , HP.title "Add row"
+                  , HE.onClick
+                      (\e ->
+                         pure
+                           (PreventDefault
+                              (Event' (toEvent e))
+                              (TriggerUpdatePath
+                                 (Shared.UpdatePath
+                                    { path: path Shared.DataHere
+                                    , update:
+                                        Shared.AddToEndUpdate
+                                    }))))
+                  ]
+                  [HH.text "+"]
+              ]
+          , HH.td [HP.class_ (HH.ClassName "bottom-blank")] []
+          ]
+      ]
 
 --------------------------------------------------------------------------------
 -- Records
