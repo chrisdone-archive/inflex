@@ -105,13 +105,14 @@ withDBPool config cont = do
 
 makeAppLogFunc :: Prometheus.Registry.Registry -> IO (GLogFunc AppMsg)
 makeAppLogFunc registry = do
+  let bucketsSeconds = [ms / 1000 | ms <- [5,10,20,30,40,50,60,70,80,90]]
   documentLoaded <-
     Prometheus.Registry.registerCounter "inflex_DocumentLoaded" mempty registry
   documentLoadedMS <-
     Prometheus.Registry.registerHistogram
       "inflex_DocumentLoadedMS"
       mempty
-      [n/10 | n <- [1..10]]
+      bucketsSeconds
       registry
   timeoutExceeded <-
     Prometheus.Registry.registerCounter "inflex_TimeoutExceeded" mempty registry
@@ -124,7 +125,7 @@ makeAppLogFunc registry = do
     Prometheus.Registry.registerHistogram
       "inflex_DocumentRefreshedMS"
       mempty
-      [n/10 | n <- [1..10]]
+      bucketsSeconds
       registry
   updateTransformError <-
     Prometheus.Registry.registerCounter
@@ -137,7 +138,7 @@ makeAppLogFunc registry = do
     Prometheus.Registry.registerHistogram
       "inflex_CellUpdatedMS"
       mempty
-      [n/10 | n <- [1..10]]
+      bucketsSeconds
       registry
   cellErrorInNestedPlace <-
     Prometheus.Registry.registerCounter
