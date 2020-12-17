@@ -147,10 +147,8 @@ eval config@(Config {validator}) =
          State state <- H.get
          case state . display of
            DisplayEditor
-             | state . lastInput == input -> do log ("SetInput: [skipped] " <> show input)
-                                                pure unit
-           _ -> do log ("SetInput:" <> show input)
-                   eval config (SetInputInternal input)
+             | state . lastInput == input -> pure unit
+           _ -> eval config (SetInputInternal input)
     SetInputInternal (Input {text, notThese}) -> do
       H.modify_
         (\(State st) ->
