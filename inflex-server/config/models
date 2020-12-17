@@ -1,3 +1,6 @@
+--------------------------------------------------------------------------------
+-- Accounts and sessions
+
 Account
   username Username Maybe
   email Email
@@ -13,17 +16,20 @@ Session
   Unique UniqueUuid uuid
   deriving Show
 
+EarlyAccessRequest
+  created UTCTime
+  email Email
+  approved UTCTime Maybe
+  Unique EarlyAccessEmail email
+  deriving Show
+
+--------------------------------------------------------------------------------
+-- Documents
+
 Document
   account AccountId
   name DocumentSlug
   content Shared.InputDocument1
   created UTCTime
   updated UTCTime
-  deriving Show
-
-EarlyAccessRequest
-  created UTCTime
-  email Email
-  approved UTCTime Maybe
-  Unique EarlyAccessEmail email
   deriving Show
