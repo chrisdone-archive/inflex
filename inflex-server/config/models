@@ -29,7 +29,15 @@ EarlyAccessRequest
 Document
   account AccountId
   name DocumentSlug
-  content Shared.InputDocument1
   created UTCTime
   updated UTCTime
+  deriving Show
+
+Revision
+  account AccountId
+  document DocumentId
+  created UTCTime
+  content Shared.InputDocument1
+  active Bool
+  activated UTCTime
   deriving Show

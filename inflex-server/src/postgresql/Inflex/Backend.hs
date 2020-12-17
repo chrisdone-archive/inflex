@@ -22,7 +22,7 @@ withBackendPool = withPostgresqlPool
 manualMigration :: (MonadIO m) => x -> ReaderT SqlBackend m ()
 manualMigration _x = do
   -- Set isolation, and validate it.
-  run "BEGIN TRANSACTION; SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+  run "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
   level <- fmap (fmap unSingle) (rawSql "SELECT CURRENT_SETTING('transaction_isolation');" [])
   unless (level == ["serializable" :: Text]) (error "Transaction isolation level is not being set properly!")
   -- Setup schema versions table.
@@ -34,11 +34,9 @@ manualMigration _x = do
     1 -> schema1
     2 -> schema2
     3 -> schema3
-    4 -> liftIO $ putStrLn "At correct schema version."
+    4 -> schema4
+    5 -> liftIO $ putStrLn "At correct schema version."
     _ -> error ("At mysterious schema version: " ++ show version)
-  -- Commit transaction NOW.
-  run "COMMIT;"
-  where
 
 run :: (MonadIO m) => Text -> ReaderT SqlBackend m ()
 run x = do
@@ -68,3 +66,24 @@ schema3 = run [s|
 INSERT INTO schema_versions VALUES (1);
 ALTER TABLE "account" ALTER COLUMN "customer_id" DROP NOT NULL;
   |]
+
+schema4  = run [s|
+INSERT INTO schema_versions VALUES (1);
+CREATE TABLE "revision"("id" SERIAL8  PRIMARY KEY UNIQUE,"account" INT8 NOT NULL,"document" INT8 NOT NULL,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"content" VARCHAR NOT NULL,"active" BOOLEAN NOT NULL,"activated" TIMESTAMP WITH TIME ZONE NOT NULL);
+
+INSERT INTO revision (account,document,created,content,active,activated)
+  SELECT d.account as account,
+         d.id as document,
+         d.updated as created,
+         d.content,
+         true as active,
+         now() as activated
+  FROM document d;
+
+ALTER TABLE "document" DROP COLUMN "content";
+
+-- For fast lookup of docs by their name.
+CREATE INDEX idx_doc_name ON document(name);
+-- For fast lookup of revisions by their document_id+activeness.
+CREATE INDEX idx_revision_doc_active ON revision (document, active);
+ |]

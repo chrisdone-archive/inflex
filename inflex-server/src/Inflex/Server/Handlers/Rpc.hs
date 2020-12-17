@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
@@ -32,32 +33,23 @@ rpcLoadDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
 rpcLoadDocument docId =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       mdoc <-
-         runDB
-           (selectFirst
-              [ DocumentAccount ==. fromAccountID loginAccountId
-              , DocumentId ==. toSqlKey (fromIntegral docId)
-              ]
-              [])
-       case mdoc of
-         Nothing -> notFound
-         Just (Entity _ Document {documentContent = document}) -> do
-           start <- liftIO getTime
-           mloaded <-
-             liftIO
-               (timeout
-                  (1000 * milliseconds)
-                  (do let !x = force (loadInputDocument document)
-                      pure x))
-           end <- liftIO getTime
-           case mloaded of
-             Just loaded -> do
-               glog (DocumentLoaded (end-start))
-               pure loaded
-             Nothing -> do
-               glog TimeoutExceeded
-               invalidArgs
-                 ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+       RevisedDocument{..} <- runDB (getRevisedDocument loginAccountId docId)
+       start <- liftIO getTime
+       mloaded <-
+         liftIO
+           (timeout
+              (1000 * milliseconds)
+              (do let !x = force (loadInputDocument (revisionContent revision))
+                  pure x))
+       end <- liftIO getTime
+       case mloaded of
+         Just loaded -> do
+           glog (DocumentLoaded (end - start))
+           pure loaded
+         Nothing -> do
+           glog TimeoutExceeded
+           invalidArgs
+             ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
 
 --------------------------------------------------------------------------------
 -- Refresh document
@@ -66,37 +58,32 @@ rpcRefreshDocument :: Shared.RefreshDocument -> Handler Shared.OutputDocument
 rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       mdoc <-
-         runDB
-           (selectFirst
-              [ DocumentAccount ==. fromAccountID loginAccountId
-              , DocumentId ==. toSqlKey (fromIntegral documentId)
-              ]
-              [])
-       case mdoc of
-         Nothing -> notFound
-         Just documentEntity -> do
-           now <- liftIO getCurrentTime
-           start <- liftIO getTime
-           mloaded <-
-             liftIO
-               (timeout
-                  (1000 * milliseconds)
-                  (do let !x = force (loadInputDocument document)
-                      pure x))
-           end <- liftIO getTime
-           runDB
-             (update
-                (entityKey documentEntity)
-                [DocumentContent =. document, DocumentUpdated =. now])
-           case mloaded of
-             Just loaded -> do
-               glog (DocumentRefreshed (end-start))
-               pure loaded
-             Nothing -> do
-               glog TimeoutExceeded
-               invalidArgs
-                 ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+       RevisedDocument {..} <-
+         runDB (getRevisedDocument loginAccountId documentId)
+       now <- liftIO getCurrentTime
+       start <- liftIO getTime
+       mloaded <-
+         liftIO
+           (timeout
+              (1000 * milliseconds)
+              (do let !x = force (loadInputDocument document)
+                  pure x))
+       end <- liftIO getTime
+       runDB
+         (setInputDocument
+            now
+            loginAccountId
+            documentKey
+            revisionId
+            document)
+       case mloaded of
+         Just loaded -> do
+           glog (DocumentRefreshed (end - start))
+           pure loaded
+         Nothing -> do
+           glog TimeoutExceeded
+           invalidArgs
+             ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
 
 milliseconds :: Int
 milliseconds = 1000
@@ -108,52 +95,44 @@ rpcUpdateDocument :: Shared.UpdateDocument -> Handler Shared.UpdateResult
 rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       mdoc <-
-         runDB
-           (selectFirst
-              [ DocumentAccount ==. fromAccountID loginAccountId
-              , DocumentId ==. toSqlKey (fromIntegral documentId)
-              ]
-              [])
-       case mdoc of
-         Nothing -> notFound
-         Just (Entity documentId' document) -> do
-           case update' of
-             Shared.CellUpdate Shared.UpdateCell { uuid
-                                                 , update = Shared.UpdatePath {path}
-                                                 } -> do
-               start <- liftIO getTime
-               case applyUpdateToDocument update' (documentContent document) of
-                 Left transformError -> do
-                   glog UpdateTransformError
+       RevisedDocument {..} <-
+         runDB (getRevisedDocument loginAccountId documentId)
+       case update' of
+         Shared.CellUpdate Shared.UpdateCell { uuid
+                                             , update = Shared.UpdatePath {path}
+                                             } -> do
+           start <- liftIO getTime
+           case applyUpdateToDocument update' (revisionContent revision) of
+             Left transformError -> do
+               glog UpdateTransformError
+               pure
+                 (Shared.NestedError
+                    (Shared.NestedCellError
+                       { Shared.error = transformErrorToCellError transformError
+                       , path = path
+                       }))
+             Right inputDocument ->
+               case cellHadErrorInNestedPlace uuid path outputDocument of
+                 Nothing -> do
+                   end <- liftIO getTime
+                   now <- liftIO getCurrentTime
+                   runDB
+                     (setInputDocument
+                        now
+                        loginAccountId
+                        documentKey
+                        revisionId
+                        inputDocument)
+                   glog (CellUpdated (end - start))
+                   pure (Shared.UpdatedDocument outputDocument)
+                 Just cellError -> do
+                   glog CellErrorInNestedPlace
                    pure
                      (Shared.NestedError
                         (Shared.NestedCellError
-                           { Shared.error =
-                               transformErrorToCellError transformError
-                           , path = path
-                           }))
-                 Right inputDocument ->
-                   case cellHadErrorInNestedPlace uuid path outputDocument of
-                     Nothing -> do
-                       end <- liftIO getTime
-                       now <- liftIO getCurrentTime
-                       runDB
-                         (update
-                            documentId'
-                            [ DocumentContent =. inputDocument
-                            , DocumentUpdated =. now
-                            ])
-                       glog (CellUpdated (end-start))
-                       pure (Shared.UpdatedDocument outputDocument)
-                     Just cellError -> do
-                       glog CellErrorInNestedPlace
-                       pure
-                         (Shared.NestedError
-                            (Shared.NestedCellError
-                               {Shared.error = cellError, path = path}))
-                   where outputDocument :: Shared.OutputDocument
-                         outputDocument = loadInputDocument inputDocument)
+                           {Shared.error = cellError, path = path}))
+               where outputDocument :: Shared.OutputDocument
+                     outputDocument = loadInputDocument inputDocument)
 
 -- | Determine whether there was an error in the cell at the place of
 -- the update. If so, return it! We can then nicely display it to the
@@ -180,3 +159,51 @@ transformErrorToCellError =
   \case
     TransformedParseError {} -> Shared.SyntaxError
     OriginalSourceNotParsing {} -> Shared.SyntaxError -- TODO: Make explicit constructor.
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+data RevisedDocument = RevisedDocument
+  { documentKey :: DocumentId
+  , revisionId :: RevisionId
+  , revision :: Revision
+  }
+
+getRevisedDocument :: AccountID -> Shared.DocumentId -> YesodDB App RevisedDocument
+getRevisedDocument loginAccountId docId = do
+  mdoc <-
+    selectFirst
+      [ DocumentAccount ==. fromAccountID loginAccountId
+      , DocumentId ==. toSqlKey (fromIntegral docId)
+      ]
+      []
+  case mdoc of
+    Nothing -> notFound
+    Just (Entity documentKey _document) -> do
+      mrevision <-
+        selectFirst
+          [RevisionDocument ==. documentKey, RevisionActive ==. True]
+          []
+      case mrevision of
+        Nothing -> notFound
+        Just (Entity revisionId revision) -> do
+          pure RevisedDocument {..}
+
+setInputDocument ::
+     UTCTime
+  -> AccountID
+  -> DocumentId
+  -> RevisionId
+  -> Shared.InputDocument1
+  -> YesodDB App ()
+setInputDocument now accountId documentId revisionId inputDocument = do
+  update revisionId [RevisionActive =. False]
+  insert_
+    Revision
+      { revisionAccount = fromAccountID accountId
+      , revisionDocument = documentId
+      , revisionCreated = now
+      , revisionContent = inputDocument
+      , revisionActive = True
+      , revisionActivated = now
+      }

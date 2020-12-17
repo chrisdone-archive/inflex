@@ -100,7 +100,7 @@ postNewDocumentR =
                  insert
                    Document
                      { documentName = DocumentSlug mempty
-                     , documentContent = Shared.InputDocument1 {cells = mempty}
+                     -- , documentContent = Shared.InputDocument1 {cells = mempty}
                      , documentCreated = now'
                      , documentUpdated = now'
                      , documentAccount = fromAccountID loginAccountId
@@ -109,6 +109,15 @@ postNewDocumentR =
                      DocumentSlug
                        ("document-" <> fromString (show (fromSqlKey key)))
                update key [DocumentName =. slug] -- TODO: Check uniqueness
+               insert_
+                 Revision
+                   { revisionAccount = fromAccountID loginAccountId
+                   , revisionDocument = key
+                   , revisionCreated = now'
+                   , revisionContent = Shared.InputDocument1 {cells = mempty}
+                   , revisionActive = True
+                   , revisionActivated = now'
+                   }
                pure slug)
        glog CreateDocument
        redirect (AppEditorR slug))
