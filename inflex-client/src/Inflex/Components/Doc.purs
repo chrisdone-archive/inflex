@@ -21,10 +21,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcLoadDocument, rpcRefreshDocument, rpcUpdateDocument)
+import Inflex.Rpc (rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
 import Web.Event.Event (preventDefault)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -48,6 +48,8 @@ data Command
   | DragStart UUID DE.DragEvent
   | OnDragOver DE.DragEvent
   | OnDrop DE.DragEvent
+  | Undo
+  | Redo
 
 type State = {
     cells :: Array OutputCell
@@ -86,6 +88,16 @@ render state =
         , HH.div
             [HP.class_ (HH.ClassName "rhs-nav")]
             [ HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\e -> pure Undo)
+                ]
+                [HH.text "Undo"]
+            , HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\e -> pure Redo)
+                ]
+                [HH.text "Redo"]
+            , HH.button
                 [HP.class_ (HH.ClassName "new-prefix full-button")]
                 [HH.text "New"]
             , HH.button
@@ -242,6 +254,16 @@ eval =
               (uuidToString uuid)
               (Cell.NestedCellError cellError)
           pure unit
+    Undo -> do
+      result <- rpcUndoDocument (DocumentId (meta . documentId))
+      case result of
+        Left err -> error err
+        Right outputDocument -> setOutputDocument outputDocument
+    Redo -> do
+      result <- rpcRedoDocument (DocumentId (meta . documentId))
+      case result of
+        Left err -> error err
+        Right outputDocument -> setOutputDocument outputDocument
 
 --------------------------------------------------------------------------------
 -- API calls

@@ -22,9 +22,19 @@ rpcHandler name =
       output <- rpcLoadDocument (input :: DocumentId)
       pure (toJSON (output :: OutputDocument))
 
+    "RedoDocument" -> do
+      input <- requireCheckJsonBody
+      output <- rpcRedoDocument (input :: DocumentId)
+      pure (toJSON (output :: OutputDocument))
+
     "RefreshDocument" -> do
       input <- requireCheckJsonBody
       output <- rpcRefreshDocument (input :: RefreshDocument)
+      pure (toJSON (output :: OutputDocument))
+
+    "UndoDocument" -> do
+      input <- requireCheckJsonBody
+      output <- rpcUndoDocument (input :: DocumentId)
       pure (toJSON (output :: OutputDocument))
 
     "UpdateDocument" -> do

@@ -7,3 +7,9 @@ RefreshDocument:
 UpdateDocument:
   input: UpdateDocument
   output: UpdateResult
+UndoDocument:
+  input: DocumentId
+  output: OutputDocument
+RedoDocument:
+  input: DocumentId
+  output: OutputDocument

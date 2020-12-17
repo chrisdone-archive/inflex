@@ -33,23 +33,8 @@ rpcLoadDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
 rpcLoadDocument docId =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
-       RevisedDocument{..} <- runDB (getRevisedDocument loginAccountId docId)
-       start <- liftIO getTime
-       mloaded <-
-         liftIO
-           (timeout
-              (1000 * milliseconds)
-              (do let !x = force (loadInputDocument (revisionContent revision))
-                  pure x))
-       end <- liftIO getTime
-       case mloaded of
-         Just loaded -> do
-           glog (DocumentLoaded (end - start))
-           pure loaded
-         Nothing -> do
-           glog TimeoutExceeded
-           invalidArgs
-             ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
+       revisedDocument <- runDB (getRevisedDocument loginAccountId docId)
+       loadRevisedDocument revisedDocument)
 
 --------------------------------------------------------------------------------
 -- Refresh document
@@ -161,6 +146,51 @@ transformErrorToCellError =
     OriginalSourceNotParsing {} -> Shared.SyntaxError -- TODO: Make explicit constructor.
 
 --------------------------------------------------------------------------------
+-- Undo/Redo document
+
+rpcUndoDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
+rpcUndoDocument docId =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       revisedDocument <-
+         runDB
+           (do RevisedDocument {..} <- getRevisedDocument loginAccountId docId
+               mrevisionId <-
+                 selectFirst
+                   [RevisionId <. revisionId, RevisionDocument ==. documentKey]
+                   [Desc RevisionId]
+               case mrevisionId of
+                 Just (Entity revisionId' revision') -> do
+                   update revisionId [RevisionActive =. False]
+                   update revisionId' [RevisionActive =. True]
+                   pure
+                     RevisedDocument
+                       {revisionId = revisionId', revision = revision', ..}
+                 Nothing -> pure RevisedDocument {..})
+       loadRevisedDocument revisedDocument)
+
+rpcRedoDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
+rpcRedoDocument docId =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       revisedDocument <-
+         runDB
+           (do RevisedDocument {..} <- getRevisedDocument loginAccountId docId
+               mrevisionId <-
+                 selectFirst
+                   [RevisionId >. revisionId, RevisionDocument ==. documentKey]
+                   [Asc RevisionId]
+               case mrevisionId of
+                 Just (Entity revisionId' revision') -> do
+                   update revisionId [RevisionActive =. False]
+                   update revisionId' [RevisionActive =. True]
+                   pure
+                     RevisedDocument
+                       {revisionId = revisionId', revision = revision', ..}
+                 Nothing -> pure RevisedDocument {..})
+       loadRevisedDocument revisedDocument)
+
+--------------------------------------------------------------------------------
 -- Helpers
 
 data RevisedDocument = RevisedDocument
@@ -207,3 +237,24 @@ setInputDocument now accountId documentId revisionId inputDocument = do
       , revisionActive = True
       , revisionActivated = now
       }
+
+--------------------------------------------------------------------------------
+-- Loading
+
+loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
+loadRevisedDocument RevisedDocument{..} = do
+  start <- liftIO getTime
+  mloaded <-
+    liftIO
+      (timeout
+         (1000 * milliseconds)
+         (do let !x = force (loadInputDocument (revisionContent revision))
+             pure x))
+  end <- liftIO getTime
+  case mloaded of
+    Just loaded -> do
+      glog (DocumentLoaded (end - start))
+      pure loaded
+    Nothing -> do
+      glog TimeoutExceeded
+      invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"]

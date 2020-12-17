@@ -23,8 +23,14 @@ import Inflex.Schema
 rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
 rpcLoadDocument = rpcCall "LoadDocument"
 
+rpcRedoDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
+rpcRedoDocument = rpcCall "RedoDocument"
+
 rpcRefreshDocument :: forall m. MonadAff m => RefreshDocument -> m (Either String OutputDocument)
 rpcRefreshDocument = rpcCall "RefreshDocument"
+
+rpcUndoDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
+rpcUndoDocument = rpcCall "UndoDocument"
 
 rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String UpdateResult)
 rpcUpdateDocument = rpcCall "UpdateDocument"
