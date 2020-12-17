@@ -6,6 +6,8 @@ module Inflex.Components.Cell.TextInput
   , Input(..)
   ) where
 
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Set (Set)
@@ -13,7 +15,7 @@ import Data.Set as Set
 import Data.String (trim)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Effect.Console (log)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -42,7 +44,9 @@ newtype Input = Input {
   text :: String,
   notThese :: Set String
   }
-derive instance genericInput :: Eq Input
+derive instance eqInput :: Eq Input
+derive instance genericInput :: Generic Input _
+instance showInput :: Show Input where show = genericShow
 
 type Output = String
 
@@ -108,7 +112,7 @@ component config =
 foreign import getValue :: Element -> Effect (Nullable String)
 
 eval :: forall q i m. MonadEffect m => Config -> Command -> H.HalogenM State q i Output m Unit
-eval config@(Config{validator}) =
+eval config@(Config {validator}) =
   case _ of
     PrintCode string -> H.liftEffect (log string)
     CodeUpdate event -> do
@@ -129,7 +133,9 @@ eval config@(Config{validator}) =
                     else if validator text
                            then do
                              H.raise text
-                             eval config (SetInputInternal (Input {text, notThese}))
+                             eval
+                               config
+                               (SetInputInternal (Input {text, notThese}))
                            else H.modify_
                                   (\(State s) ->
                                      State (s {error = Just InvalidValidation}))
@@ -137,10 +143,14 @@ eval config@(Config{validator}) =
     StartEditor ->
       void (H.modify (\(State s) -> State (s {display = DisplayEditor})))
     SetInput input -> do
-      do State state <- H.get
-         if state . lastInput == input
-           then pure unit
-           else eval config (SetInputInternal input)
+      do
+         State state <- H.get
+         case state . display of
+           DisplayEditor
+             | state . lastInput == input -> do log ("SetInput: [skipped] " <> show input)
+                                                pure unit
+           _ -> do log ("SetInput:" <> show input)
+                   eval config (SetInputInternal input)
     SetInputInternal (Input {text, notThese}) -> do
       H.modify_
         (\(State st) ->
