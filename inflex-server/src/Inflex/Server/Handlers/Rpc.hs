@@ -237,6 +237,14 @@ setInputDocument now accountId documentId revisionId inputDocument = do
       , revisionActive = True
       , revisionActivated = now
       }
+  revisions <- selectKeysList [RevisionDocument ==. documentId] [Asc RevisionId]
+  config <- fmap appConfig getYesod
+  case revisions of
+    [] -> pure ()
+    (earliestRevision:_) ->
+      if length revisions > maxRevisionsPerDoc config
+        then delete earliestRevision
+        else pure ()
 
 --------------------------------------------------------------------------------
 -- Loading

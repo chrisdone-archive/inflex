@@ -41,6 +41,7 @@ data Config = Config
   { stripeConfig :: StripeConfig
   , databaseConn :: Text
   , gaUa :: GA_UA
+  , maxRevisionsPerDoc :: Int
   } deriving (Generic)
 instance FromJSON Config
 
