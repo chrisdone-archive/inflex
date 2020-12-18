@@ -166,6 +166,11 @@ instance showNestedCellError :: Show NestedCellError where show = genericShow
 instance decodeNestedCellError :: Decode NestedCellError where decode = genericDecode opts
 instance encodeNestedCellError :: Encode NestedCellError where encode = genericEncode opts
 
+derive instance genericVariantArgument :: Generic VariantArgument _
+instance showVariantArgument :: Show VariantArgument where show = genericShow
+instance decodeVariantArgument :: Decode VariantArgument where decode = genericDecode opts
+instance encodeVariantArgument :: Encode VariantArgument where encode = genericEncode opts
+
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow
 instance decodeInputCell :: Decode InputCell where decode = genericDecode opts

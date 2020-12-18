@@ -132,6 +132,13 @@ toEditor =
       Editor.VegaE originalSource vega
     Shared.ArrayTree2 _ originalSource trees ->
       Editor.ArrayE originalSource  (map toEditor trees)
+    Shared.VariantTree2 _ originalSource label margument ->
+      Editor.VariantE
+        originalSource
+        label
+        (case margument of
+         Shared.VariantArgument tree -> Just (toEditor tree)
+         _ -> Nothing)
     Shared.RecordTree2 _ originalSource fields ->
       Editor.RecordE originalSource
         (map (\(Shared.Field2{key,value}) -> Editor.Field ({key,value: toEditor value})) fields)

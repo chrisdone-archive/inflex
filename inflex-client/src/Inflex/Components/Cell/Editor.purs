@@ -7,8 +7,7 @@ module Inflex.Components.Cell.Editor
   , Field(..)
   , Row(..)
   , Query(..)
-  , component
-  ) where
+  , component) where
 
 import Data.Array (mapWithIndex)
 import Data.Array as Array
@@ -90,6 +89,7 @@ data Editor
   | VegaE Shared.OriginalSource String
   | ErrorE CellError
   | ArrayE Shared.OriginalSource (Array Editor)
+  | VariantE Shared.OriginalSource String (Maybe Editor)
   | RecordE Shared.OriginalSource (Array Field)
   | TableE Shared.OriginalSource
            (Array String)
@@ -105,6 +105,7 @@ editorOriginalSource =
     ArrayE o _ -> o
     RecordE o _ -> o
     TableE o _ _ -> o
+    VariantE o _ _ -> o
 
 derive instance genericEditor :: Generic Editor _
 instance showEditor :: Show Editor where show x = genericShow x
@@ -360,10 +361,51 @@ renderEditor path editor =
       [renderTextEditor path t]
     VegaE _originalSource t ->
       [renderVegaEditor path t]
+    VariantE _originalSource tag arg ->
+      [renderVariantEditor path tag arg]
     ErrorE msg -> [renderError msg]
     ArrayE _originalSource editors -> [renderArrayEditor path editors]
     RecordE _originalSource fields -> [renderRecordEditor path fields]
     TableE _originalSource columns rows -> renderTableEditor path columns rows
+
+--------------------------------------------------------------------------------
+-- Variant display
+
+renderVariantEditor ::
+     forall a. MonadEffect a
+  => (Shared.DataPath -> Shared.DataPath)
+  -> String
+  -> Maybe Editor
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+renderVariantEditor path tag marg =
+  HH.div
+    [HP.class_ (HH.ClassName "variant")]
+    ([HH.div [HP.class_ (HH.ClassName "variant-tag")] [HH.text ("#" <> tag)]] <>
+     case marg of
+       Nothing -> []
+       Just arg ->
+         [HH.slot
+            (SProxy :: SProxy "editor")
+            ("#" <> show tag <> "/argument")
+            component
+            (EditorAndCode
+               { editor: arg
+               , code: editorCode arg
+               , path: path <<< Shared.DataVariantOf tag
+               })
+            (\output ->
+               case output of
+                 UpdatePath update -> Just (TriggerUpdatePath update)
+                 NewCode rhs ->
+                   Just
+                     (TriggerUpdatePath
+                        (Shared.UpdatePath
+                           { path:
+                               path (Shared.DataVariantOf tag Shared.DataHere)
+                           , update:
+                               Shared.CodeUpdate
+                                 (Shared.Code {text: rhs})
+                           })))])
 
 --------------------------------------------------------------------------------
 -- Vega display
@@ -911,6 +953,10 @@ editorCode =
     VegaE original s -> originalOr original s
     TextE original s -> (show s) -- TODO: Encoding strings is not easy. Fix this.
     ArrayE original xs -> ("[" <> joinWith ", " (map editorCode xs) <> "]")
+    VariantE original tag marg -> ("#" <> tag <> arg)
+      where arg = case marg of
+                    Nothing -> ""
+                    Just arg' -> "(" <> editorCode arg' <> ")"
     RecordE original fs ->
       ("{" <>
        joinWith

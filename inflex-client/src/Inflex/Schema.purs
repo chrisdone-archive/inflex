@@ -132,6 +132,7 @@ data DataPath
   = DataHere
   | DataElemOf Int DataPath
   | DataFieldOf Int DataPath
+  | DataVariantOf Text DataPath
 
 --------------------------------------------------------------------------------
 -- General document types (not specific to a given command)
@@ -176,7 +177,11 @@ data Tree2
   | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
   | VegaTree2 Version2 OriginalSource Text
+  | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
+
+data VariantArgument =
+  VariantArgument Tree2 | NoVariantArgument
 
 data Row = Row
  { source :: OriginalSource
@@ -379,6 +384,11 @@ derive instance genericNestedCellError :: Generic NestedCellError _
 instance showNestedCellError :: Show NestedCellError where show = genericShow
 instance decodeNestedCellError :: Decode NestedCellError where decode = genericDecode opts
 instance encodeNestedCellError :: Encode NestedCellError where encode = genericEncode opts
+
+derive instance genericVariantArgument :: Generic VariantArgument _
+instance showVariantArgument :: Show VariantArgument where show = genericShow
+instance decodeVariantArgument :: Decode VariantArgument where decode = genericDecode opts
+instance encodeVariantArgument :: Encode VariantArgument where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

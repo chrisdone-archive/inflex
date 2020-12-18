@@ -249,6 +249,12 @@ deriving instance Show NestedCellError
 instance ToJSON NestedCellError
 instance FromJSON NestedCellError
 
+instance NFData VariantArgument
+deriving instance Generic VariantArgument
+deriving instance Show VariantArgument
+instance ToJSON VariantArgument
+instance FromJSON VariantArgument
+
 instance NFData DataPath
 deriving instance Generic DataPath
 deriving instance Show DataPath

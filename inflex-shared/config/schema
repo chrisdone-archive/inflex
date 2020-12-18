@@ -110,6 +110,7 @@ data DataPath
   = DataHere
   | DataElemOf Int DataPath
   | DataFieldOf Int DataPath
+  | DataVariantOf Text DataPath
 
 --------------------------------------------------------------------------------
 -- General document types (not specific to a given command)
@@ -154,7 +155,11 @@ data Tree2
   | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
   | VegaTree2 Version2 OriginalSource Text
+  | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
+
+data VariantArgument =
+  VariantArgument Tree2 | NoVariantArgument
 
 data Row = Row
  { source :: OriginalSource

@@ -64,6 +64,13 @@ addNewFieldInCode path0 name code =
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
       \case
+        VariantExpression variant@Variant { tag = TagName expected
+                                          , argument = marg
+                                          }
+          | Shared.DataVariantOf actual path' <- path
+          , actual == expected
+          , Just expr <- marg -> do
+            (VariantExpression variant {argument = Just (go path' expr)})
         ArrayExpression array@Array {expressions, location}
           | Shared.DataElemOf _index path' <- path ->
             ArrayExpression
@@ -111,6 +118,13 @@ renameFieldInCode path0 from to' code =
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
       \case
+        VariantExpression variant@Variant { tag = TagName expected
+                                          , argument = marg
+                                          }
+          | Shared.DataVariantOf actual path' <- path
+          , actual == expected
+          , Just expr <- marg -> do
+            (VariantExpression variant {argument = Just (go path' expr)})
         ArrayExpression array@Array {expressions}
           | Shared.DataElemOf _index path' <- path ->
             ArrayExpression
@@ -162,6 +176,13 @@ deleteFieldInCode path0 name0 code =
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
       \case
+        VariantExpression variant@Variant { tag = TagName expected
+                                          , argument = marg
+                                          }
+          | Shared.DataVariantOf actual path' <- path
+          , actual == expected
+          , Just expr <- marg -> do
+            (VariantExpression variant {argument = Just (go path' expr)})
         ArrayExpression array@Array {expressions}
           | Shared.DataElemOf _index path' <- path ->
             ArrayExpression
@@ -303,6 +324,14 @@ mapPath path0 mapping code =
       -> Either TransformError (Expression Parsed)
     go path =
       \case
+        VariantExpression variant@Variant { tag = TagName expected
+                                          , argument = marg
+                                          }
+          | Shared.DataVariantOf actual path' <- path
+          , actual == expected
+          , Just expr <- marg -> do
+            expr' <- go path' expr
+            pure (VariantExpression variant {argument = Just expr'})
         ArrayExpression array@Array {expressions}
           | Shared.DataElemOf index path' <- path -> do
             expressions' <-
@@ -317,14 +346,12 @@ mapPath path0 mapping code =
           | Shared.DataFieldOf index path' <- path -> do
             fields' <-
               traverse
-                (\(i, fielde@FieldE {expression}) ->
-                   do expression' <- if i == index
-                                       then go path' expression
-                                       else pure expression
-                      pure fielde
-                             { FieldE.expression =
-                                 expression'
-                             })
+                (\(i, fielde@FieldE {expression}) -> do
+                   expression' <-
+                     if i == index
+                       then go path' expression
+                       else pure expression
+                   pure fielde {FieldE.expression = expression'})
                 (zip [0 ..] fields)
             pure (RecordExpression record {fields = fields'})
         e

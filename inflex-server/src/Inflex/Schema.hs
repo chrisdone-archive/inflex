@@ -137,6 +137,7 @@ data DataPath
   = DataHere
   | DataElemOf Int DataPath
   | DataFieldOf Int DataPath
+  | DataVariantOf Text DataPath
 
 --------------------------------------------------------------------------------
 -- General document types (not specific to a given command)
@@ -181,7 +182,11 @@ data Tree2
   | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
   | VegaTree2 Version2 OriginalSource Text
+  | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
+
+data VariantArgument =
+  VariantArgument Tree2 | NoVariantArgument
 
 data Row = Row
  { source :: OriginalSource
@@ -462,6 +467,12 @@ deriving instance Generic NestedCellError
 deriving instance Show NestedCellError
 instance ToJSON NestedCellError
 instance FromJSON NestedCellError
+
+instance NFData VariantArgument
+deriving instance Generic VariantArgument
+deriving instance Show VariantArgument
+instance ToJSON VariantArgument
+instance FromJSON VariantArgument
 
 instance NFData DataPath
 deriving instance Generic DataPath

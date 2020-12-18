@@ -122,8 +122,21 @@ toTree original =
                (V.fromList fields))
     LiteralExpression (TextLiteral (LiteralText {text})) ->
       Shared.TextTree2 Shared.versionRefl originalSource text
-    ApplyExpression Apply{typ = ConstantType TypeConstant{name=VegaTypeName}, argument} ->
-      Shared.VegaTree2 Shared.versionRefl Shared.NoOriginalSource (textDisplay argument)
+    ApplyExpression Apply { typ = ConstantType TypeConstant {name = VegaTypeName}
+                          , argument
+                          } ->
+      Shared.VegaTree2
+        Shared.versionRefl
+        Shared.NoOriginalSource
+        (textDisplay argument)
+    VariantExpression Variant {tag = TagName tag, argument} ->
+      Shared.VariantTree2
+        Shared.versionRefl
+        Shared.NoOriginalSource
+        tag
+        (case argument of
+           Just arg -> Shared.VariantArgument (toTree Nothing arg)
+           Nothing -> Shared.NoVariantArgument)
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
