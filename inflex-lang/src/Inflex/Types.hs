@@ -12,6 +12,7 @@
 module Inflex.Types where
 
 import Control.DeepSeq
+import Control.DeepSeq
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
 import Data.String
@@ -296,7 +297,7 @@ data Field s = Field
 
 newtype FieldName = FieldName
   { unFieldName :: Text
-  } deriving (Eq, Ord, Generic, Show, Lift, IsString)
+  } deriving (Eq, Ord, Generic, Show, Lift, IsString, NFData)
 
 newtype TagName = TagName
   { unTagName :: Text

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -9,6 +10,7 @@
 
 module SolverSpec where
 
+import           Data.Functor
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
@@ -17,6 +19,7 @@ import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Type
 import           Inflex.Types
+import           System.Timeout
 import           Test.Hspec
 
 solveText' :: (e ~ ()) =>
@@ -557,3 +560,10 @@ arrayHoles = do
                                })))
                 , location = ExpressionCursor
                 }))))
+  it
+    "wibblewobble"
+    (do {-pendingWith "Infinite loops!"-}
+        (shouldReturn
+           (timeout (1000 * 1000 * 5)(let !x = void (fmap Inflex.Solver.thing (solveText' mempty "" "let c = [#foo({\"t\": \"text\"})] in map(x:case x{#foo(e):e.t},c)"))
+                                      in pure x))
+           (Nothing)))

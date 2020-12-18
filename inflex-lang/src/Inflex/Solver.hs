@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
@@ -24,6 +25,7 @@ module Inflex.Solver
   , GenerateSolveError(..)
   ) where
 
+import           Control.DeepSeq
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Monad.State.Strict
@@ -38,6 +40,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Void
+import           Debug.Trace
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
@@ -194,6 +197,8 @@ unifyRows ::
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
+  -- This shows that it loops forever.
+  -- trace ("unifyRows " <> show row1 <> " == " <> show row2) (pure ())
   constraints <-
     case (fs1, v1, fs2, v2) of
       ([], Nothing, [], Nothing) -> pure []
@@ -245,10 +250,10 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
       (sd1, Nothing, sd2, Nothing)
         | sd1 `rowsExactMatch` sd2 -> do pure []
       _ -> throwError (pure (RowMismatch row1 row2))
-  let common = intersect (map fieldName fs1) (map fieldName fs2)
+  let !common = force $ intersect (map fieldName fs1) (map fieldName fs2)
       -- You have to make sure that the types of all the fields match
       -- up, obviously.
-      fieldsToUnify =
+  let !fieldsToUnify =
         mapMaybe
           (\name -> do
              f1 <- find ((== name) . fieldName) fs1
@@ -262,7 +267,7 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
           common
       -- These are essentially substitutions -- replacing one of the
       -- rows with something else.
-      constraintsToUnify =
+  let !constraintsToUnify =
         map
           (\(tyvar, t) ->
              EqualityConstraint
