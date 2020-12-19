@@ -564,6 +564,6 @@ arrayHoles = do
     "wibblewobble"
     (do {-pendingWith "Infinite loops!"-}
         (shouldReturn
-           (timeout (1000 * 1000 * 5)(let !x = void (fmap Inflex.Solver.thing (solveText' mempty "" "let c = [#foo({\"t\": \"text\"})] in map(x:case x{#foo(e):e.t},c)"))
+           (timeout (1000 * 500)(let !x = void (fmap Inflex.Solver.thing (solveText' mempty "" "let c = [#foo({\"t\": \"text\"})] in map(x:case x{#foo(e):e.t},c)"))
                                       in pure x))
            (Nothing)))
