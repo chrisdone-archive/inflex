@@ -18,6 +18,7 @@ import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Resolver
 import           Inflex.Solver
+import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -29,6 +30,15 @@ defaultDocument' = RIO.runRIO DefaulterReader . defaultDocument
 
 loadDocument' :: [Named Text] -> IO (Toposorted (Named (Either LoadError (IsResolved (Expression Resolved)))))
 loadDocument' = RIO.runRIO DocumentReader . loadDocument
+
+evalDocument' ::
+     RIO.MonadIO m
+  => RIO.Map Hash (Expression Resolved)
+  -> m (Toposorted (Named (Either LoadError Cell)))
+  -> m (Toposorted (Named (Either LoadError (Expression Resolved))))
+evalDocument' env m = do
+  doc <- m
+  RIO.runRIO StepReader (evalDocument env doc)
 
 spec :: Spec
 spec = do
@@ -52,7 +62,7 @@ errors = do
                        , code = "x"
                        }
                    ]
-              fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
+              (evalDocument' (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -78,7 +88,7 @@ errors = do
                        , order = 0
                        }
                    ]
-              fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
+              evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -116,7 +126,7 @@ errors = do
                        , order = 1
                        }
                    ]
-              fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
+              evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y(y)", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
   eval_it
     "Missing field"
@@ -156,7 +166,7 @@ success = do
                        , order = 2
                        }
                    ]
-              fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
+              evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -255,7 +265,7 @@ success = do
                        , order = 2
                        }
                    ]
-              fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
+              evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           (Toposorted {unToposorted = [Named {uuid = Uuid u1, name = "double", order = 0, code = "x: x * 2", thing = Right (LambdaExpression (Lambda {location = ExpressionCursor, param = Param {location = LambdaParamCursor, name = (), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}, body = InfixExpression (Infix {location = LambdaBodyCursor ExpressionCursor, global = ApplyExpression (Apply {location = ImplicitlyApplicationOn (LambdaBodyCursor (InfixOpCursor ExpressionCursor)), function = GlobalExpression (Global {location = LambdaBodyCursor (InfixOpCursor ExpressionCursor), name = NumericBinOpGlobal MulitplyOp, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal (IntegerOpInstance MulitplyOp), scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), left = VariableExpression (Variable {location = LambdaBodyCursor (InfixLeftCursor ExpressionCursor), name = DeBrujinIndex (DeBrujinNesting 0), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), right = ApplyExpression (Apply {location = BuiltIn, function = ApplyExpression (Apply {location = ImplicitlyApplicationOn BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal FromIntegerIntegerInstance, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), name = IntegerTypeName})})), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = TypeKind})}))},Named {uuid = Uuid u3, name = "b", order = 2, code = "double(2.2)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = DecimalNumber (Decimal {places = 1, integer = 44}), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = NatTypeName 1}), location = ApplyArgCursor ExpressionCursor, kind = TypeKind})})))},Named {uuid = Uuid u2, name = "a", order = 1, code = "double(1)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})))}]}))
   describe "Records" records
 
@@ -1556,9 +1566,7 @@ duplicate_empty_names_ok =
                 }
             ]
         shouldReturn
-          (fmap
-             (evalDocument (evalEnvironment loaded))
-             (defaultDocument' loaded))
+          ((evalDocument' (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -1629,7 +1637,8 @@ eval_it_with ::
   -> SpecWith ()
 eval_it_with desc xs result io =
   it
-    (desc <> ": " <> intercalate
+    (desc <> ": " <>
+     intercalate
        "; "
        (map (\(name, val) -> T.unpack name <> " = " <> T.unpack val) xs))
     (do io
@@ -1641,20 +1650,21 @@ eval_it_with desc xs result io =
             xs
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   (zipWith
-                      (\i (uuid, (name, thing)) ->
-                         Named
-                           { uuid = Uuid uuid
-                           , name
-                           , thing
-                           , code = thing
-                           , order = i
-                           })
-                      [0 ..]
-                      xs')
-              defaulted <- RIO.runRIO DefaulterReader (defaultDocument loaded)
-              pure (evalDocument (evalEnvironment loaded) defaulted))
+                loadDocument'
+                  (zipWith
+                     (\i (uuid, (name, thing)) ->
+                        Named
+                          { uuid = Uuid uuid
+                          , name
+                          , thing
+                          , code = thing
+                          , order = i
+                          })
+                     [0 ..]
+                     xs')
+              evalDocument'
+                (evalEnvironment loaded)
+                (RIO.runRIO DefaulterReader (defaultDocument loaded)))
           (Toposorted (result (map fst xs'))))
 
 nextRandom' :: IO Text

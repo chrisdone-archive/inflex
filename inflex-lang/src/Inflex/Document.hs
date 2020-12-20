@@ -161,26 +161,32 @@ defaultDocument1 =
 evalDocument ::
      Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell))
-  -> Toposorted (Named (Either LoadError (Expression Resolved)))
+  -> RIO StepReader (Toposorted (Named (Either LoadError (Expression Resolved))))
 evalDocument env =
-  fmap
-    (fmap
-       (\result -> do
-          cell <- result
-          first LoadStepError (stepDefaulted env cell)))
+  traverse
+    (traverse
+       (\result ->
+          case result of
+            Left e -> pure (Left e)
+            Right cell -> fmap (first LoadStepError) (stepDefaulted env cell)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::
      Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
-  -> Toposorted (Named (Either LoadError EvaledExpression))
+  -> RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
 evalDocument1 env =
-  fmap
-    (fmap
+  traverse
+    (traverse
        (\result -> do
-          cell@Cell1 {..} <- result
-          resultExpression <- first LoadStepError (stepDefaulted env Cell {..})
-          pure EvaledExpression {..}))
+          case result of
+            Left e -> pure (Left e)
+            Right cell@Cell1 {..} -> do
+              resultExpression0 <-
+                fmap (first LoadStepError) (stepDefaulted env Cell {..})
+              case resultExpression0 of
+                Left e -> pure (Left e)
+                Right resultExpression -> pure (Right EvaledExpression {..})))
 
 --------------------------------------------------------------------------------
 -- Document loading

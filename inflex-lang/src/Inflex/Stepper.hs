@@ -110,20 +110,20 @@ stepTextDefaulted schemes values fp text = do
     RIO.runRIO
       DefaulterReader
       (fmap (first DefaulterErrored) (defaultText schemes fp text))
-  pure
-    (do cell' <- cell
-        stepDefaulted values cell')
+  case cell of
+    Left e -> pure (Left e)
+    Right cell' -> stepDefaulted values cell'
 
 stepDefaulted ::
      Map Hash (Expression Resolved)
   -> Cell
-  -> Either (DefaultStepError e) (Expression Resolved)
-stepDefaulted values Cell{defaulted} = do
-  first
-    StepError'
-    (evalStateT
-       (runReaderT (unStep (stepExpression defaulted)) values)
-       Continue)
+  -> RIO StepReader (Either (DefaultStepError e) (Expression Resolved))
+stepDefaulted values Cell{defaulted} = pure (do
+   first
+     StepError'
+     (evalStateT
+        (runReaderT (unStep (stepExpression defaulted)) values)
+        Continue))
 
 stepExpression ::
      Expression Resolved
