@@ -72,7 +72,14 @@ newtype Solve a = Solve
 data SolveReader =
   SolveReader {glogfunc :: GLogFunc SolveMsg}
 
-data SolveMsg = UnifyConstraints
+data SolveMsg
+  = UnifyConstraints Int
+  | UnifyConstraintsIterate Int
+  | UnifyEqualityConstraint EqualityConstraint
+  | UnifyTypeApplications
+  | UnifyRows (TypeRow Generated) (TypeRow Generated)
+  | SuccessfulBindTypeVariable Substitution
+  | GeneratedTypeVariable TypeVariablePrefix Kind Natural
 
 $(makeLensesWith (inflexRules ['glogfunc]) ''SolveReader)
 

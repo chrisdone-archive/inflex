@@ -95,7 +95,7 @@ unifyAndSubstitute equalities typ = do
 unifyConstraints ::
      Seq EqualityConstraint -> Solve (Seq Substitution)
 unifyConstraints constraints = do
-  glog UnifyConstraints
+  glog (UnifyConstraints (length constraints))
   -- This is a large speed hit. If there are 1000 elements in an
   -- array, it will iterate at least 1000x times. So it performs
   -- O(n). Meanwhile, the length of the 'existing' increases over time
@@ -107,10 +107,11 @@ unifyConstraints constraints = do
   -- without paying this penalty.
   foldM
     (\existing equalityConstraint ->
-       fmap
-         (\new -> extendSubstitutions Extension {existing, new})
-         (unifyEqualityConstraint
-            (substituteEqualityConstraint existing equalityConstraint)))
+       do glog (UnifyConstraintsIterate (length existing))
+          fmap
+            (\new -> extendSubstitutions Extension {existing, new})
+            (unifyEqualityConstraint
+               (substituteEqualityConstraint existing equalityConstraint)))
     mempty
     constraints
 
@@ -118,7 +119,8 @@ unifyEqualityConstraint :: EqualityConstraint -> Solve (Seq Substitution)
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
-                                                              } =
+                                                              } = do
+  glog (UnifyEqualityConstraint equalityConstraint)
   case (type1, type2) of
     (ApplyType typeApplication1, ApplyType typeApplication2) ->
       unifyTypeApplications typeApplication1 typeApplication2
@@ -139,6 +141,7 @@ unifyTypeApplications ::
   -> TypeApplication Generated
   -> Solve (Seq Substitution)
 unifyTypeApplications typeApplication1 typeApplication2 = do
+  glog UnifyTypeApplications
   existing <-
     unifyEqualityConstraint
       EqualityConstraint {type1 = function1, type2 = function2, location}
@@ -168,6 +171,7 @@ unifyRows ::
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
+  glog (UnifyRows row1 row2)
   -- This shows that it loops forever.
   -- trace ("unifyRows " <> show row1 <> " == " <> show row2) (pure ())
   constraints <-
@@ -261,9 +265,15 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
 bindTypeVariable :: TypeVariable Generated -> Type Generated -> Solve (Seq Substitution)
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure mempty
-  | occursIn typeVariable typ = throwError (pure (OccursCheckFail typeVariable typ))
-  | typeVariableKind typeVariable /= typeKind typ = throwError (pure (KindMismatch typeVariable typ))
-  | otherwise = pure (pure Substitution {before = typeVariable, after = typ})
+  | occursIn typeVariable typ =
+    throwError (pure (OccursCheckFail typeVariable typ))
+  | typeVariableKind typeVariable /= typeKind typ =
+    throwError (pure (KindMismatch typeVariable typ))
+  | otherwise = do
+    glog (SuccessfulBindTypeVariable substitution)
+    pure (pure substitution)
+  where
+    substitution = Substitution {before = typeVariable, after = typ}
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
 occursIn typeVariable =
@@ -610,6 +620,7 @@ generateTypeVariable ::
      Cursor -> TypeVariablePrefix -> Kind -> Solve (TypeVariable Generated)
 generateTypeVariable location prefix kind = do
   index <- get
+  glog (GeneratedTypeVariable prefix kind index)
   modify succ
   pure
     TypeVariable {location, prefix = SolverGeneratedPrefix prefix, index, kind}
