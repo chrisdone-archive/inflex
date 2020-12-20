@@ -8,7 +8,15 @@
 
 -- | Generalise monomorphic types to poly types.
 
-module Inflex.Generaliser where
+module Inflex.Generaliser
+  ( generaliseText
+  , generaliseSolved
+  , toPolymorphic
+  , GeneraliseError(..)
+  , SolveGeneraliseError(..)
+  , IsGeneralised(..)
+  , GeneraliseReader(..)
+  ) where
 
 import           Control.Monad.State
 import           Data.Bifunctor
@@ -21,6 +29,8 @@ import           Inflex.Solver
 import           Inflex.Type
 import           Inflex.Types
 import           Numeric.Natural
+import qualified RIO
+import           RIO (RIO)
 
 --------------------------------------------------------------------------------
 -- Generalizer types
@@ -52,6 +62,9 @@ data GeneraliseState = GeneraliseState
   , replacements :: !(Map (TypeVariable Solved) (TypeVariable Polymorphic))
   }
 
+data GeneraliseReader =
+  GeneraliseReader
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -59,19 +72,22 @@ generaliseText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised))
+  -> RIO GeneraliseReader (Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised)))
 generaliseText globals fp text = do
-  solved <- first SolverErrored (solveText globals fp text)
-  generaliseSolved solved
+  solved <- pure (first SolverErrored (solveText globals fp text))
+  case solved of
+    Left e -> pure (Left e)
+    Right r -> generaliseSolved r
 
 generaliseSolved ::
      IsSolved (Expression Solved)
-  -> Either (SolveGeneraliseError e)  (IsGeneralised (Expression Generalised))
+  -> RIO GeneraliseReader (Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised)))
 generaliseSolved IsSolved {thing, mappings} = do
   let (polytype, substitions) = toPolymorphic (expressionType thing)
   pure
-    IsGeneralised
-      {mappings, thing = expressionGeneralise substitions thing, polytype}
+    (pure
+       IsGeneralised
+         {mappings, thing = expressionGeneralise substitions thing, polytype})
 
 --------------------------------------------------------------------------------
 -- Polymorphise a type

@@ -38,6 +38,7 @@ import           Inflex.Renamer (patternParam)
 import           Inflex.Type (expressionType, instanceNameType, typeOutput)
 import           Inflex.Types
 import           Inflex.Types.Resolver
+import qualified RIO
 import           RIO (RIO)
 
 --------------------------------------------------------------------------------
@@ -50,7 +51,9 @@ resolveText ::
   -> RIO ResolveReader (Either (GeneraliseResolveError e) (IsResolved (Expression Resolved)))
 resolveText globals fp text = do
   generalised <-
-    pure (first GeneraliserErrored (generaliseText globals fp text))
+    fmap
+      (first GeneraliserErrored)
+      (RIO.runRIO GeneraliseReader (generaliseText globals fp text))
   case generalised of
     Left e -> pure (Left e)
     Right generalised' -> resolveGeneralised generalised'

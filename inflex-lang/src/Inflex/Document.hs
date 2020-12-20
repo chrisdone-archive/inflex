@@ -298,7 +298,9 @@ resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamed
         Left e -> pure (Left e)
         Right isSolved' -> do
           isGeneralised <-
-            pure (first LoadGeneraliseError (generaliseSolved isSolved'))
+            fmap
+              (first LoadGeneraliseError)
+              (RIO.runRIO GeneraliseReader (generaliseSolved isSolved'))
           case isGeneralised of
             Left e -> pure (Left e)
             Right isGeneralised' -> do
