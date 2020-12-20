@@ -74,12 +74,14 @@ data SolveReader =
 
 data SolveMsg
   = UnifyConstraints Int
+  | UnifyConstraintsComplete Int
   | UnifyConstraintsIterate Int
   | UnifyEqualityConstraint EqualityConstraint
   | UnifyTypeApplications
   | UnifyRows (TypeRow Generated) (TypeRow Generated)
   | SuccessfulBindTypeVariable Substitution
   | GeneratedTypeVariable TypeVariablePrefix Kind Natural
+  deriving (Show)
 
 $(makeLensesWith (inflexRules ['glogfunc]) ''SolveReader)
 

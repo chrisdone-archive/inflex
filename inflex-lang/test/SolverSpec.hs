@@ -1645,6 +1645,6 @@ arrayHoles = do
                        solveText'
                          mempty
                          ""
-                         "let c = [#foo({\"t\": \"text\"})] in map(x:case x{#foo(e):e.t},c)"
+                         "map(x:case x{#foo(e):e.t},_)"
                      pure v)))
            Nothing))

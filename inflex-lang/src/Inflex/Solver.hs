@@ -20,6 +20,7 @@ module Inflex.Solver
   , unifyAndSubstitute
   , solveType
   , runSolver
+  , solveTextRepl
   , Substitution(..)
   , SolveError(..)
   , IsSolved(..)
@@ -47,6 +48,7 @@ import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
 import           Inflex.Types.Solver
+import qualified RIO
 import           RIO (RIO, glog)
 
 --------------------------------------------------------------------------------
@@ -85,6 +87,14 @@ unifyAndSubstitute equalities typ = do
   substitutions <- unifyConstraints equalities
   pure (solveType substitutions typ)
 
+solveTextRepl ::
+     Text
+  -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
+solveTextRepl text =
+  RIO.runRIO
+    (SolveReader {glogfunc = RIO.mkGLogFunc (\_cs msg -> print msg)})
+    (solveText mempty "repl" text)
+
 --------------------------------------------------------------------------------
 -- Unification
 
@@ -105,15 +115,18 @@ unifyConstraints constraints = do
   -- That adds up to O(n^2) time, which is (of course) very poorly
   -- performing. Consider alternative ways to express this function
   -- without paying this penalty.
-  foldM
-    (\existing equalityConstraint ->
-       do glog (UnifyConstraintsIterate (length existing))
-          fmap
-            (\new -> extendSubstitutions Extension {existing, new})
-            (unifyEqualityConstraint
-               (substituteEqualityConstraint existing equalityConstraint)))
-    mempty
-    constraints
+  substitutions <-
+    foldM
+      (\existing equalityConstraint -> do
+         glog (UnifyConstraintsIterate (length existing))
+         fmap
+           (\new -> extendSubstitutions Extension {existing, new})
+           (unifyEqualityConstraint
+              (substituteEqualityConstraint existing equalityConstraint)))
+      mempty
+      constraints
+  glog (UnifyConstraintsComplete (length substitutions))
+  pure substitutions
 
 unifyEqualityConstraint :: EqualityConstraint -> Solve (Seq Substitution)
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
