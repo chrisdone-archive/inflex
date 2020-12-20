@@ -15,8 +15,8 @@ import           RIO (textDisplay)
 import           Test.Hspec
 import           Test.QuickCheck
 
-stepTextly :: Text -> Either (ResolveStepError ()) Text
-stepTextly text = fmap textDisplay (stepText mempty mempty "" text)
+stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
+stepTextly text = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text))
 
 stepDefaultedTextly :: Text -> IO (Either (DefaultStepError ()) Text)
 stepDefaultedTextly text =
@@ -26,7 +26,7 @@ spec :: SpecWith ()
 spec = do
   describe
     "Single expressions"
-    (do it "6" (shouldBe (stepTextly "6 :: Integer") (Right "6"))
+    (do it "6" (shouldReturn (stepTextly "6 :: Integer") (Right "6"))
         it "6 + _" (shouldReturn (stepDefaultedTextly "(6 + _)") (Right "(6 + _)"))
         it
           "2 * 6 + _"
@@ -38,29 +38,29 @@ spec = do
              (Right "((6 + (_ / 2)) + 3)"))
         it
           "6 + 3"
-          (shouldBe (stepTextly "6 :: Integer + 3 :: Integer") (Right "9"))
+          (shouldReturn (stepTextly "6 :: Integer + 3 :: Integer") (Right "9"))
         it
           "6 * 3"
-          (shouldBe (stepTextly "6 :: Integer * 3 :: Integer") (Right "18"))
+          (shouldReturn (stepTextly "6 :: Integer * 3 :: Integer") (Right "18"))
         it
           "6 / 3"
-          (shouldBe (stepTextly "6 :: Integer / 3 :: Integer") (Right "2"))
+          (shouldReturn (stepTextly "6 :: Integer / 3 :: Integer") (Right "2"))
         it
           "6 - 3"
-          (shouldBe (stepTextly "6 :: Integer - 3 :: Integer") (Right "3"))
+          (shouldReturn (stepTextly "6 :: Integer - 3 :: Integer") (Right "3"))
         it
           "6 - 3 * 3"
-          (shouldBe
+          (shouldReturn
              (stepTextly "6 :: Integer - 3 :: Integer * 3 :: Integer")
              (Right "-3"))
         it
           "6.0 + 3.0"
-          (shouldBe
+          (shouldReturn
              (stepTextly "6.20 :: Decimal 2 + 3.10 :: Decimal 2")
              (Right "9.30"))
         it
           "6.0 - 3.0 * 3.0 / 2.0"
-          (shouldBe
+          (shouldReturn
              (stepTextly
                 "6.00 :: Decimal 2 - 3.00 :: Decimal 2 * 3.00 :: Decimal 2 / 2.00 :: Decimal 2")
              (Right "1.50"))

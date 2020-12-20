@@ -100,3 +100,5 @@ data ResolveState = ResolveState
 newtype Resolve a = Resolve
   { runResolve  :: ValidateT (NonEmpty ResolutionError) (State ResolveState) a
   } deriving (Functor, Applicative, Monad, MonadState ResolveState)
+
+data ResolveReader = ResolveReader

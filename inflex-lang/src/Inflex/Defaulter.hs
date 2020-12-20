@@ -51,7 +51,10 @@ defaultText ::
   -> Text
   -> RIO DefaulterReader (Either (ResolverDefaulterError e) Cell)
 defaultText globals fp text = do
-  resolved <- pure (first GeneraliseResolverError (resolveText globals fp text))
+  resolved <-
+    fmap
+      (first GeneraliseResolverError)
+      (runRIO ResolveReader (resolveText globals fp text))
   case resolved of
     Left err -> pure (Left err)
     Right resolved' ->

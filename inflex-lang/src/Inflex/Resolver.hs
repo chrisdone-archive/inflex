@@ -38,6 +38,7 @@ import           Inflex.Renamer (patternParam)
 import           Inflex.Type (expressionType, instanceNameType, typeOutput)
 import           Inflex.Types
 import           Inflex.Types.Resolver
+import           RIO (RIO)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -46,36 +47,38 @@ resolveText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either (GeneraliseResolveError e) (IsResolved (Expression Resolved))
+  -> RIO ResolveReader (Either (GeneraliseResolveError e) (IsResolved (Expression Resolved)))
 resolveText globals fp text = do
   generalised <-
-    first GeneraliserErrored (generaliseText globals fp text)
-  resolveGeneralised generalised
+    pure (first GeneraliserErrored (generaliseText globals fp text))
+  case generalised of
+    Left e -> pure (Left e)
+    Right generalised' -> resolveGeneralised generalised'
 
 resolveGeneralised ::
      IsGeneralised (Expression Generalised)
-  -> Either (GeneraliseResolveError e) (IsResolved (Expression Resolved))
-resolveGeneralised IsGeneralised {thing, polytype, mappings} = do
-  (expression, ResolveState {implicits}) <-
-    first
-      ResolverErrors
-      ((\(result, s) -> fmap (, s) result)
-         (runState
-            (runValidateT
-               (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
-            ResolveState {implicits = mempty, defaulteds}))
-  pure
-    IsResolved
-      { mappings
-      , thing = addImplicitParamsToExpression expression implicits
-      , scheme =
-          Scheme
-            { location = expressionLocation thing
-              -- The reverse is intentional. See documentation of ResolveState.
-            , constraints = reverse (toList implicits)
-            , typ = polytype
-            }
-      }
+  -> RIO ResolveReader (Either (GeneraliseResolveError e) (IsResolved (Expression Resolved)))
+resolveGeneralised IsGeneralised {thing, polytype, mappings} = pure (do
+   (expression, ResolveState {implicits}) <-
+     first
+       ResolverErrors
+       ((\(result, s) -> fmap (, s) result)
+          (runState
+             (runValidateT
+                (runResolve (expressionResolver (DeBrujinNesting 0) thing)))
+             ResolveState {implicits = mempty, defaulteds}))
+   pure
+     IsResolved
+       { mappings
+       , thing = addImplicitParamsToExpression expression implicits
+       , scheme =
+           Scheme
+             { location = expressionLocation thing
+               -- The reverse is intentional. See documentation of ResolveState.
+             , constraints = reverse (toList implicits)
+             , typ = polytype
+             }
+       })
   where
     allClassConstraints = expressionCollect thing
     typeVariableToConstraints =

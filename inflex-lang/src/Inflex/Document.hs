@@ -20,6 +20,7 @@ module Inflex.Document
   , EvaledExpression(..)
   , Toposorted(..)
   , LoadError(..)
+  , DocumentReader(..)
   ) where
 
 import           Control.DeepSeq
@@ -27,7 +28,7 @@ import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.Graph
-import           Data.List
+import           Data.List.Extra
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -43,6 +44,7 @@ import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
+import qualified RIO
 import           RIO (RIO)
 
 --------------------------------------------------------------------------------
@@ -78,6 +80,8 @@ data EvaledExpression = EvaledExpression
   , cell :: Cell1
   }
 
+data DocumentReader = DocumentReader
+
 --------------------------------------------------------------------------------
 -- Top-level entry points
 
@@ -86,17 +90,18 @@ data EvaledExpression = EvaledExpression
 -- | Load a document up to resolution.
 loadDocument ::
      [Named Text]
-  -> Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
+  -> RIO DocumentReader (Toposorted (Named (Either LoadError (IsResolved (Expression Resolved)))))
 loadDocument =
   fmap
     (fmap
-       (second (\LoadedExpression {resolvedExpression} -> resolvedExpression))) .
+       (fmap
+          (second (\LoadedExpression {resolvedExpression} -> resolvedExpression)))) .
   loadDocument1
 
 -- | Load a document up to resolution.
 loadDocument1 ::
      [Named Text]
-  -> Toposorted (Named (Either LoadError LoadedExpression))
+  -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
 loadDocument1 =
   dependentLoadDocument . topologicalSortDocument . independentLoadDocument
 
@@ -205,29 +210,34 @@ independentLoadDocument names =
 -- Must be done in order.
 dependentLoadDocument ::
      Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
-  -> Toposorted (Named (Either LoadError LoadedExpression))
-dependentLoadDocument = snd . mapAccumL loadCell (Context mempty mempty)
+  -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
+dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty mempty)
   where
     loadCell ::
          Context
       -> Named (Either LoadError (IsRenamed (Expression Renamed)))
-      -> (Context, Named (Either LoadError LoadedExpression))
-    loadCell Context {hashedCells, nameHashes} result =
-      ( Context {hashedCells = hashedCells', nameHashes = nameHashes'}
-      , namedMaybeCell)
-      where
-        namedMaybeCell =
-          fmap (>>= resolveRenamedCell hashedCells nameHashes) result
-        nameHashes' = M.insert name (fmap hashLoaded thing) nameHashes
-          where
-            Named {name, thing} = namedMaybeCell
-        hashedCells' =
-          case namedMaybeCell of
-            Named {thing = Left {}} -> hashedCells
-            Named {thing = Right loaded} ->
-              M.insert (hashLoaded loaded) (Right loaded) hashedCells
-        hashLoaded LoadedExpression {resolvedExpression = cell} =
-          hashResolved cell
+      -> RIO DocumentReader (Context, Named (Either LoadError LoadedExpression))
+    loadCell Context {hashedCells, nameHashes} result = do
+      namedMaybeCell <-
+        traverse
+          (\result' ->
+             case result' of
+               Left e -> pure (Left e)
+               Right c -> resolveRenamedCell hashedCells nameHashes c)
+          result
+      let nameHashes' = M.insert name (fmap hashLoaded thing) nameHashes
+            where
+              Named {name, thing} = namedMaybeCell
+          hashedCells' =
+            case namedMaybeCell of
+              Named {thing = Left {}} -> hashedCells
+              Named {thing = Right loaded} ->
+                M.insert (hashLoaded loaded) (Right loaded) hashedCells
+          hashLoaded LoadedExpression {resolvedExpression = cell} =
+            hashResolved cell
+      pure
+        ( Context {hashedCells = hashedCells', nameHashes = nameHashes'}
+        , namedMaybeCell)
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
@@ -260,20 +270,42 @@ resolveRenamedCell ::
      Map Hash (Either LoadError LoadedExpression)
   -> Map Text (Either LoadError Hash)
   -> IsRenamed (Expression Renamed)
-  -> Either LoadError LoadedExpression
+  -> RIO DocumentReader (Either LoadError LoadedExpression)
 resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do
   hasConstraints <-
-    first
-      LoadGenerateError
-      (generateRenamed
-         (fmap
+    pure
+      (first
+         LoadGenerateError
+         (generateRenamed
             (fmap
-               (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
-                  scheme))
-            globalTypes)
-         globalHashes
-         isRenamed)
-  isSolved <- first LoadSolveError (solveGenerated hasConstraints)
-  isGeneralised <- first LoadGeneraliseError (generaliseSolved isSolved)
-  isResolved <- first LoadResolveError (resolveGeneralised isGeneralised)
-  pure LoadedExpression {resolvedExpression = isResolved, renamedExpression}
+               (fmap
+                  (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
+                     scheme))
+               globalTypes)
+            globalHashes
+            isRenamed))
+  case hasConstraints of
+    Left e -> pure (Left e)
+    Right hasConstraints' -> do
+      isSolved <- pure (first LoadSolveError (solveGenerated hasConstraints'))
+      case isSolved of
+        Left e -> pure (Left e)
+        Right isSolved' -> do
+          isGeneralised <-
+            pure (first LoadGeneraliseError (generaliseSolved isSolved'))
+          case isGeneralised of
+            Left e -> pure (Left e)
+            Right isGeneralised' -> do
+              isResolved <-
+                RIO.runRIO
+                  ResolveReader
+                  (fmap
+                     (first LoadResolveError)
+                     (resolveGeneralised isGeneralised'))
+              case isResolved of
+                Left e -> pure (Left e)
+                Right isResolved' ->
+                  pure
+                    (Right
+                       (LoadedExpression
+                          {resolvedExpression = isResolved', renamedExpression}))

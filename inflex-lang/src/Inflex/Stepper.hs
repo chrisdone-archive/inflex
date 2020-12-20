@@ -83,14 +83,21 @@ stepText ::
   -> Map Hash (Expression Resolved)
   -> FilePath
   -> Text
-  -> Either (ResolveStepError e) (Expression Resolved)
+  -> RIO StepReader (Either (ResolveStepError e) (Expression Resolved))
 stepText schemes values fp text = do
-  IsResolved {thing} <- first ResolverErrored (resolveText schemes fp text)
-  first
-    StepError
-    (evalStateT
-       (runReaderT (unStep (stepExpression thing)) values)
-       Continue)
+  result <-
+    RIO.runRIO
+      ResolveReader
+      (fmap (first ResolverErrored) (resolveText schemes fp text))
+  case result of
+    Left e -> pure (Left e)
+    Right IsResolved {thing} ->
+      pure
+        (first
+           StepError
+           (evalStateT
+              (runReaderT (unStep (stepExpression thing)) values)
+              Continue))
 
 stepTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))
@@ -100,8 +107,8 @@ stepTextDefaulted ::
   -> RIO StepReader (Either (DefaultStepError e) (Expression Resolved))
 stepTextDefaulted schemes values fp text = do
   cell <-
-    RIO.mapRIO
-      (\StepReader -> DefaulterReader)
+    RIO.runRIO
+      DefaulterReader
       (fmap (first DefaulterErrored) (defaultText schemes fp text))
   pure
     (do cell' <- cell
