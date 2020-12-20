@@ -41,7 +41,6 @@ import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Void
 import           Inflex.Generator
@@ -185,58 +184,39 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
                                                                              , fields = fs2
                                                                              }) = do
   glog (UnifyRows row1 row2)
+  let sd1_0 =
+        [ f1
+        | f1@Field {name} <- fs1
+        , name `notElem` map (\Field {name = name2} -> name2) fs2
+        ]
+      sd2_0 =
+        [ f1
+        | f1@Field {name} <- fs2
+        , name `notElem` map (\Field {name = name2} -> name2) fs1
+        ]
   -- This shows that it loops forever.
   -- trace ("unifyRows " <> show row1 <> " == " <> show row2) (pure ())
   constraints <-
-    case (fs1, v1, fs2, v2) of
+    case (sd1_0, v1, sd2_0, v2) of
+      ([], Just v1', [], Just v2')
+        | v1' == v2' -> pure []
       ([], Nothing, [], Nothing) -> pure []
       -- Below: Just unify a row variable with no fields with any other row.
       ([], Just u, sd, r) ->
         pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
       (sd, r, [], Just u) ->
         pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
-      -- Below: A closed row { f: t, p: s } unifies with an open row { p: s | r },
-      -- forming { p: s, f: t }, provided the open row is a subset
-      -- of the closed row.
-      (sd1, Nothing, sd2, Just u2)
-        | sd2 `rowIsSubset` sd1 -> do
-          pure
-            [ (,)
-                u2
-                (RowType
-                   (TypeRow
-                      { typeVariable = Nothing
-                      , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
-                      , .. -- TODO: Merge locs, vars
-                      }))
-            ]
-       -- Below: Same as above, but flipped.
-      (sd1, Just u1, sd2, Nothing)
-        | sd1 `rowIsSubset` sd2 -> do
-          pure
-            [ (,)
-                u1
-                (RowType
-                   TypeRow
-                     { typeVariable = Nothing
-                     , fields = (nubBy (on (==) fieldName) (sd1 <> sd2))
-                     , .. -- TODO: Merge locs, vars
-                     })
-            ]
       -- Below: Two open records, their fields must unify and we
       -- produce a union row type of both.
       (sd1, Just u1, sd2, Just u2) -> do
-        freshType <-
-          generateTypeVariable location RowUnifyPrefix RowKind
-        let mergedRowType =
+        freshType <- generateTypeVariable location RowUnifyPrefix RowKind
+        let merged1 =
               RowType
-                (TypeRow
-                   {typeVariable = Just freshType, fields = shadowFields sd2 sd1, ..})
-        pure [(u2, mergedRowType), (u1, mergedRowType)]
-      -- Below: If neither row has a variable, we have no row
-      -- constraints to do. The fields will be unified below.
-      (sd1, Nothing, sd2, Nothing)
-        | sd1 `rowsExactMatch` sd2 -> do pure []
+                (TypeRow {typeVariable = Just freshType, fields = sd1, ..})
+            merged2 =
+              RowType
+                (TypeRow {typeVariable = Just freshType, fields = sd2, ..})
+        pure [(u1, merged2), (u2, merged1)]
       _ -> throwError (pure (RowMismatch row1 row2))
   let !common = force $ intersect (map fieldName fs1) (map fieldName fs2)
       -- You have to make sure that the types of all the fields match
@@ -267,8 +247,6 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
   -- TODO: confirm that unifyConstraints is the right function to use.
   unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
   where
-    rowsExactMatch = on (==) (Set.fromList . map fieldName)
-    rowIsSubset = on Set.isSubsetOf (Set.fromList . map fieldName)
     fieldName Field {name} = name
     fieldType Field {typ} = typ
 
