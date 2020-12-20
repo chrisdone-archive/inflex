@@ -9,7 +9,6 @@
 
 module Inflex.Server.Handlers.Rpc where
 
-import           Control.DeepSeq
 import           Criterion.Measurement
 import           Data.Foldable
 import           Data.Maybe
@@ -51,7 +50,7 @@ rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
          liftIO
            (timeout
               (1000 * milliseconds)
-              (do let !x = force (loadInputDocument document)
+              (do !x <- (loadInputDocument document)
                   pure x))
        end <- liftIO getTime
        runDB
@@ -96,7 +95,8 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                        { Shared.error = transformErrorToCellError transformError
                        , path = path
                        }))
-             Right inputDocument ->
+             Right inputDocument -> do
+               outputDocument <- liftIO (loadInputDocument inputDocument)
                case cellHadErrorInNestedPlace uuid path outputDocument of
                  Nothing -> do
                    end <- liftIO getTime
@@ -115,9 +115,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                    pure
                      (Shared.NestedError
                         (Shared.NestedCellError
-                           {Shared.error = cellError, path = path}))
-               where outputDocument :: Shared.OutputDocument
-                     outputDocument = loadInputDocument inputDocument)
+                           {Shared.error = cellError, path = path})))
 
 -- | Determine whether there was an error in the cell at the place of
 -- the update. If so, return it! We can then nicely display it to the
@@ -256,7 +254,7 @@ loadRevisedDocument RevisedDocument{..} = do
     liftIO
       (timeout
          (1000 * milliseconds)
-         (do let !x = force (loadInputDocument (revisionContent revision))
+         (do !x <- loadInputDocument (revisionContent revision)
              pure x))
   end <- liftIO getTime
   case mloaded of

@@ -10,50 +10,56 @@ module Inflex.Server.Compute where
 
 import           Data.Foldable
 import           Data.List
+import           Data.Ord
+import           Data.Vector (Vector)
 import qualified Data.Vector as V
+import           Inflex.Defaulter
 import           Inflex.Display ()
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Renamer
 import qualified Inflex.Schema as Shared
+import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
-import           RIO
+import qualified RIO
 
-loadInputDocument :: Shared.InputDocument1 -> Shared.OutputDocument
-loadInputDocument (Shared.InputDocument1 {cells}) =
-  Shared.OutputDocument
-    (V.fromList
-       (sortBy
-          (comparing (\Shared.OutputCell {order} -> order))
-          ((fmap
-              (\Named {uuid = Uuid uuid, name, thing, order, code} ->
-                 Shared.OutputCell
-                   { uuid = Shared.UUID uuid
-                   , result =
-                       either
-                         (Shared.ResultError . toCellError)
-                         (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
-                            Shared.ResultOk
-                              (Shared.ResultTree
-                                 (toTree (pure renamed) resultExpression)))
-                         thing
-                   , code
-                   , name
-                   , order
-                   })
-              (unToposorted
-                 (evalDocument1
-                    (evalEnvironment1 loaded)
-                    (defaultDocument1 loaded)))))))
-  where
-    loaded =
-      loadDocument1
-        (map
-           (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
-              Named {uuid = Uuid uuid, name, thing = code, order, code})
-           (toList cells))
+loadInputDocument :: Shared.InputDocument1 -> IO Shared.OutputDocument
+loadInputDocument (Shared.InputDocument1 {cells}) = do
+  loaded <-
+    RIO.runRIO
+      DocumentReader
+      (loadDocument1
+         (map
+            (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
+               Named {uuid = Uuid uuid, name, thing = code, order, code})
+            (toList cells)))
+  defaulted <- RIO.runRIO DefaulterReader (defaultDocument1 loaded)
+  topo <-
+    RIO.runRIO StepReader (evalDocument1 (evalEnvironment1 loaded) defaulted)
+  pure
+    (Shared.OutputDocument
+       (V.fromList
+          (sortBy
+             (comparing (\Shared.OutputCell {order} -> order))
+             (fmap
+                (\Named {uuid = Uuid uuid, name, thing, order, code} ->
+                   Shared.OutputCell
+                     { uuid = Shared.UUID uuid
+                     , result =
+                         either
+                           (Shared.ResultError . toCellError)
+                           (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
+                              Shared.ResultOk
+                                (Shared.ResultTree
+                                   (toTree (pure renamed) resultExpression)))
+                           thing
+                     , code
+                     , name
+                     , order
+                     })
+                (unToposorted topo)))))
 
 toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
 toTree original =
@@ -128,7 +134,7 @@ toTree original =
       Shared.VegaTree2
         Shared.versionRefl
         Shared.NoOriginalSource
-        (textDisplay argument)
+        (RIO.textDisplay argument)
     VariantExpression Variant {tag = TagName tag, argument} ->
       Shared.VariantTree2
         Shared.versionRefl
@@ -141,7 +147,7 @@ toTree original =
       Shared.MiscTree2
         Shared.versionRefl
         originalSource
-        (textDisplay expression)
+        (RIO.textDisplay expression)
   where
     inRecord :: Maybe (Expression Renamed) -> Maybe [FieldE Renamed]
     inRecord =
@@ -172,7 +178,7 @@ toTree original =
     originalSource' =
       \case
         Nothing -> Shared.NoOriginalSource
-        Just expression -> Shared.OriginalSource (textDisplay expression)
+        Just expression -> Shared.OriginalSource (RIO.textDisplay expression)
 
 toCellError :: LoadError -> Shared.CellError
 toCellError =
