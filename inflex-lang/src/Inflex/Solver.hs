@@ -23,6 +23,7 @@ module Inflex.Solver
   , SolveError(..)
   , IsSolved(..)
   , GenerateSolveError(..)
+  , SolveReader(..)
   ) where
 
 import           Control.DeepSeq
@@ -40,11 +41,12 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Void
-import           Debug.Trace
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
 import           Numeric.Natural
+import qualified RIO
+import           RIO (RIO)
 
 --------------------------------------------------------------------------------
 -- Solver types
@@ -80,6 +82,9 @@ newtype Solve a = Solve
              , MonadError (NonEmpty SolveError)
              )
 
+data SolveReader =
+  SolveReader
+
 --------------------------------------------------------------------------------
 -- Top-level
 
@@ -87,26 +92,26 @@ solveText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
+  -> RIO SolveReader (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveText globals fp text = do
-  generated <- first GeneratorErrored (generateText globals fp text)
-  solveGenerated generated
+  generated <- pure (first GeneratorErrored (generateText globals fp text))
+  case generated of
+    Left e -> pure (Left e)
+    Right generated' -> solveGenerated generated'
 
 solveGenerated ::
      HasConstraints (Expression Generated)
-  -> Either (GenerateSolveError e) (IsSolved (Expression Solved))
+  -> RIO SolveReader (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveGenerated HasConstraints {thing = expression, mappings, equalities} =
-  first
-    SolverErrors
-    (do substitutions <- runSolver (unifyConstraints equalities)
-        pure
-          IsSolved
-            { thing = expressionSolve substitutions expression
-            , mappings
-            })
+  fmap
+    (first SolverErrors .
+     second
+       (\substitutions ->
+          IsSolved {thing = expressionSolve substitutions expression, mappings}))
+    (runSolver (unifyConstraints equalities))
 
-runSolver :: Solve a -> Either (NonEmpty SolveError) a
-runSolver = flip evalStateT 0 . runSolve
+runSolver :: Solve a -> RIO SolveReader (Either (NonEmpty SolveError) a)
+runSolver = pure . flip evalStateT 0 . runSolve
 
 unifyAndSubstitute ::
      Seq EqualityConstraint

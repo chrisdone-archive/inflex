@@ -74,7 +74,10 @@ generaliseText ::
   -> Text
   -> RIO GeneraliseReader (Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised)))
 generaliseText globals fp text = do
-  solved <- pure (first SolverErrored (solveText globals fp text))
+  solved <-
+    fmap
+      (first SolverErrored)
+      (RIO.runRIO SolveReader (solveText globals fp text))
   case solved of
     Left e -> pure (Left e)
     Right r -> generaliseSolved r

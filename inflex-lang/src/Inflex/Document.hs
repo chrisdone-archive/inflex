@@ -293,7 +293,10 @@ resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamed
   case hasConstraints of
     Left e -> pure (Left e)
     Right hasConstraints' -> do
-      isSolved <- pure (first LoadSolveError (solveGenerated hasConstraints'))
+      isSolved <-
+        fmap
+          (first LoadSolveError)
+          (RIO.runRIO SolveReader (solveGenerated hasConstraints'))
       case isSolved of
         Left e -> pure (Left e)
         Right isSolved' -> do
