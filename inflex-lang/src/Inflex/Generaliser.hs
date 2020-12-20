@@ -77,7 +77,7 @@ generaliseText globals fp text = do
   solved <-
     fmap
       (first SolverErrored)
-      (RIO.runRIO SolveReader (solveText globals fp text))
+      (RIO.runRIO SolveReader {glogfunc = mempty {-TODO:-}} (solveText globals fp text))
   case solved of
     Left e -> pure (Left e)
     Right r -> generaliseSolved r

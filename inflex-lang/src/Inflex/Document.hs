@@ -296,7 +296,9 @@ resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamed
       isSolved <-
         fmap
           (first LoadSolveError)
-          (RIO.runRIO SolveReader (solveGenerated hasConstraints'))
+          (RIO.runRIO
+             SolveReader {glogfunc = mempty}
+             (solveGenerated hasConstraints'))
       case isSolved of
         Left e -> pure (Left e)
         Right isSolved' -> do

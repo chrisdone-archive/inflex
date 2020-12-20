@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -24,6 +25,7 @@ module Inflex.Solver
   , IsSolved(..)
   , GenerateSolveError(..)
   , SolveReader(..)
+  , SolveMsg(..)
   ) where
 
 import           Control.DeepSeq
@@ -44,46 +46,8 @@ import           Data.Void
 import           Inflex.Generator
 import           Inflex.Kind
 import           Inflex.Types
-import           Numeric.Natural
-import qualified RIO
-import           RIO (RIO)
-
---------------------------------------------------------------------------------
--- Solver types
-
-data SolveError
-  = OccursCheckFail (TypeVariable Generated) (Type Generated)
-  | KindMismatch (TypeVariable Generated) (Type Generated)
-  | TypeMismatch EqualityConstraint
-  | RowMismatch (TypeRow Generated) (TypeRow Generated)
-  deriving (Show, Eq)
-
-data GenerateSolveError e
-  = SolverErrors (NonEmpty SolveError)
-  | GeneratorErrored (RenameGenerateError e)
-  deriving (Show, Eq)
-
-data IsSolved a = IsSolved
-  { thing :: !a
-  , mappings :: !(Map Cursor SourceLocation)
-  } deriving (Show, Eq)
-
-data Substitution = Substitution
-  { before :: !(TypeVariable Generated)
-  , after :: !(Type Generated)
-  } deriving (Show, Eq)
-
-newtype Solve a = Solve
-  { runSolve :: StateT Natural (Either (NonEmpty SolveError)) a
-  } deriving ( MonadState Natural
-             , Monad
-             , Functor
-             , Applicative
-             , MonadError (NonEmpty SolveError)
-             )
-
-data SolveReader =
-  SolveReader
+import           Inflex.Types.Solver
+import           RIO (RIO, glog)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -111,7 +75,7 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
     (runSolver (unifyConstraints equalities))
 
 runSolver :: Solve a -> RIO SolveReader (Either (NonEmpty SolveError) a)
-runSolver = pure . flip evalStateT 0 . runSolve
+runSolver = runExceptT . flip evalStateT 0 . runSolve
 
 unifyAndSubstitute ::
      Seq EqualityConstraint
@@ -130,7 +94,8 @@ unifyAndSubstitute equalities typ = do
 
 unifyConstraints ::
      Seq EqualityConstraint -> Solve (Seq Substitution)
-unifyConstraints =
+unifyConstraints constraints = do
+  glog UnifyConstraints
   -- This is a large speed hit. If there are 1000 elements in an
   -- array, it will iterate at least 1000x times. So it performs
   -- O(n). Meanwhile, the length of the 'existing' increases over time
@@ -147,6 +112,7 @@ unifyConstraints =
          (unifyEqualityConstraint
             (substituteEqualityConstraint existing equalityConstraint)))
     mempty
+    constraints
 
 unifyEqualityConstraint :: EqualityConstraint -> Solve (Seq Substitution)
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1

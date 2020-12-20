@@ -27,19 +27,19 @@ solveText' :: (e ~ ()) =>
   -> FilePath
   -> Text
   -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
-solveText' hash fp text = RIO.runRIO SolveReader (solveText hash fp text)
+solveText' hash fp text = RIO.runRIO SolveReader {glogfunc = mempty} (solveText hash fp text)
 
 unifyConstraints' ::
      Seq EqualityConstraint
   -> IO (Either (NonEmpty SolveError) (Seq Substitution))
-unifyConstraints' = RIO.runRIO SolveReader . runSolver . unifyConstraints
+unifyConstraints' = RIO.runRIO SolveReader {glogfunc = mempty} . runSolver . unifyConstraints
 
 unifyAndSubstitute' ::
      Seq EqualityConstraint
   -> Type Generated
   -> IO (Either (NonEmpty SolveError) (Type Solved))
 unifyAndSubstitute' x =
-  RIO.runRIO SolveReader . runSolver . unifyAndSubstitute x
+  RIO.runRIO SolveReader {glogfunc = mempty} . runSolver . unifyAndSubstitute x
 
 spec :: Spec
 spec = do
