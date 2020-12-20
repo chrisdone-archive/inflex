@@ -1645,6 +1645,6 @@ arrayHoles = do
                        solveText'
                          mempty
                          ""
-                         "x:case x{#foo(e):e.t}"
+                         "case _{#foo(e):e.t}"
                      pure v)))
            Nothing))
