@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import           Data.UUID as UUID
 import           Data.UUID.V4
 import qualified Data.Vector as V
+import           Inflex.Defaulter
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Resolver
@@ -20,7 +21,11 @@ import           Inflex.Solver
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
+import qualified RIO
 import           Test.Hspec
+
+defaultDocument' :: Toposorted (Named (Either LoadError (IsResolved (Expression Resolved)))) -> IO (Toposorted (Named (Either LoadError Cell)))
+defaultDocument' = RIO.runRIO DefaulterReader . defaultDocument
 
 spec :: Spec
 spec = do
@@ -33,7 +38,7 @@ errors = do
   it
     "x = x"
     (do u1 <- nextRandom'
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    [ Named
@@ -44,7 +49,7 @@ errors = do
                        , code = "x"
                        }
                    ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -59,7 +64,7 @@ errors = do
   it
     "x = y"
     (do u1 <- nextRandom'
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    [ Named
@@ -70,7 +75,7 @@ errors = do
                        , order = 0
                        }
                    ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -90,7 +95,7 @@ errors = do
     "y = 1; x = y y"
     (do u1 <- nextRandom'
         u2 <- nextRandom'
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    [ Named
@@ -108,7 +113,7 @@ errors = do
                        , order = 1
                        }
                    ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y(y)", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
   eval_it
     "Missing field"
@@ -123,7 +128,7 @@ success = do
     (do u1 <- nextRandom'
         u2 <- nextRandom'
         u3 <- nextRandom'
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    [ Named
@@ -148,7 +153,7 @@ success = do
                        , order = 2
                        }
                    ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -222,7 +227,7 @@ success = do
     (do u1 <- nextRandom'
         u2 <- nextRandom'
         u3 <- nextRandom'
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    [ Named
@@ -247,7 +252,7 @@ success = do
                        , order = 2
                        }
                    ]
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted {unToposorted = [Named {uuid = Uuid u1, name = "double", order = 0, code = "x: x * 2", thing = Right (LambdaExpression (Lambda {location = ExpressionCursor, param = Param {location = LambdaParamCursor, name = (), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}, body = InfixExpression (Infix {location = LambdaBodyCursor ExpressionCursor, global = ApplyExpression (Apply {location = ImplicitlyApplicationOn (LambdaBodyCursor (InfixOpCursor ExpressionCursor)), function = GlobalExpression (Global {location = LambdaBodyCursor (InfixOpCursor ExpressionCursor), name = NumericBinOpGlobal MulitplyOp, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal (IntegerOpInstance MulitplyOp), scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), left = VariableExpression (Variable {location = LambdaBodyCursor (InfixLeftCursor ExpressionCursor), name = DeBrujinIndex (DeBrujinNesting 0), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), right = ApplyExpression (Apply {location = BuiltIn, function = ApplyExpression (Apply {location = ImplicitlyApplicationOn BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal FromIntegerIntegerInstance, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), name = IntegerTypeName})})), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = TypeKind})}))},Named {uuid = Uuid u3, name = "b", order = 2, code = "double(2.2)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = DecimalNumber (Decimal {places = 1, integer = 44}), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = NatTypeName 1}), location = ApplyArgCursor ExpressionCursor, kind = TypeKind})})))},Named {uuid = Uuid u2, name = "a", order = 1, code = "double(1)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})))}]}))
   describe "Records" records
 
@@ -1547,8 +1552,8 @@ duplicate_empty_names_ok =
                     , order = 1
                     }
                 ]
-        shouldBe
-          (evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+        shouldReturn
+          (fmap (evalDocument (evalEnvironment loaded)) (defaultDocument' loaded))
           (Toposorted
              { unToposorted =
                  [ Named
@@ -1629,7 +1634,7 @@ eval_it_with desc xs result io =
                u <- nextRandom'
                pure (u, x))
             xs
-        shouldBe
+        shouldReturn
           (let loaded =
                  loadDocument
                    (zipWith
@@ -1643,7 +1648,8 @@ eval_it_with desc xs result io =
                            })
                       [0 ..]
                       xs')
-            in evalDocument (evalEnvironment loaded) (defaultDocument loaded))
+            in do defaulted <- RIO.runRIO DefaulterReader (defaultDocument loaded)
+                  pure (evalDocument (evalEnvironment loaded) defaulted))
           (Toposorted (result (map fst xs'))))
 
 nextRandom' :: IO Text
