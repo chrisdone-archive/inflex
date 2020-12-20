@@ -31,6 +31,8 @@ import           Inflex.Types
 import           Inflex.Types as Apply (Apply(..))
 import           Inflex.Variants
 import           Numeric.Natural
+import qualified RIO
+import           RIO (RIO)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -72,6 +74,8 @@ newtype Step e a = Step
 --------------------------------------------------------------------------------
 -- Main entry points
 
+data StepReader = StepReader
+
 -- TODO: Add a configuration with limits: number of steps, memory used, etc.
 
 stepText ::
@@ -93,10 +97,15 @@ stepTextDefaulted ::
   -> Map Hash (Expression Resolved)
   -> FilePath
   -> Text
-  -> Either (DefaultStepError e) (Expression Resolved)
+  -> RIO StepReader (Either (DefaultStepError e) (Expression Resolved))
 stepTextDefaulted schemes values fp text = do
-  cell <- first DefaulterErrored (defaultText schemes fp text)
-  stepDefaulted values cell
+  cell <-
+    RIO.mapRIO
+      (\StepReader -> DefaulterReader)
+      (fmap (first DefaulterErrored) (defaultText schemes fp text))
+  pure
+    (do cell' <- cell
+        stepDefaulted values cell')
 
 stepDefaulted ::
      Map Hash (Expression Resolved)

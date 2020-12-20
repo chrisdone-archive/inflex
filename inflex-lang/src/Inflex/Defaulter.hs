@@ -14,6 +14,7 @@ module Inflex.Defaulter
   ( defaultText
   , defaultResolvedExpression
   , DefaulterError(..)
+  , DefaulterReader(..)
   , ResolverDefaulterError(..)
   ) where
 
@@ -37,48 +38,55 @@ import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Defaulter
+import           RIO
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
+
+data DefaulterReader = DefaulterReader
 
 defaultText ::
      Map Hash (Either e (Scheme Polymorphic))
   -> FilePath
   -> Text
-  -> Either (ResolverDefaulterError e) Cell
+  -> RIO DefaulterReader (Either (ResolverDefaulterError e) Cell)
 defaultText globals fp text = do
-  resolved <- first GeneraliseResolverError (resolveText globals fp text)
-  first DefaulterError (defaultResolvedExpression resolved)
+  resolved <- pure (first GeneraliseResolverError (resolveText globals fp text))
+  case resolved of
+    Left err -> pure (Left err)
+    Right resolved' ->
+      fmap (first DefaulterError) (defaultResolvedExpression resolved')
 
 defaultResolvedExpression ::
-     IsResolved (Expression Resolved) -> Either DefaulterError Cell
-defaultResolvedExpression IsResolved {scheme = scheme0, thing = expression} = do
-  classConstraintReplacements <- generateReplacements scheme0
-  (scheme', defaults) <-
-    runWriterT
-      (foldM
-         (\scheme@Scheme {constraints = acc, typ} classConstraint ->
-            case M.lookup classConstraint classConstraintReplacements of
-              Nothing -> pure scheme {constraints = acc ++ [classConstraint]}
-              Just replacements -> do
-                let substitutions = Seq.fromList (toList replacements)
-                    classConstraint' =
-                      substituteClassConstraint substitutions classConstraint
-                    typ' = substituteType substitutions typ
-                default' <-
-                  lift (makeValidDefault classConstraint classConstraint')
-                tell (pure default')
-                pure (scheme {constraints = acc, typ = typ'}))
-         scheme0 {constraints = mempty}
-         originalConstraints)
-  pure
-    Cell
-      { location
-      , scheme = scheme'
-      , defaultedClassConstraints = defaults
-      , ambiguousClassConstraints = mempty -- TODO: Provide this info.
-      , defaulted = applyDefaults originalConstraints defaults expression
-      }
+     IsResolved (Expression Resolved)
+  -> RIO DefaulterReader (Either DefaulterError Cell)
+defaultResolvedExpression IsResolved {scheme = scheme0, thing = expression} = pure (do
+   classConstraintReplacements <- generateReplacements scheme0
+   (scheme', defaults) <-
+     runWriterT
+       (foldM
+          (\scheme@Scheme {constraints = acc, typ} classConstraint ->
+             case M.lookup classConstraint classConstraintReplacements of
+               Nothing -> pure scheme {constraints = acc ++ [classConstraint]}
+               Just replacements -> do
+                 let substitutions = Seq.fromList (toList replacements)
+                     classConstraint' =
+                       substituteClassConstraint substitutions classConstraint
+                     typ' = substituteType substitutions typ
+                 default' <-
+                   lift (makeValidDefault classConstraint classConstraint')
+                 tell (pure default')
+                 pure (scheme {constraints = acc, typ = typ'}))
+          scheme0 {constraints = mempty}
+          originalConstraints)
+   pure
+     Cell
+       { location
+       , scheme = scheme'
+       , defaultedClassConstraints = defaults
+       , ambiguousClassConstraints = mempty -- TODO: Provide this info.
+       , defaulted = applyDefaults originalConstraints defaults expression
+       })
   where
     Scheme {constraints = originalConstraints, location} = scheme0
 

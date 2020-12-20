@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
@@ -11,7 +13,6 @@
 
 module Inflex.Types where
 
-import Control.DeepSeq
 import Control.DeepSeq
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
@@ -133,7 +134,7 @@ data Named a = Named
   , order :: Int
   , code :: Text
   , thing :: a
-  } deriving (Show, Lift, Eq, Ord, Functor, Generic)
+  } deriving (Show, Lift, Eq, Ord, Functor, Generic, Traversable, Foldable)
 instance NFData a => NFData (Named a)
 
 newtype Uuid = Uuid Text

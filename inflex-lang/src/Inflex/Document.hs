@@ -43,6 +43,7 @@ import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
+import           RIO (RIO)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -122,28 +123,34 @@ evalEnvironment1 =
 -- | Default the expressions in a document to cells.
 defaultDocument ::
      Toposorted (Named (Either LoadError (IsResolved (Expression Resolved))))
-  -> Toposorted (Named (Either LoadError Cell))
+  -> RIO DefaulterReader (Toposorted (Named (Either LoadError Cell)))
 defaultDocument =
-  fmap
-    (fmap
-       (\result -> do
-          expression <- result
-          first LoadDefaulterError (defaultResolvedExpression expression)))
+  traverse
+    (traverse
+       (\result ->
+          case result of
+            Left a -> pure (Left a)
+            Right expression ->
+              fmap
+                (first LoadDefaulterError)
+                (defaultResolvedExpression expression)))
 
 -- | Default the expressions in a document to cells.
 defaultDocument1 ::
      Toposorted (Named (Either LoadError LoadedExpression))
-  -> Toposorted (Named (Either LoadError Cell1))
+  -> RIO DefaulterReader (Toposorted (Named (Either LoadError Cell1)))
 defaultDocument1 =
-  fmap
-    (fmap
-       (\result -> do
-          LoadedExpression {..} <- result
-          Cell {..} <-
-            first
-              LoadDefaulterError
-              (defaultResolvedExpression resolvedExpression)
-          pure Cell1 {renamed = renamedExpression, ..}))
+  traverse
+    (traverse
+       (\result ->
+          case result of
+            Left a -> pure (Left a)
+            Right LoadedExpression {..} -> do
+              fmap
+                (bimap
+                   LoadDefaulterError
+                   (\Cell {..} -> Cell1 {renamed = renamedExpression, ..}))
+                (defaultResolvedExpression resolvedExpression)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument ::
