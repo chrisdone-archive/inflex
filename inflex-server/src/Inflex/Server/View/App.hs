@@ -27,5 +27,6 @@ appTemplate _state body = do
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
               link_ [rel_ "icon", type_ "image/png", href_ (url FaviconR)]
-              link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)])
+              link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)]
+              link_ [rel_ "stylesheet", type_ "text/css", href_ (url CellCssR)])
         body_ [] body)

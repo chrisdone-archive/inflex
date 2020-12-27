@@ -38,5 +38,8 @@
 /app/vega VegaJsR GET
 /app/css AppCssR GET
 
+-- Shared
+/cell/css CellCssR GET
+
 -- Vanity URLs for user documents
 -- !/#Username/#DocumentSlug ViewDocumentR GET

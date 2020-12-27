@@ -88,3 +88,6 @@ getLogoR = $(sendFileFrom "image/svg+xml" "inflex-server/svg/inflex-logo.svg")
 
 getAppCssR :: Handler Css
 getAppCssR = $(luciusFileFrom "inflex-server/templates/app.lucius")
+
+getCellCssR :: Handler Css
+getCellCssR = $(luciusFileFrom "inflex-server/templates/cell.lucius")
