@@ -82,7 +82,7 @@ body {
   background: #01203a;
   width: 100%;
   padding-top: 40px;
-  padding-bottom: 40px;
+  padding-bottom: 90px;
 }
 .hero > .margin-wrapper {
   display: flex;
@@ -156,51 +156,6 @@ body {
   text-align: center;
 }
 
-@media only screen and (max-width: 1200px) {
-  .margin-wrapper {
-    margin-left: 10px;
-    margin-right: 10px;
-  }
-}
-
-@media only screen and (max-width: 800px) {
-  .navbar form + form {
-  margin-left: 20px;
-}
-  .hero {
-    padding-top: 5px;
-    padding-bottom: 5px;
-  }
-  .hero .hero-pic {
-    flex: auto;
-    height: 300px;
-  }
-  .hero h1 {
-    margin-bottom: 0;
-  }
-  .hero .tagline h2 {
-    margin-top: 20px;
-  }
-  .hero > .margin-wrapper {
-    width: auto;
-    margin: 5px;
-    flex-direction: column;
-  }
-  .tagline {
-    margin-bottom: 10px;
-  }
-  .navbar {
-    height: 50px;
-  }
-  .navbar > .margin-wrapper {
-    margin-left: 5px;
-  }
-  .hero .tagline h1 {
-    font-size: 60px;
-  }
-  .tagline-action { margin-top: 20px; margin-bottom: 20px;}
-}
-
 /* Video on homepage */
 
 .hero-pic {
@@ -262,4 +217,118 @@ button.button.tagline-action {
 
 a {
   color: #fff;
+}
+
+
+/*********************************************************************************/
+/* Tour */
+
+.tour-light {
+  background: #eceeef;
+  h1, .explain, .step-label {
+    color: black;
+  }
+}
+.tour-dark {
+  h1, .explain, .step-label {
+    color: white;
+  }
+}
+.tour {
+  padding-top: 40px;
+  padding-bottom: 200px;
+
+  .margin-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .explain {
+      flex: 1;
+      padding-right: 50px;
+      font-size: 18px;
+      line-height: 1.7em;
+    }
+    .show {
+      flex: 1;
+      .step {
+        .step-label {
+          font-weight: bold;
+          font-size: 18px;
+          margin-bottom: 10px;
+          margin-top: 10px;
+        }
+        .example-cell + .example-cell:before {
+          color: #00e4a2;
+          font-size: 20px;
+          font-weight: bold;
+          padding-left: 5px;
+          content: "⬇";
+          display: block;
+          margin: 10px 0;
+        }
+      }
+    }
+  }
+}
+
+.example-cell {
+  * {
+    pointer-events: none;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+  }
+}
+
+@media only screen and (max-width: 1200px) {
+  .margin-wrapper {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  .navbar form + form {
+    margin-left: 20px;
+  }
+  .hero {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  .hero .hero-pic {
+    flex: auto;
+    height: 300px;
+  }
+  .hero h1 {
+    margin-bottom: 0;
+  }
+  .hero .tagline h2 {
+    margin-top: 20px;
+  }
+  .hero > .margin-wrapper {
+    width: auto;
+    margin: 5px;
+    flex-direction: column;
+  }
+  .tagline {
+    margin-bottom: 10px;
+  }
+  .navbar {
+    height: 50px;
+  }
+  .navbar > .margin-wrapper {
+    margin-left: 5px;
+  }
+  .hero .tagline h1 {
+    font-size: 60px;
+  }
+  .tagline-action { margin-top: 20px; margin-bottom: 20px;}
+  .tour > .margin-wrapper {
+    display: block;
+  }
 }

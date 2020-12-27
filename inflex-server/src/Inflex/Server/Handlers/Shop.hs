@@ -39,13 +39,14 @@ import           Data.Time
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
-import           Lucid
+import           Inflex.Server.View.Tour (tour)
+import           Lucid hiding (step_, section_)
 import           Lucid.Base
 import           Sendfile
 import           Shakespearean
 import           Text.Julius
 import           Text.Lucius
-import           Yesod hiding (Html, Field, lookupSession)
+import           Yesod hiding (Html, Field, lookupSession, toHtml)
 import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
@@ -58,12 +59,15 @@ getHomeR = do
       case state of
         Registered {} -> redirect AppDashboardR
         _ -> pure ()
-      css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
+      css1 <- $(luciusFileFrom "inflex-server/templates/home.lucius")
+      css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
       js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
       logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
       htmlWithUrl
-        (html_ $ do
-           url <- ask
+        (do
+         doctype_
+         url <- ask
+         html_ [lang_ "en"] $ do
            head_ $ do
              link_ [href_ "#", rel_ "shortcut icon"]
              title_ "Inflex"
@@ -81,7 +85,7 @@ getHomeR = do
                , src_ "https://plausible.inflex.io/js/index.js"
                ]
                ("" :: Text)
-             style_ (LT.toStrict (renderCss css))
+             style_ (LT.toStrict (renderCss css1 <> renderCss css2))
            body_ [] $ do
              div_ [class_ "navbar"] $
                div_ [class_ "margin-wrapper"] $ do
@@ -130,6 +134,8 @@ getHomeR = do
                  div_
                    [class_ "hero-pic"]
                    (do button_ [class_ "play", onclick_ "play();"] (pure ()))
+             div_ [class_ "tour tour-light"] $ do
+               tour
              div_ [class_ "footer"] $ do
                div_ [class_ "margin-wrapper"] $ do
                  p_ "© 2020 Sky Above Limited"
