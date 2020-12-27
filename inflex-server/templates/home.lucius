@@ -115,7 +115,7 @@ body {
   font-weight: normal;
 }
 
-.button {
+.button, .get-access-now {
   color: #fff;
   background: #7121ea;
   padding: 10px;
@@ -123,12 +123,10 @@ body {
   border-radius: 2px;
   box-shadow: 0px 0px 5px 5px #0001;
   cursor: pointer;
-}
-
-.button {
   background: #7121ea;
+  text-decoration: none;
 }
-.button:hover {
+.button:hover, .get-access-now {
   background: #4520a5;
   transition: 0.3s;
 }
@@ -149,6 +147,7 @@ body {
 }
 .footer {
   margin-top: 50px;
+  margin-bottom: 50px;
 }
 .footer p { margin-top: 0; }
 .footer > .margin-wrapper {
@@ -296,6 +295,9 @@ a {
   .navbar form + form {
     margin-left: 20px;
   }
+  .navbar .community-link {
+    display: none
+  }
   .hero {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -331,4 +333,8 @@ a {
   .tour > .margin-wrapper {
     display: block;
   }
+}
+
+.cta {
+  margin-top: 100px;
 }
