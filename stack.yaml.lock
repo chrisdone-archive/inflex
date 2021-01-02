@@ -180,16 +180,16 @@ packages:
     subdir: rio-orphans
     url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
 - completed:
-    size: 8178
-    url: https://github.com/inflex-io/early/archive/d9638f62ddc6ad09299c4b631d48d582d96f2e16.tar.gz
+    size: 8826
+    url: https://github.com/inflex-io/early/archive/6600e7f9b20afcbcee127df34cfa966c01cc8f91.tar.gz
     name: early
-    version: 0.1.0.0
-    sha256: 362c73acafd5d2e8a0504ee4df92f0895b884bf826b6c4f4f42241f340c55407
+    version: 0.0.0
+    sha256: 4d02d125e2632e9bf00df859dde1f70985da12917ed501500809326696350436
     pantry-tree:
-      size: 582
-      sha256: 6ca6628a2ffa82ef3f15fedb7f91391fe725df730c8eacfe6a135c0f362f5373
+      size: 583
+      sha256: 5524729eb7cbe9021f9f5f9f7703d0432813abb5161974efa999a7c13ba29f58
   original:
-    url: https://github.com/inflex-io/early/archive/d9638f62ddc6ad09299c4b631d48d582d96f2e16.tar.gz
+    url: https://github.com/inflex-io/early/archive/6600e7f9b20afcbcee127df34cfa966c01cc8f91.tar.gz
 snapshots:
 - completed:
     size: 524154
