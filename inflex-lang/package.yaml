@@ -28,6 +28,7 @@ dependencies:
 - aeson
 - memory
 - base16-bytestring
+- early
 - th-orphans
 - attoparsec
 - rio

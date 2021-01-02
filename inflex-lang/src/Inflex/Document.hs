@@ -1,3 +1,4 @@
+{-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -24,6 +25,7 @@ module Inflex.Document
   ) where
 
 import           Control.DeepSeq
+import           Control.Early
 import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Foldable
@@ -279,46 +281,21 @@ resolveRenamedCell ::
   -> RIO DocumentReader (Either LoadError LoadedExpression)
 resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do
   hasConstraints <-
-    pure
-      (first
-         LoadGenerateError
-         (generateRenamed
-            (fmap
-               (fmap
-                  (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
-                     scheme))
-               globalTypes)
-            globalHashes
-            isRenamed))
-  case hasConstraints of
-    Left e -> pure (Left e)
-    Right hasConstraints' -> do
-      isSolved <-
-        fmap
-          (first LoadSolveError)
-          (RIO.runRIO
-             SolveReader {glogfunc = mempty}
-             (solveGenerated hasConstraints'))
-      case isSolved of
-        Left e -> pure (Left e)
-        Right isSolved' -> do
-          isGeneralised <-
-            fmap
-              (first LoadGeneraliseError)
-              (RIO.runRIO GeneraliseReader (generaliseSolved isSolved'))
-          case isGeneralised of
-            Left e -> pure (Left e)
-            Right isGeneralised' -> do
-              isResolved <-
-                RIO.runRIO
-                  ResolveReader
-                  (fmap
-                     (first LoadResolveError)
-                     (resolveGeneralised isGeneralised'))
-              case isResolved of
-                Left e -> pure (Left e)
-                Right isResolved' ->
-                  pure
-                    (Right
-                       (LoadedExpression
-                          {resolvedExpression = isResolved', renamedExpression}))
+    pure $ first LoadGenerateError $
+        generateRenamed
+        (fmap
+           (fmap
+              (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
+                 scheme))
+           globalTypes)
+        globalHashes
+        isRenamed?
+  isSolved <-
+    fmap (first LoadSolveError) $ RIO.runRIO
+      SolveReader {glogfunc = mempty}
+      (solveGenerated hasConstraints)?
+  isGeneralised <- fmap (first LoadGeneraliseError) $ RIO.runRIO GeneraliseReader (generaliseSolved isSolved)?
+  isResolved <- fmap (first LoadResolveError) $ RIO.runRIO ResolveReader (resolveGeneralised isGeneralised)?
+  pure
+    (Right
+       (LoadedExpression {resolvedExpression = isResolved, renamedExpression}))
