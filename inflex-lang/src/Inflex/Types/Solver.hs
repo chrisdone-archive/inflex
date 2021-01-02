@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
@@ -34,7 +35,7 @@ import Inflex.Types
 import Numeric.Natural
 import Optics.Lens
 import Optics.TH
-import RIO (RIO, GLogFunc, HasGLogFunc(..))
+import RIO (HasStateRef(..), RIO, GLogFunc, HasGLogFunc(..), SomeRef)
 
 data SolveError
   = OccursCheckFail (TypeVariable Generated) (Type Generated)
@@ -58,19 +59,10 @@ data Substitution = Substitution
   , after :: !(Type Generated)
   } deriving (Show, Eq)
 
-newtype Solve a = Solve
-  { runSolve :: StateT Natural (ExceptT (NonEmpty SolveError) (RIO SolveReader)) a
-  } deriving ( MonadState Natural
-             , Monad
-             , Functor
-             , Applicative
-             , MonadError (NonEmpty SolveError)
-             , MonadIO
-             , MonadReader SolveReader
-             )
-
-data SolveReader =
-  SolveReader {glogfunc :: GLogFunc SolveMsg}
+data SolveReader = SolveReader
+  { glogfunc :: GLogFunc SolveMsg
+  , counter :: SomeRef Natural
+  }
 
 data SolveMsg
   = UnifyConstraints Int
@@ -83,8 +75,21 @@ data SolveMsg
   | GeneratedTypeVariable TypeVariablePrefix Kind Natural
   deriving (Show)
 
-$(makeLensesWith (inflexRules ['glogfunc]) ''SolveReader)
+$(makeLensesWith (inflexRules ['glogfunc, 'counter]) ''SolveReader)
 
 instance HasGLogFunc SolveReader where
   type GMsg SolveReader = SolveMsg
   gLogFuncL = toLensVL solveReaderGlogfuncL
+
+instance HasStateRef Natural SolveReader where
+  stateRefL = toLensVL solveReaderCounterL
+
+newtype Solve a = Solve
+  { runSolve :: RIO SolveReader a
+  } deriving ( MonadState Natural
+             , Monad
+             , Functor
+             , Applicative
+             , MonadIO
+             , MonadReader SolveReader
+             )
