@@ -619,6 +619,6 @@ generateTypeVariable ::
 generateTypeVariable location prefix kind = do
   index <- get
   glog (GeneratedTypeVariable prefix kind index)
-  modify succ
+  modify' succ
   pure
     TypeVariable {location, prefix = SolverGeneratedPrefix prefix, index, kind}
