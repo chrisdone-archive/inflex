@@ -700,5 +700,5 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
         Nothing -> do
           generatedTypeVariable <-
             lift (generateTypeVariable location0 PolyPrefix kind)
-          modify (M.insert typeVariable generatedTypeVariable)
+          modify' (M.insert typeVariable generatedTypeVariable)
           pure generatedTypeVariable
