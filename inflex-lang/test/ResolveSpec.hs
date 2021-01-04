@@ -220,7 +220,7 @@ fromDecimal_fails = do
     "fromDecimal (x : x)"
     (shouldReturn
        (resolveText' mempty "" "fromDecimal (x : x)")
-       (Left (GeneraliserErrored (SolverErrored (SolverErrors (Solver.TypeMismatch (EqualityConstraint {type1 = ConstantType (TypeConstant {location = BuiltIn, name = DecimalTypeName}), type2 = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = FunctionTypeName}), argument = VariableType (TypeVariable {location = ApplyArgCursor LambdaParamCursor, prefix = LambdaParameterPrefix, index = 2, kind = TypeKind}), location = ApplyArgCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), location = BuiltIn}) :| []))))))
+       (Left (GeneraliserErrored (SolverErrored (SolverError (Solver.TypeMismatch (EqualityConstraint {type1 = ConstantType (TypeConstant {location = BuiltIn, name = DecimalTypeName}), type2 = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = FunctionTypeName}), argument = VariableType (TypeVariable {location = ApplyArgCursor LambdaParamCursor, prefix = LambdaParameterPrefix, index = 2, kind = TypeKind}), location = ApplyArgCursor ExpressionCursor, kind = FunKind TypeKind TypeKind}), location = BuiltIn})))))))
   it
     "fromInteger 5 :: Integer -> Integer"
     (shouldReturn

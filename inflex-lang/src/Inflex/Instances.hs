@@ -9,7 +9,6 @@
 
 module Inflex.Instances where
 
-import Control.DeepSeq
 import Inflex.Types
 import Language.Haskell.TH.Lift
 

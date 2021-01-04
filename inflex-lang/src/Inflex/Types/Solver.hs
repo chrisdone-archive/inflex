@@ -27,7 +27,6 @@ module Inflex.Types.Solver
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State.Strict
-import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (Map)
 import Inflex.Generator
 import Inflex.Optics
@@ -42,10 +41,11 @@ data SolveError
   | KindMismatch (TypeVariable Generated) (Type Generated)
   | TypeMismatch EqualityConstraint
   | RowMismatch (TypeRow Generated) (TypeRow Generated)
+  | NotRowTypes
   deriving (Show, Eq)
 
 data GenerateSolveError e
-  = SolverErrors (NonEmpty SolveError)
+  = SolverError SolveError
   | GeneratorErrored (RenameGenerateError e)
   deriving (Show, Eq)
 

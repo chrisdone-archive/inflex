@@ -290,9 +290,10 @@ resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamed
            globalTypes)
         globalHashes
         isRenamed?
+  ref <- RIO.newSomeRef 0
   isSolved <-
     fmap (first LoadSolveError) $ RIO.runRIO
-      SolveReader {glogfunc = mempty}
+      SolveReader {glogfunc = mempty, counter = ref}
       (solveGenerated hasConstraints)?
   isGeneralised <- fmap (first LoadGeneraliseError) $ RIO.runRIO GeneraliseReader (generaliseSolved isSolved)?
   isResolved <- fmap (first LoadResolveError) $ RIO.runRIO ResolveReader (resolveGeneralised isGeneralised)?

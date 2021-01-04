@@ -26,19 +26,25 @@ solveText' :: (e ~ ()) =>
   -> FilePath
   -> Text
   -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
-solveText' hash fp text = RIO.runRIO SolveReader {glogfunc = mempty} (solveText hash fp text)
+solveText' hash fp text = do
+  counter <- RIO.newSomeRef 0
+  RIO.runRIO SolveReader {glogfunc = mempty, counter} (solveText hash fp text)
 
 unifyConstraints' ::
      Seq EqualityConstraint
-  -> IO (Either (NonEmpty SolveError) (Seq Substitution))
-unifyConstraints' = RIO.runRIO SolveReader {glogfunc = mempty} . runSolver . unifyConstraints
+  -> IO (Either (SolveError) (Seq Substitution))
+unifyConstraints' cs = do
+  counter <- RIO.newSomeRef 0
+  RIO.runRIO SolveReader {glogfunc = mempty, counter} $
+    runSolver (unifyConstraints cs)
 
 unifyAndSubstitute' ::
      Seq EqualityConstraint
   -> Type Generated
-  -> IO (Either (NonEmpty SolveError) (Type Solved))
-unifyAndSubstitute' x =
-  RIO.runRIO SolveReader {glogfunc = mempty} . runSolver . unifyAndSubstitute x
+  -> IO (Either (SolveError) (Type Solved))
+unifyAndSubstitute' x cs = do
+  counter <- RIO.newSomeRef 0
+  RIO.runRIO SolveReader {glogfunc = mempty, counter} . runSolver . unifyAndSubstitute x $ cs
 
 spec :: Spec
 spec = do
@@ -1220,17 +1226,17 @@ erroneous =
        "{x:1}.y"
        (shouldReturn
           (solveText' mempty "" "{x:1}.y")
-          (Left (SolverErrors (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = RowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = FieldTypePrefix, index = 3, kind = TypeKind})}]}) (TypeRow {location = PropExpressionCursor ExpressionCursor, typeVariable = Nothing, fields = [Field {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) :| []))))
+          (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = RowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = FieldTypePrefix, index = 3, kind = TypeKind})}]}) (TypeRow {location = PropExpressionCursor ExpressionCursor, typeVariable = Nothing, fields = [Field {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) ))))
      it
        "[{x:1},{y:1}]"
        (shouldReturn
           (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[{x:1},{y:1}]"))
-          (Left (SolverErrors (RowMismatch (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) TypeCursor), name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 4, kind = TypeKind})}]}) :| []))))
+          (Left (SolverError (RowMismatch (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) TypeCursor), name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 4, kind = TypeKind})}]}) ))))
      it
        "[{x:1},{y:{}]"
        (shouldReturn
           (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[{x:1},{y:{a:2}}]"))
-          (Left (SolverErrors (RowMismatch (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) TypeCursor), name = FieldName {unFieldName = "y"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression ExpressionCursor)), typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression (RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor))), name = FieldName {unFieldName = "a"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression (RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor)))), prefix = ApplyPrefix, index = 4, kind = TypeKind})}]}))}]}) :| [])))))
+          (Left (SolverError (RowMismatch (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}) (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) TypeCursor), name = FieldName {unFieldName = "y"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression ExpressionCursor)), typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression (RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor))), name = FieldName {unFieldName = "a"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "y"}) (RowFieldExpression (RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor)))), prefix = ApplyPrefix, index = 4, kind = TypeKind})}]}))}]}) )))))
 
 --------------------------------------------------------------------------------
 -- Fine-grained tests
@@ -1280,22 +1286,22 @@ fineGrained = do
           "Occurs check: F a b ~ a"
           (shouldReturn
              (unifyConstraints' [_F a b .~ a])
-             (Left (pure (OccursCheckFail a' (_F a b)))))
+             (Left (OccursCheckFail a' (_F a b))))
         it
           "Kind mismatch: F a ~ b"
           (shouldReturn
              (unifyConstraints' [_F_partial a .~ b])
-             (Left (pure (KindMismatch b' (_F_partial a)))))
+             (Left (KindMismatch b' (_F_partial a))))
         it
           "Constant mismatch: Integer ~ Text"
           (shouldReturn
              (unifyConstraints' [_Integer .~ _Text])
-             (Left (pure (TypeMismatch (_Integer .~ _Text)))))
+             (Left (TypeMismatch (_Integer .~ _Text))))
         it
           "Type mismatch: F a a ~ F (Option Text) (Option Integer)"
           (shouldReturn
              (unifyConstraints' [_F a a .~ _F (_Option _Text) (_Option _Integer)])
-             (Left (pure (TypeMismatch (_Text .~ _Integer))))))
+             (Left (TypeMismatch (_Text .~ _Integer)))))
 
 --------------------------------------------------------------------------------
 -- Type variables
@@ -1414,7 +1420,7 @@ variants = do
   it
     "case #a { #b: {} }"
     (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {} }"))
-              (Left (SolverErrors (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) :| []))))
+              (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) ))))
   it
       "case #a { #b: {}, wild: {} }"
       (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))

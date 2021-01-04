@@ -1,3 +1,4 @@
+{-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
@@ -30,13 +31,12 @@ module Inflex.Solver
   ) where
 
 import           Control.DeepSeq
-import           Control.Monad
-import           Control.Monad.Except
+import           Control.Early
+import           Control.Monad.Early
 import           Control.Monad.State.Strict
 import           Data.Bifunctor
 import           Data.Function
 import           Data.List
-import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Data.Sequence (Seq)
@@ -69,29 +69,30 @@ solveGenerated ::
   -> RIO SolveReader (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveGenerated HasConstraints {thing = expression, mappings, equalities} =
   fmap
-    (first SolverErrors .
+    (first SolverError .
      second
        (\substitutions ->
           IsSolved {thing = expressionSolve substitutions expression, mappings}))
     (runSolver (unifyConstraints equalities))
 
-runSolver :: Solve a -> RIO SolveReader (Either (NonEmpty SolveError) a)
-runSolver = runExceptT . flip evalStateT 0 . runSolve
+runSolver :: Solve a -> RIO SolveReader a
+runSolver = runSolve
 
 unifyAndSubstitute ::
      Seq EqualityConstraint
   -> Type Generated
-  -> Solve (Type Solved)
+  -> Solve (Either SolveError (Type Solved))
 unifyAndSubstitute equalities typ = do
-  substitutions <- unifyConstraints equalities
-  pure (solveType substitutions typ)
+  substitutions <- unifyConstraints equalities?
+  pure (Right (solveType substitutions typ))
 
 solveTextRepl ::
      Text
   -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
-solveTextRepl text =
+solveTextRepl text = do
+  counterRef <- RIO.newSomeRef 0
   RIO.runRIO
-    (SolveReader {glogfunc = RIO.mkGLogFunc (\_cs msg -> print msg)})
+    (SolveReader {glogfunc = RIO.mkGLogFunc (\_cs msg -> print msg), counter = counterRef})
     (solveText mempty "repl" text)
 
 --------------------------------------------------------------------------------
@@ -102,7 +103,7 @@ solveTextRepl text =
 -- largest hit is in unifyConstraints with O(n^2) behavior.
 
 unifyConstraints ::
-     Seq EqualityConstraint -> Solve (Seq Substitution)
+     Seq EqualityConstraint -> Solve (Either SolveError (Seq Substitution))
 unifyConstraints constraints = do
   glog (UnifyConstraints (length constraints))
   -- This is a large speed hit. If there are 1000 elements in an
@@ -115,19 +116,21 @@ unifyConstraints constraints = do
   -- performing. Consider alternative ways to express this function
   -- without paying this penalty.
   substitutions <-
-    foldM
+    foldEither
       (\existing equalityConstraint -> do
          glog (UnifyConstraintsIterate (length existing))
          fmap
-           (\new -> extendSubstitutions Extension {existing, new})
+           (fmap (\new -> extendSubstitutions Extension {existing, new}))
            (unifyEqualityConstraint
               (substituteEqualityConstraint existing equalityConstraint)))
       mempty
-      constraints
+      constraints?
   glog (UnifyConstraintsComplete (length substitutions))
-  pure substitutions
+  pure (Right substitutions)
 
-unifyEqualityConstraint :: EqualityConstraint -> Solve (Seq Substitution)
+unifyEqualityConstraint ::
+     EqualityConstraint
+  -> Solve (Either SolveError (Seq Substitution))
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
@@ -139,30 +142,30 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
     (VariableType typeVariable, typ) -> bindTypeVariable typeVariable typ
     (typ, VariableType typeVariable) -> bindTypeVariable typeVariable typ
     (ConstantType TypeConstant {name = typeConstant1}, ConstantType TypeConstant {name = typeConstant2})
-      | typeConstant1 == typeConstant2 -> pure mempty
+      | typeConstant1 == typeConstant2 -> pure (Right mempty)
     (RowType x, RowType y) -> unifyRows x y
     (RecordType r1, RecordType r2) -> unifyRecords r1 r2
     (VariantType r1, VariantType r2) -> unifyRecords r1 r2
     (ArrayType a, ArrayType b) ->
       unifyEqualityConstraint
         EqualityConstraint {location, type1 = a, type2 = b}
-    _ -> throwError (pure (TypeMismatch equalityConstraint))
+    _ -> pure (Left (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::
      TypeApplication Generated
   -> TypeApplication Generated
-  -> Solve (Seq Substitution)
+  -> Solve (Either SolveError (Seq Substitution))
 unifyTypeApplications typeApplication1 typeApplication2 = do
   glog UnifyTypeApplications
   existing <-
     unifyEqualityConstraint
-      EqualityConstraint {type1 = function1, type2 = function2, location}
+      EqualityConstraint {type1 = function1, type2 = function2, location}?
   new <-
     unifyEqualityConstraint
       (substituteEqualityConstraint
          existing
-         (EqualityConstraint {type1 = argument1, type2 = argument2, location}))
-  pure (extendSubstitutions Extension {existing, new})
+         (EqualityConstraint {type1 = argument1, type2 = argument2, location}))?
+  pure (pure (extendSubstitutions Extension {existing, new}))
   where
     TypeApplication {function = function1, argument = argument1, location}
      = typeApplication1
@@ -172,52 +175,19 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
       typeApplication2
 
 -- | Unify records -- must contain row types inside.
-unifyRecords :: Type Generated -> Type Generated -> Solve (Seq Substitution)
+unifyRecords :: Type Generated -> Type Generated -> Solve (Either SolveError (Seq Substitution))
 unifyRecords (RowType x) (RowType y) = unifyRows x y
-unifyRecords _ _ = error "Invalid row types!" -- TODO: Make better error.
+unifyRecords _ _ = pure (Left NotRowTypes)
 
 unifyRows ::
      TypeRow Generated
   -> TypeRow Generated
-  -> Solve (Seq Substitution)
+  -> Solve (Either SolveError (Seq Substitution))
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
   glog (UnifyRows row1 row2)
-  let sd1_0 =
-        [ f1
-        | f1@Field {name} <- fs1
-        , name `notElem` map (\Field {name = name2} -> name2) fs2
-        ]
-      sd2_0 =
-        [ f1
-        | f1@Field {name} <- fs2
-        , name `notElem` map (\Field {name = name2} -> name2) fs1
-        ]
-  -- This shows that it loops forever.
-  -- trace ("unifyRows " <> show row1 <> " == " <> show row2) (pure ())
-  constraints <-
-    case (sd1_0, v1, sd2_0, v2) of
-      ([], Just v1', [], Just v2')
-        | v1' == v2' -> pure []
-      ([], Nothing, [], Nothing) -> pure []
-      -- Below: Just unify a row variable with no fields with any other row.
-      ([], Just u, sd, r) ->
-        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
-      (sd, r, [], Just u) ->
-        pure [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))] -- TODO: Merge locs, vars
-      -- Below: Two open records, their fields must unify and we
-      -- produce a union row type of both.
-      (sd1, Just u1, sd2, Just u2) -> do
-        freshType <- generateTypeVariable location RowUnifyPrefix RowKind
-        let merged1 =
-              RowType
-                (TypeRow {typeVariable = Just freshType, fields = sd1, ..})
-            merged2 =
-              RowType
-                (TypeRow {typeVariable = Just freshType, fields = sd2, ..})
-        pure [(u1, merged2), (u2, merged1)]
-      _ -> throwError (pure (RowMismatch row1 row2))
+  constraints <- generateConstraints?
   let !common = force $ intersect (map fieldName fs1) (map fieldName fs2)
       -- You have to make sure that the types of all the fields match
       -- up, obviously.
@@ -249,20 +219,57 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
   where
     fieldName Field {name} = name
     fieldType Field {typ} = typ
+    generateConstraints = do
+      let sd1_0 =
+            [ f1
+            | f1@Field {name} <- fs1
+            , name `notElem` map (\Field {name = name2} -> name2) fs2
+            ]
+          sd2_0 =
+            [ f1
+            | f1@Field {name} <- fs2
+            , name `notElem` map (\Field {name = name2} -> name2) fs1
+            ]
+      -- This shows that it loops forever.
+      -- trace ("unifyRows " <> show row1 <> " == " <> show row2) (pure ())
+      case (sd1_0, v1, sd2_0, v2) of
+          ([], Just v1', [], Just v2')
+            | v1' == v2' -> pure $ Right []
+          ([], Nothing, [], Nothing) -> pure $ Right []
+          -- Below: Just unify a row variable with no fields with any other row.
+          ([], Just u, sd, r) ->
+            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))]) -- TODO: Merge locs, vars
+          (sd, r, [], Just u) ->
+            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))]) -- TODO: Merge locs, vars
+          -- Below: Two open records, their fields must unify and we
+          -- produce a union row type of both.
+          (sd1, Just u1, sd2, Just u2) -> do
+            freshType <- generateTypeVariable location RowUnifyPrefix RowKind
+            let merged1 =
+                  RowType
+                    (TypeRow {typeVariable = Just freshType, fields = sd1, ..})
+                merged2 =
+                  RowType
+                    (TypeRow {typeVariable = Just freshType, fields = sd2, ..})
+            pure (Right [(u1, merged2), (u2, merged1)])
+          _ -> pure (Left (RowMismatch row1 row2))
 
 --------------------------------------------------------------------------------
 -- Binding
 
-bindTypeVariable :: TypeVariable Generated -> Type Generated -> Solve (Seq Substitution)
+bindTypeVariable ::
+     TypeVariable Generated
+  -> Type Generated
+  -> Solve (Either SolveError (Seq Substitution))
 bindTypeVariable typeVariable typ
-  | typ == VariableType typeVariable = pure mempty
+  | typ == VariableType typeVariable = pure (Right mempty)
   | occursIn typeVariable typ =
-    throwError (pure (OccursCheckFail typeVariable typ))
+    pure (Left (OccursCheckFail typeVariable typ))
   | typeVariableKind typeVariable /= typeKind typ =
-    throwError (pure (KindMismatch typeVariable typ))
+    pure (Left (KindMismatch typeVariable typ))
   | otherwise = do
     glog (SuccessfulBindTypeVariable substitution)
-    pure (pure substitution)
+    pure (Right (pure substitution))
   where
     substitution = Substitution {before = typeVariable, after = typ}
 
