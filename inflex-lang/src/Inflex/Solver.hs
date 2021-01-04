@@ -32,7 +32,7 @@ module Inflex.Solver
 
 import           Control.DeepSeq
 import           Control.Early
-import           Control.Monad.Early
+import           Data.Early
 import           Control.Monad.State.Strict
 import           Data.Bifunctor
 import           Data.Function

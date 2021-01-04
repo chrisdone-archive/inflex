@@ -46,4 +46,4 @@ extra-deps:
     - rio
     - rio-orphans
 - github: inflex-io/early
-  commit: 6600e7f9b20afcbcee127df34cfa966c01cc8f91
+  commit: f892a632d97585916d732f86dacee4dc78df7c7c
