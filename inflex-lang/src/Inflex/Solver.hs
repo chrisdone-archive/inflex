@@ -116,7 +116,7 @@ unifyConstraints constraints = do
   -- performing. Consider alternative ways to express this function
   -- without paying this penalty.
   substitutions <-
-    foldEither
+    foldE
       (\existing equalityConstraint -> do
          glog (UnifyConstraintsIterate (length existing))
          fmap
