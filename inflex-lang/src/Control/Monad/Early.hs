@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 -- |
 
 module Control.Monad.Early where
@@ -12,8 +13,8 @@ foldEither ::
   -> m (Either e x)
 foldEither cons nil = go nil . toList
   where
-    go acc [] = pure (Right acc)
-    go acc (x:xs) = do
+    go (!acc) [] = pure (Right acc)
+    go (!acc) (x:xs) = do
       r <- cons acc x
       case r of
         Left e -> pure (Left e)
