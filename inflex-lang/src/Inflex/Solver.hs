@@ -167,8 +167,8 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
          (EqualityConstraint {type1 = argument1, type2 = argument2, location}))?
   pure (pure (extendSubstitutions Extension {existing, new}))
   where
-    TypeApplication {function = function1, argument = argument1, location}
-     = typeApplication1
+    TypeApplication {function = function1, argument = argument1, location} =
+      typeApplication1
      -- TODO: set location properly. This will enable "provenance"
      -- <https://www.youtube.com/watch?v=rdVqQUOvxSU>
     TypeApplication {function = function2, argument = argument2} =
