@@ -57,7 +57,6 @@ newtype DocumentSlug =
   DocumentSlug Text
   deriving ( Show
            , Read
-           , PathPiece
            , Eq
            , ToJSON
            , FromJSON
@@ -65,6 +64,20 @@ newtype DocumentSlug =
            , PersistField
            , ToHtml
            )
+
+instance PathPiece DocumentSlug where
+  toPathPiece (DocumentSlug t) = t
+  fromPathPiece text =
+    pure
+      (DocumentSlug
+         (T.map
+            (\c ->
+               if not (valid c)
+                 then '-'
+                 else c)
+            (T.map toLower text)))
+    where
+      valid c = isAlphaNum c || c == '_' || c == '-'
 
 -- | TODO: Implement manual PathPiece
 newtype Username =
