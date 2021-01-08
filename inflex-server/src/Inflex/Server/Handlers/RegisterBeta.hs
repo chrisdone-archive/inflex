@@ -45,7 +45,7 @@ intro_ = do
   p_
     (do "Don't forget, you can also join the community forum at "
         a_ [href_ "https://community.inflex.io/"] "community.inflex.io"
-        " to share your (much needed) feedback!.")
+        " to share your (much needed) feedback!")
 
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
