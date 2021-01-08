@@ -85,6 +85,7 @@ data ServerMsg
   | OpenDocument
   | CreateDocument
   | DeleteDocument
+  | RenameDocument
   deriving (Show)
 
 -- | A generic log output.

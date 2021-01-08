@@ -151,6 +151,8 @@ makeAppLogFunc registry = do
     Prometheus.Registry.registerCounter "inflex_CreateDocument" mempty registry
   deleteDocument <-
     Prometheus.Registry.registerCounter "inflex_DeleteDocument" mempty registry
+  renameDocument <-
+    Prometheus.Registry.registerCounter "inflex_RenameDocument" mempty registry
   pure
     (mkGLogFunc
        (\_callStack ->
@@ -172,6 +174,7 @@ makeAppLogFunc registry = do
                 OpenDocument -> Counter.inc openDocument
                 CreateDocument -> Counter.inc createDocument
                 DeleteDocument -> Counter.inc deleteDocument
+                RenameDocument -> Counter.inc renameDocument
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))

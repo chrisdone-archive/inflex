@@ -107,7 +107,7 @@ body {
 .dashboard {
   margin: 10px;
   font-family: sans-serif;
-  max-width: 40em;
+  max-width: 60em;
   margin: 0 auto;
   margin-top: 50px;
   font-size: 20px;
@@ -120,7 +120,7 @@ body {
     margin-top: 0;
     margin-bottom: 10px;
   }
-  .new-document {
+  .new-document, .rename-document button {
     margin-bottom:15px;
     font-size: 15px;
     background: #e9eef2;
@@ -131,9 +131,25 @@ body {
     border-radius: 5px;
     cursor: pointer;
   }
-  .new-document:hover {
+  .new-document:hover, .rename-document button:hover {
     background: #15263b;
     color: #fff;
+  }
+
+  .rename-document button {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+  }
+  .rename-document input[type=text] {
+    margin-bottom:15px;
+    font-size: 15px;
+    background: #fff;
+    padding: 10px;
+    width: 80px;
+    border: 1px solid #aaa;
+    border-bottom-left-radius: 5px;
+    border-top-left-radius: 5px;
+    border-right: 0;
   }
 
   .documents {
@@ -154,6 +170,11 @@ body {
       border-radius: 5px;
       margin-right: 10px;
       margin-top: 10px;
+
+      .rename-document {
+        padding: 10px;
+
+      }
 
       .document-header {
         display: flex;

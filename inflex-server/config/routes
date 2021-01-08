@@ -32,7 +32,8 @@
 -- App
 /dashboard AppDashboardR GET POST
 /dashboard/new NewDocumentR POST
-/dashboard/del/#DocumentId DeleteDocumentR POST
+/dashboard/delete/#DocumentId DeleteDocumentR POST
+/dashboard/rename/#DocumentId RenameDocumentR POST
 /editor/#DocumentSlug AppEditorR GET
 /app/js AppJsR GET
 /app/vega VegaJsR GET

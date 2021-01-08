@@ -8,6 +8,7 @@ module Inflex.Server.Handlers.Dashboard
   , getAppDashboardR
   , postNewDocumentR
   , postDeleteDocumentR
+  , postRenameDocumentR
   ) where
 
 import           Control.Monad.Reader
@@ -15,8 +16,8 @@ import           Data.String
 import qualified Data.Text as T
 import           Data.Time
 import           Database.Persist.Sql
-import           Formatting
-import           Formatting.Time
+import qualified Formatting
+import qualified Formatting.Time
 import           GA
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
@@ -93,13 +94,30 @@ getAppDashboardR =
                                                    "Delete this document permanently"
                                                ]
                                                "×"))
+                                    form_
+                                      [ action_
+                                          (url (RenameDocumentR documentId))
+                                      , method_ "post"
+                                      , class_ "rename-document"
+                                      ]
+                                      (do input_
+                                            [ name_ "name"
+                                            , type_ "text"
+                                            , value_
+                                                (let DocumentSlug slug =
+                                                       documentName
+                                                  in slug)
+                                            ]
+                                          button_
+                                            [title_ "Rename this document"]
+                                            "Rename")
                                     p_
                                       [ class_ "document-date"
                                       , title_ (T.pack (show documentCreated))
                                       ]
                                       (toHtml
-                                         (format
-                                            (diff True)
+                                         (Formatting.format
+                                            (Formatting.Time.diff True)
                                             (diffUTCTime documentCreated now')))))))))))
 
 postAppDashboardR :: Handler (Html ())
@@ -148,3 +166,33 @@ postDeleteDocumentR documentId =
             [DocumentId ==. documentId, DocumentAccount ==. toSqlKey accountId])
        glog DeleteDocument
        redirect AppDashboardR)
+
+postRenameDocumentR :: DocumentId -> Handler ()
+postRenameDocumentR documentId = do
+  mdocumentSlug <- fmap (>>= fromPathPiece) (lookupPostParam "name")
+  case mdocumentSlug of
+    Nothing -> do
+      slug <- (lookupPostParam "name")
+      error (show slug)
+               {-error redirect AppDashboardR-}
+    Just documentSlug ->
+      withLogin
+        (\_ LoginState {loginAccountId = AccountID accountId} -> do
+           (runDB $ do
+              mexisting <-
+                selectFirst
+                  [ DocumentName ==. documentSlug
+                  , DocumentAccount ==. toSqlKey accountId
+                  ]
+                  []
+              case mexisting of
+                Just {} -> pure ()
+                Nothing -> do
+                  now <- liftIO getCurrentTime
+                  updateWhere
+                    [ DocumentId ==. documentId
+                    , DocumentAccount ==. toSqlKey accountId
+                    ]
+                    [DocumentName =. documentSlug, DocumentUpdated =. now])
+
+           redirect AppDashboardR)
