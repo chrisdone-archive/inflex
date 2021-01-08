@@ -190,10 +190,14 @@ body {
 
 .register-page {
   font-family: sans-serif;
-  max-width: 50em;
+  max-width: 40em;
   margin: 0 auto;
   text-align: center;
   margin-top: 50px;
+  font-size: 20px;
+
+  p { line-height: 1.7em }
+
   .invalid-feedback {
     color: red;
     font-weight: bold;
@@ -204,4 +208,23 @@ body {
     display: inline-block;
     margin-top: 1em;
   }
+
+  .btn, .get-access-now {
+    margin-top: 20px;
+    color: #fff;
+    background: #7121ea;
+    padding: 10px;
+    border: 0;
+    border-radius: 2px;
+    box-shadow: 0px 0px 5px 5px #0001;
+    cursor: pointer;
+    background: #7121ea;
+    text-decoration: none;
+  }
+  .btn:hover, .get-access-now {
+    background: #4520a5;
+    transition: 0.3s;
+  }
+
+
 }

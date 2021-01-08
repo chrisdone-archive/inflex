@@ -40,12 +40,11 @@ import           Yesod.Lucid
 
 intro_ :: Lucid App ()
 intro_ = do
-  h1_ "Welcome to the beta!"
+  h1_ "Create a username and password"
   p_
-    (do "You should have received an invite from our community forum at "
+    (do "Don't forget, you can also join the community forum at "
         a_ [href_ "https://community.inflex.io/"] "community.inflex.io"
-        ".")
-  p_ "Please use the same email from your early access request."
+        " to share your (much needed) feedback!.")
 
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
@@ -112,7 +111,7 @@ registerView sessionState formView =
              [action_ (url EnterDetailsR), method_ "POST"]
              (do intro_
                  formView
-                 p_ (button_ [class_ "btn btn-primary"] "Continue"))))
+                 p_ (button_ [class_ "btn btn-primary"] "Create and go to dashboard"))))
 
 verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm RegisterError RegistrationDetails
 verifiedRegisterForm = $$($$(Forge.verify1 [||registerFormBeta||]))

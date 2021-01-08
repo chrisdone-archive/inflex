@@ -66,11 +66,13 @@ instance ShowError LoginError where
 registerFormBeta :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails
 registerFormBeta mregistrationDetails =
   Forge.ParseForm
-    (\ok@RegistrationDetails {registerEmail} -> do
-       msomething <- selectFirst [EarlyAccessRequestEmail ==. registerEmail] []
-       case msomething of
-         Nothing -> pure (Left BetaEmailNotThere)
-         Just {} -> pure (Right ok))
+    (\ok@RegistrationDetails {registerEmail=_} -> do
+       pure (Right ok)
+       -- msomething <- selectFirst [EarlyAccessRequestEmail ==. registerEmail] []
+       -- case msomething of
+       --   Nothing -> pure (Left BetaEmailNotThere)
+       --   Just {} -> pure (Right ok)
+    )
     (registerForm mregistrationDetails)
 
 registerForm :: Forge.Default RegistrationDetails -> Form RegisterError RegistrationDetails

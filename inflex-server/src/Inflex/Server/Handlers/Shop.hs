@@ -122,29 +122,29 @@ getHomeR = do
                       h1_ "It's time to go off grid"
                       h2_ "Online spreadsheets re-invented"
                       form_
-                        [action_ (url EarlyAccessRequestR), method_ "post"]
-                        (do div_
+                        [action_ (url EnterDetailsR), method_ "get"]
+                            {-div_
                               [class_ "email-address"]
                               (input_
                                  [ name_ "email"
                                  , type_ "email"
                                  , placeholder_ "Your email address"
                                  , required_ ""
-                                 ])
-                            button_
-                              [class_ "button tagline-action"]
-                              "Request early access!")
+                                 ])-}
+                        (do button_ [class_ "button tagline-action"] "Try now!")
                     div_
                       [class_ "hero-pic"]
                       (do button_ [class_ "play", onclick_ "play();"] (pure ()))
                 div_ [class_ "tour tour-light"] $ do
                   tour
                   div_ [class_ "margin-wrapper"] $ do
-                    p_
-                      [class_ "cta"]
-                      (a_
-                         [href_ "#top", class_ "get-access-now"]
-                         "Back to top")
+                    h1_ "What are you waiting for?"
+                  div_ [class_ "margin-wrapper"] $ do
+                    p_ "We're open for beta testing now."
+                  div_ [class_ "margin-wrapper"] $ do
+                    p_ $
+                      form_ [action_ (url EnterDetailsR), method_ "get"] $
+                      button_ [class_ "button tagline-action"] "Try now!"
                 div_ [class_ "footer"] $ do
                   div_ [class_ "margin-wrapper"] $ do
                     p_ "© 2020 Sky Above Limited"
