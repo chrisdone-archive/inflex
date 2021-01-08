@@ -45,6 +45,18 @@ getAppDashboardR =
             (div_
                [class_ "dashboard"]
                (do url <- ask
+                   h1_ "Documents"
+                   p_
+                     "Your work in Inflex is split up into documents. We've added some \
+                      \example documents for you below. You can create a new document to \
+                      \start from scratch by hitting New Document."
+                   p_
+                     (do "Don't forget to check out the "
+                         a_
+                           [ href_
+                               "https://community.inflex.io/t/the-inflex-document/17"
+                           ]
+                           "community forum guide on working with documents.")
                    form_
                      [action_ (url NewDocumentR), method_ "post"]
                      (button_ [class_ "new-document"] "New Document")
@@ -73,9 +85,14 @@ getAppDashboardR =
                                                    (DeleteDocumentR documentId))
                                             , method_ "post"
                                             , class_ "delete-document"
-                                            , onsubmit_ "return confirm('Do you really want to delete this document?');"
+                                            , onsubmit_
+                                                "return confirm('Do you really want to delete this document?');"
                                             ]
-                                            (button_ [title_ "Delete this document permanently"] "×"))
+                                            (button_
+                                               [ title_
+                                                   "Delete this document permanently"
+                                               ]
+                                               "×"))
                                     p_
                                       [ class_ "document-date"
                                       , title_ (T.pack (show documentCreated))
