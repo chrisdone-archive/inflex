@@ -19,6 +19,7 @@ module Inflex.Server.Handlers.RegisterBeta
 
 import           Control.Monad.Reader
 import           Data.Foldable
+import           Data.Time
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
 import           Data.Validation
@@ -83,6 +84,7 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                              , accountEmail = registerEmail
                              , accountCustomerId = Nothing
                              }
+                       copySampleDocuments key
                        updateSession
                          sessionId
                          (Registered
@@ -99,6 +101,50 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                       (do h1_ "Registered!"
                           p_ "Taking you to the dashboard..."
                           redirect_ 3 AppDashboardR)))
+
+copySampleDocuments :: AccountId -> YesodDB App ()
+copySampleDocuments targetAccountId = do
+  maccount <- selectFirst [AccountEmail ==. Email "templates@inflex.io"] [] -- TODO: put in config file
+  let maccountId = fmap entityKey maccount
+  case maccountId of
+    Nothing -> pure ()
+    Just sourceAccountId -> do
+      oldDocuments <-
+        selectList [DocumentAccount ==. sourceAccountId] [Desc DocumentId]
+      let oldKeys = map entityKey oldDocuments
+      now <- liftIO getCurrentTime
+      newKeys <-
+        insertMany
+          (map
+             (\(Entity _ Document {..}) ->
+                Document
+                  { documentAccount = targetAccountId
+                  , documentName
+                  , documentUpdated = now
+                  , documentCreated = now
+                  })
+             oldDocuments)
+      oldRevisions <-
+        selectList
+          [ RevisionAccount ==. sourceAccountId
+          , RevisionDocument <-. oldKeys
+          , RevisionActive ==. True
+          ]
+          [Desc RevisionDocument]
+      insertMany_
+        (zipWith
+           (\newKey Revision {..} ->
+              Revision
+                { revisionContent
+                , revisionActive = True
+                , revisionDocument = newKey
+                , revisionCreated = now
+                , revisionActivated = now
+                , revisionAccount = targetAccountId
+                })
+           newKeys
+           (map entityVal oldRevisions))
+      pure ()
 
 registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =
