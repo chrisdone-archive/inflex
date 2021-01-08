@@ -48,10 +48,8 @@ body {
  */
 
 html, body, .wrapper {
-  height: 100%;
 }
 body {
-  overflow: hidden;
   margin: 0;
   padding: 0;
   font-size: 14px;
@@ -143,6 +141,8 @@ body {
     font-family: sans-serif;
     display: flex;
     flex-direction: row;
+    width: 100%;
+    flex-wrap: wrap;
 
     a {
       color: #174783;
