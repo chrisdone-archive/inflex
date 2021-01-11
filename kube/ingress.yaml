@@ -2,24 +2,16 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: inflex-ingress
+  namespace: ingress-nginx
   annotations:
     kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "X-Ingress: inflex-ingress";
+      proxy_set_header HTTPS on;
 spec:
-  tls:
-  - hosts:
-    - inflex.io
-    secretName: tls-secret
   rules:
-  - host: inflex.io
-    http:
+  - http:
       paths:
-      - backend:
-          serviceName: lbtest
-          servicePort: 80
-        path: /lbtest
       - backend:
           serviceName: inflex-server
           servicePort: 80
