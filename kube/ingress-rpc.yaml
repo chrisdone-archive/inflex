@@ -2,22 +2,19 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: inflex-rpc-ingress
+  namespace: ingress-nginx
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "X-Ingress: inflex-rpc-ingress";
+      proxy_set_header HTTPS on;
     nginx.ingress.kubernetes.io/limit-connections: "5"
     nginx.ingress.kubernetes.io/limit-rps: "1"
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "1"
 spec:
-  tls:
-  - hosts:
-    - inflex.io
-    secretName: tls-secret
   rules:
-  - host: inflex.io
-    http:
+  - http:
       paths:
       - backend:
           serviceName: inflex-server
