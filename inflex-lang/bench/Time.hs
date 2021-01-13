@@ -38,12 +38,21 @@ time                 548.2 ms   (540.3 ms .. 569.9 ms)
 mean                 553.0 ms   (549.4 ms .. 562.2 ms)
 std dev              8.898 ms   (3.145 ms .. 14.24 ms)
 
+WITH TYPE SIGNATURE
+
+benchmarking solveText/medium array ... took 17.01 s, total 56 iterations
+[0Kbenchmarked solveText/medium array
+time                 312.1 ms   (307.4 ms .. 315.8 ms)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 308.1 ms   (306.2 ms .. 310.0 ms)
+std dev              3.175 ms   (2.390 ms .. 4.474 ms)
+
 -}
 
 main :: IO ()
 main = do
   -- u1 <- nextRandom'
-  let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
+  let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
   defaultMain
     [ bgroup
         "parseText"
