@@ -41,3 +41,15 @@ Revision
   active Bool
   activated UTCTime
   deriving Show
+
+--------------------------------------------------------------------------------
+-- Files
+
+File
+  account AccountId
+  name Text
+  created UTCTime
+  hash Sha256
+  bytes Word64
+  mime Text
+  deriving Show

@@ -38,6 +38,7 @@
 /app/js AppJsR GET
 /app/vega VegaJsR GET
 /app/css AppCssR GET
+/file/upload UploadFileR POST
 
 -- Shared
 /cell/css CellCssR GET

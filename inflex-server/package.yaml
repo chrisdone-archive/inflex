@@ -11,6 +11,7 @@ extra-source-files:
 - ChangeLog.md
 - config/*
 - templates/*.lucius
+- templates/*.julius
 - svg/*.svg
 
 # Metadata used when publishing your package
@@ -24,6 +25,9 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - criterion-measurement
+- conduit
+- conduit-extra
+- path
 - prometheus
 - async
 - yesod-core

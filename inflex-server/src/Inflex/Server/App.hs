@@ -42,30 +42,23 @@ import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Sha256
+import qualified Network.Wai.Parse
 import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
 import           RIO hiding (Handler, preview)
 import           RIO.Warp
 import           RIO.Yesod
-import           Yesod hiding (Html, Field)
+import           Yesod hiding (Html, Field, fileName)
 import qualified Yesod.Core.Types as Yesod
 import           Yesod.Lucid
+
+--------------------------------------------------------------------------------
+-- Types
 
 data App = App
   { appPool :: !(Pool SqlBackend)
   , appConfig :: !Config
   , appLogFunc :: GLogFunc AppMsg
   }
-
-instance Yesod App where
-  makeSessionBackend _  = pure Nothing
-  messageLoggerSource App {appLogFunc} =
-    yesodLoggerSource (contramap YesodMsg appLogFunc)
-
-instance YesodPersist App where
-  type YesodPersistBackend App = SqlBackend
-  runDB action = do
-    App {appPool = pool} <- getYesod
-    runSqlPool action pool
 
 -- | App log message.
 data AppMsg
@@ -96,8 +89,38 @@ data DatabaseLog =
               MonadLogger.LogStr
   deriving (Show)
 
+--------------------------------------------------------------------------------
+-- TH-based derivings
+
 $(makePrisms ''AppMsg)
 $(makeLensesFor [("appLogFunc","appLogFuncLens")] ''App)
+$(share
+    [mkPersist sqlSettings, mkMigrate "migrateAll"]
+    $(persistFileWith lowerCaseSettings "config/models"))
+$(mkYesodData "App" $(parseRoutesFile "config/routes"))
+
+--------------------------------------------------------------------------------
+-- Instances
+
+instance Yesod App where
+  makeSessionBackend _ = pure Nothing
+  maximumContentLength app mroute =
+    case mroute of
+      Just UploadFileR {} ->
+        pure (fromIntegral (maxUploadSizeBytes (appConfig app)))
+      _ -> pure (fromIntegral (defaultMaxRequestBytes (appConfig app)))
+  messageLoggerSource App {appLogFunc} =
+    yesodLoggerSource (contramap YesodMsg appLogFunc)
+  fileUpload _ _ = FileUploadDisk Network.Wai.Parse.tempFileBackEnd
+
+instance RenderMessage App FormMessage where
+    renderMessage _ _ = defaultFormMessage
+
+instance YesodPersist App where
+  type YesodPersistBackend App = SqlBackend
+  runDB action = do
+    App {appPool = pool} <- getYesod
+    runSqlPool action pool
 
 instance HasGLogFunc (Yesod.HandlerData App App) where
   type GMsg (Yesod.HandlerData App App) = ServerMsg
@@ -109,17 +132,17 @@ instance HasGLogFunc (Yesod.HandlerData App App) where
            (fmap (contramapMaybeGLogFunc (preview _ServerMsg)) .
             f . contramap ServerMsg))
 
-share
-  [mkPersist sqlSettings, mkMigrate "migrateAll"]
-  $(persistFileWith lowerCaseSettings "config/models")
-
-mkYesodData "App" $(parseRoutesFile "config/routes")
+--------------------------------------------------------------------------------
+-- Helpers
 
 fromAccountId :: AccountId -> AccountID
 fromAccountId = AccountID . fromSqlKey
 
 fromAccountID :: AccountID -> AccountId
 fromAccountID (AccountID i) = toSqlKey i
+
+--------------------------------------------------------------------------------
+-- Handy aliases
 
 type FormValidate = YesodDB App
 

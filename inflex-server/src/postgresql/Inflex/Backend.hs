@@ -20,23 +20,39 @@ import           Yesod
 withBackendPool = withPostgresqlPool
 
 manualMigration :: (MonadIO m) => x -> ReaderT SqlBackend m ()
-manualMigration _x = do
+manualMigration _x
   -- Set isolation, and validate it.
+ = do
   run "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
-  level <- fmap (fmap unSingle) (rawSql "SELECT CURRENT_SETTING('transaction_isolation');" [])
-  unless (level == ["serializable" :: Text]) (error "Transaction isolation level is not being set properly!")
+  level <-
+    fmap
+      (fmap unSingle)
+      (rawSql "SELECT CURRENT_SETTING('transaction_isolation');" [])
+  unless
+    (level == ["serializable" :: Text])
+    (error "Transaction isolation level is not being set properly!")
   -- Setup schema versions table.
-  run "CREATE TABLE IF NOT EXISTS schema_versions (version INT, date TIMESTAMP DEFAULT NOW());"
-  version :: Int <- fmap (foldl (+) 0 . fmap unSingle) (rawSql "SELECT version FROM schema_versions;" [])
-  -- Dispatch a migrateion.
-  case version of
-    0 -> schema0
-    1 -> schema1
-    2 -> schema2
-    3 -> schema3
-    4 -> schema4
-    5 -> liftIO $ putStrLn "At correct schema version."
-    _ -> error ("At mysterious schema version: " ++ show version)
+  run
+    "CREATE TABLE IF NOT EXISTS schema_versions (version INT, date TIMESTAMP DEFAULT NOW());"
+
+  -- Dispatch a migration.
+  let loop = do
+        version :: Int <-
+          fmap
+            (foldl (+) 0 . fmap unSingle)
+            (rawSql "SELECT version FROM schema_versions;" [])
+        liftIO $ putStrLn ("Schema version: " ++ show version)
+        case version of
+          0 -> schema0 >> loop
+          1 -> schema1 >> loop
+          2 -> schema2 >> loop
+          3 -> schema3 >> loop
+          4 -> schema4 >> loop
+          5 -> schema5 >> loop
+          6 -> schema6 >> loop
+          7 -> liftIO $ putStrLn "OK."
+          _ -> error ("At mysterious schema version: " ++ show version)
+  loop
 
 run :: (MonadIO m) => Text -> ReaderT SqlBackend m ()
 run x = do
@@ -87,3 +103,15 @@ CREATE INDEX idx_doc_name ON document(name);
 -- For fast lookup of revisions by their document_id+activeness.
 CREATE INDEX idx_revision_doc_active ON revision (document, active);
  |]
+
+schema5  = run [s|
+INSERT INTO schema_versions VALUES (1);
+CREATE TABLE "file"("id" SERIAL8  PRIMARY KEY UNIQUE,"account" INT8 NOT NULL,"name" VARCHAR NOT NULL,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"hash" BYTEA NOT NULL,"bytes" INT8 NOT NULL,"mime" VARCHAR NOT NULL);
+CREATE INDEX file_account_hash ON file (account,hash);
+CREATE INDEX file_account ON file (account);
+|]
+
+schema6  = run [s|
+INSERT INTO schema_versions VALUES (1);
+CREATE INDEX document_account ON document (account);
+|]

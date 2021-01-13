@@ -33,6 +33,7 @@ import           GHC.Generics
 import           Inflex.Server.Types.Sha256
 import           Lucid
 import           Optics.TH
+import           Path
 import           Stripe
 import           Text.Email.Validate as Email
 import           Yesod hiding (Html)
@@ -42,6 +43,9 @@ data Config = Config
   , databaseConn :: Text
   , gaUa :: GA_UA
   , maxRevisionsPerDoc :: Int
+  , maxUploadSizeBytes :: Int
+  , defaultMaxRequestBytes :: Int
+  , uploadsDir :: !(Path Abs Dir)
   } deriving (Generic)
 instance FromJSON Config
 

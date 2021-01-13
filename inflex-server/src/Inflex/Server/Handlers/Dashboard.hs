@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- |
@@ -14,6 +15,7 @@ module Inflex.Server.Handlers.Dashboard
 import           Control.Monad.Reader
 import           Data.String
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
 import           Data.Time
 import           Database.Persist.Sql
 import qualified Formatting
@@ -26,6 +28,8 @@ import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
 import           RIO (glog)
+import           Shakespearean
+import           Text.Julius
 import           Yesod hiding (Html, toHtml)
 import           Yesod.Lucid
 
@@ -39,86 +43,151 @@ getAppDashboardR =
            (selectList
               [DocumentAccount ==. fromAccountID loginAccountId]
               [Desc DocumentCreated])
+       files <-
+         runDB
+           (selectList
+              [FileAccount ==. fromAccountID loginAccountId]
+              [Desc FileCreated])
        now' <- liftIO getCurrentTime
+       config <- fmap appConfig getYesod
+       js' <- $(juliusFileFrom "inflex-server/templates/dashboard.julius")
        htmlWithUrl
          (shopTemplate
             (Registered state)
-            (div_
-               [class_ "dashboard"]
-               (do url <- ask
-                   h1_ "Documents"
-                   p_
-                     "Your work in Inflex is split up into documents. We've added some \
+            (do script_ (LT.toStrict (renderJavascript js'))
+                div_
+                  [class_ "dashboard"]
+                  (do url <- ask
+                      h1_ "Documents"
+                      p_
+                        "Your work in Inflex is split up into documents. We've added some \
                       \example documents for you below. You can create a new document to \
                       \start from scratch by hitting New Document."
-                   p_
-                     (do "Don't forget to check out the "
-                         a_
-                           [ href_
-                               "https://community.inflex.io/t/the-inflex-document/17"
-                           ]
-                           "community forum guide on working with documents.")
-                   form_
-                     [action_ (url NewDocumentR), method_ "post"]
-                     (button_ [class_ "new-document"] "New Document")
-                   unless
-                     (null documents)
-                     (div_
-                        [class_ "documents"]
-                        (forM_
-                           documents
-                           (\(Entity documentId Document {..}) ->
-                              div_
-                                [class_ "document"]
-                                (do div_
-                                      [class_ "document-header"]
-                                      (do p_
-                                            [class_ "document-title"]
-                                            (a_
-                                               [ href_
-                                                   (url
-                                                      (AppEditorR documentName))
-                                               ]
-                                               (toHtml documentName))
-                                          form_
-                                            [ action_
-                                                (url
-                                                   (DeleteDocumentR documentId))
-                                            , method_ "post"
-                                            , class_ "delete-document"
-                                            , onsubmit_
-                                                "return confirm('Do you really want to delete this document?');"
-                                            ]
-                                            (button_
-                                               [ title_
-                                                   "Delete this document permanently"
-                                               ]
-                                               "×"))
-                                    form_
-                                      [ action_
-                                          (url (RenameDocumentR documentId))
-                                      , method_ "post"
-                                      , class_ "rename-document"
-                                      ]
-                                      (do input_
-                                            [ name_ "name"
-                                            , type_ "text"
-                                            , value_
-                                                (let DocumentSlug slug =
-                                                       documentName
-                                                  in slug)
-                                            ]
-                                          button_
-                                            [title_ "Rename this document"]
-                                            "Rename")
-                                    p_
-                                      [ class_ "document-date"
-                                      , title_ (T.pack (show documentCreated))
-                                      ]
-                                      (toHtml
-                                         (Formatting.format
-                                            (Formatting.Time.diff True)
-                                            (diffUTCTime documentCreated now')))))))))))
+                      p_
+                        (do "Don't forget to check out the "
+                            a_
+                              [ href_
+                                  "https://community.inflex.io/t/the-inflex-document/17"
+                              ]
+                              "community forum guide on working with documents.")
+                      form_
+                        [action_ (url NewDocumentR), method_ "post"]
+                        (button_ [class_ "new-document"] "New Document")
+                      if null documents
+                        then p_ "No documents yet."
+                        else div_
+                               [class_ "documents"]
+                               (forM_
+                                  documents
+                                  (\(Entity documentId Document {..}) ->
+                                     div_
+                                       [class_ "document"]
+                                       (do div_
+                                             [class_ "document-header"]
+                                             (do p_
+                                                   [class_ "document-title"]
+                                                   (a_
+                                                      [ href_
+                                                          (url
+                                                             (AppEditorR
+                                                                documentName))
+                                                      ]
+                                                      (toHtml documentName))
+                                                 form_
+                                                   [ action_
+                                                       (url
+                                                          (DeleteDocumentR
+                                                             documentId))
+                                                   , method_ "post"
+                                                   , class_ "delete-document"
+                                                   , onsubmit_
+                                                       "return confirm('Do you really want to delete this document?');"
+                                                   ]
+                                                   (button_
+                                                      [ title_
+                                                          "Delete this document permanently"
+                                                      ]
+                                                      "×"))
+                                           form_
+                                             [ action_
+                                                 (url
+                                                    (RenameDocumentR documentId))
+                                             , method_ "post"
+                                             , class_ "rename-document"
+                                             ]
+                                             (do input_
+                                                   [ name_ "name"
+                                                   , type_ "text"
+                                                   , value_
+                                                       (let DocumentSlug slug =
+                                                              documentName
+                                                         in slug)
+                                                   ]
+                                                 button_
+                                                   [ title_
+                                                       "Rename this document"
+                                                   ]
+                                                   "Rename")
+                                           p_
+                                             [ class_ "document-date"
+                                             , title_
+                                                 (T.pack (show documentCreated))
+                                             ]
+                                             (toHtml
+                                                (Formatting.format
+                                                   (Formatting.Time.diff True)
+                                                   (diffUTCTime
+                                                      documentCreated
+                                                      now'))))))
+                      h1_ "Files"
+                      p_
+                        "You can upload CSV files so that they can be used in your documents."
+                      let maxKB = maxUploadSizeBytes config `div` 1024
+                      p_
+                        (small_
+                           (do "At the moment, the maximum file size is "
+                               toHtml (show maxKB)
+                               "KB. (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
+                      form_
+                        [ action_ (url UploadFileR)
+                        , method_ "post"
+                        , id_ "file-upload-form"
+                        , enctype_ "multipart/form-data"
+                        ]
+                        (do input_
+                              [ type_ "file"
+                              , id_ "file-input"
+                              , accept_ "text/csv"
+                              , style_ "display:none"
+                              , name_ "file"
+                              ]
+                            button_
+                              [class_ "new-document", id_ "file-select"]
+                              "Upload File")
+                      script_ ""
+                      if null files
+                        then p_ "No files yet."
+                        else div_
+                               [class_ "documents"]
+                               (forM_
+                                  files
+                                  (\(Entity _fileId File {..}) ->
+                                     div_
+                                       [class_ "document"]
+                                       (do div_
+                                             [class_ "document-header"]
+                                             (do p_
+                                                   [class_ "document-title"]
+                                                   (a_ (toHtml fileName)))
+                                           p_
+                                             [ class_ "document-date"
+                                             , title_
+                                                 (T.pack (show fileCreated))
+                                             ]
+                                             (toHtml
+                                                (Formatting.format
+                                                   (Formatting.Time.diff True)
+                                                   (diffUTCTime fileCreated now'))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())

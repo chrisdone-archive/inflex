@@ -17,6 +17,8 @@ module Inflex.Server.Types.Sha256
   , valueToSha256
   , sha256Text
   , Sha256(..)
+  , sha256LazyByteString
+  , sha256AsHexString
   ) where
 
 import qualified Crypto.Hash as Hash (Digest, SHA256, hash)
@@ -24,9 +26,12 @@ import           Data.Aeson
 import qualified Data.Attoparsec.Text as Atto.T
 import           Data.ByteArray
 import           Data.ByteString (ByteString)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Base16 as Hex
+import qualified Data.ByteString.Char8 as S8
 import           Data.ByteString.Lazy (toStrict)
+import qualified Data.ByteString.Lazy as L
 import           Data.String
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -106,6 +111,9 @@ instance IsString (Q (TExp Sha256)) where
 sha256AsHexText :: Sha256 -> Text
 sha256AsHexText = decodeUtf8 . sha256AsHexBS
 
+sha256AsHexString :: Sha256 -> String
+sha256AsHexString = S8.unpack . sha256AsHexBS
+
 sha256AsHexBS :: Sha256 -> ByteString
 sha256AsHexBS (Sha256 key) = Hex.encode key
 
@@ -118,6 +126,10 @@ valueToSha256 value = sha256ByteString $ toStrict $ encode value
 sha256ByteString :: ByteString -> Sha256
 sha256ByteString =
   Sha256 . convert . (Hash.hash :: ByteString -> Hash.Digest Hash.SHA256)
+
+sha256LazyByteString :: L.ByteString -> Sha256
+sha256LazyByteString =
+  Sha256 . convert . (Hash.hash :: ByteString -> Hash.Digest Hash.SHA256) . L.toStrict
 
 checkSha256Of :: Sha256 -> ByteString -> Bool
 checkSha256Of hash bs = hash == sha256ByteString bs
