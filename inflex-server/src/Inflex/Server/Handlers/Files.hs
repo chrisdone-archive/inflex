@@ -15,7 +15,9 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import           Data.Conduit
 import qualified Data.Conduit.Binary as CB
+import qualified Data.Conduit.List as CL
 import           Data.Conduit.Zlib
+import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time
 import           Inflex.Server.App
@@ -34,7 +36,7 @@ postUploadFileR =
        fileInfo <- getFile
        if fileContentType fileInfo == "text/csv"
          then do
-           !(hash, bytes) <- hashFile fileInfo
+           !(hash, bytes, len) <- hashFile fileInfo
            !casfilename <- parseRelFile (sha256AsHexString hash)
            !dir <- fmap (uploadsDir . appConfig) getYesod
            let casPath = toFilePath (dir </> casfilename)
@@ -46,7 +48,7 @@ postUploadFileR =
                   { fileAccount = fromAccountID loginAccountId
                   , fileName = Yesod.fileName fileInfo
                   , fileCreated = now
-                  , fileBytes = fromIntegral (S.length bytes) -- TODO: Make this conversion explicit.
+                  , fileBytes = fromIntegral len -- TODO: fromIntegral bad
                   , fileHash = hash
                   , fileMime = fileContentType fileInfo
                   })
@@ -64,10 +66,15 @@ getFile = do
           T.pack (show (length files))
         ]
 
-hashFile :: MonadIO m => FileInfo -> m (Sha256, ByteString)
+hashFile :: MonadIO m => FileInfo -> m (Sha256, ByteString, Int)
 hashFile fileInfo =
   liftIO
-    (do !compressed <-
+    (do lenref <- newIORef 0
+        let countBytes =
+              CL.mapM_ (\chunk -> liftIO (modifyIORef' lenref (+ S.length chunk)))
+        !compressed <-
           runConduitRes
-            (fileSourceRaw fileInfo .| gzip .| fmap L.toStrict CB.sinkLbs)
-        pure (sha256ByteString compressed, compressed))
+            (fileSourceRaw fileInfo .| countBytes .| gzip .|
+             fmap L.toStrict CB.sinkLbs)
+        len <- readIORef lenref
+        pure (sha256ByteString compressed, compressed, len))
