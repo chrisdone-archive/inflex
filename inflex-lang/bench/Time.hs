@@ -42,7 +42,7 @@ std dev              8.898 ms   (3.145 ms .. 14.24 ms)
 
 main :: IO ()
 main = do
-  u1 <- nextRandom'
+  -- u1 <- nextRandom'
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
   defaultMain
     [ bgroup
