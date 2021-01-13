@@ -13,6 +13,7 @@ module Inflex.Server.Handlers.Dashboard
   ) where
 
 import           Control.Monad.Reader
+import           Data.Units
 import           Data.String
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -142,12 +143,12 @@ getAppDashboardR =
                       h1_ "Files"
                       p_
                         "You can upload CSV files so that they can be used in your documents."
-                      let maxKB = maxUploadSizeBytes config `div` 1024
                       p_
                         (small_
                            (do "At the moment, the maximum file size is "
-                               toHtml (show maxKB)
-                               "KB. (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
+                               toHtml
+                                 (bytesShorthand (maxUploadSizeBytes config))
+                               ". (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
                       form_
                         [ action_ (url UploadFileR)
                         , method_ "post"
@@ -179,6 +180,10 @@ getAppDashboardR =
                                              (do p_
                                                    [class_ "document-title"]
                                                    (a_ (toHtml fileName)))
+                                           p_ [class_ "file-size"]
+                                             (do "Size: "
+                                                 toHtml
+                                                   (bytesShorthand fileBytes))
                                            p_
                                              [ class_ "document-date"
                                              , title_

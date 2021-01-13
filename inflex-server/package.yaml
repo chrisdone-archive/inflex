@@ -28,6 +28,7 @@ dependencies:
 - conduit
 - conduit-extra
 - path
+- byteunits
 - prometheus
 - async
 - yesod-core

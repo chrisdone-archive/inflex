@@ -215,7 +215,7 @@ body {
           }
         }
       }
-      .document-date {
+      .document-date, .file-size {
         padding:0 10px
       }
     }

@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
+    pantry-tree:
+      size: 322
+      sha256: 98431cf111d5d0f22b93b2c6275d80261288d84189dcd72179c9d95c747eaa19
+  original:
+    hackage: byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
+- completed:
     hackage: monad-validate-1.2.0.0@sha256:9850f408431098b28806dd464b6825a88a0b56c84f380d7fe0454c1df9d6f881,3505
     pantry-tree:
       size: 713
