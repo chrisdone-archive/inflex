@@ -265,7 +265,15 @@ data CsvColumnType
   | DecimalType Int Optionality
   | TextType Optionality
 
-data Optionality = Optional | Required
+-- | Versions added here because there is a mismatch between
+-- foreign-generic and haskell. :-(
+--
+-- I need to add a slot, else the decode fails.
+--
+-- =(
+data Optionality
+  = Optional Version1
+  | Required Version1
 
 --------------------------------------------------------------------------------
 -- Deprecated -- types that should no longer be used outside of the

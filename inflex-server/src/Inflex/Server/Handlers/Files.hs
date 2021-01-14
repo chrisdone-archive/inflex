@@ -14,7 +14,6 @@ import qualified Data.ByteString.Lazy as L
 import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
-import qualified Data.ByteString.Lazy as L
 import           Data.Conduit
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
@@ -73,7 +72,9 @@ hashFile fileInfo =
   liftIO
     (do lenref <- newIORef 0
         let countBytes =
-              CL.mapM_ (\chunk -> liftIO (modifyIORef' lenref (+ S.length chunk)))
+              CL.mapM
+                (\chunk ->
+                   liftIO (modifyIORef' lenref (+ S.length chunk)) *> pure chunk)
         !compressed <-
           runConduitRes
             (fileSourceRaw fileInfo .| countBytes .| gzip .|
@@ -86,4 +87,6 @@ readFileFromHash hash = do
   dir <- fmap (uploadsDir . appConfig) getYesod
   casfilename <- parseRelFile (sha256AsHexString hash)
   let casPath = toFilePath (dir </> casfilename)
-  liftIO (L.readFile casPath)
+  lbs <- liftIO (runConduitRes (CB.sourceFile casPath .| ungzip .| CB.sinkLbs))
+  -- liftIO (print lbs)
+  pure lbs

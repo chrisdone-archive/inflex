@@ -21,7 +21,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
 import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
@@ -51,6 +51,7 @@ data Command
   | Undo
   | Redo
   | ImportCsvStart
+  | ChooseCsvFile Shared.File
 
 type State = {
     cells :: Array OutputCell
@@ -90,78 +91,105 @@ render :: forall keys m. MonadEffect m =>
 render state =
   HH.div
     [HP.class_ (HH.ClassName "wrapper")]
-    [ HH.div
-        [HP.class_ (HH.ClassName "navbar")]
-        [ HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
-        , HH.div
-            [HP.class_ (HH.ClassName "rhs-nav")]
-            [ HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\e -> pure Undo)
-                ]
-                [HH.text "Undo"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\e -> pure Redo)
-                ]
-                [HH.text "Redo"]
-            , HH.button
-                [HP.class_ (HH.ClassName "new-prefix full-button")]
-                [HH.text "New"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\e -> pure (NewCell ""))
-                ]
-                [HH.text "Formula"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\_ -> pure (NewCell "\"\""))
-                ]
-                [HH.text "Text"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\_ -> pure (NewCell "[]"))
-                ]
-                [HH.text "List"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
-                ]
-                [HH.text "Table"]
-            , HH.button
-                [ HP.class_ (HH.ClassName "new-cell full-button")
-                , HE.onClick (\_ -> pure ImportCsvStart)
-                ]
-                [HH.text "Import"]
-            , HH.form
-                [HP.action (meta . logout), HP.method HP.POST]
-                [ HH.button
-                    [HP.class_ (HH.ClassName "logout full-button")]
-                    [HH.text "Logout"]
-                ]
-            ]
+    ([ HH.div
+         [HP.class_ (HH.ClassName "navbar")]
+         [ HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
+         , HH.div
+             [HP.class_ (HH.ClassName "rhs-nav")]
+             [ HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\e -> pure Undo)
+                 ]
+                 [HH.text "Undo"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\e -> pure Redo)
+                 ]
+                 [HH.text "Redo"]
+             , HH.button
+                 [HP.class_ (HH.ClassName "new-prefix full-button")]
+                 [HH.text "New"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\e -> pure (NewCell ""))
+                 ]
+                 [HH.text "Formula"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\_ -> pure (NewCell "\"\""))
+                 ]
+                 [HH.text "Text"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\_ -> pure (NewCell "[]"))
+                 ]
+                 [HH.text "List"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
+                 ]
+                 [HH.text "Table"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\_ -> pure ImportCsvStart)
+                 ]
+                 [HH.text "Import"]
+             , HH.form
+                 [HP.action (meta . logout), HP.method HP.POST]
+                 [ HH.button
+                     [HP.class_ (HH.ClassName "logout full-button")]
+                     [HH.text "Logout"]
+                 ]
+             ]
+         ]
+     , HH.div
+         [ HP.class_ (HH.ClassName "canvas")
+         , HE.onDragOver (Just <<< OnDragOver)
+         , HE.onDrop (Just <<< OnDrop)
+         ]
+         (map
+            (\cell@(OutputCell {uuid}) ->
+               HH.slot
+                 (SProxy :: SProxy "Cell")
+                 (uuidToString uuid)
+                 Cell.component
+                 cell
+                 (\update0 ->
+                    pure
+                      (case update0 of
+                         Cell.CellUpdate update' -> UpdateCell uuid update'
+                         Cell.RemoveCell -> DeleteCell uuid
+                         Cell.CellDragStart dragEvent ->
+                           DragStart uuid dragEvent
+                         Cell.UpdatePath update' -> UpdatePath uuid update')))
+            (state . cells))
+     ] <>
+     case state . modal of
+       NoModal -> []
+       ImportCsvModal wizard ->
+         [ HH.div
+             [HP.class_ (HH.ClassName "modal-wrap")]
+             [renderCsvWizard wizard]
+         ])
+
+renderCsvWizard :: forall t46. CsvWizard -> HH.HTML t46 Command
+renderCsvWizard wizard =
+  case wizard of
+    CsvChooseFile files ->
+      HH.div
+        [HP.class_ (HH.ClassName "csv-import")]
+        [ HH.h1 [] [HH.text "Choose a CSV file that you uploaded"]
+        , HH.ul
+            [HP.class_ (HH.ClassName "csv-files")]
+            (map
+               (\file@(Shared.File {name}) ->
+                  HH.li
+                    [ HP.class_ (HH.ClassName "csv-file")
+                    , HE.onClick (\_ -> pure (ChooseCsvFile file))
+                    ]
+                    [HH.text name])
+               files)
         ]
-    , HH.div
-        [ HP.class_ (HH.ClassName "canvas")
-        , HE.onDragOver (Just <<< OnDragOver)
-        , HE.onDrop (Just <<< OnDrop)
-        ]
-        (map
-           (\cell@(OutputCell {uuid}) ->
-              HH.slot
-                (SProxy :: SProxy "Cell")
-                (uuidToString uuid)
-                Cell.component
-                cell
-                (\update0 ->
-                   pure
-                     (case update0 of
-                        Cell.CellUpdate update' -> UpdateCell uuid update'
-                        Cell.RemoveCell -> DeleteCell uuid
-                        Cell.CellDragStart dragEvent -> DragStart uuid dragEvent
-                        Cell.UpdatePath update' -> UpdatePath uuid update')))
-           (state . cells))
-    ]
 
 --------------------------------------------------------------------------------
 -- Eval
@@ -280,6 +308,24 @@ eval =
         Left err -> error err
         Right (Shared.FilesOutput {files}) ->
           H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})
+    ChooseCsvFile file -> do
+      result <- rpcCsvGuessSchema file
+      case result of
+        Left err -> error ("rpcCsvGuessSchema: " <> err)
+        Right csvGuess ->
+          case csvGuess of
+            Shared.GuessCassavaFailure err -> error err
+            Shared.CsvGuessed csvImportSpec -> do
+              result2 <-
+                rpcCsvImport (Shared.CsvImportFinal {csvImportSpec, documentId})
+              -- For now, we're just going to immediately import the
+              -- file. But next, we'll provide a UI display of the guessed
+              -- schema, with the option to tweak the types of fields before importing.
+              case result2 of
+                Left err -> error ("CsvImport: " <> err)
+                Right outputDocument -> setOutputDocument outputDocument
+  where
+    documentId = DocumentId (meta . documentId)
 
 --------------------------------------------------------------------------------
 -- API calls
@@ -302,11 +348,9 @@ refresh cells = do
       error err -- TODO:Display this to the user properly.
     Right outputDocument -> setOutputDocument outputDocument
 
-update :: forall t60 t74.
+update :: forall t60.
   Bind t60 => MonadEffect t60 => MonadAff t60 => MonadState
-                                                   { cells :: Array OutputCell
-                                                   | t74
-                                                   }
+                                                   State
                                                    t60
                                                   => Shared.Update -> t60 (Maybe Shared.NestedCellError)
 update update' = do
@@ -331,15 +375,12 @@ update update' = do
 --------------------------------------------------------------------------------
 -- Internal state helpers
 
-setOutputDocument :: forall t11 t14.
-  MonadState
-    { cells :: Array OutputCell
-    | t14
-    }
-    t11
-   => OutputDocument -> t11 Unit
+setOutputDocument ::
+     forall t11. MonadState State t11
+  => OutputDocument
+  -> t11 Unit
 setOutputDocument (OutputDocument {cells}) =
-  H.modify_ (\s -> s {cells = cells})
+  H.modify_ (\s -> s {cells = cells, modal = NoModal})
 
 toInputCell :: OutputCell -> InputCell1
 toInputCell (OutputCell {uuid, name, code, order}) =

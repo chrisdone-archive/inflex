@@ -109,3 +109,30 @@ body {
   flex-wrap: wrap;
   align-content: flex-start
 }
+
+/********************************************************************************
+ * CSV import
+ */
+
+.modal-wrap {
+  padding: 0 10px;
+  background: #15263b;
+  color: white;
+  font-family: sans-serif;
+  max-height: 400px;
+  overflow: auto;
+}
+.csv-import {
+  .csv-files {
+    list-style-type: none;
+  }
+  .csv-file {
+    padding: 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    width: fit-content;
+  }
+  .csv-file:hover {
+    background: #224064;
+  }
+}

@@ -11,6 +11,7 @@
 module Inflex.Server.Handlers.Rpc where
 
 import           Criterion.Measurement
+import           Data.Aeson
 import           Data.Char
 import qualified Data.Csv as Csv
 import           Data.Foldable
@@ -23,6 +24,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
+import qualified Data.Text.Lazy.Encoding as LT
 import           Data.Time
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
@@ -334,7 +336,9 @@ rpcCsvGuessSchema file@Shared.File {id = fileId} = do
                                      Shared.ImportAction
                                        Shared.ImportColumn
                                          { importType =
-                                             Shared.TextType Shared.Required
+                                             Shared.TextType
+                                               (Shared.Required
+                                               Shared.versionRefl)
                                          , renameTo = T.decodeUtf8 name
                                          }
                                  })
@@ -448,7 +452,10 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
         fields =
           commas .
           map
-            (\(key, val) -> "\"" <> LT.fromText key <> "\":" <> LT.fromText val) .
+            (\(key, val) ->
+               let asString v =
+                     LT.fromLazyText (LT.decodeUtf8 (encode (v :: Text)))
+                in asString key <> ":" <> asString val) .
           HM.toList
     brackets :: LT.Builder -> LT.Builder
     brackets x = "[" <> x <> "]"
