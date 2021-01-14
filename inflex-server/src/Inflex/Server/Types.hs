@@ -46,6 +46,9 @@ data Config = Config
   , maxUploadSizeBytes :: Int
   , defaultMaxRequestBytes :: Int
   , uploadsDir :: !(Path Abs Dir)
+  , maxUploads :: Int
+  , maxDocuments :: !Int
+  , maxStoredRowsPerTable :: !Int
   } deriving (Generic)
 instance FromJSON Config
 
