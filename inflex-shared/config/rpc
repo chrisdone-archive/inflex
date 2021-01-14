@@ -13,3 +13,15 @@ UndoDocument:
 RedoDocument:
   input: DocumentId
   output: OutputDocument
+GetFiles:
+  input: FileQuery
+  output: FilesOutput
+CsvGuessSchema:
+  input: File
+  output: CsvGuess
+CsvCheckSchema:
+  input: CsvImportSpec
+  output: CsvCheckStatus
+CsvImport:
+  input: CsvImportFinal
+  output: OutputDocument

@@ -20,6 +20,18 @@ import Effect.Class.Console (error)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 import Inflex.Schema
 
+rpcCsvCheckSchema :: forall m. MonadAff m => CsvImportSpec -> m (Either String CsvCheckStatus)
+rpcCsvCheckSchema = rpcCall "CsvCheckSchema"
+
+rpcCsvGuessSchema :: forall m. MonadAff m => File -> m (Either String CsvGuess)
+rpcCsvGuessSchema = rpcCall "CsvGuessSchema"
+
+rpcCsvImport :: forall m. MonadAff m => CsvImportFinal -> m (Either String OutputDocument)
+rpcCsvImport = rpcCall "CsvImport"
+
+rpcGetFiles :: forall m. MonadAff m => FileQuery -> m (Either String FilesOutput)
+rpcGetFiles = rpcCall "GetFiles"
+
 rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
 rpcLoadDocument = rpcCall "LoadDocument"
 

@@ -18,6 +18,7 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Database.Persist.TH
 import           GHC.Generics
+import           Prelude hiding (Maybe)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -41,6 +42,84 @@ deriving instance Generic None
 deriving instance Show None
 instance ToJSON None
 instance FromJSON None
+
+instance NFData Optionality
+deriving instance Generic Optionality
+deriving instance Show Optionality
+instance ToJSON Optionality
+instance FromJSON Optionality
+
+instance NFData FileQuery
+deriving instance Generic FileQuery
+deriving instance Show FileQuery
+instance ToJSON FileQuery
+instance FromJSON FileQuery
+
+instance NFData File
+deriving instance Generic File
+deriving instance Show File
+instance ToJSON File
+instance FromJSON File
+
+instance NFData CsvImportFinal
+deriving instance Generic CsvImportFinal
+deriving instance Show CsvImportFinal
+instance ToJSON CsvImportFinal
+instance FromJSON CsvImportFinal
+
+instance NFData CsvGuess
+deriving instance Generic CsvGuess
+deriving instance Show CsvGuess
+instance ToJSON CsvGuess
+instance FromJSON CsvGuess
+
+instance NFData FilesOutput
+deriving instance Generic FilesOutput
+deriving instance Show FilesOutput
+instance ToJSON FilesOutput
+instance FromJSON FilesOutput
+
+instance NFData CsvImportSpec
+deriving instance Generic CsvImportSpec
+deriving instance Show CsvImportSpec
+instance ToJSON CsvImportSpec
+instance FromJSON CsvImportSpec
+
+instance NFData CsvCheckStatus
+deriving instance Generic CsvCheckStatus
+deriving instance Show CsvCheckStatus
+instance ToJSON CsvCheckStatus
+instance FromJSON CsvCheckStatus
+
+instance NFData CsvColumnProblem
+deriving instance Generic CsvColumnProblem
+deriving instance Show CsvColumnProblem
+instance ToJSON CsvColumnProblem
+instance FromJSON CsvColumnProblem
+
+instance NFData CsvColumn
+deriving instance Generic CsvColumn
+deriving instance Show CsvColumn
+instance ToJSON CsvColumn
+instance FromJSON CsvColumn
+
+instance NFData ColumnAction
+deriving instance Generic ColumnAction
+deriving instance Show ColumnAction
+instance ToJSON ColumnAction
+instance FromJSON ColumnAction
+
+instance NFData ImportColumn
+deriving instance Generic ImportColumn
+deriving instance Show ImportColumn
+instance ToJSON ImportColumn
+instance FromJSON ImportColumn
+
+instance NFData CsvColumnType
+deriving instance Generic CsvColumnType
+deriving instance Show CsvColumnType
+instance ToJSON CsvColumnType
+instance FromJSON CsvColumnType
 
 instance NFData Result
 deriving instance Generic Result

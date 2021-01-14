@@ -17,6 +17,26 @@ postAppRpcR = selectRep . provideRep . rpcHandler
 rpcHandler :: Text -> Handler Value
 rpcHandler name =
   case name of
+    "CsvCheckSchema" -> do
+      input <- requireCheckJsonBody
+      output <- rpcCsvCheckSchema (input :: CsvImportSpec)
+      pure (toJSON (output :: CsvCheckStatus))
+
+    "CsvGuessSchema" -> do
+      input <- requireCheckJsonBody
+      output <- rpcCsvGuessSchema (input :: File)
+      pure (toJSON (output :: CsvGuess))
+
+    "CsvImport" -> do
+      input <- requireCheckJsonBody
+      output <- rpcCsvImport (input :: CsvImportFinal)
+      pure (toJSON (output :: OutputDocument))
+
+    "GetFiles" -> do
+      input <- requireCheckJsonBody
+      output <- rpcGetFiles (input :: FileQuery)
+      pure (toJSON (output :: FilesOutput))
+
     "LoadDocument" -> do
       input <- requireCheckJsonBody
       output <- rpcLoadDocument (input :: DocumentId)

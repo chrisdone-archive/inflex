@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,14 +11,28 @@
 module Inflex.Server.Handlers.Rpc where
 
 import           Criterion.Measurement
+import           Data.Char
+import qualified Data.Csv as Csv
 import           Data.Foldable
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+import qualified Data.List as List
 import           Data.Maybe
+import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Builder as LT
 import           Data.Time
+import           Data.UUID as UUID
+import           Data.UUID.V4 as UUID
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Database.Persist.Sql
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
+import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
@@ -264,3 +279,178 @@ loadRevisedDocument RevisedDocument{..} = do
     Nothing -> do
       glog TimeoutExceeded
       invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"]
+
+--------------------------------------------------------------------------------
+-- Importing CSV
+
+rpcGetFiles :: Shared.FileQuery -> Handler Shared.FilesOutput
+rpcGetFiles Shared.FileQuery =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       files <-
+         runDB
+           (selectList
+              [FileAccount ==. fromAccountID loginAccountId]
+              [Desc FileCreated])
+       pure
+         (Shared.FilesOutput
+            (V.fromList
+               (map
+                  (\(Entity fileid File {..}) ->
+                     Shared.File
+                       {name = fileName, id = fromIntegral (fromSqlKey fileid)})
+                  files))))
+
+rpcCsvGuessSchema :: Shared.File -> Handler Shared.CsvGuess
+rpcCsvGuessSchema file@Shared.File {id = fileId} = do
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       mfile <-
+         runDB
+           (selectFirst
+              [ FileAccount ==. fromAccountID loginAccountId
+              , FileId ==. toSqlKey (fromIntegral fileId)
+              ]
+              [Desc FileCreated])
+       case mfile of
+         Nothing -> notFound
+         Just (Entity _ File {fileHash}) -> do
+           bytes <- readFileFromHash fileHash
+           case Csv.decodeByName bytes of
+             Left err -> pure (Shared.GuessCassavaFailure (T.pack err))
+             Right (headers, _rows :: Vector (HashMap Text Text)) ->
+               pure
+                 (Shared.CsvGuessed
+                    Shared.CsvImportSpec
+                      { file
+                      , skipRows = 0
+                      , separator = ","
+                      , columns =
+                          fmap
+                            (\name ->
+                               Shared.CsvColumn
+                                 { name = T.decodeUtf8 name -- TODO: Handle better.
+                                 , action =
+                                     Shared.ImportAction
+                                       Shared.ImportColumn
+                                         { importType =
+                                             Shared.TextType Shared.Required
+                                         , renameTo = T.decodeUtf8 name
+                                         }
+                                 })
+                            headers
+                      }))
+
+rpcCsvCheckSchema :: Shared.CsvImportSpec -> Handler Shared.CsvCheckStatus
+rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
+                                       , ..
+                                       } =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       mfile <-
+         runDB
+           (selectFirst
+              [ FileAccount ==. fromAccountID loginAccountId
+              , FileId ==. toSqlKey (fromIntegral fileId)
+              ]
+              [Desc FileCreated])
+       case mfile of
+         Nothing -> notFound
+         Just (Entity _ File {fileHash}) -> do
+           bytes <- readFileFromHash fileHash
+           case Csv.decodeByName bytes of
+             Left _err -> pure (Shared.CsvColumnFailures mempty)
+             Right (_headers, _rows :: Vector (HashMap Text Text)) ->
+               pure Shared.CsvParsesHappily)
+
+rpcCsvImport :: Shared.CsvImportFinal -> Handler Shared.OutputDocument
+rpcCsvImport Shared.CsvImportFinal { csvImportSpec = Shared.CsvImportSpec {file = file@Shared.File {id = fileId}}
+                                   , documentId
+                                   , ..
+                                   } =
+  withLogin
+    (\_ (LoginState {loginAccountId}) -> do
+       mfile <-
+         runDB
+           (selectFirst
+              [ FileAccount ==. fromAccountID loginAccountId
+              , FileId ==. toSqlKey (fromIntegral fileId)
+              ]
+              [Desc FileCreated])
+       case mfile of
+         Nothing -> notFound
+         Just (Entity _ File {fileHash}) -> do
+           bytes <- readFileFromHash fileHash
+           case Csv.decodeByName bytes of
+             Left _err ->
+               error
+                 "Unexpected CSV parse fail; the schema should have \
+                 \been validated, so this is a bug."
+             Right (_headers, rows :: Vector (HashMap Text Text)) -> do
+               RevisedDocument {..} <-
+                 runDB (getRevisedDocument loginAccountId documentId)
+               document <-
+                 liftIO (insertImportedCsv file rows (revisionContent revision))
+               now <- liftIO getCurrentTime
+               start <- liftIO getTime
+               mloaded <-
+                 liftIO
+                   (timeout
+                      (1000 * milliseconds)
+                      (do !x <- loadInputDocument document
+                          pure x))
+               end <- liftIO getTime
+               runDB
+                 (setInputDocument
+                    now
+                    loginAccountId
+                    documentKey
+                    revisionId
+                    document)
+               case mloaded of
+                 Just loaded -> do
+                   glog (DocumentRefreshed (end - start))
+                   pure loaded
+                 Nothing -> do
+                   glog TimeoutExceeded
+                   invalidArgs
+                     [ "timeout: exceeded " <> T.pack (show milliseconds) <>
+                       "ms"
+                     ])
+
+insertImportedCsv ::
+     Shared.File
+  -> Vector (HashMap Text Text)
+  -> Shared.InputDocument1
+  -> IO Shared.InputDocument1
+insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
+  uuid <- liftIO UUID.nextRandom
+  pure
+    Shared.InputDocument1
+      { cells =
+          cells <>
+          pure
+            (Shared.InputCell1
+               { uuid = Shared.UUID (UUID.toText uuid)
+               , name = T.filter okChar name <> T.pack (show (fileId :: Int))
+               , code = toArray rows
+               , order = V.length cells + 1
+               , version = Shared.versionRefl
+               })
+      }
+  where
+    okChar c = isAlphaNum c || c == '_'
+    toArray =
+      LT.toStrict . LT.toLazyText . brackets . commas . map toObject . V.toList
+    toObject :: HashMap Text Text -> LT.Builder
+    toObject hash = "{" <> fields hash <> "}"
+      where
+        fields =
+          commas .
+          map
+            (\(key, val) -> "\"" <> LT.fromText key <> "\":" <> LT.fromText val) .
+          HM.toList
+    brackets :: LT.Builder -> LT.Builder
+    brackets x = "[" <> x <> "]"
+    commas :: [LT.Builder] -> LT.Builder
+    commas = mconcat . List.intersperse ","

@@ -212,6 +212,66 @@ data FillError
   | OtherCellProblem Text
 
 --------------------------------------------------------------------------------
+-- CSV import
+
+data FileQuery = FileQuery
+
+data FilesOutput = FilesOutput
+  { files :: Vector File
+  }
+
+data File = File
+  { id :: Int
+  , name :: Text
+  }
+
+data CsvCheckStatus
+  = CsvParsesHappily
+  | CsvColumnFailures (Vector CsvColumnProblem)
+
+data CsvImportFinal = CsvImportFinal
+  { csvImportSpec :: CsvImportSpec
+  , documentId :: DocumentId
+  }
+
+data CsvColumnProblem
+  = FoundNonInteger Text
+  | FoundNonDecimal Text
+  | RequiredColumnHasEmpty
+
+data CsvGuess
+  = CsvGuessed CsvImportSpec
+  | GuessCassavaFailure Text
+
+data CsvImportSpec = CsvImportSpec
+  { file :: File
+  , skipRows :: Int
+  , separator :: Text
+  , columns :: Vector CsvColumn
+  }
+
+data CsvColumn = CsvColumn
+  { name :: Text
+  , action :: ColumnAction
+  }
+
+data ColumnAction
+  = IgnoreColumn
+  | ImportAction ImportColumn
+
+data ImportColumn = ImportColumn
+  { importType :: CsvColumnType
+  , renameTo :: Text -- No renames will just be the same name.
+  }
+
+data CsvColumnType
+  = IntegerType Optionality
+  | DecimalType Int Optionality
+  | TextType Optionality
+
+data Optionality = Optional | Required
+
+--------------------------------------------------------------------------------
 -- Deprecated -- types that should no longer be used outside of the
 -- Schema.hs/.purs modules
 
@@ -248,6 +308,71 @@ derive instance genericNone :: Generic None _
 instance showNone :: Show None where show = genericShow
 instance decodeNone :: Decode None where decode = genericDecode opts
 instance encodeNone :: Encode None where encode = genericEncode opts
+
+derive instance genericOptionality :: Generic Optionality _
+instance showOptionality :: Show Optionality where show = genericShow
+instance decodeOptionality :: Decode Optionality where decode = genericDecode opts
+instance encodeOptionality :: Encode Optionality where encode = genericEncode opts
+
+derive instance genericFileQuery :: Generic FileQuery _
+instance showFileQuery :: Show FileQuery where show = genericShow
+instance decodeFileQuery :: Decode FileQuery where decode = genericDecode opts
+instance encodeFileQuery :: Encode FileQuery where encode = genericEncode opts
+
+derive instance genericFile :: Generic File _
+instance showFile :: Show File where show = genericShow
+instance decodeFile :: Decode File where decode = genericDecode opts
+instance encodeFile :: Encode File where encode = genericEncode opts
+
+derive instance genericCsvImportFinal :: Generic CsvImportFinal _
+instance showCsvImportFinal :: Show CsvImportFinal where show = genericShow
+instance decodeCsvImportFinal :: Decode CsvImportFinal where decode = genericDecode opts
+instance encodeCsvImportFinal :: Encode CsvImportFinal where encode = genericEncode opts
+
+derive instance genericCsvGuess :: Generic CsvGuess _
+instance showCsvGuess :: Show CsvGuess where show = genericShow
+instance decodeCsvGuess :: Decode CsvGuess where decode = genericDecode opts
+instance encodeCsvGuess :: Encode CsvGuess where encode = genericEncode opts
+
+derive instance genericFilesOutput :: Generic FilesOutput _
+instance showFilesOutput :: Show FilesOutput where show = genericShow
+instance decodeFilesOutput :: Decode FilesOutput where decode = genericDecode opts
+instance encodeFilesOutput :: Encode FilesOutput where encode = genericEncode opts
+
+derive instance genericCsvImportSpec :: Generic CsvImportSpec _
+instance showCsvImportSpec :: Show CsvImportSpec where show = genericShow
+instance decodeCsvImportSpec :: Decode CsvImportSpec where decode = genericDecode opts
+instance encodeCsvImportSpec :: Encode CsvImportSpec where encode = genericEncode opts
+
+derive instance genericCsvCheckStatus :: Generic CsvCheckStatus _
+instance showCsvCheckStatus :: Show CsvCheckStatus where show = genericShow
+instance decodeCsvCheckStatus :: Decode CsvCheckStatus where decode = genericDecode opts
+instance encodeCsvCheckStatus :: Encode CsvCheckStatus where encode = genericEncode opts
+
+derive instance genericCsvColumnProblem :: Generic CsvColumnProblem _
+instance showCsvColumnProblem :: Show CsvColumnProblem where show = genericShow
+instance decodeCsvColumnProblem :: Decode CsvColumnProblem where decode = genericDecode opts
+instance encodeCsvColumnProblem :: Encode CsvColumnProblem where encode = genericEncode opts
+
+derive instance genericCsvColumn :: Generic CsvColumn _
+instance showCsvColumn :: Show CsvColumn where show = genericShow
+instance decodeCsvColumn :: Decode CsvColumn where decode = genericDecode opts
+instance encodeCsvColumn :: Encode CsvColumn where encode = genericEncode opts
+
+derive instance genericCsvColumnType :: Generic CsvColumnType _
+instance showCsvColumnType :: Show CsvColumnType where show = genericShow
+instance decodeCsvColumnType :: Decode CsvColumnType where decode = genericDecode opts
+instance encodeCsvColumnType :: Encode CsvColumnType where encode = genericEncode opts
+
+derive instance genericColumnAction :: Generic ColumnAction _
+instance showColumnAction :: Show ColumnAction where show = genericShow
+instance decodeColumnAction :: Decode ColumnAction where decode = genericDecode opts
+instance encodeColumnAction :: Encode ColumnAction where encode = genericEncode opts
+
+derive instance genericImportColumn :: Generic ImportColumn _
+instance showImportColumn :: Show ImportColumn where show = genericShow
+instance decodeImportColumn :: Decode ImportColumn where decode = genericDecode opts
+instance encodeImportColumn :: Encode ImportColumn where encode = genericEncode opts
 
 derive instance genericDataPath :: Generic DataPath _
 derive instance eqDataPath :: Eq DataPath

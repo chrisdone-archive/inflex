@@ -7,8 +7,10 @@
 
 module Inflex.Server.Handlers.Files
   ( postUploadFileR
+  , readFileFromHash
   ) where
 
+import qualified Data.ByteString.Lazy as L
 import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
@@ -78,3 +80,10 @@ hashFile fileInfo =
              fmap L.toStrict CB.sinkLbs)
         len <- readIORef lenref
         pure (sha256ByteString compressed, compressed, len))
+
+readFileFromHash :: Sha256 -> Handler L.ByteString
+readFileFromHash hash = do
+  dir <- fmap (uploadsDir . appConfig) getYesod
+  casfilename <- parseRelFile (sha256AsHexString hash)
+  let casPath = toFilePath (dir </> casfilename)
+  liftIO (L.readFile casPath)
