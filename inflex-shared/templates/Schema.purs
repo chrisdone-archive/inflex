@@ -25,11 +25,6 @@ $types
 --------------------------------------------------------------------------------
 -- Derivings
 
-derive instance genericNone :: Generic None _
-instance showNone :: Show None where show = genericShow
-instance decodeNone :: Decode None where decode = genericDecode opts
-instance encodeNone :: Encode None where encode = genericEncode opts
-
 derive instance genericOptionality :: Generic Optionality _
 instance showOptionality :: Show Optionality where show = genericShow
 instance decodeOptionality :: Decode Optionality where decode = genericDecode opts

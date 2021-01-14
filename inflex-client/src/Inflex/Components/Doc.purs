@@ -21,7 +21,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
+import Inflex.Rpc (rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
 import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
@@ -50,11 +50,19 @@ data Command
   | OnDrop DE.DragEvent
   | Undo
   | Redo
+  | ImportCsvStart
 
 type State = {
     cells :: Array OutputCell
   , dragUUID :: Maybe UUID
+  , modal :: Modal
  }
+
+data Modal
+  = NoModal
+  | ImportCsvModal CsvWizard
+
+data CsvWizard = CsvChooseFile (Array Shared.File)
 
 type Input = Unit
 
@@ -66,7 +74,7 @@ type Output = Unit
 component :: forall q. H.Component HH.HTML q Input Output Aff
 component =
   H.mkComponent
-    { initialState: const {cells: mempty, dragUUID: Nothing}
+    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal}
     , render
     , eval:
         H.mkEval
@@ -76,8 +84,8 @@ component =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall state keys m. MonadEffect m =>
-   { cells :: Array OutputCell | state }
+render :: forall keys m. MonadEffect m =>
+   State
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot Cell.Query Cell.Output String | keys) m Command) Command
 render state =
   HH.div
@@ -120,6 +128,11 @@ render state =
                 , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
                 ]
                 [HH.text "Table"]
+            , HH.button
+                [ HP.class_ (HH.ClassName "new-cell full-button")
+                , HE.onClick (\_ -> pure ImportCsvStart)
+                ]
+                [HH.text "Import"]
             , HH.form
                 [HP.action (meta . logout), HP.method HP.POST]
                 [ HH.button
@@ -157,13 +170,10 @@ mediaType :: MediaType
 mediaType = (MediaType "text/plain")
 
 
-eval :: forall t122 t125 t129 t130 t131 t258.
+eval :: forall t122 t125 t129 t130 t131.
   MonadEffect t129 => MonadAff t129 => Command
                                        -> H.HalogenM
-                                            { cells :: Array OutputCell
-                                            , dragUUID :: Maybe UUID
-                                            | t258
-                                            }
+                                            State
                                             t131
                                             ( "Cell" :: H.Slot Cell.Query t125 String
                                             | t122
@@ -264,17 +274,22 @@ eval =
       case result of
         Left err -> error err
         Right outputDocument -> setOutputDocument outputDocument
+    ImportCsvStart -> do
+      result <- rpcGetFiles (Shared.FileQuery {search: ""})
+      case result of
+        Left err -> error err
+        Right (Shared.FilesOutput {files}) ->
+          H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})
 
 --------------------------------------------------------------------------------
 -- API calls
 
-refresh :: forall t60 t74.
-  Bind t60 => MonadEffect t60 => MonadAff t60 => MonadState
-                                                   { cells :: Array OutputCell
-                                                   | t74
-                                                   }
-                                                   t60
-                                                  => Array InputCell1 -> t60 Unit
+refresh ::
+     forall t60. Bind t60
+  => MonadEffect t60 =>
+       MonadAff t60 =>
+         MonadState State t60 =>
+           Array InputCell1 -> t60 Unit
 refresh cells = do
   result <-
     rpcRefreshDocument

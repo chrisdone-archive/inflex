@@ -61,12 +61,6 @@ data Version1 = Version1
 data Version2 = Version2
 
 --------------------------------------------------------------------------------
--- Basic types
-
-data None =
-  None
-
---------------------------------------------------------------------------------
 -- Command types
 
 data RefreshDocument = RefreshDocument
@@ -221,6 +215,8 @@ data FillError
 -- CSV import
 
 data FileQuery = FileQuery
+  { search :: Text
+  }
 
 data FilesOutput = FilesOutput
   { files :: Vector File
@@ -315,12 +311,6 @@ opts = defaultOptions
 
 --------------------------------------------------------------------------------
 -- Derivings
-
-instance NFData None
-deriving instance Generic None
-deriving instance Show None
-instance ToJSON None
-instance FromJSON None
 
 instance NFData Optionality
 deriving instance Generic Optionality

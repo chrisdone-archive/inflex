@@ -55,12 +55,6 @@ data Version1 = Version1
 data Version2 = Version2
 
 --------------------------------------------------------------------------------
--- Basic types
-
-data None =
-  None
-
---------------------------------------------------------------------------------
 -- Command types
 
 data RefreshDocument = RefreshDocument
@@ -215,6 +209,8 @@ data FillError
 -- CSV import
 
 data FileQuery = FileQuery
+  { search :: Text
+  }
 
 data FilesOutput = FilesOutput
   { files :: Vector File
@@ -303,11 +299,6 @@ data Field1 = Field1
 
 --------------------------------------------------------------------------------
 -- Derivings
-
-derive instance genericNone :: Generic None _
-instance showNone :: Show None where show = genericShow
-instance decodeNone :: Decode None where decode = genericDecode opts
-instance encodeNone :: Encode None where encode = genericEncode opts
 
 derive instance genericOptionality :: Generic Optionality _
 instance showOptionality :: Show Optionality where show = genericShow

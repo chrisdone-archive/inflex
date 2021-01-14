@@ -284,7 +284,7 @@ loadRevisedDocument RevisedDocument{..} = do
 -- Importing CSV
 
 rpcGetFiles :: Shared.FileQuery -> Handler Shared.FilesOutput
-rpcGetFiles Shared.FileQuery =
+rpcGetFiles (Shared.FileQuery{search = _}) =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        files <-

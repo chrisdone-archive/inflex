@@ -37,12 +37,6 @@ opts = defaultOptions
 --------------------------------------------------------------------------------
 -- Derivings
 
-instance NFData None
-deriving instance Generic None
-deriving instance Show None
-instance ToJSON None
-instance FromJSON None
-
 instance NFData Optionality
 deriving instance Generic Optionality
 deriving instance Show Optionality
