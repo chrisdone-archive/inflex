@@ -38,7 +38,8 @@ import           Numeric.Natural
 data ImportError
   = MissingKey Text
   | ParseFieldError CsvColumnType LexParseError
-  | MissingRequiredField
+  | MissingRequiredField Text
+  deriving (Show)
 
 importViaSchema ::
      File
@@ -58,7 +59,7 @@ importViaSchema file CsvImportSpec {columns} rows =
                 ImportAction ImportColumn { importType
                                           , renameTo = _ -- TODO:
                                           } ->
-                  parseColumnText file importType value))
+                  fmap Just (parseColumnText file importType key value)))
     rows
   where
     columnMap =
@@ -66,25 +67,26 @@ importViaSchema file CsvImportSpec {columns} rows =
         (map (\CsvColumn {name, action} -> (name, action)) (V.toList columns))
 
 parseColumnText ::
-     File -> CsvColumnType -> Text -> Either ImportError (Maybe (Expression Parsed))
-parseColumnText File {name} typ text =
+     File -> CsvColumnType -> Text -> Text -> Either ImportError (Expression Parsed)
+parseColumnText _file typ key text =
   case typ of
     IntegerType optionality ->
       if T.null (T.strip text)
-        then checkRequired optionality
+        then viaOptionality optionality Nothing
         else case parseTextWith numberExpressionParser text of
                Left err -> Left (ParseFieldError typ err)
-               Right expr -> pure (Just expr)
+               Right expr -> viaOptionality optionality (Just expr)
     DecimalType _ optionality ->
       if T.null (T.strip text)
-        then checkRequired optionality
+        then viaOptionality optionality Nothing
         else case parseTextWith numberExpressionParser text of
                Left err -> Left (ParseFieldError typ err)
-               Right expr -> pure (Just expr)
+               Right expr -> viaOptionality optionality (Just expr)
     TextType optionality ->
-      if T.null (T.strip text)
-        then checkRequired optionality
-        else pure
+      if T.null (T.strip text) && isOptional optionality
+        then viaOptionality optionality Nothing
+        else viaOptionality
+               optionality
                (Just
                   (LiteralExpression
                      (TextLiteral
@@ -95,9 +97,33 @@ parseColumnText File {name} typ text =
                                SourceLocation {start = emptyPos, end = emptyPos}
                            }))))
   where
-    checkRequired Required {} = Left MissingRequiredField
-    checkRequired Optional {} = pure Nothing
-    emptyPos = SourcePos {line = 0, column = 0, name = T.unpack name}
+    viaOptionality Required {} Nothing = Left (MissingRequiredField key)
+    viaOptionality Required {} (Just e) = Right e
+    viaOptionality Optional {} Nothing = pure (optionalExpression Nothing)
+    viaOptionality Optional {} (Just e) = pure (optionalExpression (Just e))
+    isOptional Optional {} = True
+    isOptional _ = False
+
+emptyPos :: SourcePos
+emptyPos = SourcePos {line = 0, column = 0, name = "none"}
+
+optionalExpression :: Maybe (Expression Parsed) -> Expression Parsed
+optionalExpression Nothing =
+  VariantExpression
+    Variant
+      { location = SourceLocation {start = emptyPos, end = emptyPos}
+      , typ = Nothing
+      , tag = TagName "none"
+      , argument = Nothing
+      }
+optionalExpression (Just e) =
+  VariantExpression
+    Variant
+      { location = SourceLocation {start = emptyPos, end = emptyPos}
+      , typ = Nothing
+      , tag = TagName "some"
+      , argument = Just e
+      }
 
 --------------------------------------------------------------------------------
 -- Schema guessing
@@ -114,7 +140,8 @@ guessCsvSchema file bytes =
           typedRows :: Map Text CsvColumnType
           typedRows =
             fmap
-              (fromMaybe (TextType required) . foldl' typeAndSeenToType Nothing)
+              (fromMaybe (TextType required) .
+               iffyType . foldl' typeAndSeenToType NoneSoFar)
               combinedRows
        in CsvGuessed
             (CsvImportSpec
@@ -137,30 +164,43 @@ guessCsvSchema file bytes =
 --------------------------------------------------------------------------------
 -- Synthesis of seen features into a type
 
+data Iffy = NoneSoFar | FoundEmpty | Found CsvColumnType
+
+iffyType :: Iffy -> Maybe CsvColumnType
+iffyType =
+  \case
+    Found t -> pure t
+    _ -> Nothing
+
 -- | For easy folding: if we have two types, combine them, else use
 -- whatever type we see, if anything.
-typeAndSeenToType :: Maybe CsvColumnType -> Seen -> Maybe CsvColumnType
-typeAndSeenToType mtype seen =
-  case mtype of
-    Nothing -> seenToType seen
-    Just typ ->
-      case seenToType seen of
-        Nothing -> pure typ
-        Just typ2 -> pure (combineTypes typ typ2)
+typeAndSeenToType :: Iffy -> Seen -> Iffy
+typeAndSeenToType iffy = combineIffy iffy . seenToType
 
 -- | Give a possible type to a seen thing.
-seenToType :: Seen -> Maybe CsvColumnType
+seenToType :: Seen -> Iffy
 seenToType =
   \case
-    SeenNothing -> Nothing
-    SeenText -> pure (TextType required)
+    SeenNothing -> FoundEmpty
+    SeenText -> Found (TextType required)
     SeenDecimal natural ->
-      pure
+      Found
         (DecimalType
            (fromIntegral natural -- TODO: bad
             )
            required)
-    SeenInteger -> pure (IntegerType required)
+    SeenInteger -> Found (IntegerType required)
+
+-- | Combine types that are "iffy" -- maybe we have them, maybe we
+-- don't. But "nothing seen so far" is different to "saw an empty
+-- column".
+combineIffy :: Iffy -> Iffy -> Iffy
+combineIffy NoneSoFar x = x
+combineIffy x NoneSoFar = x
+combineIffy FoundEmpty FoundEmpty = FoundEmpty
+combineIffy FoundEmpty (Found csvColumnType) = Found (setOptional csvColumnType)
+combineIffy (Found csvColumnType) FoundEmpty = Found (setOptional csvColumnType)
+combineIffy (Found t1) (Found t2) = Found (combineTypes t1 t2)
 
 -- | Combines likewise types as-is, integer is upgraded to decimal, and all types
 -- upgrade to text.
@@ -190,9 +230,18 @@ combineOptionalities Optional {} _ = Optional versionRefl
 combineOptionalities _ Optional {} = Optional versionRefl
 combineOptionalities Required {} Required {} = Required versionRefl
 
+setOptional :: CsvColumnType -> CsvColumnType
+setOptional (IntegerType (_ :: Optionality)) = IntegerType optional
+setOptional (DecimalType p (_ :: Optionality)) = DecimalType p optional
+setOptional (TextType (_ :: Optionality)) = TextType optional
+
 -- | Handy helper.
 required :: Optionality
 required = Required versionRefl
+
+-- | Handy helper.
+optional :: Optionality
+optional = Optional versionRefl
 
 --------------------------------------------------------------------------------
 -- Look at the text in a column

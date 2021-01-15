@@ -363,16 +363,16 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
          Just (Entity _ File {fileHash}) -> do
            bytes <- readFileFromHash fileHash
            case Csv.decodeByName bytes of
-             Left _err ->
+             Left err ->
                error
-                 "Unexpected CSV parse fail; the schema should have \
-                 \been validated, so this is a bug."
+                 ("Unexpected CSV parse fail; the schema should have \
+                 \been validated, so this is a bug." <> show err)
              Right (_headers, rows0 :: Vector (HashMap Text Text)) ->
                case importViaSchema file csvImportSpec rows0 of
-                 Left _err ->
+                 Left err ->
                    error
-                     "Unexpected CSV parse fail; the schema should have \
-                     \been validated, so this is a bug."
+                     ("Unexpected CSV parse fail; the schema should have \
+                     \been validated, so this is a bug: " <> show err)
                  Right rows -> do
                    RevisedDocument {..} <-
                      runDB (getRevisedDocument loginAccountId documentId)
