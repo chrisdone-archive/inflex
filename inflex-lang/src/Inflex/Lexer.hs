@@ -21,6 +21,7 @@ module Inflex.Lexer
   , SourceLocation(..)
   , lexText
   , LexError
+  , lexTextSingleton
   , _NaturalToken
   , _DecimalToken
   , _BackslashToken
@@ -50,6 +51,7 @@ import           Data.Bifunctor
 import           Data.Char
 import           Data.Functor
 import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Read as T
@@ -114,24 +116,32 @@ lexText :: FilePath -> Text -> Either LexError (Seq (Located Token))
 lexText fp bs =
   first LexError (Mega.runParser (Mega.space *> tokensLexer <* Mega.eof) fp bs)
 
+-- | Lex a given block of text.
+lexTextSingleton :: Text -> Either LexError (Located Token)
+lexTextSingleton bs =
+  first
+    LexError
+    (Mega.runParser (Mega.space *> tokenLexer <* Mega.eof) "single-token" bs)
+
 --------------------------------------------------------------------------------
 -- Lexer
 
 -- | Lex unquoted regular code e.g. @let x = 1@.
 tokensLexer :: Lexer (Seq (Located Token))
-tokensLexer =
-  fmap
-    mconcat
-    (Mega.many
-       (Mega.choice
-          [ fmap pure string
-          , fmap pure camelWord
-          , fmap pure anyWord
-          , fmap pure symbol
-          , fmap pure integer
-          , fmap pure decimal
-          ] <*
-        Mega.space))
+tokensLexer = fmap Seq.fromList (Mega.many tokenLexer)
+
+-- | Lex a single token.
+tokenLexer :: Lexer (Located Token)
+tokenLexer =
+  Mega.choice
+    [  string
+    ,  camelWord
+    ,  anyWord
+    ,  symbol
+    ,  integer
+    ,  decimal
+    ] <*
+  Mega.space
   where
     string =
       located

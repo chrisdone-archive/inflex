@@ -21,7 +21,6 @@ import qualified Data.List as List
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
 import qualified Data.Text.Lazy.Encoding as LT
@@ -34,10 +33,13 @@ import           Database.Persist.Sql
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
+import           Inflex.Server.Csv
 import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
+import           Inflex.Types
+import qualified RIO
 import           RIO (glog)
 import           System.Timeout
 import           Yesod hiding (Html)
@@ -318,32 +320,7 @@ rpcCsvGuessSchema file@Shared.File {id = fileId} = do
          Nothing -> notFound
          Just (Entity _ File {fileHash}) -> do
            bytes <- readFileFromHash fileHash
-           case Csv.decodeByName bytes of
-             Left err -> pure (Shared.GuessCassavaFailure (T.pack err))
-             Right (headers, _rows :: Vector (HashMap Text Text)) ->
-               pure
-                 (Shared.CsvGuessed
-                    Shared.CsvImportSpec
-                      { file
-                      , skipRows = 0
-                      , separator = ","
-                      , columns =
-                          fmap
-                            (\name ->
-                               Shared.CsvColumn
-                                 { name = T.decodeUtf8 name -- TODO: Handle better.
-                                 , action =
-                                     Shared.ImportAction
-                                       Shared.ImportColumn
-                                         { importType =
-                                             Shared.TextType
-                                               (Shared.Required
-                                               Shared.versionRefl)
-                                         , renameTo = T.decodeUtf8 name
-                                         }
-                                 })
-                            headers
-                      }))
+           pure (guessCsvSchema file bytes))
 
 rpcCsvCheckSchema :: Shared.CsvImportSpec -> Handler Shared.CsvCheckStatus
 rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
@@ -368,7 +345,7 @@ rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
                pure Shared.CsvParsesHappily)
 
 rpcCsvImport :: Shared.CsvImportFinal -> Handler Shared.OutputDocument
-rpcCsvImport Shared.CsvImportFinal { csvImportSpec = Shared.CsvImportSpec {file = file@Shared.File {id = fileId}}
+rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImportSpec {file = file@Shared.File {id = fileId}}
                                    , documentId
                                    , ..
                                    } =
@@ -390,41 +367,48 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = Shared.CsvImportSpec {file 
                error
                  "Unexpected CSV parse fail; the schema should have \
                  \been validated, so this is a bug."
-             Right (_headers, rows :: Vector (HashMap Text Text)) -> do
-               RevisedDocument {..} <-
-                 runDB (getRevisedDocument loginAccountId documentId)
-               document <-
-                 liftIO (insertImportedCsv file rows (revisionContent revision))
-               now <- liftIO getCurrentTime
-               start <- liftIO getTime
-               mloaded <-
-                 liftIO
-                   (timeout
-                      (1000 * milliseconds)
-                      (do !x <- loadInputDocument document
-                          pure x))
-               end <- liftIO getTime
-               runDB
-                 (setInputDocument
-                    now
-                    loginAccountId
-                    documentKey
-                    revisionId
-                    document)
-               case mloaded of
-                 Just loaded -> do
-                   glog (DocumentRefreshed (end - start))
-                   pure loaded
-                 Nothing -> do
-                   glog TimeoutExceeded
-                   invalidArgs
-                     [ "timeout: exceeded " <> T.pack (show milliseconds) <>
-                       "ms"
-                     ])
+             Right (_headers, rows0 :: Vector (HashMap Text Text)) ->
+               case importViaSchema file csvImportSpec rows0 of
+                 Left _err ->
+                   error
+                     "Unexpected CSV parse fail; the schema should have \
+                     \been validated, so this is a bug."
+                 Right rows -> do
+                   RevisedDocument {..} <-
+                     runDB (getRevisedDocument loginAccountId documentId)
+                   document <-
+                     liftIO
+                       (insertImportedCsv file rows (revisionContent revision))
+                   now <- liftIO getCurrentTime
+                   start <- liftIO getTime
+                   mloaded <-
+                     liftIO
+                       (timeout
+                          (1000 * milliseconds)
+                          (do !x <- loadInputDocument document
+                              pure x))
+                   end <- liftIO getTime
+                   runDB
+                     (setInputDocument
+                        now
+                        loginAccountId
+                        documentKey
+                        revisionId
+                        document)
+                   case mloaded of
+                     Just loaded -> do
+                       glog (DocumentRefreshed (end - start))
+                       pure loaded
+                     Nothing -> do
+                       glog TimeoutExceeded
+                       invalidArgs
+                         [ "timeout: exceeded " <> T.pack (show milliseconds) <>
+                           "ms"
+                         ])
 
 insertImportedCsv ::
      Shared.File
-  -> Vector (HashMap Text Text)
+  -> Vector (HashMap Text (Expression Parsed))
   -> Shared.InputDocument1
   -> IO Shared.InputDocument1
 insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
@@ -446,7 +430,7 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
     okChar c = isAlphaNum c || c == '_'
     toArray =
       LT.toStrict . LT.toLazyText . brackets . commas . map toObject . V.toList
-    toObject :: HashMap Text Text -> LT.Builder
+    toObject :: HashMap Text (Expression Parsed) -> LT.Builder
     toObject hash = "{" <> fields hash <> "}"
       where
         fields =
@@ -455,7 +439,7 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
             (\(key, val) ->
                let asString v =
                      LT.fromLazyText (LT.decodeUtf8 (encode (v :: Text)))
-                in asString key <> ":" <> asString val) .
+                in asString key <> ":" <> LT.fromText (RIO.textDisplay val)) .
           HM.toList
     brackets :: LT.Builder -> LT.Builder
     brackets x = "[" <> x <> "]"

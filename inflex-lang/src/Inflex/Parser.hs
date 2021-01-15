@@ -11,7 +11,13 @@
 
 -- | Parser for Inflex language.
 
-module Inflex.Parser (parseText, parseType, LexParseError(..)) where
+module Inflex.Parser
+  ( parseText
+  , parseTextWith
+  , parseType
+  , numberExpressionParser
+  , LexParseError(..)
+  ) where
 
 import           Control.Applicative ((<|>))
 import           Control.Monad.Reader
@@ -105,6 +111,14 @@ parseText fp bs = do
   first
     ParseError
     (runIdentity (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens))
+
+-- | Parse a given block of text.
+parseTextWith :: Parser e -> Text -> Either LexParseError e
+parseTextWith p bs = do
+  tokens <- first LexerError (lexText "thing" bs)
+  first
+    ParseError
+    (runIdentity (Reparsec.parseOnlyT (p <* Reparsec.endOfInput) tokens))
 
 -- | Parse a given block of type.
 parseType :: FilePath -> Text -> Either LexParseError (Type Parsed)
@@ -526,6 +540,11 @@ numberParser = do
   Located {thing = number, location} <- integerParser <> decimalParser
   typ <- optionalSignatureParser
   pure (Number {typ, ..})
+
+numberExpressionParser :: Parser (Expression Parsed)
+numberExpressionParser = do
+  Located {thing = number, location} <- integerParser <> decimalParser
+  pure (LiteralExpression (NumberLiteral (Number {typ = Nothing, ..})))
 
 integerParser :: Parser (Located SomeNumber)
 integerParser =
