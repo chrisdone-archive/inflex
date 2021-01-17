@@ -59,10 +59,12 @@ data State = State
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe CellError
   , lastInput :: Maybe EditorAndCode
+  , dropping :: Int
   }
 
 data Command
   = SetEditorInput EditorAndCode
+  | TableNext
   | StartEditor
   | FinishEditing String
   | PreventDefault Event'
@@ -162,7 +164,7 @@ component =
   H.mkComponent
     { initialState:
         (\input@(EditorAndCode {editor, code, path}) ->
-           State {display: DisplayEditor, editor, code, path, cellError: Nothing, lastInput: Just input})
+           State {display: DisplayEditor, editor, code, path, cellError: Nothing, lastInput: Just input, dropping: 0})
     , render
     , eval:
         H.mkEval
@@ -237,6 +239,7 @@ eval' =
            (if trim code == ""
               then "_"
               else code))
+    TableNext -> H.modify_ (\(State s) -> State (s {dropping=s.dropping + 1}))
     SetEditorInput input@(EditorAndCode {editor, code, path}) -> do
       State state <- H.get
       case state . display of
@@ -250,6 +253,7 @@ eval' =
                , display: DisplayEditor
                , cellError: Nothing
                , lastInput: Just input
+               , dropping: state.dropping
                })
       -- do undefined
       --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})
@@ -285,13 +289,13 @@ foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
 -- Render main component
 
 render :: forall a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-render (State {display, code, editor, path, cellError}) =
+render (State {display, code, editor, path, cellError, dropping}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
       if trim code == ""
         then wrapper (renderControl)
-        else wrapper (renderEditor path editor)
+        else wrapper (renderEditor dropping path editor)
   where
     renderControl =
       [ HH.input
@@ -350,10 +354,10 @@ render (State {display, code, editor, path, cellError}) =
 
 renderEditor ::
      forall a. MonadEffect a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Int -> (Shared.DataPath -> Shared.DataPath)
   -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor path editor =
+renderEditor dropping  path editor =
   case editor of
     MiscE _originalSource t ->
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]]
@@ -366,7 +370,7 @@ renderEditor path editor =
     ErrorE msg -> [renderError msg]
     ArrayE _originalSource editors -> [renderArrayEditor path editors]
     RecordE _originalSource fields -> [renderRecordEditor path fields]
-    TableE _originalSource columns rows -> renderTableEditor path columns rows
+    TableE _originalSource columns rows -> renderTableEditor dropping path columns rows
 
 --------------------------------------------------------------------------------
 -- Variant display
@@ -462,20 +466,32 @@ renderTextEditor path text =
 --------------------------------------------------------------------------------
 -- Tables
 
+mapWithIndexNarrow :: forall b a. Int -> Int -> (Int -> a -> b) -> Array a -> Array b
+mapWithIndexNarrow dropping taking' f xs =
+  map
+    (\(Tuple i x) -> f i x)
+    (Array.take
+       taking'
+       (Array.drop dropping (Array.zip (Array.range 0 (Array.length xs - 1)) xs)))
+
+taking :: Int
+taking = 5
+
 renderTableEditor ::
      forall a. MonadEffect a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Int -> (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Array Row
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor path columns rows =
+renderTableEditor dropping path columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow path) rows <>
-           addNewRow)
+          (bodyGuide emptyTable emptyRows <> mapWithIndexNarrow dropping taking (tableRow path) rows <>
+           addNewRow <>
+           [HH.tr [] [HH.td [] [HH.button [HE.onClick (const (pure TableNext))] [HH.text "NEXT"]]]])
       ]
   ]
   where
