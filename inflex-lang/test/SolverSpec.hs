@@ -28,14 +28,16 @@ solveText' :: (e ~ ()) =>
   -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveText' hash fp text = do
   counter <- RIO.newSomeRef 0
-  RIO.runRIO SolveReader {glogfunc = mempty, counter} (solveText hash fp text)
+  binds <- RIO.newSomeRef mempty
+  RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} (solveText hash fp text)
 
 unifyConstraints' ::
      Seq EqualityConstraint
   -> IO (Either (SolveError) (Seq Substitution))
 unifyConstraints' cs = do
   counter <- RIO.newSomeRef 0
-  RIO.runRIO SolveReader {glogfunc = mempty, counter} $
+  binds <- RIO.newSomeRef mempty
+  RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} $
     runSolver (unifyConstraints cs)
 
 unifyAndSubstitute' ::
@@ -44,7 +46,8 @@ unifyAndSubstitute' ::
   -> IO (Either (SolveError) (Type Solved))
 unifyAndSubstitute' x cs = do
   counter <- RIO.newSomeRef 0
-  RIO.runRIO SolveReader {glogfunc = mempty, counter} . runSolver . unifyAndSubstitute x $ cs
+  binds <- RIO.newSomeRef mempty
+  RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} . runSolver . unifyAndSubstitute x $ cs
 
 spec :: Spec
 spec = do

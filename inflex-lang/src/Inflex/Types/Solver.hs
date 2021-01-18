@@ -62,6 +62,7 @@ data Substitution = Substitution
 data SolveReader = SolveReader
   { glogfunc :: GLogFunc SolveMsg
   , counter :: SomeRef Natural
+  , binds :: SomeRef (Map (TypeVariable Generated) (SomeRef (Type Generated)))
   }
 
 data SolveMsg

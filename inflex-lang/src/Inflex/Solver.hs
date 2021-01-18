@@ -32,12 +32,13 @@ module Inflex.Solver
 
 import           Control.DeepSeq
 import           Control.Early
-import           Data.Early
 import           Control.Monad.State.Strict
 import           Data.Bifunctor
+import           Data.Early
 import           Data.Function
 import           Data.List
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -91,8 +92,13 @@ solveTextRepl ::
   -> IO (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveTextRepl text = do
   counterRef <- RIO.newSomeRef 0
+  binds <- RIO.newSomeRef mempty
   RIO.runRIO
-    (SolveReader {glogfunc = RIO.mkGLogFunc (\_cs msg -> print msg), counter = counterRef})
+    (SolveReader
+       { glogfunc = RIO.mkGLogFunc (\_cs msg -> print msg)
+       , counter = counterRef
+       , binds = binds
+       })
     (solveText mempty "repl" text)
 
 --------------------------------------------------------------------------------
@@ -136,7 +142,9 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , location
                                                               } = do
   glog (UnifyEqualityConstraint equalityConstraint)
-  case (type1, type2) of
+  type1' <- expandSpine type1
+  type2' <- expandSpine type2
+  case (type1', type2') of
     (ApplyType typeApplication1, ApplyType typeApplication2) ->
       unifyTypeApplications typeApplication1 typeApplication2
     (VariableType typeVariable, typ) -> bindTypeVariable typeVariable typ
@@ -268,10 +276,32 @@ bindTypeVariable typeVariable typ
   | typeVariableKind typeVariable /= typeKind typ =
     pure (Left (KindMismatch typeVariable typ))
   | otherwise = do
+    bindImperatively typeVariable typ
     glog (SuccessfulBindTypeVariable substitution)
     pure (Right (pure substitution))
   where
     substitution = Substitution {before = typeVariable, after = typ}
+
+bindImperatively :: TypeVariable Generated -> Type Generated -> Solve ()
+bindImperatively (!typeVariable) (!typ) = do
+  bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
+  !binds <- RIO.readSomeRef bindsRef
+  case M.lookup typeVariable binds of
+    Nothing -> do
+      ref <- RIO.newSomeRef typ
+      RIO.modifySomeRef bindsRef (M.insert typeVariable ref)
+    Just ref -> RIO.writeSomeRef ref typ
+
+expandSpine :: Type Generated -> Solve (Type Generated)
+expandSpine ty = do
+  case ty of
+    VariableType tyvar -> do
+      bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
+      bindsMap <- RIO.readSomeRef bindsRef
+      case M.lookup tyvar bindsMap of
+        Nothing -> pure ty
+        Just typ -> RIO.readSomeRef typ
+    _ -> pure ty
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
 occursIn typeVariable =

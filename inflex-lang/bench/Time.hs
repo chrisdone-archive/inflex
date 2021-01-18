@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
 
@@ -65,8 +66,8 @@ main = do
         [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
     , bgroup
         "solveText"
-        [bench "medium array" (nfIO (do ref <- newSomeRef 0
-                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref}) (solveTextUpToErrorSuccess mediumArray)))]
+        [bench "medium array" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArray)))]
     -- , bgroup
     --     "generaliseText"
     --     [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]

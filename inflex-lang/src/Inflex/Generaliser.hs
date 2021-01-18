@@ -75,10 +75,11 @@ generaliseText ::
   -> RIO GeneraliseReader (Either (SolveGeneraliseError e) (IsGeneralised (Expression Generalised)))
 generaliseText globals fp text = do
   ref <- RIO.newSomeRef 0
+  binds <- RIO.newSomeRef mempty
   solved <-
     fmap
       (first SolverErrored)
-      (RIO.runRIO SolveReader {glogfunc = mempty {-TODO:-}, counter = ref} (solveText globals fp text))
+      (RIO.runRIO SolveReader {glogfunc = mempty {-TODO:-}, counter = ref, binds} (solveText globals fp text))
   case solved of
     Left e -> pure (Left e)
     Right r -> generaliseSolved r

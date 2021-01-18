@@ -281,22 +281,29 @@ resolveRenamedCell ::
   -> RIO DocumentReader (Either LoadError LoadedExpression)
 resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do
   hasConstraints <-
-    pure $ first LoadGenerateError $
-        generateRenamed
-        (fmap
-           (fmap
-              (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
-                 scheme))
-           globalTypes)
-        globalHashes
-        isRenamed?
+    pure $
+    first LoadGenerateError $
+    generateRenamed
+      (fmap
+         (fmap
+            (\LoadedExpression {resolvedExpression = IsResolved {scheme}} ->
+               scheme))
+         globalTypes)
+      globalHashes
+      isRenamed?
   ref <- RIO.newSomeRef 0
+  binds <- RIO.newSomeRef mempty
   isSolved <-
-    fmap (first LoadSolveError) $ RIO.runRIO
-      SolveReader {glogfunc = mempty, counter = ref}
+    fmap (first LoadSolveError) $
+    RIO.runRIO
+      SolveReader {glogfunc = mempty, counter = ref, binds}
       (solveGenerated hasConstraints)?
-  isGeneralised <- fmap (first LoadGeneraliseError) $ RIO.runRIO GeneraliseReader (generaliseSolved isSolved)?
-  isResolved <- fmap (first LoadResolveError) $ RIO.runRIO ResolveReader (resolveGeneralised isGeneralised)?
+  isGeneralised <-
+    fmap (first LoadGeneraliseError) $
+    RIO.runRIO GeneraliseReader (generaliseSolved isSolved)?
+  isResolved <-
+    fmap (first LoadResolveError) $
+    RIO.runRIO ResolveReader (resolveGeneralised isGeneralised)?
   pure
     (Right
        (LoadedExpression {resolvedExpression = isResolved, renamedExpression}))
