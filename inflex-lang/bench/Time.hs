@@ -17,36 +17,27 @@ import           RIO (newSomeRef, RIO)
 
 {-
 
-Latest numbers:
+with optimisations with type signature
 
 [0Kbenchmarked parseText/medium array
-time                 21.35 ms   (21.19 ms .. 21.51 ms)
-                     1.000 R²   (0.999 R² .. 1.000 R²)
-mean                 21.26 ms   (21.15 ms .. 21.38 ms)
-std dev              266.1 μs   (187.0 μs .. 408.3 μs)
+time                 7.805 ms   (7.351 ms .. 8.342 ms)
+                     0.983 R²   (0.967 R² .. 0.999 R²)
+mean                 7.479 ms   (7.379 ms .. 7.673 ms)
+std dev              385.7 μs   (232.3 μs .. 677.0 μs)
+variance introduced by outliers: 25% (moderately inflated)
 
 [0Kbenchmarked generateText/medium array
-time                 36.31 ms   (36.00 ms .. 36.73 ms)
-                     1.000 R²   (1.000 R² .. 1.000 R²)
-mean                 37.42 ms   (36.77 ms .. 40.41 ms)
-std dev              2.372 ms   (278.0 μs .. 4.665 ms)
-variance introduced by outliers: 23% (moderately inflated)
+time                 12.89 ms   (12.19 ms .. 13.59 ms)
+                     0.978 R²   (0.954 R² .. 0.991 R²)
+mean                 14.50 ms   (14.04 ms .. 15.07 ms)
+std dev              1.322 ms   (1.082 ms .. 1.652 ms)
+variance introduced by outliers: 44% (moderately inflated)
 
-benchmarking solveText/medium array ... took 30.40 s, total 56 iterations
-[0Kbenchmarked solveText/medium array
-time                 548.2 ms   (540.3 ms .. 569.9 ms)
-                     0.998 R²   (0.995 R² .. 1.000 R²)
-mean                 553.0 ms   (549.4 ms .. 562.2 ms)
-std dev              8.898 ms   (3.145 ms .. 14.24 ms)
-
-WITH TYPE SIGNATURE
-
-benchmarking solveText/medium array ... took 17.01 s, total 56 iterations
-[0Kbenchmarked solveText/medium array
-time                 312.1 ms   (307.4 ms .. 315.8 ms)
-                     1.000 R²   (0.999 R² .. 1.000 R²)
-mean                 308.1 ms   (306.2 ms .. 310.0 ms)
-std dev              3.175 ms   (2.390 ms .. 4.474 ms)
+[0Kbenchmarked solveText/array[1000]
+time                 18.46 ms   (18.16 ms .. 18.78 ms)
+                     0.998 R²   (0.996 R² .. 0.999 R²)
+mean                 18.64 ms   (18.43 ms .. 18.93 ms)
+std dev              635.0 μs   (432.2 μs .. 920.5 μs)
 
 -}
 
@@ -54,6 +45,8 @@ main :: IO ()
 main = do
   -- u1 <- nextRandom'
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
+      -- !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]:: [Integer]"]
+      -- !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]:: [Integer]"]
   defaultMain
     [ bgroup
         "parseText"
@@ -66,8 +59,16 @@ main = do
         [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
     , bgroup
         "solveText"
-        [bench "medium array" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArray)))]
+        [bench "array[1000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                       RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArray)))]
+   -- , bgroup
+   --     "solveText"
+   --     [bench "array[2000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+   --                                    RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array2000)))]
+   --  , bgroup
+   --      "solveText"
+   --      [bench "array[4000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+   --                                     RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array4000)))]
     -- , bgroup
     --     "generaliseText"
     --     [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]
@@ -91,8 +92,8 @@ main = do
     --     ]
     ]
 
-nextRandom' :: IO Text
-nextRandom' = fmap UUID.toText nextRandom
+-- nextRandom' :: IO Text
+-- nextRandom' = fmap UUID.toText nextRandom
 
 -- loadDocumentUpToErrorSuccess :: [Named Text] -> Toposorted (Named (Either () ()))
 -- loadDocumentUpToErrorSuccess = fmap (fmap (first undefined . second (const ()))) . loadDocument
