@@ -12,9 +12,11 @@
 module SolverSpec where
 
 import           Control.Early
+import qualified Data.HashMap.Strict as HM
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Instances ()
 import           Inflex.Solver
@@ -40,8 +42,11 @@ unifyConstraints' cs = do
   counter <- RIO.newSomeRef 0
   binds <- RIO.newSomeRef mempty
   RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} $
-    runSolver (do unifyConstraints cs?
-                  fmap Right freezeSubstitutions)
+    runSolver
+      (do unifyConstraints cs?
+          fmap
+            (Right . fmap (uncurry Substitution) . Seq.fromList . HM.toList)
+            freezeSubstitutions)
 
 unifyAndSubstitute' ::
      Seq EqualityConstraint
