@@ -54,38 +54,38 @@ Type help for available commands. Press enter to force a rebuild.
 main :: IO ()
 main = do
   -- u1 <- nextRandom'
-  let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
-      !mediumArraynosig = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
-      -- !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]:: [Integer]"]
-      -- !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]:: [Integer]"]
-  do ref <- newSomeRef 0;binds <- newSomeRef mempty
-     RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArraynosig)
-  when False (defaultMain
-     [ -- bgroup
-     --     "parseText"
-     --     [bench "medium array" (nf parseTextUpToErrorSuccess mediumArray)]
-     -- -- , bgroup
-     -- --     "renameText"
-     -- --     [bench "medium array" (nf renameTextUpToErrorSuccess mediumArray)]
+  let !array1000Sig = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
+      !array1000 = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
+      !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]"]
+      !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]"]
+  -- do ref <- newSomeRef 0;binds <- newSomeRef mempty
+  --    RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArraynosig)
+  when True (defaultMain
+     [ bgroup
+         "parseText"
+         [bench "medium array" (nf parseTextUpToErrorSuccess array1000)]
      -- , bgroup
-     --     "generateText"
-     --     [bench "medium array" (nf generateTextUpToErrorSuccess mediumArray)]
-      bgroup
+     --     "renameText"
+     --     [bench "medium array" (nf renameTextUpToErrorSuccess array1000)]
+     , bgroup
+         "generateText"
+         [bench "medium array" (nf generateTextUpToErrorSuccess array1000)]
+      , bgroup
          "solveText"
-         [bench "array[1000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArray)))]
+         [bench "array[1000] SIG" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                            RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array1000Sig)))]
      , bgroup
          "solveText"
-         [bench "array[1000] no sig" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                               RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArraynosig)))]
-    -- , bgroup
-    --     "solveText"
-    --     [bench "array[2000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-    --                                    RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array2000)))]
-    --  , bgroup
-    --      "solveText"
-    --      [bench "array[4000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-    --                                     RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array4000)))]
+         [bench "array[1000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array1000)))]
+    , bgroup
+        "solveText"
+        [bench "array[2000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                       RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array2000)))]
+     , bgroup
+         "solveText"
+         [bench "array[4000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array4000)))]
      -- , bgroup
      --     "generaliseText"
      --     [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]
