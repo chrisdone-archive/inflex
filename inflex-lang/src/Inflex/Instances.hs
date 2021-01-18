@@ -529,7 +529,8 @@ instance Hashable (TypeVariable Generated) where
 deriving instance Ord (TypeVariable Generated)
 deriving instance Show (TypeVariable Generated)
 deriving instance Lift (TypeVariable Generated)
-deriving instance Eq (TypeVariable Parsed)
+instance Eq (TypeVariable Parsed) where
+  (==) TypeVariable {index,prefix} TypeVariable {index=index2,prefix=prefix2} = (index,prefix)== (index2,prefix2)
 deriving instance Ord (TypeVariable Parsed)
 deriving instance Show (TypeVariable Parsed)
 deriving instance Lift (TypeVariable Parsed)

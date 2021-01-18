@@ -315,24 +315,11 @@ substituteType substitutions = go
           ApplyType
             TypeApplication {function = go function, argument = go argument, ..}
         typ@(VariableType typeVariable :: Type Generated) ->
-          -- TODO: This is an O(n) operation. Bad in a type
-          -- checker. May be the cause of slow down in array.
-          case HM.lookup
-                 typeVariable
-                 substitutions of
-            Just after ->
-              -- | substitutionKind substitution == typeVariableKind typeVariable ->
-                after
-              -- | otherwise -> typ -- TODO: error/signal problem.
+          case HM.lookup typeVariable substitutions of
+            Just after -> after
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
-          | Just after <-
-             -- TODO: This is an O(n) operation. Bad in a type
-             -- checker.
-             HM.lookup -- find
-               typeVariable
-               substitutions
-          -- , substitutionKind substitution == RowKind
+          | Just after <- HM.lookup typeVariable substitutions
           , RowType TypeRow {typeVariable = newVariable, fields = ys} <- after ->
             RowType -- Here we merge the two field sets with shadowing.
               (TypeRow
