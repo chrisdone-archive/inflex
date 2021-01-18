@@ -22,6 +22,7 @@ module Inflex.Solver
   , solveType
   , runSolver
   , solveTextRepl
+  , freezeSubstitutions
   , Substitution(..)
   , SolveError(..)
   , IsSolved(..)
@@ -74,7 +75,9 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
      second
        (\substitutions ->
           IsSolved {thing = expressionSolve substitutions expression, mappings}))
-    (runSolver (unifyConstraints equalities))
+    (runSolver
+       (do unifyConstraints equalities?
+           fmap Right freezeSubstitutions))
 
 runSolver :: Solve a -> RIO SolveReader a
 runSolver = runSolve
@@ -84,7 +87,8 @@ unifyAndSubstitute ::
   -> Type Generated
   -> Solve (Either SolveError (Type Solved))
 unifyAndSubstitute equalities typ = do
-  substitutions <- unifyConstraints equalities?
+  unifyConstraints equalities?
+  substitutions <- freezeSubstitutions
   pure (Right (solveType substitutions typ))
 
 solveTextRepl ::
@@ -104,39 +108,15 @@ solveTextRepl text = do
 --------------------------------------------------------------------------------
 -- Unification
 
--- TODO: Change Seq Substitution to a @Map replaceme withthis@?
--- Doesn't save much time presently, but may in future. The current
--- largest hit is in unifyConstraints with O(n^2) behavior.
-
 unifyConstraints ::
-     Seq EqualityConstraint -> Solve (Either SolveError (Seq Substitution))
+     Seq EqualityConstraint -> Solve (Either SolveError ())
 unifyConstraints constraints = do
   glog (UnifyConstraints (length constraints))
-  -- This is a large speed hit. If there are 1000 elements in an
-  -- array, it will iterate at least 1000x times. So it performs
-  -- O(n). Meanwhile, the length of the 'existing' increases over time
-  -- too. And extendSubstitutions performs an O(n) map over the
-  -- existing set of subs.
-  --
-  -- That adds up to O(n^2) time, which is (of course) very poorly
-  -- performing. Consider alternative ways to express this function
-  -- without paying this penalty.
-  substitutions <-
-    foldE
-      (\existing equalityConstraint -> do
-         glog (UnifyConstraintsIterate (length existing))
-         fmap
-           (fmap (\new -> extendSubstitutions Extension {existing, new}))
-           (unifyEqualityConstraint
-              (substituteEqualityConstraint existing equalityConstraint)))
-      mempty
-      constraints?
-  glog (UnifyConstraintsComplete (length substitutions))
-  pure (Right substitutions)
+  traverseE_ unifyEqualityConstraint constraints
 
 unifyEqualityConstraint ::
      EqualityConstraint
-  -> Solve (Either SolveError (Seq Substitution))
+  -> Solve (Either SolveError ())
 unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
                                                               , type2
                                                               , location
@@ -162,18 +142,13 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
 unifyTypeApplications ::
      TypeApplication Generated
   -> TypeApplication Generated
-  -> Solve (Either SolveError (Seq Substitution))
+  -> Solve (Either SolveError ())
 unifyTypeApplications typeApplication1 typeApplication2 = do
   glog UnifyTypeApplications
-  existing <-
-    unifyEqualityConstraint
-      EqualityConstraint {type1 = function1, type2 = function2, location}?
-  new <-
-    unifyEqualityConstraint
-      (substituteEqualityConstraint
-         existing
-         (EqualityConstraint {type1 = argument1, type2 = argument2, location}))?
-  pure (pure (extendSubstitutions Extension {existing, new}))
+  unifyEqualityConstraint
+    EqualityConstraint {type1 = function1, type2 = function2, location}?
+  unifyEqualityConstraint
+    (EqualityConstraint {type1 = argument1, type2 = argument2, location})
   where
     TypeApplication {function = function1, argument = argument1, location} =
       typeApplication1
@@ -183,14 +158,14 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
       typeApplication2
 
 -- | Unify records -- must contain row types inside.
-unifyRecords :: Type Generated -> Type Generated -> Solve (Either SolveError (Seq Substitution))
+unifyRecords :: Type Generated -> Type Generated -> Solve (Either SolveError ())
 unifyRecords (RowType x) (RowType y) = unifyRows x y
 unifyRecords _ _ = pure (Left NotRowTypes)
 
 unifyRows ::
      TypeRow Generated
   -> TypeRow Generated
-  -> Solve (Either SolveError (Seq Substitution))
+  -> Solve (Either SolveError ())
 unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
                                                                              , fields = fs2
                                                                              }) = do
@@ -268,7 +243,7 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
 bindTypeVariable ::
      TypeVariable Generated
   -> Type Generated
-  -> Solve (Either SolveError (Seq Substitution))
+  -> Solve (Either SolveError ())
 bindTypeVariable typeVariable typ
   | typ == VariableType typeVariable = pure (Right mempty)
   | occursIn typeVariable typ =
@@ -278,7 +253,7 @@ bindTypeVariable typeVariable typ
   | otherwise = do
     bindImperatively typeVariable typ
     glog (SuccessfulBindTypeVariable substitution)
-    pure (Right (pure substitution))
+    pure (Right ())
   where
     substitution = Substitution {before = typeVariable, after = typ}
 
@@ -300,7 +275,11 @@ expandSpine ty = do
       bindsMap <- RIO.readSomeRef bindsRef
       case M.lookup tyvar bindsMap of
         Nothing -> pure ty
-        Just typ -> RIO.readSomeRef typ
+        Just typ -> do
+          ty' <- RIO.readSomeRef typ
+          if ty' /= ty
+            then expandSpine ty'
+            else pure ty'
     _ -> pure ty
 
 occursIn :: TypeVariable Generated -> Type Generated -> Bool
@@ -319,35 +298,7 @@ occursIn typeVariable =
       any (\Field{typ} -> occursIn typeVariable typ) fields
 
 --------------------------------------------------------------------------------
--- Extension
-
-data Extension = Extension
-  { existing :: !(Seq Substitution)
-  , new :: !(Seq Substitution)
-  }
-
-extendSubstitutions :: Extension -> Seq Substitution
-extendSubstitutions Extension {new, existing} = existing' <> new
-  where
-    existing' =
-      fmap
-        (\Substitution {after, ..} ->
-           Substitution {after = substituteType new after, ..})
-        existing
-
---------------------------------------------------------------------------------
 -- Substitution
-
-substituteEqualityConstraint ::
-     Seq Substitution -> EqualityConstraint -> EqualityConstraint
-substituteEqualityConstraint substitutions equalityConstraint =
-  EqualityConstraint
-    { type1 = substituteType substitutions type1
-    , type2 = substituteType substitutions type2
-    , ..
-    }
-  where
-    EqualityConstraint {type1, type2, ..} = equalityConstraint
 
 substituteType :: Seq Substitution -> Type Generated -> Type Generated
 substituteType substitutions = go
@@ -652,3 +603,59 @@ generateTypeVariable location prefix kind = do
   modify' succ
   pure
     TypeVariable {location, prefix = SolverGeneratedPrefix prefix, index, kind}
+
+--------------------------------------------------------------------------------
+-- Freeze substitutions
+
+freezeSubstitutions :: Solve (Seq Substitution)
+freezeSubstitutions = do
+  bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
+  bindsMap <- RIO.readSomeRef bindsRef
+  let go typ =
+        case typ of
+          FreshType v -> absurd v
+          RecordType t -> fmap RecordType (go t)
+          VariantType t -> fmap VariantType (go t)
+          ArrayType t -> fmap ArrayType (go t)
+          ConstantType {} -> pure typ
+          VariableType typeVariable ->
+            case M.lookup typeVariable bindsMap of
+              Nothing -> pure typ
+              Just typ' -> RIO.readSomeRef typ' >>= go
+          ApplyType TypeApplication {function, argument, ..} -> do
+            function' <- go function
+            argument' <- go argument
+            pure
+              (ApplyType
+                 TypeApplication
+                   {function = function', argument = argument', ..})
+          RowType typeRow@TypeRow { typeVariable = Just typeTariable
+                                  , fields = xs
+                                  , ..
+                                  }
+            | Just after <- M.lookup typeTariable bindsMap -> do
+              typ' <- RIO.readSomeRef after
+              case typ' of
+                RowType TypeRow {typeVariable = newVariable, fields = ys} ->
+                  pure
+                    (RowType
+                       TypeRow
+                         { typeVariable = newVariable
+                         , fields = shadowFields ys xs
+                         , ..
+                         })
+                _ -> doFields typeRow
+          RowType typeRow -> doFields typeRow
+        where
+          doFields TypeRow {..} = do
+            fields' <- traverse substituteField fields
+            pure (RowType TypeRow {fields = fields', ..})
+            where
+              substituteField Field {typ = typ0, location = l, ..} = do
+                typ' <- go typ0
+                pure Field {typ = typ', location = l, ..}
+  traverse
+    (\(typeVariable, typeRef) -> do
+       typ <- RIO.readSomeRef typeRef >>= go
+       pure Substitution {before = typeVariable, after = typ})
+    (Seq.fromList (M.toList bindsMap))

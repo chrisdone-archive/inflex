@@ -1,3 +1,4 @@
+{-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -10,6 +11,7 @@
 
 module SolverSpec where
 
+import           Control.Early
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
@@ -38,7 +40,8 @@ unifyConstraints' cs = do
   counter <- RIO.newSomeRef 0
   binds <- RIO.newSomeRef mempty
   RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} $
-    runSolver (unifyConstraints cs)
+    runSolver (do unifyConstraints cs?
+                  fmap Right freezeSubstitutions)
 
 unifyAndSubstitute' ::
      Seq EqualityConstraint
@@ -1423,11 +1426,11 @@ variants = do
   it
     "case #a { #b: {} }"
     (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {} }"))
-              (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) ))))
+              (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = VariantRowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]})))))
   it
       "case #a { #b: {}, wild: {} }"
       (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))
-                (Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))))
+                (Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))))
 
 
 arrays :: SpecWith ()
