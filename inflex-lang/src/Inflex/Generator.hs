@@ -302,7 +302,7 @@ arrayGenerator Array {..} = do
          e' <- expressionGenerator e
          addEqualityConstraint
            EqualityConstraint
-             {type1 = elementVariable, type2 = expressionType e', ..}
+             {type2 = elementVariable, type1 = expressionType e', ..}
          pure e')
       expressions
   pure Array {typ = ArrayType elementVariable, expressions = expressions', ..}
