@@ -14,6 +14,7 @@
 module Inflex.Types where
 
 import Control.DeepSeq
+import Data.Hashable
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
 import Data.String
@@ -373,7 +374,8 @@ data TypeVariablePrefix
   | FreshPrefix
   | RowUnifyPrefix
   | SolverGeneratedPrefix TypeVariablePrefix
-  deriving (Show, Lift, Eq, Ord)
+  deriving (Show, Lift, Eq, Ord, Generic)
+instance Hashable TypeVariablePrefix
 
 data EqualityConstraint = EqualityConstraint
   { type1 :: Type Generated

@@ -5,8 +5,6 @@
 import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Data.UUID as UUID
-import           Data.UUID.V4
 import           Gauge.Main
 import           Inflex.Generator
 import           Inflex.Instances ()
@@ -19,25 +17,35 @@ import           RIO (newSomeRef, RIO)
 
 with optimisations with type signature
 
+Benchmark inflex-lang-time: RUNNING...
 [0Kbenchmarked parseText/medium array
-time                 7.805 ms   (7.351 ms .. 8.342 ms)
-                     0.983 R²   (0.967 R² .. 0.999 R²)
-mean                 7.479 ms   (7.379 ms .. 7.673 ms)
-std dev              385.7 μs   (232.3 μs .. 677.0 μs)
-variance introduced by outliers: 25% (moderately inflated)
+time                 9.687 ms   (8.865 ms .. 10.32 ms)
+                     0.965 R²   (0.943 R² .. 0.983 R²)
+mean                 8.730 ms   (8.423 ms .. 9.049 ms)
+std dev              899.5 μs   (754.3 μs .. 1.070 ms)
+variance introduced by outliers: 56% (severely inflated)
 
 [0Kbenchmarked generateText/medium array
-time                 12.89 ms   (12.19 ms .. 13.59 ms)
-                     0.978 R²   (0.954 R² .. 0.991 R²)
-mean                 14.50 ms   (14.04 ms .. 15.07 ms)
-std dev              1.322 ms   (1.082 ms .. 1.652 ms)
-variance introduced by outliers: 44% (moderately inflated)
+time                 16.02 ms   (13.44 ms .. 18.07 ms)
+                     0.932 R²   (0.886 R² .. 0.974 R²)
+mean                 17.79 ms   (16.81 ms .. 19.41 ms)
+std dev              3.108 ms   (1.894 ms .. 5.119 ms)
+variance introduced by outliers: 73% (severely inflated)
 
 [0Kbenchmarked solveText/array[1000]
-time                 18.46 ms   (18.16 ms .. 18.78 ms)
-                     0.998 R²   (0.996 R² .. 0.999 R²)
-mean                 18.64 ms   (18.43 ms .. 18.93 ms)
-std dev              635.0 μs   (432.2 μs .. 920.5 μs)
+time                 16.88 ms   (16.25 ms .. 17.70 ms)
+                     0.994 R²   (0.991 R² .. 0.998 R²)
+mean                 19.17 ms   (18.19 ms .. 21.85 ms)
+std dev              3.797 ms   (1.954 ms .. 6.808 ms)
+variance introduced by outliers: 81% (severely inflated)
+
+benchmarking solveText/array[1000] no sig ... took 9.582 s, total 56 iterations
+[0Kbenchmarked solveText/array[1000] no sig
+time                 190.0 ms   (173.9 ms .. 213.2 ms)
+                     0.983 R²   (0.962 R² .. 0.998 R²)
+mean                 167.0 ms   (156.7 ms .. 177.1 ms)
+std dev              17.35 ms   (12.26 ms .. 23.62 ms)
+variance introduced by outliers: 29% (moderately inflated)
 
 -}
 
@@ -45,6 +53,7 @@ main :: IO ()
 main = do
   -- u1 <- nextRandom'
   let !mediumArray = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
+      !mediumArraynosig = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
       -- !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]:: [Integer]"]
       -- !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]:: [Integer]"]
   defaultMain
@@ -61,6 +70,10 @@ main = do
         "solveText"
         [bench "array[1000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArray)))]
+    , bgroup
+        "solveText"
+        [bench "array[1000] no sig" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
+                                              RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArraynosig)))]
    -- , bgroup
    --     "solveText"
    --     [bench "array[2000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty

@@ -37,9 +37,10 @@ import           Control.Monad.State.Strict
 import           Data.Bifunctor
 import           Data.Early
 import           Data.Function
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -261,10 +262,10 @@ bindImperatively :: TypeVariable Generated -> Type Generated -> Solve ()
 bindImperatively (!typeVariable) (!typ) = do
   bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
   !binds <- RIO.readSomeRef bindsRef
-  case M.lookup typeVariable binds of
+  case HM.lookup typeVariable binds of
     Nothing -> do
       ref <- RIO.newSomeRef typ
-      RIO.modifySomeRef bindsRef (M.insert typeVariable ref)
+      RIO.modifySomeRef bindsRef (HM.insert typeVariable ref)
     Just ref -> RIO.writeSomeRef ref typ
 
 expandSpine :: Type Generated -> Solve (Type Generated)
@@ -273,7 +274,7 @@ expandSpine ty = do
     VariableType tyvar -> do
       bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
       bindsMap <- RIO.readSomeRef bindsRef
-      case M.lookup tyvar bindsMap of
+      case HM.lookup tyvar bindsMap of
         Nothing -> pure ty
         Just typ -> do
           ty' <- RIO.readSomeRef typ
@@ -300,7 +301,7 @@ occursIn typeVariable =
 --------------------------------------------------------------------------------
 -- Substitution
 
-substituteType :: Seq Substitution -> Type Generated -> Type Generated
+substituteType :: HashMap (TypeVariable Generated) (Type Generated) -> Type Generated -> Type Generated
 substituteType substitutions = go
   where
     go =
@@ -316,22 +317,22 @@ substituteType substitutions = go
         typ@(VariableType typeVariable :: Type Generated) ->
           -- TODO: This is an O(n) operation. Bad in a type
           -- checker. May be the cause of slow down in array.
-          case find
-                 (\Substitution {before} -> before == typeVariable)
+          case HM.lookup
+                 typeVariable
                  substitutions of
-            Just substitution@Substitution {after}
-              | substitutionKind substitution == typeVariableKind typeVariable ->
+            Just after ->
+              -- | substitutionKind substitution == typeVariableKind typeVariable ->
                 after
-              | otherwise -> typ -- TODO: error/signal problem.
+              -- | otherwise -> typ -- TODO: error/signal problem.
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
-          | Just substitution@Substitution {after} <-
+          | Just after <-
              -- TODO: This is an O(n) operation. Bad in a type
              -- checker.
-             find
-               (\Substitution {before} -> before == typeVariable)
+             HM.lookup -- find
+               typeVariable
                substitutions
-          , substitutionKind substitution == RowKind
+          -- , substitutionKind substitution == RowKind
           , RowType TypeRow {typeVariable = newVariable, fields = ys} <- after ->
             RowType -- Here we merge the two field sets with shadowing.
               (TypeRow
@@ -356,7 +357,7 @@ shadowFields = unionBy (on (==) (\Field{name} -> name))
 -- Solving (i.e. substitution, but we also change the type from
 -- Generated to Solved)
 
-solveType :: Seq Substitution -> Type Generated -> Type Solved
+solveType :: HashMap (TypeVariable Generated) (Type Generated) -> Type Generated -> Type Solved
 solveType substitutions = go . substituteType substitutions
   where
     go =
@@ -380,7 +381,7 @@ solveType substitutions = go . substituteType substitutions
     fieldSolve Field {..} = Field {typ = solveType substitutions typ, ..}
     typeVarSolve TypeVariable {..} = TypeVariable {..}
 
-expressionSolve :: Seq Substitution -> Expression Generated -> Expression Solved
+expressionSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Expression Generated -> Expression Solved
 expressionSolve substitutions =
   \case
     LiteralExpression literal ->
@@ -412,7 +413,7 @@ expressionSolve substitutions =
     GlobalExpression global ->
       GlobalExpression (globalSolve substitutions global)
 
-lambdaSolve :: Seq Substitution -> Lambda Generated -> Lambda Solved
+lambdaSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Lambda Generated -> Lambda Solved
 lambdaSolve substitutions Lambda {..} =
   Lambda
     { param = paramSolve substitutions param
@@ -421,7 +422,7 @@ lambdaSolve substitutions Lambda {..} =
     , ..
     }
 
-propSolve :: Seq Substitution -> Prop Generated -> Prop Solved
+propSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Prop Generated -> Prop Solved
 propSolve substitutions Prop {..} =
   Prop
     { expression = expressionSolve substitutions expression
@@ -429,7 +430,7 @@ propSolve substitutions Prop {..} =
     , ..
     }
 
-arraySolve :: Seq Substitution -> Array Generated -> Array Solved
+arraySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Array Generated -> Array Solved
 arraySolve substitutions Array {..} =
   Array
     { expressions = fmap (expressionSolve substitutions) expressions
@@ -437,7 +438,7 @@ arraySolve substitutions Array {..} =
     , ..
     }
 
-variantSolve :: Seq Substitution -> Variant Generated -> Variant Solved
+variantSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Variant Generated -> Variant Solved
 variantSolve substitutions Variant {..} =
   Variant
     { argument = fmap (expressionSolve substitutions) argument
@@ -445,7 +446,7 @@ variantSolve substitutions Variant {..} =
     , ..
     }
 
-recordSolve :: Seq Substitution -> Record Generated -> Record Solved
+recordSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Record Generated -> Record Solved
 recordSolve substitutions Record {..} =
   Record
     { fields = map (fieldESolve substitutions) fields
@@ -453,14 +454,14 @@ recordSolve substitutions Record {..} =
     , ..
     }
 
-fieldESolve :: Seq Substitution -> FieldE Generated -> FieldE Solved
+fieldESolve :: HashMap (TypeVariable Generated) (Type Generated) -> FieldE Generated -> FieldE Solved
 fieldESolve substitutions FieldE {..} =
   FieldE
     { expression = expressionSolve substitutions expression
     , ..
     }
 
-infixSolve :: Seq Substitution -> Infix Generated -> Infix Solved
+infixSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Infix Generated -> Infix Solved
 infixSolve substitutions Infix {..} =
   Infix
     { left = expressionSolve substitutions left
@@ -470,7 +471,7 @@ infixSolve substitutions Infix {..} =
     , ..
     }
 
-letSolve :: Seq Substitution -> Let Generated -> Let Solved
+letSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Let Generated -> Let Solved
 letSolve substitutions Let {..} =
   Let
     { binds = fmap (bindSolve substitutions) binds
@@ -479,7 +480,7 @@ letSolve substitutions Let {..} =
     , ..
     }
 
-bindSolve :: Seq Substitution -> Bind Generated -> Bind Solved
+bindSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Bind Generated -> Bind Solved
 bindSolve substitutions Bind {..} =
   Bind
     { param = paramSolve substitutions param
@@ -488,7 +489,7 @@ bindSolve substitutions Bind {..} =
     , ..
     }
 
-applySolve :: Seq Substitution -> Apply Generated -> Apply Solved
+applySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Apply Generated -> Apply Solved
 applySolve substitutions Apply {..} =
   Apply
     { function = expressionSolve substitutions function
@@ -497,7 +498,7 @@ applySolve substitutions Apply {..} =
     , ..
     }
 
-caseSolve :: Seq Substitution -> Case Generated -> Case Solved
+caseSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Case Generated -> Case Solved
 caseSolve substitutions Case {..} =
   Case
     { location
@@ -525,7 +526,7 @@ caseSolve substitutions Case {..} =
           alternatives
     }
 
-ifSolve :: Seq Substitution -> If Generated -> If Solved
+ifSolve :: HashMap (TypeVariable Generated) (Type Generated) -> If Generated -> If Solved
 ifSolve substitutions If {..} =
   If
     { condition = expressionSolve substitutions condition
@@ -535,11 +536,11 @@ ifSolve substitutions If {..} =
     , ..
     }
 
-variableSolve :: Seq Substitution -> Variable Generated -> Variable Solved
+variableSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Variable Generated -> Variable Solved
 variableSolve substitutions Variable {..} =
   Variable {typ = solveType substitutions typ, ..}
 
-globalSolve :: Seq Substitution -> Global Generated -> Global Solved
+globalSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Global Generated -> Global Solved
 globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
   Global
     {scheme = SolvedScheme (solveScheme substitutions scheme), name = refl, ..}
@@ -554,7 +555,7 @@ globalSolve substitutions Global {scheme = GeneratedScheme scheme, ..} =
         NumericBinOpGlobal n -> NumericBinOpGlobal n
         FunctionGlobal f -> FunctionGlobal f
 
-solveScheme :: Seq Substitution -> Scheme Generated -> Scheme Solved
+solveScheme :: HashMap (TypeVariable Generated) (Type Generated) -> Scheme Generated -> Scheme Solved
 solveScheme substitutions Scheme {..} =
   Scheme
     { typ = solveType substitutions typ
@@ -562,31 +563,28 @@ solveScheme substitutions Scheme {..} =
     , ..
     }
 
-solveClassConstraint :: Seq Substitution -> ClassConstraint Generated -> ClassConstraint Solved
+solveClassConstraint :: HashMap (TypeVariable Generated) (Type Generated) -> ClassConstraint Generated -> ClassConstraint Solved
 solveClassConstraint substitutions ClassConstraint {..} =
   ClassConstraint {typ = fmap (solveType substitutions) typ, ..}
 
-literalSolve :: Seq Substitution -> Literal Generated -> Literal Solved
+literalSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Literal Generated -> Literal Solved
 literalSolve substitutions =
   \case
     TextLiteral LiteralText {..} ->
       TextLiteral LiteralText {typ = solveType substitutions typ, ..}
     NumberLiteral number -> NumberLiteral (numberSolve substitutions number)
 
-numberSolve :: Seq Substitution -> Number Generated -> Number Solved
+numberSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Number Generated -> Number Solved
 numberSolve substitutions Number {..} =
   Number {typ = solveType substitutions typ, ..}
 
-paramSolve :: Seq Substitution -> Param Generated -> Param Solved
+paramSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Param Generated -> Param Solved
 paramSolve substitutions Param {..} =
   Param {typ = solveType substitutions typ, ..}
 
-holeSolve :: Seq Substitution -> Hole Generated -> Hole Solved
+holeSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Hole Generated -> Hole Solved
 holeSolve substitutions Hole {..} =
   Hole {typ = solveType substitutions typ, ..}
-
-substitutionKind :: Substitution -> Kind
-substitutionKind Substitution {before} = typeVariableKind before
 
 --------------------------------------------------------------------------------
 -- Generate type variable
@@ -607,7 +605,7 @@ generateTypeVariable location prefix kind = do
 --------------------------------------------------------------------------------
 -- Freeze substitutions
 
-freezeSubstitutions :: Solve (Seq Substitution)
+freezeSubstitutions :: Solve (HashMap (TypeVariable Generated) (Type Generated))
 freezeSubstitutions = do
   bindsRef <- RIO.asks (\SolveReader {binds} -> binds)
   bindsMap <- RIO.readSomeRef bindsRef
@@ -619,7 +617,7 @@ freezeSubstitutions = do
           ArrayType t -> fmap ArrayType (go t)
           ConstantType {} -> pure typ
           VariableType typeVariable ->
-            case M.lookup typeVariable bindsMap of
+            case HM.lookup typeVariable bindsMap of
               Nothing -> pure typ
               Just typ' -> RIO.readSomeRef typ' >>= go
           ApplyType TypeApplication {function, argument, ..} -> do
@@ -633,7 +631,7 @@ freezeSubstitutions = do
                                   , fields = xs
                                   , ..
                                   }
-            | Just after <- M.lookup typeTariable bindsMap -> do
+            | Just after <- HM.lookup typeTariable bindsMap -> do
               typ' <- RIO.readSomeRef after
               case typ' of
                 RowType TypeRow {typeVariable = newVariable, fields = ys} ->
@@ -655,7 +653,7 @@ freezeSubstitutions = do
                 typ' <- go typ0
                 pure Field {typ = typ', location = l, ..}
   traverse
-    (\(typeVariable, typeRef) -> do
+    (\typeRef -> do
        typ <- RIO.readSomeRef typeRef >>= go
-       pure Substitution {before = typeVariable, after = typ})
-    (Seq.fromList (M.toList bindsMap))
+       pure typ)
+    bindsMap

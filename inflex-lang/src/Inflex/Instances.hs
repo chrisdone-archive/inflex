@@ -1,3 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -9,6 +12,7 @@
 
 module Inflex.Instances where
 
+import Data.Hashable
 import Inflex.Types
 import Language.Haskell.TH.Lift
 
@@ -520,6 +524,8 @@ deriving instance Show (Type Polymorphic)
 deriving instance Lift (Type Polymorphic)
 
 deriving instance Eq (TypeVariable Generated)
+instance Hashable (TypeVariable Generated) where
+  hashWithSalt salt TypeVariable {index,prefix} = hashWithSalt salt (index, prefix)
 deriving instance Ord (TypeVariable Generated)
 deriving instance Show (TypeVariable Generated)
 deriving instance Lift (TypeVariable Generated)

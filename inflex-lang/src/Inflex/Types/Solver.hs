@@ -24,17 +24,19 @@ module Inflex.Types.Solver
   , Solve(..)
   ) where
 
-import Control.Monad.Except
-import Control.Monad.Reader
-import Control.Monad.State.Strict
-import Data.Map.Strict (Map)
-import Inflex.Generator
-import Inflex.Optics
-import Inflex.Types
-import Numeric.Natural
-import Optics.Lens
-import Optics.TH
-import RIO (HasStateRef(..), RIO, GLogFunc, HasGLogFunc(..), SomeRef)
+import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Control.Monad.State.Strict
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+import           Data.Map.Strict (Map)
+import           Inflex.Generator
+import           Inflex.Optics
+import           Inflex.Types
+import           Numeric.Natural
+import           Optics.Lens
+import           Optics.TH
+import           RIO (HasStateRef(..), RIO, GLogFunc, HasGLogFunc(..), SomeRef)
 
 data SolveError
   = OccursCheckFail (TypeVariable Generated) (Type Generated)
@@ -62,7 +64,7 @@ data Substitution = Substitution
 data SolveReader = SolveReader
   { glogfunc :: GLogFunc SolveMsg
   , counter :: SomeRef Natural
-  , binds :: SomeRef (Map (TypeVariable Generated) (SomeRef (Type Generated)))
+  , binds :: SomeRef (HashMap (TypeVariable Generated) (SomeRef (Type Generated)))
   }
 
 data SolveMsg

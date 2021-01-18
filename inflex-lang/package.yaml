@@ -6,6 +6,8 @@ dependencies:
 - genvalidity
 - QuickCheck
 - mutable-containers
+- unordered-containers
+- hashable
 - hspec
 - validity
 - cryptonite
