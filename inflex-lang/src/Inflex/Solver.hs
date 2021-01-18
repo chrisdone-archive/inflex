@@ -35,7 +35,9 @@ import           Control.DeepSeq
 import           Control.Early
 import           Control.Monad.State.Strict
 import           Data.Bifunctor
+import           Data.Char
 import           Data.Early
+import           Data.Foldable
 import           Data.Function
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
@@ -71,14 +73,36 @@ solveGenerated ::
      HasConstraints (Expression Generated)
   -> RIO SolveReader (Either (GenerateSolveError e) (IsSolved (Expression Solved)))
 solveGenerated HasConstraints {thing = expression, mappings, equalities} =
-  fmap
-    (first SolverError .
-     second
-       (\substitutions ->
-          IsSolved {thing = expressionSolve substitutions expression, mappings}))
-    (runSolver
-       (do unifyConstraints equalities?
-           fmap Right freezeSubstitutions))
+  do
+     fmap
+       (first SolverError .
+        second
+          (\substitutions ->
+             IsSolved {thing = expressionSolve substitutions expression, mappings}))
+       (runSolver
+          (do unifyConstraints equalities?
+              fmap Right freezeSubstitutions))
+
+prettyEquality :: EqualityConstraint -> String
+prettyEquality EqualityConstraint {type1,type2} =
+  prettyType type1 <> " ~ " <> prettyType type2
+
+prettyType :: Type Generated -> String
+prettyType =
+  \case
+    VariableType TypeVariable {prefix, index} -> map toLower (show prefix) ++ show index
+    ArrayType t -> "[" ++ prettyType t ++ "]"
+
+    ApplyType TypeApplication { function = ApplyType TypeApplication { function = ConstantType (TypeConstant {name = FunctionTypeName})
+                                                                     , argument = i
+                                                                     }
+                              , argument = o
+                              } ->
+      "(" ++ prettyType i ++ " -> " ++ prettyType o ++ ")"
+    ApplyType TypeApplication {function = f, argument = x} ->
+      "(" ++ prettyType f ++ " " ++ prettyType x ++ ")"
+    ConstantType TypeConstant {name} -> show name
+    _ -> "?"
 
 runSolver :: Solve a -> RIO SolveReader a
 runSolver = runSolve
