@@ -53,82 +53,43 @@ Type help for available commands. Press enter to force a rebuild.
 
 main :: IO ()
 main = do
-  -- u1 <- nextRandom'
-  let !array1000Sig = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "] :: [Integer]"]
-      !array1000 = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
+  let !array1000 = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
       !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]"]
       !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]"]
-  -- do ref <- newSomeRef 0;binds <- newSomeRef mempty
-  --    RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess mediumArraynosig)
-  when True (defaultMain
-     [ bgroup
-         "parseText"
-         [bench "medium array" (nf parseTextUpToErrorSuccess array1000)]
-     -- , bgroup
-     --     "renameText"
-     --     [bench "medium array" (nf renameTextUpToErrorSuccess array1000)]
-     , bgroup
-         "generateText"
-         [bench "medium array" (nf generateTextUpToErrorSuccess array1000)]
-      , bgroup
-         "solveText"
-         [bench "array[1000] SIG" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                            RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array1000Sig)))]
-     , bgroup
-         "solveText"
-         [bench "array[1000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array1000)))]
-    , bgroup
-        "solveText"
-        [bench "array[2000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                       RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array2000)))]
-     , bgroup
-         "solveText"
-         [bench "array[4000]" (nfIO (do ref <- newSomeRef 0;binds <- newSomeRef mempty
-                                        RIO.runRIO (SolveReader {glogfunc = mempty, counter = ref,binds}) (solveTextUpToErrorSuccess array4000)))]
-     -- , bgroup
-     --     "generaliseText"
-     --     [bench "medium array" (nf generaliseTextUpToErrorSuccess mediumArray)]
-     -- , bgroup
-     --     "resolveText"
-     --     [bench "medium array" (nf resolveTextUpToErrorSuccess mediumArray)]
-     -- , bgroup
-     --     "loadDocument"
-     --     [ bench
-     --         "medium array"
-     --         (nf
-     --            loadDocumentUpToErrorSuccess
-     --            [ Named
-     --                { uuid = Uuid u1
-     --                , name = "x"
-     --                , thing = mediumArray
-     --                , order = 0
-     --                , code = mediumArray
-     --                }
-     --            ])
-     --     ]
-     ])
-
--- nextRandom' :: IO Text
--- nextRandom' = fmap UUID.toText nextRandom
-
--- loadDocumentUpToErrorSuccess :: [Named Text] -> Toposorted (Named (Either () ()))
--- loadDocumentUpToErrorSuccess = fmap (fmap (first undefined . second (const ()))) . loadDocument
+  when
+    True
+    (defaultMain
+       [ bgroup
+           "parseText"
+           [ bench "array[1000]" (nf parseTextUpToErrorSuccess array1000)
+           , bench "array[2000]" (nf parseTextUpToErrorSuccess array2000)
+           , bench "array[4000]" (nf parseTextUpToErrorSuccess array4000)
+           ]
+       , bgroup
+           "generateText"
+           [ bench "array[1000]" (nf generateTextUpToErrorSuccess array1000)
+           , bench "array[2000]" (nf generateTextUpToErrorSuccess array2000)
+           , bench "array[4000]" (nf generateTextUpToErrorSuccess array4000)
+           ]
+       , bgroup
+           "solveText"
+           [ bench
+             ("array[" <> show n <> "] SIG")
+             (nfIO
+                (do ref <- newSomeRef 0
+                    binds <- newSomeRef mempty
+                    RIO.runRIO
+                      (SolveReader {glogfunc = mempty, counter = ref, binds})
+                      (solveTextUpToErrorSuccess array)))
+           | (n, array) <- [(1000 :: Int, array1000)]
+           ]
+       ])
 
 parseTextUpToErrorSuccess :: Text -> Either () ()
 parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
-
--- renameTextUpToErrorSuccess :: Text -> Either () ()
--- renameTextUpToErrorSuccess = first (const ()) . second (const ()) . renameText ""
 
 solveTextUpToErrorSuccess :: Text -> RIO SolveReader (Either () ())
 solveTextUpToErrorSuccess = fmap (bimap (const ()) (const ())) . solveText mempty ""
 
 generateTextUpToErrorSuccess :: Text -> Either () ()
 generateTextUpToErrorSuccess = bimap (const ()) (const ())  . generateText mempty ""
-
--- generaliseTextUpToErrorSuccess :: Text -> Either () ()
--- generaliseTextUpToErrorSuccess = first (const ()) . second (const ()) . generaliseText mempty ""
-
--- resolveTextUpToErrorSuccess :: Text -> Either () ()
--- resolveTextUpToErrorSuccess = first (const ()) . second (const ()) . resolveText mempty ""
