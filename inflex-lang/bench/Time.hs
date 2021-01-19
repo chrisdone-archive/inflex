@@ -10,6 +10,7 @@ import           Gauge.Main
 import           Inflex.Generator
 import           Inflex.Instances ()
 import           Inflex.Parser
+import           Inflex.Resolver
 import           Inflex.Solver
 import qualified RIO
 import           RIO (newSomeRef, RIO)
@@ -81,8 +82,18 @@ main = do
                     RIO.runRIO
                       (SolveReader {glogfunc = mempty, counter = ref, binds})
                       (solveTextUpToErrorSuccess array)))
-           | (n, array) <- [(1000 :: Int, array1000)]
+           | (n, array) <- [(1000 :: Int, array1000),(1000 :: Int, array4000)]
            ]
+       ,  bgroup
+            "resolveText"
+            [ bench
+              ("array[" <> show n <> "] SIG")
+              (nfIO
+                 (do RIO.runRIO
+                       ResolveReader
+                       (resolveTextUpToErrorSuccess array)))
+            | (n, array) <- [(1000 :: Int, array1000),(1000 :: Int, array4000)]
+            ]
        ])
 
 parseTextUpToErrorSuccess :: Text -> Either () ()
@@ -90,6 +101,13 @@ parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
 
 solveTextUpToErrorSuccess :: Text -> RIO SolveReader (Either () ())
 solveTextUpToErrorSuccess = fmap (bimap (const ()) (const ())) . solveText mempty ""
+
+
+resolveTextUpToErrorSuccess ::
+     Text
+  -> RIO ResolveReader (Either () ())
+resolveTextUpToErrorSuccess =
+  fmap (bimap (const ()) (const ())) . resolveText mempty ""
 
 generateTextUpToErrorSuccess :: Text -> Either () ()
 generateTextUpToErrorSuccess = bimap (const ()) (const ())  . generateText mempty ""
