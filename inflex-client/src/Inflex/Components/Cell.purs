@@ -154,6 +154,20 @@ toEditor =
                         fields
                 })
              rows)
+    Shared.TableTreeMaybe2 _ originalSource columns rows ->
+      Editor.TableE
+        originalSource
+        columns
+        (map (\mrow ->
+                case mrow of
+                  Shared.HoleRow -> Editor.HoleRow
+                  Shared.SomeRow (Shared.Row {source, fields}) -> Editor.Row
+                        { original: source
+                        , fields:
+                            map (\(Shared.Field2{key,value}) -> Editor.Field {key,value: toEditor value})
+                                fields
+                        })
+             rows)
 
 --------------------------------------------------------------------------------
 -- Query

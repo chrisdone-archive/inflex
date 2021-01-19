@@ -173,9 +173,14 @@ data Tree2
   | VegaTree2 Version2 OriginalSource Text
   | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
+  | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument
+
+data MaybeRow
+  = SomeRow Row
+  | HoleRow
 
 data Row = Row
  { source :: OriginalSource
@@ -513,6 +518,11 @@ derive instance genericVariantArgument :: Generic VariantArgument _
 instance showVariantArgument :: Show VariantArgument where show = genericShow
 instance decodeVariantArgument :: Decode VariantArgument where decode = genericDecode opts
 instance encodeVariantArgument :: Encode VariantArgument where encode = genericEncode opts
+
+derive instance genericMaybeRow :: Generic MaybeRow _
+instance showMaybeRow :: Show MaybeRow where show = genericShow
+instance decodeMaybeRow :: Decode MaybeRow where decode = genericDecode opts
+instance encodeMaybeRow :: Encode MaybeRow where encode = genericEncode opts
 
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow

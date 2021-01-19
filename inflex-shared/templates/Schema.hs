@@ -322,6 +322,12 @@ deriving instance Show NestedCellError
 instance ToJSON NestedCellError
 instance FromJSON NestedCellError
 
+instance NFData MaybeRow
+deriving instance Generic MaybeRow
+deriving instance Show MaybeRow
+instance ToJSON MaybeRow
+instance FromJSON MaybeRow
+
 instance NFData VariantArgument
 deriving instance Generic VariantArgument
 deriving instance Show VariantArgument

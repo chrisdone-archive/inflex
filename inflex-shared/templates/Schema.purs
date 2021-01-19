@@ -231,6 +231,11 @@ instance showVariantArgument :: Show VariantArgument where show = genericShow
 instance decodeVariantArgument :: Decode VariantArgument where decode = genericDecode opts
 instance encodeVariantArgument :: Encode VariantArgument where encode = genericEncode opts
 
+derive instance genericMaybeRow :: Generic MaybeRow _
+instance showMaybeRow :: Show MaybeRow where show = genericShow
+instance decodeMaybeRow :: Decode MaybeRow where decode = genericDecode opts
+instance encodeMaybeRow :: Encode MaybeRow where encode = genericEncode opts
+
 derive instance genericInputCell :: Generic InputCell _
 instance showInputCell :: Show InputCell where show = genericShow
 instance decodeInputCell :: Decode InputCell where decode = genericDecode opts

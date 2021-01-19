@@ -66,7 +66,7 @@ toTree original =
   \case
     ArrayExpression Array {typ, expressions} -- Recognize a table.
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
-        Shared.TableTree2
+        Shared.TableTreeMaybe2
           Shared.versionRefl
           originalSource
           (V.fromList (map (\Field {name = FieldName text} -> text) fields))
@@ -77,7 +77,7 @@ toTree original =
                       RecordExpression Record {fields = fieldEs} ->
                         let arrayItem = atIndex rowIndex originalArray
                             originalRecord = inRecord arrayItem
-                         in Shared.Row
+                         in Shared.SomeRow $ Shared.Row
                               { source = originalSource' arrayItem
                               , fields =
                                   V.imap
@@ -98,23 +98,7 @@ toTree original =
                                          })
                                     (V.fromList fieldEs)
                               }
-                      _ ->
-                        Shared.Row
-                          { source = Shared.NoOriginalSource
-                          , fields =
-                              V.map
-                                (\Field {name = FieldName key} ->
-                                   Shared.Field2
-                                     { key
-                                     , version = Shared.versionRefl
-                                     , value =
-                                         Shared.MiscTree2
-                                           Shared.versionRefl
-                                           Shared.NoOriginalSource
-                                           "_"
-                                     })
-                                (V.fromList fields)
-                          })
+                      _ -> Shared.HoleRow)
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2

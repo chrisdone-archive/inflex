@@ -179,9 +179,14 @@ data Tree2
   | VegaTree2 Version2 OriginalSource Text
   | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
+  | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument
+
+data MaybeRow
+  = SomeRow Row
+  | HoleRow
 
 data Row = Row
  { source :: OriginalSource
@@ -604,6 +609,12 @@ deriving instance Generic NestedCellError
 deriving instance Show NestedCellError
 instance ToJSON NestedCellError
 instance FromJSON NestedCellError
+
+instance NFData MaybeRow
+deriving instance Generic MaybeRow
+deriving instance Show MaybeRow
+instance ToJSON MaybeRow
+instance FromJSON MaybeRow
 
 instance NFData VariantArgument
 deriving instance Generic VariantArgument

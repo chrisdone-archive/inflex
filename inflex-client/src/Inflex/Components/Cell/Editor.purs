@@ -137,7 +137,8 @@ type Slots i =
   , textEditor :: H.Slot i String Unit
   )
 
-newtype Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
+data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
+         | HoleRow
 derive instance genericRow :: Generic Row _
 instance showRow :: Show Row where show x = genericShow x
 
@@ -474,7 +475,7 @@ renderTableEditor path columns rows =
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow path) rows <>
+          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow columns path) rows <>
            addNewRow)
       ]
   ]
@@ -526,13 +527,73 @@ renderTableEditor path columns rows =
         disabled = Array.null columns
     fieldset = Set.fromFoldable columns
 
+originateFromField :: Array String -> String -> String -> String
+originateFromField columns key code =
+  "{" <>
+  joinWith
+    ", "
+    (map
+       (\column ->
+          show column -- TOOD: Make not bad. Fix this. Use JSON encode.
+           <> ": " <>
+          if column == key
+            then code
+            else "_")
+       columns) <>
+  "}"
+
 tableRow ::
      forall a. MonadEffect a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Array String
+  -> (Shared.DataPath -> Shared.DataPath)
   -> Int
   -> Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow path rowIndex (Row {original, fields}) =
+tableRow columns path rowIndex HoleRow =
+  HH.tr
+    []
+    ([rowNumber] <>
+     mapWithIndex
+       (\fieldIndex key ->
+          let editor' = MiscE Shared.NoOriginalSource "_"
+           in HH.td
+                [HP.class_ (HH.ClassName "table-datum-value")]
+                [ HH.slot
+                    (SProxy :: SProxy "editor")
+                    (show rowIndex <> "/" <> show fieldIndex)
+                    component
+                    (EditorAndCode
+                       { editor: editor'
+                       , code: editorCode editor'
+                       , path:
+                           path <<<
+                           Shared.DataElemOf rowIndex <<<
+                           Shared.DataFieldOf fieldIndex
+                       })
+                    (\output ->
+                       case output of
+                         UpdatePath update -> Just (TriggerUpdatePath update)
+                         NewCode rhs ->
+                           Just
+                             (TriggerUpdatePath
+                                (Shared.UpdatePath
+                                   { path:
+                                       path
+                                         (Shared.DataElemOf
+                                            rowIndex
+                                            Shared.DataHere)
+                                   , update:
+                                       Shared.CodeUpdate
+                                         (Shared.Code {text: originateFromField columns key rhs})
+                                   })))
+                ])
+       columns <>
+     [addColumnBlank])
+  where
+    addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
+    rowNumber =
+      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
+tableRow _ path rowIndex (Row {fields}) =
   HH.tr
     []
     ([rowNumber] <>
@@ -972,8 +1033,9 @@ editorCode =
            (ArrayE
               original
               (map
-                 (\(Row {original: o, fields}) ->
-                    RecordE o fields)
+                 (case _ of
+                    Row {original: o,fields} -> RecordE o fields
+                    HoleRow -> MiscE Shared.NoOriginalSource "_")
                  rows)))
 
 -- | Add a type signature if the rows are empty.
