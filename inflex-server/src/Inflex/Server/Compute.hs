@@ -98,7 +98,23 @@ toTree original =
                                          })
                                     (V.fromList fieldEs)
                               }
-                      p -> error ("TODO: resolve this: " ++ show p))
+                      _ ->
+                        Shared.Row
+                          { source = Shared.NoOriginalSource
+                          , fields =
+                              V.map
+                                (\Field {name = FieldName key} ->
+                                   Shared.Field2
+                                     { key
+                                     , version = Shared.versionRefl
+                                     , value =
+                                         Shared.MiscTree2
+                                           Shared.versionRefl
+                                           Shared.NoOriginalSource
+                                           "_"
+                                     })
+                                (V.fromList fields)
+                          })
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
