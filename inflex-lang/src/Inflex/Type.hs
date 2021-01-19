@@ -247,7 +247,7 @@ functionScheme location =
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     AndFunction -> mono (ArrayType boolT .-> boolT)
     OrFunction -> mono (ArrayType boolT .-> integerT)
-    SumFunction -> mono (ArrayType a .-> a)
+    SumFunction -> poly [addable a] (ArrayType a .-> maybeType location a)
     MinimumFunction -> mono (ArrayType a .-> a)
     MaximumFunction -> mono (ArrayType a .-> a)
     AverageFunction -> mono (ArrayType a .-> a)
@@ -261,9 +261,14 @@ functionScheme location =
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
     comparable t = ClassConstraint {className = CompareClassName, typ = pure t, location}
+    addable t = ClassConstraint {className = AddOpClassName, typ = pure t, location}
     a = typeVariable 0
     b = typeVariable 1
     typeVariable index =
       VariableType
         (TypeVariable
            {location = (), prefix = (), index = index, kind = TypeKind})
+
+-- TODO: implement properly
+binOpType :: NumericBinOp -> Type Generalised
+binOpType _ = nullType BuiltIn

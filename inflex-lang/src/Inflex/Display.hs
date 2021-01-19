@@ -122,7 +122,10 @@ instance Display (Number Resolved) where
   display (Number {number}) = display number
 
 instance Display (Lambda Resolved) where
-  display Lambda{body} = "(\\ -> " <> display body <> ")"
+  display Lambda{location,body} =
+    case location of
+      ImplicitArgumentFor {} -> display body
+      _ -> ":" <> display body
 
 instance Display (Variable Resolved) where
   display Variable{name} = "$" <> displayShow (coerce (deBrujinIndexNesting name) :: Int)
@@ -164,7 +167,7 @@ instance Display (Apply Resolved) where
           Apply { function = GlobalExpression Global {name = FromIntegerGlobal}
                 , argument = LiteralExpression {}
                 } -> display argument
-          _ -> displayApply display apply
+          _ -> displayApplyResolved apply
 
 --------------------------------------------------------------------------------
 -- Renamed
@@ -262,7 +265,7 @@ instance Display (Number Renamed) where
   display (Number {number}) = display number
 
 instance Display (Lambda Renamed) where
-  display Lambda{body} = "(\\ -> " <> display body <> ")"
+  display Lambda{param=_,body} = "(:" <> display body <> ")"
 
 instance Display (Variable Renamed) where
   display Variable{name} = "$" <> displayShow (coerce (deBrujinIndexNesting name) :: Int)
@@ -540,6 +543,16 @@ displayApply display' apply =
   mconcat (intersperse ", " (map display' arguments)) <>
   ")"
   where (function, arguments) = uncurryApplies apply
+
+displayApplyResolved :: Apply Resolved -> Utf8Builder
+displayApplyResolved apply =
+  display function <> "(" <>
+  mconcat (intersperse ", " (map display arguments)) <>
+  ")"
+  where (function, arguments0) = uncurryApplies apply
+        arguments = filter (\e -> case expressionLocation e of
+                                    ImplicitArgumentFor{} -> False
+                                    _ -> True) arguments0
 
 uncurryApplies :: Apply s -> (Expression s, [Expression s])
 uncurryApplies Apply {function, argument} =

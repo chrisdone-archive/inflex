@@ -284,7 +284,24 @@ functions =
                 "null([1,2,3])"
                 (shouldReturn
                    (stepDefaultedTextly "null([1,2,3])")
-                   (Right "#false"))))
+                   (Right "#false")))
+        describe
+          "sum"
+          (do it
+                "sum([1,2,3])"
+                (shouldReturn
+                   (stepDefaultedTextly "sum([1,2,3])")
+                   (Right "#some(6)"))
+              it
+                "sum(filter(x:x>5,[1,2,3]))"
+                (shouldReturn
+                   (stepDefaultedTextly "sum(filter(x:x>5,[1,2,3]))")
+                   (Right "#none"))
+              it
+                "sum([])"
+                (shouldReturn
+                   (stepDefaultedTextly "sum([])")
+                   (Right "sum([])"))))
 
 if' :: SpecWith ()
 if' =

@@ -393,7 +393,8 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                  case reifyBool bool of
                    Just True -> pure (Just arrayItem')
                    Just False -> pure Nothing
-                   Nothing -> pure (Just (holeExpression (expressionType arrayItem))))
+                   Nothing ->
+                     pure (Just (holeExpression (expressionType arrayItem))))
               expressions
           stepped' <- get
           case stepped' of
@@ -407,7 +408,43 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                      , expressions = (V.mapMaybe id expressions')
                      })
         _ -> error "Invalid argument to function."
-    _ -> error "bad arity"
+    SumFunction ->
+      case argument' of
+        ArrayExpression Array {expressions, typ = ArrayType ty} ->
+          let loop nil [] =
+                case nil of
+                  Nothing -> pure (noneVariant ty)
+                  Just thing -> pure (someVariant ty thing)
+              loop nil (e:es) =
+                case nil of
+                  Nothing -> loop (Just e) es
+                  Just acc -> do
+                    nil' <-
+                      stepInfix
+                        Infix
+                          { location = BuiltIn
+                          , global =
+                              ApplyExpression
+                                Apply
+                                  { function =
+                                      GlobalExpression
+                                        Global
+                                          { location = BuiltIn
+                                          , name = NumericBinOpGlobal AddOp
+                                          , scheme = ResolvedScheme (binOpType AddOp)
+                                          }
+                                  , argument = functionExpression
+                                  , location = BuiltIn
+                                  , typ = binOpType AddOp
+                                  }
+                          , left = acc
+                          , right = e
+                          , typ = maybeType BuiltIn ty
+                          }
+                    loop (Just nil') es
+           in loop Nothing (V.toList expressions) -- TODO: don't toList it.
+        _ -> error "Invalid argument to function."
+    _ -> error "TODO: Missing function implementation!"
 
 --------------------------------------------------------------------------------
 -- Infix stepper

@@ -51,3 +51,26 @@ moreVariant :: StagedLocation Resolved -> Expression Resolved
 moreVariant location =
   VariantExpression
     Variant {location, typ = boolType location, tag = TagName ">", argument = Nothing}
+
+--------------------------------------------------------------------------------
+-- Option
+
+noneVariant :: StagedType Resolved -> Expression Resolved
+noneVariant ty =
+  VariantExpression
+    Variant
+      { location = BuiltIn
+      , typ = maybeType BuiltIn ty
+      , tag = TagName "none"
+      , argument = Nothing
+      }
+
+someVariant :: StagedType Resolved -> Expression Resolved -> Expression Resolved
+someVariant ty thing =
+  VariantExpression
+    Variant
+      { location = BuiltIn
+      , typ = maybeType BuiltIn ty
+      , tag = TagName "some"
+      , argument = Just thing
+      }
