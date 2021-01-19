@@ -301,7 +301,17 @@ functions =
                 "sum([])"
                 (shouldReturn
                    (stepDefaultedTextly "sum([])")
-                   (Right "sum([])"))))
+                   (Right "sum([])"))
+              it
+                "sum(map(x:x.p,[{p:1},{p:2}]))"
+                (shouldReturn
+                   (stepDefaultedTextly "sum(map(x:x.p,[{p:1},{p:2}]))")
+                   (Right "#some(3)"))
+              it
+                "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+                (shouldReturn
+                   (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+                   (Right "#some(3)"))))
 
 if' :: SpecWith ()
 if' =
