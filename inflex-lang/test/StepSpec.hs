@@ -311,7 +311,7 @@ functions =
                 "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#some(3)"))))
+                   (Right "#some(-1.2)"))))
 
 if' :: SpecWith ()
 if' =
