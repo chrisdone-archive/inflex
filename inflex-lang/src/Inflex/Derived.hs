@@ -9,4 +9,4 @@ import Inflex.Derived.TH
 import Inflex.Types
 
 nullFunction :: Expression Resolved
-nullFunction = $(compile "list: length(list) = 0")
+nullFunction = $(compile "list: length(list) = (0::Integer)")

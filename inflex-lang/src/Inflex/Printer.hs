@@ -30,8 +30,7 @@ import           Inflex.Types
 import qualified RIO
 import           RIO (displayBytesUtf8, displayShow, Utf8Builder)
 
-{-# NOINLINE tracePrinter #-}
-{-# DEPRECATED tracePrinter "Debugging mode only." #-}
+{-# INLINE tracePrinter #-}
 tracePrinter :: Printer a1 => a1 -> a2 -> a2
 tracePrinter e = trace (L8.unpack (SB.toLazyByteString (RIO.getUtf8Builder (printer e))))
 

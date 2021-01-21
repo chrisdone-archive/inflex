@@ -86,7 +86,9 @@ stepTextRepl text = do
   output <- RIO.runRIO StepReader (stepTextDefaulted mempty mempty "" text)
   case output of
     Left e -> print (e :: DefaultStepError ())
-    Right e -> L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
+    Right e -> do
+      putStrLn "=>"
+      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
 
 stepText ::
      Map Hash (Either e (Scheme Polymorphic))
@@ -138,7 +140,7 @@ stepDefaulted values Cell{defaulted} = pure (do
 stepExpression ::
      Expression Resolved
   -> Step e (Expression Resolved)
-stepExpression expression = tracePrinter expression (do
+stepExpression expression =  (do
    stepped <- get
    case stepped of
      Stepped -> pure expression
@@ -193,7 +195,9 @@ stepArray Array {..} = do
 
 stepVariant :: Variant Resolved -> Step e (Expression Resolved)
 stepVariant Variant {..} = do
+  -- trace ("stepVariant: " <> show argument) (pure ())
   argument' <- traverse stepExpression argument
+  -- trace ("stepVariant => " <> show argument') (pure ())
   pure (VariantExpression Variant {argument = argument', ..})
 
 stepIf :: If Resolved -> Step e (Expression Resolved)
@@ -250,70 +254,253 @@ stepApply :: Apply Resolved -> Step e (Expression Resolved)
 stepApply Apply {..} = do
   function' <- stepExpression function
   argument' <- stepExpression argument
+  let apply' = Apply {function = function', argument = argument', ..}
+  -- tracePrinter (apply') (pure ())
   stepped <- get
   case stepped of
-    Stepped ->
-      pure
-        (ApplyExpression Apply {function = function', argument = argument', ..})
-    Continue -> do
-      case function' of
-        LambdaExpression Lambda {body} -> do
-          body' <- betaReduce body argument'
-          stepExpression body'
-        GlobalExpression (Global {name = FunctionGlobal func})
-          | elem func [LengthFunction, NullFunction] ->
-            stepFunction1 typ func argument'
-        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
-                              , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
-                              }
-          | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
-             argument' -> pure argument'
-        ApplyExpression Apply { function = GlobalExpression (Global {name = FromDecimalGlobal})
-                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromDecimalDecimalInstance fromDecimalInstance))})
-                              }
-          | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
-                                                     , typ = typ'
-                                                     })) <- argument' -> do
-            decimal' <- fromDecimalStep fromDecimalInstance decimal
-            pure
-              (LiteralExpression
-                 (NumberLiteral
-                    (Number {number = DecimalNumber decimal', typ = typ', ..})))
-        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
-                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromIntegerDecimalInstance supersetPlaces))})
-                              }
-          | LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
-                                                     , typ = typ'
-                                                     })) <- argument' -> do
-            pure
-              (LiteralExpression
-                 (NumberLiteral
-                    (Number
-                       { number =
-                           DecimalNumber
-                             (decimalFromInteger integer supersetPlaces)
-                       , typ = typ'
-                       , ..
-                       })))
-        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
-                              , argument = functionExpression
-                              , location = applyLocation
-                              }
-          | functionName `elem` [MapFunction, FilterFunction, SumFunction] ->
-            stepFunction2
-              functionName
-              argument'
-              functionExpression
-              location
-              applyLocation
-              typ
-        _ ->
-          pure
-            (ApplyExpression
-               Apply {function = function', argument = argument', ..})
+    Stepped -> pure (ApplyExpression apply')
+    Continue ->
+      case apply' of
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = fromIntegerOp
+                                                 , typ = fromIntegerApplyType
+                                                 , function = ApplyExpression Apply { argument = divideOp
+                                                                                    , typ = divideOpTyp
+                                                                                    , function = ApplyExpression Apply { argument = addOp
+                                                                                                                       , typ = addOpType
+                                                                                                                       , function = GlobalExpression Global {name = FunctionGlobal AverageFunction}
+                                                                                                                       }
+                                                                                    }
+                                                 }
+              } ->
+          stepAverage
+            (list, listApplyType)
+            (addOp, addOpType)
+            (divideOp, divideOpTyp)
+            (fromIntegerOp, fromIntegerApplyType)
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = fromIntegerOp
+                                                 , typ = fromIntegerApplyType
+                                                 , function = GlobalExpression Global {name = FunctionGlobal LengthFunction}
+                                                 }
+              } ->
+          stepLength
+            (list, listApplyType)
+            (fromIntegerOp, fromIntegerApplyType)
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = fromIntegerOp
+                                                 , typ = fromIntegerApplyType
+                                                 , function = ApplyExpression Apply { argument = addOp
+                                                                                    , typ = addOpType
+                                                                                    , function = GlobalExpression Global {name = FunctionGlobal SumFunction}
+                                                                                    }
+                                                 }
+              } ->
+          stepSum
+            (list, listApplyType)
+            (addOp, addOpType)
+            (fromIntegerOp, fromIntegerApplyType)
+        _ -> do
+          case function' of
+            LambdaExpression Lambda {body} -> do
+              body' <- betaReduce body argument'
+              stepExpression body'
+            GlobalExpression (Global {name = FunctionGlobal func})
+              | elem func [NullFunction] ->
+                stepFunction1 typ func argument'
+            ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                                  , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
+                                  }
+              | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
+                 argument' -> pure argument'
+            ApplyExpression Apply { function = GlobalExpression (Global {name = FromDecimalGlobal})
+                                  , argument = GlobalExpression (Global {name = (InstanceGlobal (FromDecimalDecimalInstance fromDecimalInstance))})
+                                  }
+              | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
+                                                         , typ = typ'
+                                                         })) <- argument' -> do
+                decimal' <- fromDecimalStep fromDecimalInstance decimal
+                pure
+                  (LiteralExpression
+                     (NumberLiteral
+                        (Number
+                           {number = DecimalNumber decimal', typ = typ', ..})))
+            ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                                  , argument = GlobalExpression (Global {name = (InstanceGlobal (FromIntegerDecimalInstance supersetPlaces))})
+                                  }
+              | LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
+                                                         , typ = typ'
+                                                         })) <- argument' -> do
+                pure
+                  (LiteralExpression
+                     (NumberLiteral
+                        (Number
+                           { number =
+                               DecimalNumber
+                                 (decimalFromInteger integer supersetPlaces)
+                           , typ = typ'
+                           , ..
+                           })))
+            ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
+                                  , argument = functionExpression
+                                  , location = applyLocation
+                                  }
+              | functionName `elem` [MapFunction, FilterFunction] ->
+                stepFunction2
+                  functionName
+                  argument'
+                  functionExpression
+                  location
+                  applyLocation
+                  typ
+            _ ->
+              pure
+                (ApplyExpression
+                   Apply {function = function', argument = argument', ..})
 
 --------------------------------------------------------------------------------
 -- Function stepper
+
+stepAverage ::
+     (Array Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> Step e (Expression Resolved)
+stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) fromInt =
+  loop Nothing (V.toList expressions)
+  where
+    loop nil [] =
+      case nil of
+        Nothing -> pure (noneVariant listApplyType)
+        Just total -> do
+          lenE <- stepLength list fromInt
+          avgE <-
+            stepInfix
+              Infix
+                { location = BuiltIn
+                , global =
+                    ApplyExpression
+                      Apply
+                        { location = BuiltIn
+                        , typ = listApplyType -- The types here matter.
+                        , function =
+                            GlobalExpression
+                              Global
+                                { location = BuiltIn
+                                , scheme = ResolvedScheme (binOpType DivideOp)
+                                , name = NumericBinOpGlobal DivideOp
+                                }
+                        , argument = divideOp
+                        }
+                , left = total
+                , right = lenE
+                , typ = listApplyType
+                }
+          pure (someVariant listApplyType avgE)
+    loop nil (e:es) =
+      case nil of
+        Nothing -> loop (Just e) es
+        Just acc -> do
+          nil' <-
+            stepInfix
+              Infix
+                { location = BuiltIn
+                , global =
+                    ApplyExpression
+                      Apply
+                        { location = BuiltIn
+                        , typ = listApplyType -- The types here matter.
+                        , function =
+                            GlobalExpression
+                              Global
+                                { location = BuiltIn
+                                , scheme = ResolvedScheme (binOpType AddOp)
+                                , name = NumericBinOpGlobal AddOp
+                                }
+                        , argument = addOp
+                        }
+                , left = acc
+                , right = e
+                , typ = listApplyType
+                }
+          loop (Just nil') es
+
+stepLength ::
+     (Array Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> Step e (Expression Resolved)
+stepLength (Array {expressions}, listApplyType) (fromIntegerOp, _fromIntegerType) =
+  stepApply
+    Apply
+      { location = BuiltIn
+      , function =
+          ApplyExpression
+            Apply
+              { function =
+                  GlobalExpression
+                    (Global
+                       { location = BuiltIn
+                       , scheme = ResolvedScheme (nullType BuiltIn) -- TODO
+                       , name = FromIntegerGlobal
+                       })
+              , typ = listApplyType
+              , argument = fromIntegerOp
+              , location = BuiltIn
+              }
+      , typ = listApplyType
+      , argument =
+          LiteralExpression
+            (NumberLiteral
+               Number
+                 { number = IntegerNumber (fromIntegral (V.length expressions))
+                 , location = SteppedCursor
+                 , typ = listApplyType
+                 })
+      }
+
+stepSum ::
+     (Array Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> (Expression Resolved, Type Generalised)
+  -> Step e (Expression Resolved)
+stepSum (Array {expressions}, listApplyType) (addOp, _addOpType) (_fromIntegerOp, _fromIntegerType) =
+  loop Nothing (V.toList expressions)
+  where
+    loop nil [] =
+      case nil of
+        Nothing -> pure (noneVariant listApplyType)
+        Just thing -> pure (someVariant listApplyType thing)
+    loop nil (e:es) =
+      case nil of
+        Nothing -> loop (Just e) es
+        Just acc -> do
+          nil' <-
+            stepInfix
+              Infix
+                { location = BuiltIn
+                , global =
+                    ApplyExpression
+                      Apply
+                        { location = BuiltIn
+                        , typ = listApplyType -- The types here matter.
+                        , function =
+                            GlobalExpression
+                              Global
+                                { location = BuiltIn
+                                , scheme = ResolvedScheme (binOpType AddOp)
+                                , name = NumericBinOpGlobal AddOp
+                                }
+                        , argument = addOp
+                        }
+                , left = acc
+                , right = e
+                , typ = listApplyType
+                }
+          loop (Just nil') es
 
 stepFunction1 ::
      Type Generalised
@@ -322,19 +509,6 @@ stepFunction1 ::
   -> Step e (Expression Resolved)
 stepFunction1 returnType func argument =
   case func of
-    LengthFunction ->
-      case argument of
-        ArrayExpression Array {expressions} -> do
-          pure
-            (LiteralExpression
-               (NumberLiteral
-                  Number
-                    { number =
-                        IntegerNumber (fromIntegral (V.length expressions))
-                    , location = SteppedCursor
-                    , typ = returnType
-                    }))
-        _ -> error "Invalid argument to function."
     NullFunction ->
       do result <- stepApply
            Apply
@@ -419,42 +593,6 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                      , location = applyLocation
                      , expressions = (V.mapMaybe id expressions')
                      })
-        _ -> error "Invalid argument to function."
-    SumFunction ->
-      case argument' of
-        ArrayExpression Array {expressions, typ = ArrayType ty} ->
-          let loop nil [] =
-                case nil of
-                  Nothing -> pure (noneVariant ty)
-                  Just thing -> pure (someVariant ty thing)
-              loop nil (e:es) =
-                case nil of
-                  Nothing -> loop (Just e) es
-                  Just acc -> do
-                    nil' <-
-                      stepInfix
-                        Infix
-                          { location = BuiltIn
-                          , global =
-                              ApplyExpression
-                                Apply
-                                  { function =
-                                      GlobalExpression
-                                        Global
-                                          { location = BuiltIn
-                                          , name = NumericBinOpGlobal AddOp
-                                          , scheme = ResolvedScheme (binOpType AddOp)
-                                          }
-                                  , argument = functionExpression
-                                  , location = BuiltIn
-                                  , typ = binOpType AddOp
-                                  }
-                          , left = acc
-                          , right = e
-                          , typ = maybeType BuiltIn ty
-                          }
-                    loop (Just nil') es
-           in loop Nothing (V.toList expressions) -- TODO: don't toList it.
         _ -> error "Invalid argument to function."
     _ -> error "TODO: Missing function implementation!"
 

@@ -55,8 +55,7 @@ suggestTypeConstant =
   traverse suggestedConstant . toList
   where
     suggestedConstant ::
-         ClassConstraint s
-      -> Identity (Maybe (Natural, Type Polymorphic))
+         ClassConstraint s -> Identity (Maybe (Natural, Type Polymorphic))
     suggestedConstant =
       \case
         ClassConstraint {className = FromIntegerClassName} ->

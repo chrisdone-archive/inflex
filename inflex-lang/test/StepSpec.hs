@@ -276,10 +276,20 @@ functions =
         describe
           "length"
           (do it
+                "length([])"
+                (shouldReturn
+                   (stepDefaultedTextly "length([])")
+                   (Right "0"))
+              it
                 "length([1,2,3])"
                 (shouldReturn
                    (stepDefaultedTextly "length([1,2,3])")
                    (Right "3"))
+              it
+                "null([])"
+                (shouldReturn
+                   (stepDefaultedTextly "null([])")
+                   (Right "#true"))
               it
                 "null([1,2,3])"
                 (shouldReturn
@@ -301,7 +311,7 @@ functions =
                 "sum([])"
                 (shouldReturn
                    (stepDefaultedTextly "sum([])")
-                   (Right "sum([])"))
+                   (Right "#none"))
               it
                 "sum(map(x:x.p,[{p:1},{p:2}]))"
                 (shouldReturn
@@ -311,7 +321,39 @@ functions =
                 "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#some(-1.2)"))))
+                   (Right "#some(-1.2)")))
+        describe
+          "average"
+          (do it
+                "average([24 , 55 , 17 , 87 , 100])"
+                (shouldReturn
+                   (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100])")
+                   (Right "#some(56)"))
+              it
+                "average([24 , 55 , 17 , 87 , 100.0])"
+                (shouldReturn
+                   (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100.0])")
+                   (Right "#some(56.6)"))
+              it
+                "average(filter(x:x>5,[1,2,3]))"
+                (shouldReturn
+                   (stepDefaultedTextly "average(filter(x:x>5,[1,2,3]))")
+                   (Right "#none"))
+              it
+                "average([])"
+                (shouldReturn
+                   (stepDefaultedTextly "average([])")
+                   (Right "#none"))
+              it
+                "average(map(x:x.p,[{p:1},{p:2}]))"
+                (shouldReturn
+                   (stepDefaultedTextly "average(map(x:x.p,[{p:1},{p:2.0}]))")
+                   (Right "#some(1.5)"))
+              it
+                "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+                (shouldReturn
+                   (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+                   (Right "#some(-0.6)"))))
 
 if' :: SpecWith ()
 if' =

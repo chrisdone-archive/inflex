@@ -244,10 +244,10 @@ functionScheme location =
     VegaFunction -> mono (a .-> vegaT)
     MapFunction -> mono ((a .-> b) .-> ArrayType a .-> ArrayType b)
     FilterFunction -> mono ((a .-> boolT) .-> ArrayType a .-> ArrayType a)
-    SumFunction -> poly [addable a] (ArrayType a .-> maybeType location a)
-    LengthFunction -> mono (ArrayType a .-> integerT)
+    SumFunction -> poly [addable a, frominteger a] (ArrayType a .-> maybeType location a)
+    LengthFunction -> poly [frominteger a] (ArrayType a .-> a)
     NullFunction -> mono (ArrayType a .-> boolT)
-    AverageFunction -> poly [divisible a, addable a] (ArrayType a .-> maybeType location a)
+    AverageFunction -> poly [addable a, divisible a, frominteger a] (ArrayType a .-> maybeType location a)
     -- Not done yet:
     DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
@@ -265,6 +265,7 @@ functionScheme location =
     comparable t = ClassConstraint {className = CompareClassName, typ = pure t, location}
     addable t = ClassConstraint {className = AddOpClassName, typ = pure t, location}
     divisible t = ClassConstraint {className = DivideOpClassName, typ = pure t, location}
+    frominteger t = ClassConstraint {className = FromIntegerClassName, typ = pure t, location}
     a = typeVariable 0
     b = typeVariable 1
     typeVariable index =
