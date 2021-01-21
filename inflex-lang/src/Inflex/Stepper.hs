@@ -14,6 +14,8 @@ module Inflex.Stepper where
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Bifunctor
+import qualified Data.ByteString.Lazy.Builder as SB
+import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.Map.Strict (Map)
@@ -24,6 +26,7 @@ import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Derived
+import           Inflex.Printer
 import           Inflex.Renamer (patternParam)
 import           Inflex.Resolver
 import           Inflex.Type
@@ -77,6 +80,13 @@ newtype Step e a = Step
 data StepReader = StepReader
 
 -- TODO: Add a configuration with limits: number of steps, memory used, etc.
+
+stepTextRepl :: Text -> IO ()
+stepTextRepl text = do
+  output <- RIO.runRIO StepReader (stepTextDefaulted mempty mempty "" text)
+  case output of
+    Left e -> print (e :: DefaultStepError ())
+    Right e -> L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
 
 stepText ::
      Map Hash (Either e (Scheme Polymorphic))
