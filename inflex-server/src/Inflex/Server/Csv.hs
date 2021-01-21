@@ -121,7 +121,7 @@ optionalExpression (Just e) =
     Variant
       { location = SourceLocation {start = emptyPos, end = emptyPos}
       , typ = Nothing
-      , tag = TagName "some"
+      , tag = TagName "ok"
       , argument = Just e
       }
 

@@ -165,7 +165,7 @@ maybeType location a =
           { location
           , typeVariable = Nothing
           , fields =
-              [ Field {location, name = "some", typ = a}
+              [ Field {location, name = "ok", typ = a}
               , Field {location, name = "none", typ = nullType location}
               ]
           }))

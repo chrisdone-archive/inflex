@@ -301,7 +301,7 @@ functions =
                 "sum([1,2,3])"
                 (shouldReturn
                    (stepDefaultedTextly "sum([1,2,3])")
-                   (Right "#some(6)"))
+                   (Right "#ok(6)"))
               it
                 "sum(filter(x:x>5,[1,2,3]))"
                 (shouldReturn
@@ -316,24 +316,24 @@ functions =
                 "sum(map(x:x.p,[{p:1},{p:2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "sum(map(x:x.p,[{p:1},{p:2}]))")
-                   (Right "#some(3)"))
+                   (Right "#ok(3)"))
               it
                 "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#some(-1.2)")))
+                   (Right "#ok(-1.2)")))
         describe
           "average"
           (do it
                 "average([24 , 55 , 17 , 87 , 100])"
                 (shouldReturn
                    (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100])")
-                   (Right "#some(56)"))
+                   (Right "#ok(56)"))
               it
                 "average([24 , 55 , 17 , 87 , 100.0])"
                 (shouldReturn
                    (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100.0])")
-                   (Right "#some(56.6)"))
+                   (Right "#ok(56.6)"))
               it
                 "average(filter(x:x>5,[1,2,3]))"
                 (shouldReturn
@@ -348,12 +348,12 @@ functions =
                 "average(map(x:x.p,[{p:1},{p:2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "average(map(x:x.p,[{p:1},{p:2.0}]))")
-                   (Right "#some(1.5)"))
+                   (Right "#ok(1.5)"))
               it
                 "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#some(-0.6)"))))
+                   (Right "#ok(-0.6)"))))
 
 if' :: SpecWith ()
 if' =
@@ -391,25 +391,25 @@ case' =
              (stepDefaultedTextly "case 2>1 { #true: 1, #false: 0 }")
              (Right "1"))
         it
-          "case #some(1) { #some(n): n, #none: 0 }"
+          "case #ok(1) { #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "case #some(1) { #some(n): n, #none: 0 }")
+             (stepDefaultedTextly "case #ok(1) { #ok(n): n, #none: 0 }")
              (Right "1"))
         it
-          "case #none { #some(n): n, #none: 0 }"
+          "case #none { #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "case #none { #some(n): n, #none: 0 }")
+             (stepDefaultedTextly "case #none { #ok(n): n, #none: 0 }")
              (Right "0"))
         it
-          "case #some(2*3) { #some(n): n, #none: 0 }"
+          "case #ok(2*3) { #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "case #some(2*3) { #some(n): n, #none: 0 }")
+             (stepDefaultedTextly "case #ok(2*3) { #ok(n): n, #none: 0 }")
              (Right "6"))
         -- This sneaky test checks that all the types unify properly and defaulting working:
         it
-          "case #some(2*3) { #some(n): n, #none: 0.0 } -- check unification"
+          "case #ok(2*3) { #ok(n): n, #none: 0.0 } -- check unification"
           (shouldReturn
-             (stepDefaultedTextly "case #some(2*3) { #some(n): n, #none: 0.0 }")
+             (stepDefaultedTextly "case #ok(2*3) { #ok(n): n, #none: 0.0 }")
              (Right "6.0"))
         it
           "nested cases"

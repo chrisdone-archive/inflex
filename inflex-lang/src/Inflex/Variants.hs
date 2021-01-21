@@ -71,6 +71,6 @@ someVariant ty thing =
     Variant
       { location = BuiltIn
       , typ = maybeType BuiltIn ty
-      , tag = TagName "some"
+      , tag = TagName "ok"
       , argument = Just thing
       }
