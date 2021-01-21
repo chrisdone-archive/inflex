@@ -240,19 +240,21 @@ functionOutput func =
 functionScheme :: Cursor -> Function -> Scheme Polymorphic
 functionScheme location =
   \case
+    -- Done ones:
     VegaFunction -> mono (a .-> vegaT)
     MapFunction -> mono ((a .-> b) .-> ArrayType a .-> ArrayType b)
     FilterFunction -> mono ((a .-> boolT) .-> ArrayType a .-> ArrayType a)
+    SumFunction -> poly [addable a] (ArrayType a .-> maybeType location a)
+    LengthFunction -> mono (ArrayType a .-> integerT)
+    NullFunction -> mono (ArrayType a .-> boolT)
+    AverageFunction -> poly [divisible a, addable a] (ArrayType a .-> maybeType location a)
+    -- Not done yet:
     DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     AndFunction -> mono (ArrayType boolT .-> boolT)
     OrFunction -> mono (ArrayType boolT .-> integerT)
-    SumFunction -> poly [addable a] (ArrayType a .-> maybeType location a)
-    MinimumFunction -> mono (ArrayType a .-> a)
-    MaximumFunction -> mono (ArrayType a .-> a)
-    AverageFunction -> mono (ArrayType a .-> a)
-    LengthFunction -> mono (ArrayType a .-> integerT)
-    NullFunction -> mono (ArrayType a .-> boolT)
+    MinimumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
+    MaximumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
     FindFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location a)
     LookupFunction -> undefined
     AllFunction -> mono ((a .-> boolT) .-> ArrayType a .-> boolT)
@@ -262,6 +264,7 @@ functionScheme location =
     poly p t = Scheme {location, constraints = p, typ = t}
     comparable t = ClassConstraint {className = CompareClassName, typ = pure t, location}
     addable t = ClassConstraint {className = AddOpClassName, typ = pure t, location}
+    divisible t = ClassConstraint {className = DivideOpClassName, typ = pure t, location}
     a = typeVariable 0
     b = typeVariable 1
     typeVariable index =

@@ -138,26 +138,26 @@ stepDefaulted values Cell{defaulted} = pure (do
 stepExpression ::
      Expression Resolved
   -> Step e (Expression Resolved)
-stepExpression expression = do
-  stepped <- get
-  case stepped of
-    Stepped -> pure expression
-    Continue ->
-      case expression of
-        ApplyExpression apply -> stepApply apply
-        PropExpression prop -> stepProp prop
-        ArrayExpression array -> stepArray array
-        VariantExpression variant -> stepVariant variant
-        RecordExpression record -> stepRecord record
-        InfixExpression infix' -> stepInfix infix'
-        IfExpression if' -> stepIf if'
-        CaseExpression case' -> stepCase case'
-        GlobalExpression global -> stepGlobal global
-        LiteralExpression {} -> pure expression
-        LambdaExpression {} -> pure expression
-        VariableExpression {} -> pure expression
-        HoleExpression {} -> pure expression
-        LetExpression {} -> pure expression
+stepExpression expression = tracePrinter expression (do
+   stepped <- get
+   case stepped of
+     Stepped -> pure expression
+     Continue ->
+       case expression of
+         ApplyExpression apply -> stepApply apply
+         PropExpression prop -> stepProp prop
+         ArrayExpression array -> stepArray array
+         VariantExpression variant -> stepVariant variant
+         RecordExpression record -> stepRecord record
+         InfixExpression infix' -> stepInfix infix'
+         IfExpression if' -> stepIf if'
+         CaseExpression case' -> stepCase case'
+         GlobalExpression global -> stepGlobal global
+         LiteralExpression {} -> pure expression
+         LambdaExpression {} -> pure expression
+         VariableExpression {} -> pure expression
+         HoleExpression {} -> pure expression
+         LetExpression {} -> pure expression)
 
 --------------------------------------------------------------------------------
 -- Records
@@ -257,11 +257,12 @@ stepApply Apply {..} = do
         (ApplyExpression Apply {function = function', argument = argument', ..})
     Continue -> do
       case function' of
-        LambdaExpression Lambda{body} -> do
+        LambdaExpression Lambda {body} -> do
           body' <- betaReduce body argument'
           stepExpression body'
-        GlobalExpression (Global {name = FunctionGlobal func}) | elem func [LengthFunction,NullFunction] ->
-          stepFunction1 typ func argument'
+        GlobalExpression (Global {name = FunctionGlobal func})
+          | elem func [LengthFunction, NullFunction] ->
+            stepFunction1 typ func argument'
         ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
                               , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
                               }
@@ -297,14 +298,15 @@ stepApply Apply {..} = do
         ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
                               , argument = functionExpression
                               , location = applyLocation
-                              } ->
-          stepFunction2
-            functionName
-            argument'
-            functionExpression
-            location
-            applyLocation
-            typ
+                              }
+          | functionName `elem` [MapFunction, FilterFunction, SumFunction] ->
+            stepFunction2
+              functionName
+              argument'
+              functionExpression
+              location
+              applyLocation
+              typ
         _ ->
           pure
             (ApplyExpression

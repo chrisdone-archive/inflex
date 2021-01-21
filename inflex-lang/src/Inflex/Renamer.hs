@@ -72,6 +72,7 @@ wiredInGlobals =
     , ("null", FunctionGlobal NullFunction)
     , ("vega", FunctionGlobal VegaFunction)
     , ("sum", FunctionGlobal SumFunction)
+    , ("average", FunctionGlobal AverageFunction)
     ]
 
 --------------------------------------------------------------------------------
