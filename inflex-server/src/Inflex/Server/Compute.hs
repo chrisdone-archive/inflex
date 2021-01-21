@@ -8,6 +8,7 @@
 
 module Inflex.Server.Compute where
 
+import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.List
 import           Data.Ord
@@ -18,7 +19,9 @@ import           Inflex.Display ()
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Renamer
+import qualified Inflex.Schema as OutputCell (OutputCell(..))
 import qualified Inflex.Schema as Shared
+import           Inflex.Server.Types.Sha256
 import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
@@ -45,21 +48,29 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
              (comparing (\Shared.OutputCell {order} -> order))
              (fmap
                 (\Named {uuid = Uuid uuid, name, thing, order, code} ->
-                   Shared.OutputCell
-                     { uuid = Shared.UUID uuid
-                     , result =
-                         either
-                           (Shared.ResultError . toCellError)
-                           (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
-                              Shared.ResultOk
-                                (Shared.ResultTree
-                                   (toTree (pure renamed) resultExpression)))
-                           thing
-                     , code
-                     , name
-                     , order
-                     })
+                   hashOutputCell (Shared.OutputCell
+                      { uuid = Shared.UUID uuid
+                      , hash = Shared.Hash mempty
+                      , result =
+                          either
+                            (Shared.ResultError . toCellError)
+                            (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
+                               Shared.ResultOk
+                                 (Shared.ResultTree
+                                    (toTree (pure renamed) resultExpression)))
+                            thing
+                      , code
+                      , name
+                      , order
+                      }))
                 (unToposorted topo)))))
+
+hashOutputCell :: Shared.OutputCell -> Shared.OutputCell
+hashOutputCell cell =
+  cell
+    { OutputCell.hash =
+        Shared.Hash (sha256AsHexText (sha256LazyByteString (Aeson.encode cell)))
+    }
 
 toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
 toTree original =

@@ -25,7 +25,7 @@ import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Schema as Shared
 import Inflex.FieldName (validFieldName)
-import Prelude (class Ord, class Show, Unit, bind, discard, identity, map, mempty, pure, show, unit, (-), (<<<), (<>), (>>=))
+import Prelude
 import Web.DOM.Node as Node
 import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
@@ -56,7 +56,7 @@ data State = State
   }
 
 data Command
-  = SetCell Cell
+  = SetCellFromInput Cell
   | CodeUpdate Cell
   | DeleteCell
   | DragStarted DragEvent'
@@ -81,6 +81,7 @@ data Cell = Cell
   { name :: String
   , code :: String
   , result :: Either Shared.CellError Editor.Editor
+  , hash :: String
   }
 
 derive instance genericCell :: Generic Cell _
@@ -105,16 +106,17 @@ component =
         H.mkEval
           H.defaultEval
             { handleAction = eval
-            , receive = pure <<< SetCell <<< outputCellToCell
+            , receive = pure <<< SetCellFromInput <<< outputCellToCell
             , handleQuery = query
             }
     }
 
 outputCellToCell :: Shared.OutputCell -> Cell
-outputCellToCell (Shared.OutputCell {name, code, result}) =
+outputCellToCell (Shared.OutputCell {name, code, result, hash: Shared.Hash hash}) =
   Cell
     { name
     , code
+    , hash
     , result:
         case result of
           Shared.ResultError e -> Left e
@@ -217,7 +219,14 @@ eval =
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     CodeUpdate (Cell {name, code}) -> do
       H.raise (CellUpdate {name, code})
-    SetCell cell -> do
+    SetCellFromInput cell@(Cell {hash, name}) -> do
+      when
+        false
+        (do State s0 <- H.get
+            let Cell cell0 = s0 . cell
+            if cell0 . hash == hash
+              then log ("Ignoring unchanged cell " <> name)
+              else log ("Updating changed cell " <> name))
       H.modify_ (\(State s) -> State (s {cell = cell}))
     DeleteCell -> H.raise RemoveCell
     DragStarted (DragEvent' dragEvent) -> do
@@ -258,7 +267,7 @@ render :: forall keys q m. MonadEffect m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {cell: Cell {name, code, result}, pos}) =
+render (State {cell: Cell {name, code, result, hash}, pos}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
     -- Disabling dragging for now
@@ -293,7 +302,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                 (\name' ->
                    pure
                      (CodeUpdate
-                        (Cell {name: name', result, code})))
+                        (Cell {name: name', result, code, hash})))
             , HH.button
 
                 [ HP.class_ (HH.ClassName "delete-cell")
@@ -319,7 +328,7 @@ render (State {cell: Cell {name, code, result}, pos}) =
                     Editor.NewCode code' ->
                      pure
                      (CodeUpdate
-                        (Cell {name, result, code: code'})))
+                        (Cell {name, result, code: code', hash})))
             ]
         ]
     ]

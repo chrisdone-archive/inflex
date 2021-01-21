@@ -26,6 +26,9 @@ import           Prelude hiding (Maybe)
 newtype UUID = UUID Text
  deriving (Eq, Ord, FromJSON, ToJSON, Show, NFData)
 
+newtype Hash = Hash Text
+ deriving (Eq, Ord, FromJSON, ToJSON, Show, NFData)
+
 $types
 
 --------------------------------------------------------------------------------

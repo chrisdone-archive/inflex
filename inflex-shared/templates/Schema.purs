@@ -17,6 +17,8 @@ type Vector a = Array a
 
 type Text = String
 
+newtype Hash = Hash String
+
 --------------------------------------------------------------------------------
 -- Custom types
 
@@ -29,6 +31,11 @@ derive instance genericOptionality :: Generic Optionality _
 instance showOptionality :: Show Optionality where show = genericShow
 instance decodeOptionality :: Decode Optionality where decode = genericDecode opts
 instance encodeOptionality :: Encode Optionality where encode = genericEncode opts
+
+derive instance genericHash :: Generic Hash _
+instance showHash :: Show Hash where show = genericShow
+instance decodeHash :: Decode Hash where decode = genericDecode opts
+instance encodeHash :: Encode Hash where encode = genericEncode opts
 
 derive instance genericFileQuery :: Generic FileQuery _
 instance showFileQuery :: Show FileQuery where show = genericShow

@@ -126,6 +126,7 @@ data OutputCell = OutputCell
   , code :: Text
   , result :: Result
   , order :: Int
+  , hash :: Hash
   }
 
 data InputCell1 = InputCell1
