@@ -53,6 +53,7 @@ data State = State
   { cell :: Cell
   , pos :: Maybe Pos
   , offset :: Maybe {x::Int,y::Int, innerx :: Int, innery :: Int}
+  , dirty :: Boolean
   }
 
 data Command
@@ -97,7 +98,7 @@ component =
         (\cell ->
            State
              { cell: outputCellToCell cell
-
+             , dirty: false
              , pos: Nothing
              , offset: Nothing
              })
@@ -216,18 +217,22 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
-    TriggerUpdatePath update -> H.raise (UpdatePath update)
+    TriggerUpdatePath update -> do
+      H.modify_ (\(State s) -> State (s {dirty = true}))
+      H.raise (UpdatePath update)
     CodeUpdate (Cell {name, code}) -> do
+      H.modify_ (\(State s) -> State (s {dirty = true}))
       H.raise (CellUpdate {name, code})
     SetCellFromInput cell@(Cell {hash, name}) -> do
-      when
-        false
-        (do State s0 <- H.get
-            let Cell cell0 = s0 . cell
-            if cell0 . hash == hash
-              then log ("Ignoring unchanged cell " <> name)
-              else log ("Updating changed cell " <> name))
-      H.modify_ (\(State s) -> State (s {cell = cell}))
+      State s0 <- H.get
+      let Cell cell0 = s0 . cell
+      if s0 . dirty || cell0 . hash /= hash
+        then do
+          {-if s0.dirty
+             then log ("Updating dirty cell " <> name)
+             else log ("Updating changed cell " <> name)-}
+          H.modify_ (\(State s) -> State (s {dirty = false, cell = cell}))
+        else pure unit {-log ("Ignoring unchanged clean cell " <> name)-}
     DeleteCell -> H.raise RemoveCell
     DragStarted (DragEvent' dragEvent) -> do
       H.liftEffect
