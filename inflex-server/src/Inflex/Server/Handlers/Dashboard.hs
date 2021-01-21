@@ -149,7 +149,8 @@ getAppDashboardR =
                                toHtml
                                  (bytesShorthand (maxUploadSizeBytes config))
                                ". (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
-                      form_
+                      p_ (strong_ "Currently disabled.")
+                      {-form_
                         [ action_ (url UploadFileR)
                         , method_ "post"
                         , id_ "file-upload-form"
@@ -164,8 +165,7 @@ getAppDashboardR =
                               ]
                             button_
                               [class_ "new-document", id_ "file-select"]
-                              "Upload File")
-                      script_ ""
+                              "Upload File")-}
                       if null files
                         then p_ "No files yet."
                         else div_
