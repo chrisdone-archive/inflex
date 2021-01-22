@@ -1050,13 +1050,3 @@ addTableTypeSig columns rows inner =
 originalOr :: Shared.OriginalSource -> String -> String
 originalOr Shared.NoOriginalSource s = s
 originalOr (Shared.OriginalSource s) _ = s
-
--- TODO: This is slow -- use a 'update at index' function, one must
--- exist and be way faster.
-editArray :: forall i. Int -> i -> Array i -> Array i
-editArray idx i =
-  mapWithIndex
-    (\idx' oldi ->
-       if idx == idx'
-         then i
-         else oldi)
