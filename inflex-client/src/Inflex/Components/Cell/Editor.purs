@@ -592,7 +592,7 @@ tableRow columns path rowIndex HoleRow =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
     rowNumber =
-      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
+      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show (1+rowIndex))]
 tableRow _ path rowIndex (Row {fields}) =
   HH.tr
     []
@@ -637,7 +637,7 @@ tableRow _ path rowIndex (Row {fields}) =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
     rowNumber =
-      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show rowIndex)]
+      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show (1+rowIndex))]
 
 bodyGuide :: forall t651 t652. Boolean -> Boolean -> Array (HH.HTML t652 t651)
 bodyGuide emptyTable emptyRows =
@@ -806,7 +806,7 @@ renderArrayEditor path editors =
                rowNumber =
                  HH.td
                    [HP.class_ (HH.ClassName "row-number")]
-                   [HH.text (show i)]
+                   [HH.text (show (i + 1))]
             in HH.tr
                  []
                  [ rowNumber
