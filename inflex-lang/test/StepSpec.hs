@@ -269,10 +269,20 @@ functions =
         describe
           "find"
           (do it
+                "find(r:r.name=\"jane\",[])"
+                (shouldReturn
+                   (stepDefaultedTextly "find(r:r.name=\"jane\",[])")
+                   (Right "#none"))
+              it
                 "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
                 (shouldReturn
                    (stepDefaultedTextly "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
                    (Right "#ok({\"name\": \"jane\"})"))
+              it
+                "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+                (shouldReturn
+                   (stepDefaultedTextly "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+                   (Right "#none"))
               it
                 "find(x:x>4,[1,2,3,4,5,6,7])"
                 (shouldReturn
