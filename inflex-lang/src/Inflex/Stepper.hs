@@ -27,6 +27,7 @@ import           Data.Containers.ListUtils
 import           Data.Early
 import           Data.Foldable
 import           Data.Functor.Identity
+import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -300,6 +301,12 @@ stepApply Apply {..} = do
         Apply { argument = ArrayExpression list
               , typ = listApplyType
               , function = ApplyExpression Apply { argument = compareOp
+                                                 , function = GlobalExpression Global {name = FunctionGlobal SortFunction}
+                                                 }
+              } -> stepSort (ApplyExpression apply') (list, listApplyType) compareOp
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = compareOp
                                                  , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
                                                  }
               } -> stepDistinct (ApplyExpression apply') (list, listApplyType) compareOp
@@ -407,6 +414,25 @@ stepDistinct asis (list@Array {expressions}, _listApplyType) _cmpInst = do
       pure
         (ArrayExpression
            list {expressions = V.fromList (map originalR (nubOrd es))})
+
+stepSort ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepSort asis (list@Array {expressions}, _listApplyType) _cmpInst = do
+  result <-
+    traverseE
+      (\e -> do
+         e' <- stepExpression e
+         reify e')
+      (toList expressions)
+  case result of
+    Left () -> pure asis
+    Right es ->
+      pure
+        (ArrayExpression
+           list {expressions = V.fromList (map originalR (List.sort es))})
 
 stepMinimum ::
      Expression Resolved
@@ -997,10 +1023,10 @@ holeExpression typ = HoleExpression Hole {location = BuiltIn, typ}
 -- Reification
 
 data Reified e
-  = TextR e Text
-  | IntegerR e Integer
-  | DecimalR e Decimal
-  | BoolR e Bool
+  = TextR e !Text
+  | IntegerR e !Integer
+  | DecimalR e !Decimal
+  | BoolR e !Bool
   deriving (Functor, Traversable, Foldable)
 
 instance Eq (Reified e) where

@@ -361,6 +361,18 @@ functions =
                    (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
                    (Right "[1, 2, 3]")))
         describe
+          "sort"
+          (do it
+                "sort([])"
+                (shouldReturn
+                   (stepDefaultedTextly "sort([])")
+                   (Right "[]"))
+              it
+                "sort([5,3,8,2,4,2,9,1])"
+                (shouldReturn
+                   (stepDefaultedTextly "sort([5,3,8,2,4,2,9,1])")
+                   (Right "[1, 2, 2, 3, 4, 5, 8, 9]")))
+        describe
           "maximum"
           (do it
                 "maximum([])"

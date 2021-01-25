@@ -553,12 +553,12 @@ data Function
   | NullFunction
   | LengthFunction
   | DistinctFunction
-  -- TODO:
-  | SortFunction
-  | AndFunction
-  | OrFunction
   | MinimumFunction
   | MaximumFunction
+  | SortFunction
+  -- TODO:
+  | AndFunction
+  | OrFunction
   | FindFunction
   | LookupFunction
   | AllFunction
