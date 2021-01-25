@@ -544,30 +544,27 @@ data NumericBinOp
   deriving (Show, Lift, Eq, Ord)
 
 data Function
+  -- Done:
   = MapFunction
   | FilterFunction
-  | DistinctFunction
-  | SortFunction
-
-  | AndFunction
-  | OrFunction
-
   | SumFunction
-  | MinimumFunction
-  | MaximumFunction
   | AverageFunction
+  | VegaFunction
+  | NullFunction
   | LengthFunction
 
+  -- TODO:
+
+  | DistinctFunction
+  | SortFunction
+  | AndFunction
+  | OrFunction
+  | MinimumFunction
+  | MaximumFunction
   | FindFunction
   | LookupFunction
-
   | AllFunction
   | AnyFunction
-
-  | NullFunction
-
-  | VegaFunction
-
   deriving (Show, Lift, Eq, Ord, Enum, Bounded)
 
 --------------------------------------------------------------------------------
