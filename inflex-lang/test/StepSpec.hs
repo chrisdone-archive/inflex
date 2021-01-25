@@ -277,9 +277,7 @@ functions =
           "length"
           (do it
                 "length([])"
-                (shouldReturn
-                   (stepDefaultedTextly "length([])")
-                   (Right "0"))
+                (shouldReturn (stepDefaultedTextly "length([])") (Right "0"))
               it
                 "length([1,2,3])"
                 (shouldReturn
@@ -287,9 +285,7 @@ functions =
                    (Right "3"))
               it
                 "null([])"
-                (shouldReturn
-                   (stepDefaultedTextly "null([])")
-                   (Right "#true"))
+                (shouldReturn (stepDefaultedTextly "null([])") (Right "#true"))
               it
                 "null([1,2,3])"
                 (shouldReturn
@@ -309,9 +305,7 @@ functions =
                    (Right "#none"))
               it
                 "sum([])"
-                (shouldReturn
-                   (stepDefaultedTextly "sum([])")
-                   (Right "#none"))
+                (shouldReturn (stepDefaultedTextly "sum([])") (Right "#none"))
               it
                 "sum(map(x:x.p,[{p:1},{p:2}]))"
                 (shouldReturn
@@ -353,7 +347,19 @@ functions =
                 "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
                 (shouldReturn
                    (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#ok(-0.6)"))))
+                   (Right "#ok(-0.6)")))
+        describe
+          "distinct"
+          (do it
+                "distinct([])"
+                (shouldReturn
+                   (stepDefaultedTextly "distinct([])")
+                   (Right "[]"))
+              it
+                "distinct([1,2,1,3,3,3,1])"
+                (shouldReturn
+                   (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
+                   (Right "[1, 2, 3]"))))
 
 if' :: SpecWith ()
 if' =

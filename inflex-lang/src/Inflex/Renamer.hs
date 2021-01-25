@@ -73,6 +73,7 @@ wiredInGlobals =
     , ("vega", FunctionGlobal VegaFunction)
     , ("sum", FunctionGlobal SumFunction)
     , ("average", FunctionGlobal AverageFunction)
+    , ("distinct", FunctionGlobal DistinctFunction)
     ]
 
 --------------------------------------------------------------------------------

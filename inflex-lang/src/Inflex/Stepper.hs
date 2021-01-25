@@ -1,3 +1,10 @@
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
@@ -16,6 +23,8 @@ import           Control.Monad.State
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
+import           Data.Containers.ListUtils
+import           Data.Early
 import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.Map.Strict (Map)
@@ -203,10 +212,11 @@ stepVariant Variant {..} = do
 stepIf :: If Resolved -> Step e (Expression Resolved)
 stepIf If {..} = do
   condition' <- stepExpression condition
-  case reifyBool condition' of
-    Nothing -> pure (IfExpression If {condition = condition', ..})
-    Just True -> stepExpression consequent
-    Just False -> stepExpression alternative
+  boolR <- reify condition'
+  case boolR of
+    Right (BoolR _ True) -> stepExpression consequent
+    Right (BoolR _ False) -> stepExpression alternative
+    _ -> pure (IfExpression If {condition = condition', ..})
 
 stepCase :: Case Resolved -> Step e (Expression Resolved)
 stepCase Case {..} = do
@@ -286,9 +296,13 @@ stepApply Apply {..} = do
                                                  , function = GlobalExpression Global {name = FunctionGlobal LengthFunction}
                                                  }
               } ->
-          stepLength
-            (list, listApplyType)
-            (fromIntegerOp, fromIntegerApplyType)
+          stepLength (list, listApplyType) (fromIntegerOp, fromIntegerApplyType)
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = compareOp
+                                                 , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
+                                                 }
+              } -> stepDistinct (ApplyExpression apply') (list, listApplyType) compareOp
         Apply { argument = ArrayExpression list
               , typ = listApplyType
               , function = ApplyExpression Apply { argument = fromIntegerOp
@@ -309,8 +323,7 @@ stepApply Apply {..} = do
               body' <- betaReduce body argument'
               stepExpression body'
             GlobalExpression (Global {name = FunctionGlobal func})
-              | elem func [NullFunction] ->
-                stepFunction1 typ func argument'
+              | elem func [NullFunction] -> stepFunction1 typ func argument'
             ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
                                   , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
                                   }
@@ -363,6 +376,25 @@ stepApply Apply {..} = do
 
 --------------------------------------------------------------------------------
 -- Function stepper
+
+stepDistinct ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepDistinct asis (list@Array {expressions}, _listApplyType) _cmpInst = do
+  result <-
+    traverseE
+      (\e -> do
+         e' <- stepExpression e
+         reify e')
+      (toList expressions)
+  case result of
+    Left () -> pure asis
+    Right es ->
+      pure
+        (ArrayExpression
+           list {expressions = V.fromList (map originalR (nubOrd es))})
 
 stepAverage ::
      (Array Resolved, Type Generalised)
@@ -576,10 +608,11 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                            , typ =
                                typeOutput (expressionType functionExpression)
                            }))
-                 case reifyBool bool of
-                   Just True -> pure (Just arrayItem')
-                   Just False -> pure Nothing
-                   Nothing ->
+                 boolR <- reify bool
+                 case boolR of
+                   Right (BoolR _ True) -> pure (Just arrayItem')
+                   Right (BoolR _ False) -> pure Nothing
+                   _ ->
                      pure (Just (holeExpression (expressionType arrayItem))))
               expressions
           stepped' <- get
@@ -913,3 +946,53 @@ fromDecimalStep fromDecimalInstance decimal =
 
 holeExpression :: (StagedLocation s ~ Cursor) => StagedType s -> Expression s
 holeExpression typ = HoleExpression Hole {location = BuiltIn, typ}
+
+--------------------------------------------------------------------------------
+-- Reification
+
+data Reified e
+  = TextR e Text
+  | IntegerR e Integer
+  | DecimalR e Decimal
+  | BoolR e Bool
+  deriving (Functor, Traversable, Foldable)
+
+instance Eq (Reified e) where
+  (==) x y = case (x,y) of
+               (TextR _ a, TextR _ b) -> a == b
+               (IntegerR _ a, IntegerR _ b) -> a == b
+               (DecimalR _ a, DecimalR _ b) -> a == b
+               (BoolR _ a, BoolR _ b) -> a == b
+               _ -> error "Invalid Eq comparison between types."
+
+instance Ord (Reified e) where
+  compare x y = case (x,y) of
+               (TextR _ a, TextR _ b) -> a `compare` b
+               (IntegerR _ a, IntegerR _ b) -> a `compare` b
+               (DecimalR _ a, DecimalR _ b) -> a `compare` b
+               (BoolR _ a, BoolR _ b) -> a `compare` b
+               _ -> error "Invalid Ord comparison between types."
+
+originalR :: Reified e -> e
+originalR =
+  \case
+    TextR e _ -> e
+    IntegerR e _ -> e
+    DecimalR e _ -> e
+    BoolR e _ -> e
+
+reify :: Expression s -> Step e (Either () (Reified (Expression s)))
+reify e' =
+  case e' of
+    LiteralExpression literal ->
+      case literal of
+        TextLiteral LiteralText {text} -> pure (Right (TextR e' text))
+        NumberLiteral Number {number = IntegerNumber integer} ->
+          pure (Right (IntegerR e' integer))
+        NumberLiteral Number {number = DecimalNumber decimal} ->
+          pure (Right (DecimalR e' decimal))
+    VariantExpression Variant {tag = TagName "true", argument = Nothing} ->
+      pure (Right (BoolR e' True))
+    VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
+      pure (Right (BoolR e' False))
+    _ -> pure (Left ())

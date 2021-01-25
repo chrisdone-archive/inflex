@@ -56,12 +56,21 @@ suggestTypeConstant =
   where
     suggestedConstant ::
          ClassConstraint s -> Identity (Maybe (Natural, Type Polymorphic))
-    suggestedConstant =
+    suggestedConstant
+        -- TODO: Reconsider this. Perhaps assume unit? {}
+     =
       \case
-        ClassConstraint {className = FromIntegerClassName} ->
+        ClassConstraint {className = CompareClassName} ->
           pure
             (pure
                ( 0
+               , ConstantType
+                   TypeConstant
+                     {location = DefaultedCursor, name = IntegerTypeName}))
+        ClassConstraint {className = FromIntegerClassName} ->
+          pure
+            (pure
+               ( 1
                , ConstantType
                    TypeConstant
                      {location = DefaultedCursor, name = IntegerTypeName}))
@@ -70,7 +79,7 @@ suggestTypeConstant =
             ConstantType TypeConstant {name = NatTypeName places, location} :| [_] ->
               pure
                 (pure
-                   ( places
+                   ( 1 + places -- Due to the 0 above in Compare.
                    , ApplyType
                        TypeApplication
                          { location = DefaultedCursor
