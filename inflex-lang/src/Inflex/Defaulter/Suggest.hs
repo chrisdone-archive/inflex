@@ -63,14 +63,14 @@ suggestTypeConstant =
         ClassConstraint {className = CompareClassName} ->
           pure
             (pure
-               ( 0
+               ( 0 -- Lowest priority.
                , ConstantType
                    TypeConstant
                      {location = DefaultedCursor, name = IntegerTypeName}))
         ClassConstraint {className = FromIntegerClassName} ->
           pure
             (pure
-               ( 1
+               ( 1 -- Second to lowest priority.
                , ConstantType
                    TypeConstant
                      {location = DefaultedCursor, name = IntegerTypeName}))
@@ -79,7 +79,7 @@ suggestTypeConstant =
             ConstantType TypeConstant {name = NatTypeName places, location} :| [_] ->
               pure
                 (pure
-                   ( 1 + places -- Due to the 0 above in Compare.
+                   ( 1 + places -- The +1 is due the Compare bumping everything up.
                    , ApplyType
                        TypeApplication
                          { location = DefaultedCursor
