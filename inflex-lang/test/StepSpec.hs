@@ -267,6 +267,23 @@ functions =
                    (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
                    (Right "[2, 4, 6]")))
         describe
+          "find"
+          (do it
+                "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+                (shouldReturn
+                   (stepDefaultedTextly "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+                   (Right "#ok({\"name\": \"jane\"})"))
+              it
+                "find(x:x>4,[1,2,3,4,5,6,7])"
+                (shouldReturn
+                   (stepDefaultedTextly "find(x:x>4,[1,2,3,4,5,6,7])")
+                   (Right "#ok(5)"))
+              it
+                "find(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+                (shouldReturn
+                   (stepDefaultedTextly "find(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+                   (Right "#ok({\"x\": 2})")))
+        describe
           "filter"
           (do it
                 "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
@@ -352,9 +369,7 @@ functions =
           "distinct"
           (do it
                 "distinct([])"
-                (shouldReturn
-                   (stepDefaultedTextly "distinct([])")
-                   (Right "[]"))
+                (shouldReturn (stepDefaultedTextly "distinct([])") (Right "[]"))
               it
                 "distinct([1,2,1,3,3,3,1])"
                 (shouldReturn
@@ -364,9 +379,7 @@ functions =
           "sort"
           (do it
                 "sort([])"
-                (shouldReturn
-                   (stepDefaultedTextly "sort([])")
-                   (Right "[]"))
+                (shouldReturn (stepDefaultedTextly "sort([])") (Right "[]"))
               it
                 "sort([5,3,8,2,4,2,9,1])"
                 (shouldReturn

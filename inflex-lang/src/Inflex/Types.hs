@@ -556,13 +556,13 @@ data Function
   | MinimumFunction
   | MaximumFunction
   | SortFunction
+  | FindFunction
   -- TODO:
   | AndFunction
   | OrFunction
-  | FindFunction
-  | LookupFunction
   | AllFunction
   | AnyFunction
+  | LookupFunction
   deriving (Show, Lift, Eq, Ord, Enum, Bounded)
 
 --------------------------------------------------------------------------------

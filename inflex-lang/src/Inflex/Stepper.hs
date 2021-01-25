@@ -306,6 +306,12 @@ stepApply Apply {..} = do
               } -> stepSort (ApplyExpression apply') (list, listApplyType) compareOp
         Apply { argument = ArrayExpression list
               , typ = listApplyType
+              , function = ApplyExpression Apply { argument = predicate
+                                                 , function = GlobalExpression Global {name = FunctionGlobal FindFunction}
+                                                 }
+              } -> stepFind (ApplyExpression apply') (list, listApplyType) predicate
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
               , function = ApplyExpression Apply { argument = compareOp
                                                  , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
                                                  }
@@ -395,6 +401,43 @@ stepApply Apply {..} = do
 
 --------------------------------------------------------------------------------
 -- Function stepper
+
+data Find
+  = FoundHole
+  | FoundOk (Expression Resolved)
+
+stepFind ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepFind asis (Array {expressions}, typ) predicate = do
+  result <-
+    traverseE_
+      (\e -> do
+         e' <- stepExpression e
+         case e' of
+           HoleExpression {} -> pure (Left FoundHole)
+           _ -> do
+             boolish <-
+               stepExpression
+                 (ApplyExpression
+                    (Apply
+                       { function = predicate
+                       , argument = e'
+                       , location = BuiltIn
+                       , typ = typeOutput (expressionType predicate)
+                       }))
+             boolR <- reify boolish
+             case boolR of
+               Right (BoolR _ True) -> pure (Left (FoundOk e'))
+               Right (BoolR _ False) -> pure (Right ())
+               _ -> pure (Left FoundHole))
+      (toList expressions)
+  case result of
+    Left (FoundOk e) -> pure (someVariantSigged typ e)
+    Left FoundHole -> pure asis
+    Right () -> pure (noneVariantSigged typ)
 
 stepDistinct ::
      Expression Resolved
