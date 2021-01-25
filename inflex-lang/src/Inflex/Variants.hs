@@ -56,21 +56,28 @@ moreVariant location =
 -- Option
 
 noneVariant :: StagedType Resolved -> Expression Resolved
-noneVariant ty =
+noneVariant ty = noneVariantSigged ty
+
+-- | None variant given a complete type signature.
+noneVariantSigged :: StagedType Resolved -> Expression Resolved
+noneVariantSigged ty =
   VariantExpression
     Variant
       { location = BuiltIn
-      , typ = maybeType BuiltIn ty
+      , typ = ty
       , tag = TagName "none"
       , argument = Nothing
       }
 
 someVariant :: StagedType Resolved -> Expression Resolved -> Expression Resolved
-someVariant ty thing =
+someVariant ty thing = someVariantSigged (maybeType BuiltIn ty) thing
+
+someVariantSigged :: StagedType Resolved -> Expression Resolved -> Expression Resolved
+someVariantSigged ty thing =
   VariantExpression
     Variant
       { location = BuiltIn
-      , typ = maybeType BuiltIn ty
+      , typ = ty
       , tag = TagName "ok"
       , argument = Just thing
       }

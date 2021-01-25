@@ -74,6 +74,8 @@ wiredInGlobals =
     , ("sum", FunctionGlobal SumFunction)
     , ("average", FunctionGlobal AverageFunction)
     , ("distinct", FunctionGlobal DistinctFunction)
+    , ("minimum", FunctionGlobal MinimumFunction)
+    , ("maximum", FunctionGlobal MaximumFunction)
     ]
 
 --------------------------------------------------------------------------------

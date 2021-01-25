@@ -305,6 +305,18 @@ stepApply Apply {..} = do
               } -> stepDistinct (ApplyExpression apply') (list, listApplyType) compareOp
         Apply { argument = ArrayExpression list
               , typ = listApplyType
+              , function = ApplyExpression Apply { argument = compareOp
+                                                 , function = GlobalExpression Global {name = FunctionGlobal MaximumFunction}
+                                                 }
+              } -> stepMaximum (ApplyExpression apply') (list, listApplyType) compareOp
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = compareOp
+                                                 , function = GlobalExpression Global {name = FunctionGlobal MinimumFunction}
+                                                 }
+              } -> stepMinimum (ApplyExpression apply') (list, listApplyType) compareOp
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
               , function = ApplyExpression Apply { argument = fromIntegerOp
                                                  , typ = fromIntegerApplyType
                                                  , function = ApplyExpression Apply { argument = addOp
@@ -395,6 +407,40 @@ stepDistinct asis (list@Array {expressions}, _listApplyType) _cmpInst = do
       pure
         (ArrayExpression
            list {expressions = V.fromList (map originalR (nubOrd es))})
+
+stepMinimum ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepMinimum asis (Array {expressions}, typ) _cmpInst = do
+  result <-
+    traverseE
+      (\e -> do
+         e' <- stepExpression e
+         reify e')
+      (toList expressions)
+  case result of
+    Left () -> pure asis
+    Right [] -> pure (noneVariantSigged typ)
+    Right es -> pure (someVariantSigged typ (originalR (minimum es)))
+
+stepMaximum ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepMaximum asis (Array {expressions}, typ) _cmpInst = do
+  result <-
+    traverseE
+      (\e -> do
+         e' <- stepExpression e
+         reify e')
+      (toList expressions)
+  case result of
+    Left () -> pure asis
+    Right [] -> pure (noneVariantSigged typ)
+    Right es -> pure (someVariantSigged typ (originalR (maximum es)))
 
 stepAverage ::
      (Array Resolved, Type Generalised)

@@ -359,7 +359,31 @@ functions =
                 "distinct([1,2,1,3,3,3,1])"
                 (shouldReturn
                    (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
-                   (Right "[1, 2, 3]"))))
+                   (Right "[1, 2, 3]")))
+        describe
+          "maximum"
+          (do it
+                "maximum([])"
+                (shouldReturn
+                   (stepDefaultedTextly "maximum([])")
+                   (Right "#none"))
+              it
+                "maximum([2,3,1,5])"
+                (shouldReturn
+                   (stepDefaultedTextly "maximum([2,3,1,5])")
+                   (Right "#ok(5)")))
+        describe
+          "minimum"
+          (do it
+                "minimum([])"
+                (shouldReturn
+                   (stepDefaultedTextly "minimum([])")
+                   (Right "#none"))
+              it
+                "minimum([2,3,1,5])"
+                (shouldReturn
+                   (stepDefaultedTextly "minimum([2,3,1,5])")
+                   (Right "#ok(1)"))))
 
 if' :: SpecWith ()
 if' =

@@ -552,10 +552,8 @@ data Function
   | VegaFunction
   | NullFunction
   | LengthFunction
-
-  -- TODO:
-
   | DistinctFunction
+  -- TODO:
   | SortFunction
   | AndFunction
   | OrFunction
