@@ -68,6 +68,7 @@ wiredInGlobals =
     , ("fromDecimal", FromDecimalGlobal)
     , ("map", FunctionGlobal MapFunction)
     , ("filter", FunctionGlobal FilterFunction)
+    , ("size", FunctionGlobal LengthFunction)
     , ("length", FunctionGlobal LengthFunction)
     , ("null", FunctionGlobal NullFunction)
     , ("vega", FunctionGlobal VegaFunction)
