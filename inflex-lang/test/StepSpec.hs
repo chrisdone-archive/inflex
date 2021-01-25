@@ -254,171 +254,190 @@ functions :: SpecWith ()
 functions =
   describe
     "Functions"
-    (do describe
-          "map"
-          (do it
-                "map(r:r*2,[1,2,3])"
-                (shouldReturn
-                   (stepDefaultedTextly "map(r:r*2,[1,2,3])")
-                   (Right "[2, 4, 6]"))
-              it
-                "map(r:r.x*2,[{x:1},{x:2},{x:3}])"
-                (shouldReturn
-                   (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
-                   (Right "[2, 4, 6]")))
-        describe
-          "find"
-          (do it
-                "find(r:r.name=\"jane\",[])"
-                (shouldReturn
-                   (stepDefaultedTextly "find(r:r.name=\"jane\",[])")
-                   (Right "#none"))
-              it
-                "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
-                (shouldReturn
-                   (stepDefaultedTextly "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
-                   (Right "#ok({\"name\": \"jane\"})"))
-              it
-                "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
-                (shouldReturn
-                   (stepDefaultedTextly "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
-                   (Right "#none"))
-              it
-                "find(x:x>4,[1,2,3,4,5,6,7])"
-                (shouldReturn
-                   (stepDefaultedTextly "find(x:x>4,[1,2,3,4,5,6,7])")
-                   (Right "#ok(5)"))
-              it
-                "find(r:r.x>=2, [{x:1},{x:2},{x:3}])"
-                (shouldReturn
-                   (stepDefaultedTextly "find(r:r.x>=2, [{x:1},{x:2},{x:3}])")
-                   (Right "#ok({\"x\": 2})")))
-        describe
-          "filter"
-          (do it
-                "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
-                (shouldReturn
-                   (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
-                   (Right "[{\"x\": 2}, {\"x\": 3}]")))
-        describe
-          "length"
-          (do it
-                "length([])"
-                (shouldReturn (stepDefaultedTextly "length([])") (Right "0"))
-              it
-                "length([1,2,3])"
-                (shouldReturn
-                   (stepDefaultedTextly "length([1,2,3])")
-                   (Right "3"))
-              it
-                "null([])"
-                (shouldReturn (stepDefaultedTextly "null([])") (Right "#true"))
-              it
-                "null([1,2,3])"
-                (shouldReturn
-                   (stepDefaultedTextly "null([1,2,3])")
-                   (Right "#false")))
-        describe
-          "sum"
-          (do it
-                "sum([1,2,3])"
-                (shouldReturn
-                   (stepDefaultedTextly "sum([1,2,3])")
-                   (Right "#ok(6)"))
-              it
-                "sum(filter(x:x>5,[1,2,3]))"
-                (shouldReturn
-                   (stepDefaultedTextly "sum(filter(x:x>5,[1,2,3]))")
-                   (Right "#none"))
-              it
-                "sum([])"
-                (shouldReturn (stepDefaultedTextly "sum([])") (Right "#none"))
-              it
-                "sum(map(x:x.p,[{p:1},{p:2}]))"
-                (shouldReturn
-                   (stepDefaultedTextly "sum(map(x:x.p,[{p:1},{p:2}]))")
-                   (Right "#ok(3)"))
-              it
-                "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
-                (shouldReturn
-                   (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#ok(-1.2)")))
-        describe
-          "average"
-          (do it
-                "average([24 , 55 , 17 , 87 , 100])"
-                (shouldReturn
-                   (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100])")
-                   (Right "#ok(56)"))
-              it
-                "average([24 , 55 , 17 , 87 , 100.0])"
-                (shouldReturn
-                   (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100.0])")
-                   (Right "#ok(56.6)"))
-              it
-                "average(filter(x:x>5,[1,2,3]))"
-                (shouldReturn
-                   (stepDefaultedTextly "average(filter(x:x>5,[1,2,3]))")
-                   (Right "#none"))
-              it
-                "average([])"
-                (shouldReturn
-                   (stepDefaultedTextly "average([])")
-                   (Right "#none"))
-              it
-                "average(map(x:x.p,[{p:1},{p:2}]))"
-                (shouldReturn
-                   (stepDefaultedTextly "average(map(x:x.p,[{p:1},{p:2.0}]))")
-                   (Right "#ok(1.5)"))
-              it
-                "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
-                (shouldReturn
-                   (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
-                   (Right "#ok(-0.6)")))
-        describe
-          "distinct"
-          (do it
-                "distinct([])"
-                (shouldReturn (stepDefaultedTextly "distinct([])") (Right "[]"))
-              it
-                "distinct([1,2,1,3,3,3,1])"
-                (shouldReturn
-                   (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
-                   (Right "[1, 2, 3]")))
-        describe
-          "sort"
-          (do it
-                "sort([])"
-                (shouldReturn (stepDefaultedTextly "sort([])") (Right "[]"))
-              it
-                "sort([5,3,8,2,4,2,9,1])"
-                (shouldReturn
-                   (stepDefaultedTextly "sort([5,3,8,2,4,2,9,1])")
-                   (Right "[1, 2, 2, 3, 4, 5, 8, 9]")))
-        describe
-          "maximum"
-          (do it
-                "maximum([])"
-                (shouldReturn
-                   (stepDefaultedTextly "maximum([])")
-                   (Right "#none"))
-              it
-                "maximum([2,3,1,5])"
-                (shouldReturn
-                   (stepDefaultedTextly "maximum([2,3,1,5])")
-                   (Right "#ok(5)")))
-        describe
-          "minimum"
-          (do it
-                "minimum([])"
-                (shouldReturn
-                   (stepDefaultedTextly "minimum([])")
-                   (Right "#none"))
-              it
-                "minimum([2,3,1,5])"
-                (shouldReturn
-                   (stepDefaultedTextly "minimum([2,3,1,5])")
-                   (Right "#ok(1)"))))
+    (do functions1;functions2)
+
+functions2 :: SpecWith ()
+functions2 = do
+  describe
+    "any"
+    (do it
+          "any(r:r=2,[1,2,3])"
+          (shouldReturn
+             (stepDefaultedTextly "any(r:r=2,[1,2,3])")
+             (Right "#ok(#true)"))
+        it
+          "any(r:r=6,[1,2,3])"
+          (shouldReturn
+             (stepDefaultedTextly "any(r:r=6,[1,2,3])")
+             (Right "#ok(#false)"))
+        it
+          "any(r:r=6,[])"
+          (shouldReturn
+             (stepDefaultedTextly "any(r:r=6,[])")
+             (Right "#none")))
+
+functions1 :: Spec
+functions1 = do
+  describe
+    "map"
+    (do it
+          "map(r:r*2,[])"
+          (shouldReturn
+             (stepDefaultedTextly "map(r:r*2,[])")
+             (Right "[]"))
+        it
+          "map(r:r*2,[1,2,3])"
+          (shouldReturn
+             (stepDefaultedTextly "map(r:r*2,[1,2,3])")
+             (Right "[2, 4, 6]"))
+        it
+          "map(r:r.x*2,[{x:1},{x:2},{x:3}])"
+          (shouldReturn
+             (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
+             (Right "[2, 4, 6]")))
+  describe
+    "find"
+    (do it
+          "find(r:r.name=\"jane\",[])"
+          (shouldReturn
+             (stepDefaultedTextly "find(r:r.name=\"jane\",[])")
+             (Right "#none"))
+        it
+          "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+          (shouldReturn
+             (stepDefaultedTextly
+                "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+             (Right "#ok({\"name\": \"jane\"})"))
+        it
+          "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+          (shouldReturn
+             (stepDefaultedTextly
+                "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+             (Right "#none"))
+        it
+          "find(x:x>4,[1,2,3,4,5,6,7])"
+          (shouldReturn
+             (stepDefaultedTextly "find(x:x>4,[1,2,3,4,5,6,7])")
+             (Right "#ok(5)"))
+        it
+          "find(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+          (shouldReturn
+             (stepDefaultedTextly "find(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+             (Right "#ok({\"x\": 2})")))
+  describe
+    "filter"
+    (do it
+          "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+          (shouldReturn
+             (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+             (Right "[{\"x\": 2}, {\"x\": 3}]")))
+  describe
+    "length"
+    (do it
+          "length([])"
+          (shouldReturn (stepDefaultedTextly "length([])") (Right "0"))
+        it
+          "length([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "length([1,2,3])") (Right "3"))
+        it
+          "null([])"
+          (shouldReturn (stepDefaultedTextly "null([])") (Right "#true"))
+        it
+          "null([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "null([1,2,3])") (Right "#false")))
+  describe
+    "sum"
+    (do it
+          "sum([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "sum([1,2,3])") (Right "#ok(6)"))
+        it
+          "sum(filter(x:x>5,[1,2,3]))"
+          (shouldReturn
+             (stepDefaultedTextly "sum(filter(x:x>5,[1,2,3]))")
+             (Right "#none"))
+        it
+          "sum([])"
+          (shouldReturn (stepDefaultedTextly "sum([])") (Right "#none"))
+        it
+          "sum(map(x:x.p,[{p:1},{p:2}]))"
+          (shouldReturn
+             (stepDefaultedTextly "sum(map(x:x.p,[{p:1},{p:2}]))")
+             (Right "#ok(3)"))
+        it
+          "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+          (shouldReturn
+             (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+             (Right "#ok(-1.2)")))
+  describe
+    "average"
+    (do it
+          "average([24 , 55 , 17 , 87 , 100])"
+          (shouldReturn
+             (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100])")
+             (Right "#ok(56)"))
+        it
+          "average([24 , 55 , 17 , 87 , 100.0])"
+          (shouldReturn
+             (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100.0])")
+             (Right "#ok(56.6)"))
+        it
+          "average(filter(x:x>5,[1,2,3]))"
+          (shouldReturn
+             (stepDefaultedTextly "average(filter(x:x>5,[1,2,3]))")
+             (Right "#none"))
+        it
+          "average([])"
+          (shouldReturn (stepDefaultedTextly "average([])") (Right "#none"))
+        it
+          "average(map(x:x.p,[{p:1},{p:2}]))"
+          (shouldReturn
+             (stepDefaultedTextly "average(map(x:x.p,[{p:1},{p:2.0}]))")
+             (Right "#ok(1.5)"))
+        it
+          "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+          (shouldReturn
+             (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+             (Right "#ok(-0.6)")))
+  describe
+    "distinct"
+    (do it
+          "distinct([])"
+          (shouldReturn (stepDefaultedTextly "distinct([])") (Right "[]"))
+        it
+          "distinct([1,2,1,3,3,3,1])"
+          (shouldReturn
+             (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
+             (Right "[1, 2, 3]")))
+  describe
+    "sort"
+    (do it
+          "sort([])"
+          (shouldReturn (stepDefaultedTextly "sort([])") (Right "[]"))
+        it
+          "sort([5,3,8,2,4,2,9,1])"
+          (shouldReturn
+             (stepDefaultedTextly "sort([5,3,8,2,4,2,9,1])")
+             (Right "[1, 2, 2, 3, 4, 5, 8, 9]")))
+  describe
+    "maximum"
+    (do it
+          "maximum([])"
+          (shouldReturn (stepDefaultedTextly "maximum([])") (Right "#none"))
+        it
+          "maximum([2,3,1,5])"
+          (shouldReturn
+             (stepDefaultedTextly "maximum([2,3,1,5])")
+             (Right "#ok(5)")))
+  describe
+    "minimum"
+    (do it
+          "minimum([])"
+          (shouldReturn (stepDefaultedTextly "minimum([])") (Right "#none"))
+        it
+          "minimum([2,3,1,5])"
+          (shouldReturn
+             (stepDefaultedTextly "minimum([2,3,1,5])")
+             (Right "#ok(1)")))
 
 if' :: SpecWith ()
 if' =

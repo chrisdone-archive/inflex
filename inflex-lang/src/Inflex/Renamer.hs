@@ -78,6 +78,7 @@ wiredInGlobals =
     , ("maximum", FunctionGlobal MaximumFunction)
     , ("sort", FunctionGlobal SortFunction)
     , ("find", FunctionGlobal FindFunction)
+    , ("any", FunctionGlobal AnyFunction)
     ]
 
 --------------------------------------------------------------------------------

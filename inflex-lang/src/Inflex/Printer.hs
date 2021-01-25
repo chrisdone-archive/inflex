@@ -234,7 +234,6 @@ instance Printer Function where
     AverageFunction -> "average"
     LengthFunction -> "length"
     FindFunction -> "find"
-    LookupFunction -> "lookup"
     AllFunction -> "all"
     AnyFunction -> "any"
     NullFunction -> "null"

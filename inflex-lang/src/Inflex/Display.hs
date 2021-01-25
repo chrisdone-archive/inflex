@@ -507,24 +507,24 @@ instance Display (GlobalRef Parsed) where
       FunctionGlobal function -> display function
 
 instance Display Function where
-  display = \case
-    MapFunction -> "map"
-    VegaFunction -> "vega"
-    FilterFunction -> "filter"
-    DistinctFunction -> "distinct"
-    SortFunction -> "sort"
-    AndFunction -> "and"
-    OrFunction -> "or"
-    SumFunction -> "sum"
-    MinimumFunction -> "minimum"
-    MaximumFunction -> "maximum"
-    AverageFunction -> "average"
-    LengthFunction -> "length"
-    FindFunction -> "find"
-    LookupFunction -> "lookup"
-    AllFunction -> "all"
-    AnyFunction -> "any"
-    NullFunction -> "null"
+  display =
+    \case
+      MapFunction -> "map"
+      VegaFunction -> "vega"
+      FilterFunction -> "filter"
+      DistinctFunction -> "distinct"
+      SortFunction -> "sort"
+      AndFunction -> "and"
+      OrFunction -> "or"
+      SumFunction -> "sum"
+      MinimumFunction -> "minimum"
+      MaximumFunction -> "maximum"
+      AverageFunction -> "average"
+      LengthFunction -> "length"
+      FindFunction -> "find"
+      AllFunction -> "all"
+      AnyFunction -> "any"
+      NullFunction -> "null"
 
 instance Display NumericBinOp where
   display =

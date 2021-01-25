@@ -312,6 +312,12 @@ stepApply Apply {..} = do
               } -> stepFind (ApplyExpression apply') (list, listApplyType) predicate
         Apply { argument = ArrayExpression list
               , typ = listApplyType
+              , function = ApplyExpression Apply { argument = predicate
+                                                 , function = GlobalExpression Global {name = FunctionGlobal AnyFunction}
+                                                 }
+              } -> stepAny (ApplyExpression apply') (list, listApplyType) predicate
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
               , function = ApplyExpression Apply { argument = compareOp
                                                  , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
                                                  }
@@ -438,6 +444,44 @@ stepFind asis (Array {expressions}, typ) predicate = do
     Left (FoundOk e) -> pure (someVariantSigged typ e)
     Left FoundHole -> pure asis
     Right () -> pure (noneVariantSigged typ)
+
+-- | Any is a bool-specific version of find.
+stepAny ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepAny asis (Array {expressions}, typ) predicate = do
+  if V.null expressions
+    then pure (noneVariantSigged typ)
+    else do
+      result <-
+        traverseE_
+          (\e -> do
+             e' <- stepExpression e
+             case e' of
+               HoleExpression {} -> pure (Left FoundHole)
+               _ -> do
+                 boolish <-
+                   stepExpression
+                     (ApplyExpression
+                        (Apply
+                           { function = predicate
+                           , argument = e'
+                           , location = BuiltIn
+                           , typ = typeOutput (expressionType predicate)
+                           }))
+                 boolR <- reify boolish
+                 case boolR of
+                   Right (BoolR _ True) ->
+                     pure (Left (FoundOk (trueVariant BuiltIn)))
+                   Right (BoolR _ False) -> pure (Right ())
+                   _ -> pure (Left FoundHole))
+          (toList expressions)
+      case result of
+        Left (FoundOk e) -> pure (someVariantSigged typ e)
+        Left FoundHole -> pure asis
+        Right () -> pure (someVariantSigged typ (falseVariant BuiltIn))
 
 stepDistinct ::
      Expression Resolved

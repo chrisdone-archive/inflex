@@ -256,9 +256,8 @@ functionScheme location =
     MinimumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
     MaximumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
     FindFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location a)
-    LookupFunction -> undefined
-    AllFunction -> mono ((a .-> boolT) .-> ArrayType a .-> boolT)
-    AnyFunction -> mono ((a .-> boolT) .-> ArrayType a .-> boolT)
+    AllFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location boolT)
+    AnyFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location boolT)
   where
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
