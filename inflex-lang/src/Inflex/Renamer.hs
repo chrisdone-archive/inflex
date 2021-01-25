@@ -79,6 +79,7 @@ wiredInGlobals =
     , ("sort", FunctionGlobal SortFunction)
     , ("find", FunctionGlobal FindFunction)
     , ("any", FunctionGlobal AnyFunction)
+    , ("all", FunctionGlobal AllFunction)
     ]
 
 --------------------------------------------------------------------------------

@@ -259,6 +259,23 @@ functions =
 functions2 :: SpecWith ()
 functions2 = do
   describe
+    "all"
+    (do it
+          "all(r:r=2,[2,2,2])"
+          (shouldReturn
+             (stepDefaultedTextly "all(r:r=2,[2,2,2])")
+             (Right "#ok(#true)"))
+        it
+          "all(r:r=2,[1,2,3])"
+          (shouldReturn
+             (stepDefaultedTextly "all(r:r=2,[1,2,3])")
+             (Right "#ok(#false)"))
+        it
+          "all(r:r=6,[])"
+          (shouldReturn
+             (stepDefaultedTextly "all(r:r=6,[])")
+             (Right "#none")))
+  describe
     "any"
     (do it
           "any(r:r=2,[1,2,3])"

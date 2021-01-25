@@ -313,6 +313,12 @@ stepApply Apply {..} = do
         Apply { argument = ArrayExpression list
               , typ = listApplyType
               , function = ApplyExpression Apply { argument = predicate
+                                                 , function = GlobalExpression Global {name = FunctionGlobal AllFunction}
+                                                 }
+              } -> stepAll (ApplyExpression apply') (list, listApplyType) predicate
+        Apply { argument = ArrayExpression list
+              , typ = listApplyType
+              , function = ApplyExpression Apply { argument = predicate
                                                  , function = GlobalExpression Global {name = FunctionGlobal AnyFunction}
                                                  }
               } -> stepAny (ApplyExpression apply') (list, listApplyType) predicate
@@ -408,9 +414,9 @@ stepApply Apply {..} = do
 --------------------------------------------------------------------------------
 -- Function stepper
 
-data Find
+data Find e
   = FoundHole
-  | FoundOk (Expression Resolved)
+  | FoundStop e
 
 stepFind ::
      Expression Resolved
@@ -436,12 +442,12 @@ stepFind asis (Array {expressions}, typ) predicate = do
                        }))
              boolR <- reify boolish
              case boolR of
-               Right (BoolR _ True) -> pure (Left (FoundOk e'))
+               Right (BoolR _ True) -> pure (Left (FoundStop e'))
                Right (BoolR _ False) -> pure (Right ())
                _ -> pure (Left FoundHole))
       (toList expressions)
   case result of
-    Left (FoundOk e) -> pure (someVariantSigged typ e)
+    Left (FoundStop e) -> pure (someVariantSigged typ e)
     Left FoundHole -> pure asis
     Right () -> pure (noneVariantSigged typ)
 
@@ -474,14 +480,52 @@ stepAny asis (Array {expressions}, typ) predicate = do
                  boolR <- reify boolish
                  case boolR of
                    Right (BoolR _ True) ->
-                     pure (Left (FoundOk (trueVariant BuiltIn)))
+                     pure (Left (FoundStop (trueVariant BuiltIn)))
                    Right (BoolR _ False) -> pure (Right ())
                    _ -> pure (Left FoundHole))
           (toList expressions)
       case result of
-        Left (FoundOk e) -> pure (someVariantSigged typ e)
+        Left (FoundStop e) -> pure (someVariantSigged typ e)
         Left FoundHole -> pure asis
         Right () -> pure (someVariantSigged typ (falseVariant BuiltIn))
+
+-- | All is a bool-specific version of find.
+stepAll ::
+     Expression Resolved
+  -> (Array Resolved, Type Generalised)
+  -> Expression Resolved
+  -> Step e (Expression Resolved)
+stepAll asis (Array {expressions}, typ) predicate = do
+  if V.null expressions
+    then pure (noneVariantSigged typ)
+    else do
+      result <-
+        traverseE_
+          (\e -> do
+             e' <- stepExpression e
+             case e' of
+               HoleExpression {} -> pure (Left FoundHole)
+               _ -> do
+                 boolish <-
+                   stepExpression
+                     (ApplyExpression
+                        (Apply
+                           { function = predicate
+                           , argument = e'
+                           , location = BuiltIn
+                           , typ = typeOutput (expressionType predicate)
+                           }))
+                 boolR <- reify boolish
+                 case boolR of
+                   Right (BoolR _ True) -> pure (Right ())
+                   Right (BoolR _ False) -> pure (Left (FoundStop ()))
+                   _ -> pure (Left FoundHole))
+          (toList expressions)
+      case result of
+        Left (FoundStop ()) ->
+          pure (someVariantSigged typ (falseVariant BuiltIn))
+        Left FoundHole -> pure asis
+        Right () -> pure (someVariantSigged typ (trueVariant BuiltIn))
 
 stepDistinct ::
      Expression Resolved
