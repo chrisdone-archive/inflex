@@ -28,7 +28,7 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.State.Strict
 import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
+
 import           Data.Map.Strict (Map)
 import           Inflex.Generator
 import           Inflex.Optics

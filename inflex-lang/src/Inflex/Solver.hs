@@ -23,6 +23,7 @@ module Inflex.Solver
   , runSolver
   , solveTextRepl
   , freezeSubstitutions
+  , prettyEquality
   , Substitution(..)
   , SolveError(..)
   , IsSolved(..)
