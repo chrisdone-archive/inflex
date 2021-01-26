@@ -34,6 +34,9 @@ import           Inflex.Instances ()
 import           Inflex.Parser
 import           Inflex.Type
 import           Inflex.Types
+import           Inflex.Types as Alternative (Alternative(..))
+import           Inflex.Types as Bind (Bind(..))
+import           Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Renamer
 import           Optics
 
@@ -53,10 +56,18 @@ renameText fp text = do
              (runValidateT
                 (runRenamer
                    (renameExpression
-                      (Env {globals = wiredInGlobals, cursor = id, scope = mempty})
+                      (Env
+                         {globals = wiredInGlobals, cursor = id, scope = mempty})
                       expression)))
              mempty
-      in fmap (\thing -> IsRenamed {thing, mappings, unresolvedGlobals}) result)
+      in fmap
+           (\thing ->
+              IsRenamed
+                { thing = addBoundaryImplicitly thing
+                , mappings
+                , unresolvedGlobals
+                })
+           result)
 
 --------------------------------------------------------------------------------
 -- Wired-in
@@ -97,6 +108,8 @@ renameExpression env =
     VariantExpression variant -> fmap VariantExpression (renameVariant env variant)
     LetExpression let' -> fmap LetExpression (renameLet env let')
     CaseExpression case' -> fmap CaseExpression (renameCase env case')
+    EarlyExpression early' -> fmap EarlyExpression (renameEarly env early')
+    BoundaryExpression boundary' -> fmap BoundaryExpression (renameBoundary env boundary')
     IfExpression if' -> fmap IfExpression (renameIf env if')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
@@ -183,7 +196,14 @@ renameLambda env@Env {cursor} Lambda {..} = do
          (over envCursorL (. LambdaBodyCursor) env))
       body
   typ' <- renameSignature env typ
-  pure Lambda {body = body', location = final, param = param', typ = typ', ..}
+  pure
+    Lambda
+      { body = addBoundaryImplicitly body'
+      , location = final
+      , param = param'
+      , typ = typ'
+      , ..
+      }
 
 renameRecord :: Env -> Record Parsed -> Renamer (Record Renamed)
 renameRecord env@Env {cursor} Record {..} = do
@@ -272,6 +292,32 @@ renameCase env@Env {cursor} Case {..} = do
       , typ = typ'
       , alternatives = alternatives'
       , scrutinee = scrutinee'
+      , ..
+      }
+
+renameEarly :: Env -> Early Parsed -> Renamer (Early Renamed)
+renameEarly env@Env {cursor} Early {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  typ' <- renameSignature env typ
+  expression' <- renameExpression env expression
+  pure
+    Early
+      { location = final
+      , typ = typ'
+      , expression = expression'
+      , ..
+      }
+
+renameBoundary :: Env -> Boundary Parsed -> Renamer (Boundary Renamed)
+renameBoundary env@Env {cursor} Boundary {..} = do
+  final <- finalizeCursor cursor ExpressionCursor location
+  typ' <- renameSignature env typ
+  expression' <- renameExpression env expression
+  pure
+    Boundary
+      { location = final
+      , typ = typ'
+      , expression = expression'
       , ..
       }
 
@@ -510,3 +556,58 @@ finalizeCursor cursor finalCursor loc = do
   modify (over _1 (M.insert final loc))
   pure final
   where final = cursor finalCursor
+
+--------------------------------------------------------------------------------
+-- Early returns
+
+addBoundaryImplicitly :: Expression Renamed -> Expression Renamed
+addBoundaryImplicitly e =
+  if returnsEarly e
+    then BoundaryExpression
+           Boundary {expression = e, location = BuiltIn, typ = Nothing}
+    else e
+
+-- When generating types, on an early `e?`, where e :: Maybe t, then `e? :: t` if composite, such as
+--
+-- e? + x
+--
+--   then e :: Maybe t
+--               e? :: t
+--               x  :: t
+--   finally
+--               e? + x :: Maybe t
+--
+-- and e? by itself is syntactically ILLEGAL, as it would be pointless.
+--
+-- We stop as far as lambdas.
+
+returnsEarly :: Expression s -> Bool
+returnsEarly =
+  \case
+    EarlyExpression {} -> True
+    -- These are transitive early returnable:
+    ApplyExpression Apply {function, argument} ->
+      returnsEarly function || returnsEarly argument
+    PropExpression Prop {expression} -> returnsEarly expression
+    InfixExpression Infix {left, right} ->
+      returnsEarly left || returnsEarly right
+    RecordExpression Record {fields} ->
+      any (returnsEarly . Field.expression) fields
+    ArrayExpression Array {expressions} -> any returnsEarly expressions
+    IfExpression If {condition, consequent, alternative} ->
+      returnsEarly consequent ||
+      returnsEarly condition || returnsEarly alternative
+    CaseExpression Case {scrutinee, alternatives} ->
+      returnsEarly scrutinee ||
+      any (returnsEarly . Alternative.expression) alternatives
+    LetExpression Let {binds, body} ->
+      returnsEarly body || any (returnsEarly . Bind.value) binds
+    -- Lambda and Early is the ceiling:
+    LambdaExpression {} -> False
+    BoundaryExpression {} -> False
+    -- These are constant/literals or non-composites:
+    LiteralExpression {} -> False
+    VariableExpression {} -> False
+    GlobalExpression {} -> False
+    HoleExpression {} -> False
+    VariantExpression {} -> False

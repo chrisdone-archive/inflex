@@ -1,3 +1,4 @@
+{-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -19,12 +20,12 @@
 module Inflex.Stepper where
 
 import           Control.Monad.Reader
-import           Control.Monad.State
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Containers.ListUtils
 import           Data.Early
+import qualified Control.Early (Early(..), early)
 import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List as List
@@ -69,18 +70,35 @@ data StepError
   | CannotShrinkADecimalFromTo Natural Natural
   | NotARecord
   | MissingRecordKey FieldName
+  | EarlyReturnWithoutBoundary (Expression Resolved)
+  | InvalidReifyValue (Expression Resolved)
+  | ShouldGetBool
   deriving (Show, Eq)
 
-data Stepped
-  = Continue
-  | Stepped
+data Result e
+  = Returned (Expression Resolved)
+  | FoundHole (Expression Resolved)
+  | Errored StepError
+  | Ok e
+  deriving (Functor)
 
-newtype Step e a = Step
-  { unStep :: ReaderT (Map Hash (Expression Resolved)) (StateT Stepped (Either StepError)) a
+instance Applicative Result where
+  pure = Ok
+  (<*>) = error "This isn't necessary."
+
+instance Control.Early.Early Result where
+  dispatch r f =
+    case r of
+      Returned e -> pure (Returned e)
+      Errored e -> pure (Errored e)
+      FoundHole e -> pure (FoundHole e)
+      Ok x -> f x
+
+newtype Step a = Step
+  { unStep :: Reader (Map Hash (Expression Resolved)) a
   } deriving ( Functor
              , Monad
              , Applicative
-             , MonadState Stepped
              , MonadReader (Map Hash (Expression Resolved))
              )
 
@@ -114,12 +132,16 @@ stepText schemes values fp text = do
   case result of
     Left e -> pure (Left e)
     Right IsResolved {thing} ->
-      pure
-        (first
-           StepError
-           (evalStateT
-              (runReaderT (unStep (stepExpression thing)) values)
-              Continue))
+      pure (first StepError (resultToEither (runReader (unStep (stepExpression thing)) values)))
+
+resultToEither ::
+     Result (Expression Resolved) -> Either StepError (Expression Resolved)
+resultToEither =
+  \case
+    Ok e -> pure e
+    Errored e -> Left e
+    FoundHole e -> pure e
+    Returned e -> Left (EarlyReturnWithoutBoundary e)
 
 stepTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))
@@ -140,92 +162,97 @@ stepDefaulted ::
      Map Hash (Expression Resolved)
   -> Cell
   -> RIO StepReader (Either (DefaultStepError e) (Expression Resolved))
-stepDefaulted values Cell{defaulted} = pure (do
-   first
-     StepError'
-     (evalStateT
-        (runReaderT (unStep (stepExpression defaulted)) values)
-        Continue))
+stepDefaulted values Cell {defaulted} =
+  pure
+    (do first
+          StepError'
+          (resultToEither (runReader (unStep (stepExpression defaulted)) values)))
 
 stepExpression ::
      Expression Resolved
-  -> Step e (Expression Resolved)
-stepExpression expression =  (do
-   stepped <- get
-   case stepped of
-     Stepped -> pure expression
-     Continue ->
-       case expression of
-         ApplyExpression apply -> stepApply apply
-         PropExpression prop -> stepProp prop
-         ArrayExpression array -> stepArray array
-         VariantExpression variant -> stepVariant variant
-         RecordExpression record -> stepRecord record
-         InfixExpression infix' -> stepInfix infix'
-         IfExpression if' -> stepIf if'
-         CaseExpression case' -> stepCase case'
-         GlobalExpression global -> stepGlobal global
-         LiteralExpression {} -> pure expression
-         LambdaExpression {} -> pure expression
-         VariableExpression {} -> pure expression
-         HoleExpression {} -> pure expression
-         LetExpression {} -> pure expression)
+  -> Step (Result (Expression Resolved))
+stepExpression expression = do
+  case expression of
+    ApplyExpression apply -> stepApply apply
+    PropExpression prop -> stepProp prop
+    ArrayExpression array -> stepArray array
+    VariantExpression variant -> stepVariant variant
+    RecordExpression record -> stepRecord record
+    InfixExpression infix' -> stepInfix infix'
+    IfExpression if' -> stepIf if'
+    CaseExpression case' -> stepCase case'
+    GlobalExpression global -> stepGlobal global
+    LiteralExpression {} -> pure (Ok expression)
+    LambdaExpression {} -> pure (Ok expression)
+    VariableExpression {} -> pure (Ok expression)
+    HoleExpression {} -> pure (Ok expression)
+    LetExpression {} -> pure (Ok expression)
+    EarlyExpression early -> stepEarly early
+    BoundaryExpression boundary -> stepBoundary boundary
+
+--------------------------------------------------------------------------------
+-- Early return
+
+stepEarly :: Early Resolved -> Step (Result (Expression Resolved))
+stepEarly Early {expression} = pure (Ok expression) -- TODO:
+
+stepBoundary :: Boundary Resolved -> Step (Result (Expression Resolved))
+stepBoundary Boundary {expression} = pure (Ok expression) -- TODO:
 
 --------------------------------------------------------------------------------
 -- Records
 
-stepRecord :: Record Resolved -> Step e (Expression Resolved)
+stepRecord :: Record Resolved -> Step (Result (Expression Resolved))
 stepRecord Record {..} = do
   fields' <-
-    traverse
+    traverseE
       (\FieldE {location = l, ..} -> do
-         e' <- stepExpression expression
-         pure FieldE {location = l, expression = e', ..})
-      fields
-  pure (RecordExpression (Record {fields = fields', ..}))
+         e' <- stepExpression expression?
+         pure (Ok (FieldE {location = l, expression = e', ..})))
+      fields?
+  pure (Ok (RecordExpression (Record {fields = fields', ..})))
 
-stepProp :: Prop Resolved -> Step e (Expression Resolved)
+stepProp :: Prop Resolved -> Step (Result (Expression Resolved))
 stepProp Prop {..} = do
-  expression' <- stepExpression expression
-  stepped <- get
-  case stepped of
-    Stepped -> pure (PropExpression Prop {expression = expression', ..})
-    Continue ->
-      case expression' of
-        RecordExpression Record {fields} ->
-          case find (\FieldE {name = name'} -> name' == name) fields of
-            Nothing -> Step (lift (lift (Left (MissingRecordKey name))))
-            Just FieldE{expression = v} -> stepExpression v
-        _ -> Step (lift (lift (Left NotARecord)))
+  expression' <- stepExpression expression?
+  case expression' of
+    RecordExpression Record {fields} ->
+      case find (\FieldE {name = name'} -> name' == name) fields of
+        Nothing -> pure (Errored (MissingRecordKey name))
+        Just FieldE{expression = v} -> stepExpression v
+    _ -> pure (Errored NotARecord)
 
-stepArray :: Array Resolved -> Step e (Expression Resolved)
+stepArray :: Array Resolved -> Step (Result (Expression Resolved))
 stepArray Array {..} = do
-  expressions' <- traverse stepExpression expressions
-  pure (ArrayExpression Array {expressions = expressions', ..})
+  expressions' <- traverseE stepExpression expressions?
+  pure (Ok (ArrayExpression Array {expressions = expressions', ..}))
 
-stepVariant :: Variant Resolved -> Step e (Expression Resolved)
+stepVariant :: Variant Resolved -> Step (Result (Expression Resolved))
 stepVariant Variant {..} = do
   -- trace ("stepVariant: " <> show argument) (pure ())
-  argument' <- traverse stepExpression argument
+  argument' <- traverseE stepExpression argument?
   -- trace ("stepVariant => " <> show argument') (pure ())
-  pure (VariantExpression Variant {argument = argument', ..})
+  pure (Ok (VariantExpression Variant {argument = argument', ..}))
 
-stepIf :: If Resolved -> Step e (Expression Resolved)
+stepIf :: If Resolved -> Step (Result (Expression Resolved))
 stepIf If {..} = do
-  condition' <- stepExpression condition
+  condition' <- stepExpression condition?
   boolR <- reify condition'
   case boolR of
-    Right (BoolR _ True) -> stepExpression consequent
-    Right (BoolR _ False) -> stepExpression alternative
-    _ -> pure (IfExpression If {condition = condition', ..})
+    Ok (BoolR _ True) -> stepExpression consequent
+    Ok (BoolR _ False) -> stepExpression alternative
+    Ok _ -> pure (Errored ShouldGetBool)
+    Returned r -> pure (Returned r)
+    FoundHole{} -> pure (Ok (IfExpression If {condition = condition', ..}))
+    Errored e -> pure (Errored e)
 
-stepCase :: Case Resolved -> Step e (Expression Resolved)
+stepCase :: Case Resolved -> Step (Result (Expression Resolved))
 stepCase Case {..} = do
-  scrutinee' <- stepExpression scrutinee
+  scrutinee' <- stepExpression scrutinee?
   case listToMaybe (mapMaybe (match scrutinee') (toList alternatives)) of
     Just e -> stepExpression e
     -- TODO: warn about unmatched case?
-    Nothing -> pure (CaseExpression (Case {scrutinee = scrutinee', ..}))
+    Nothing -> pure (Ok (CaseExpression (Case {scrutinee = scrutinee', ..})))
 
 -- | Finds a match, if any, and the result must be stepped again.
 match :: Expression Resolved -> Alternative Resolved -> Maybe (Expression Resolved)
@@ -248,188 +275,185 @@ match scrutinee Alternative {..} =
 --------------------------------------------------------------------------------
 -- Globals
 
-stepGlobal :: Global Resolved -> Step e (Expression Resolved)
+stepGlobal :: Global Resolved -> Step (Result (Expression Resolved))
 stepGlobal global@Global {name} = do
   hashes <- ask
   case name of
     HashGlobal hash ->
       case M.lookup hash hashes of
-        Just expre -> pure expre
-        Nothing -> Step (lift (lift (Left (NotInScope hash))))
-    _ -> pure (GlobalExpression global)
+        Just expre -> pure (pure expre)
+        Nothing -> pure (Errored (NotInScope hash))
+    _ -> pure (pure (GlobalExpression global))
 
 --------------------------------------------------------------------------------
 -- Function application
 
-stepApply :: Apply Resolved -> Step e (Expression Resolved)
+stepApply :: Apply Resolved -> Step (Result (Expression Resolved))
 stepApply Apply {..} = do
-  function' <- stepExpression function
-  argument' <- stepExpression argument
+  function' <- stepExpression function?
+  argument' <- stepExpression argument?
   let apply' = Apply {function = function', argument = argument', ..}
   -- tracePrinter (apply') (pure ())
-  stepped <- get
-  case stepped of
-    Stepped -> pure (ApplyExpression apply')
-    Continue ->
-      case apply' of
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = fromIntegerOp
-                                                 , typ = fromIntegerApplyType
-                                                 , function = ApplyExpression Apply { argument = divideOp
-                                                                                    , typ = divideOpTyp
-                                                                                    , function = ApplyExpression Apply { argument = addOp
-                                                                                                                       , typ = addOpType
-                                                                                                                       , function = GlobalExpression Global {name = FunctionGlobal AverageFunction}
-                                                                                                                       }
-                                                                                    }
-                                                 }
-              } ->
-          stepAverage
-            (list, listApplyType)
-            (addOp, addOpType)
-            (divideOp, divideOpTyp)
-            (fromIntegerOp, fromIntegerApplyType)
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = fromIntegerOp
-                                                 , typ = fromIntegerApplyType
-                                                 , function = GlobalExpression Global {name = FunctionGlobal LengthFunction}
-                                                 }
-              } ->
-          stepLength (list, listApplyType) (fromIntegerOp, fromIntegerApplyType)
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = compareOp
-                                                 , function = GlobalExpression Global {name = FunctionGlobal SortFunction}
-                                                 }
-              } -> stepSort (ApplyExpression apply') (list, listApplyType) compareOp
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = predicate
-                                                 , function = GlobalExpression Global {name = FunctionGlobal FindFunction}
-                                                 }
-              } -> stepFind (ApplyExpression apply') (list, listApplyType) predicate
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = predicate
-                                                 , function = GlobalExpression Global {name = FunctionGlobal AllFunction}
-                                                 }
-              } -> stepAll (ApplyExpression apply') (list, listApplyType) predicate
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = predicate
-                                                 , function = GlobalExpression Global {name = FunctionGlobal AnyFunction}
-                                                 }
-              } -> stepAny (ApplyExpression apply') (list, listApplyType) predicate
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = compareOp
-                                                 , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
-                                                 }
-              } -> stepDistinct (ApplyExpression apply') (list, listApplyType) compareOp
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = compareOp
-                                                 , function = GlobalExpression Global {name = FunctionGlobal MaximumFunction}
-                                                 }
-              } -> stepMaximum (ApplyExpression apply') (list, listApplyType) compareOp
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = compareOp
-                                                 , function = GlobalExpression Global {name = FunctionGlobal MinimumFunction}
-                                                 }
-              } -> stepMinimum (ApplyExpression apply') (list, listApplyType) compareOp
-        Apply { argument = ArrayExpression list
-              , typ = listApplyType
-              , function = ApplyExpression Apply { argument = fromIntegerOp
-                                                 , typ = fromIntegerApplyType
-                                                 , function = ApplyExpression Apply { argument = addOp
-                                                                                    , typ = addOpType
-                                                                                    , function = GlobalExpression Global {name = FunctionGlobal SumFunction}
-                                                                                    }
-                                                 }
-              } ->
-          stepSum
-            (list, listApplyType)
-            (addOp, addOpType)
-            (fromIntegerOp, fromIntegerApplyType)
-        _ -> do
-          case function' of
-            LambdaExpression Lambda {body} -> do
-              body' <- betaReduce body argument'
-              stepExpression body'
-            GlobalExpression (Global {name = FunctionGlobal func})
-              | elem func [NullFunction] -> stepFunction1 typ func argument'
-            ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
-                                  , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
-                                  }
-              | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
-                 argument' -> pure argument'
-            ApplyExpression Apply { function = GlobalExpression (Global {name = FromDecimalGlobal})
-                                  , argument = GlobalExpression (Global {name = (InstanceGlobal (FromDecimalDecimalInstance fromDecimalInstance))})
-                                  }
-              | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
-                                                         , typ = typ'
-                                                         })) <- argument' -> do
-                decimal' <- fromDecimalStep fromDecimalInstance decimal
-                pure
-                  (LiteralExpression
-                     (NumberLiteral
-                        (Number
-                           {number = DecimalNumber decimal', typ = typ', ..})))
-            ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
-                                  , argument = GlobalExpression (Global {name = (InstanceGlobal (FromIntegerDecimalInstance supersetPlaces))})
-                                  }
-              | LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
-                                                         , typ = typ'
-                                                         })) <- argument' -> do
-                pure
-                  (LiteralExpression
-                     (NumberLiteral
-                        (Number
-                           { number =
-                               DecimalNumber
-                                 (decimalFromInteger integer supersetPlaces)
-                           , typ = typ'
-                           , ..
-                           })))
-            ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
-                                  , argument = functionExpression
-                                  , location = applyLocation
-                                  }
-              | functionName `elem` [MapFunction, FilterFunction] ->
-                stepFunction2
-                  functionName
-                  argument'
-                  functionExpression
-                  location
-                  applyLocation
-                  typ
-            _ ->
-              pure
-                (ApplyExpression
-                   Apply {function = function', argument = argument', ..})
+  case apply' of
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = fromIntegerOp
+                                             , typ = fromIntegerApplyType
+                                             , function = ApplyExpression Apply { argument = divideOp
+                                                                                , typ = divideOpTyp
+                                                                                , function = ApplyExpression Apply { argument = addOp
+                                                                                                                   , typ = addOpType
+                                                                                                                   , function = GlobalExpression Global {name = FunctionGlobal AverageFunction}
+                                                                                                                   }
+                                                                                }
+                                             }
+          } ->
+      stepAverage
+        (list, listApplyType)
+        (addOp, addOpType)
+        (divideOp, divideOpTyp)
+        (fromIntegerOp, fromIntegerApplyType)
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = fromIntegerOp
+                                             , typ = fromIntegerApplyType
+                                             , function = GlobalExpression Global {name = FunctionGlobal LengthFunction}
+                                             }
+          } ->
+      stepLength (list, listApplyType) (fromIntegerOp, fromIntegerApplyType)
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = compareOp
+                                             , function = GlobalExpression Global {name = FunctionGlobal SortFunction}
+                                             }
+          } -> stepSort (ApplyExpression apply') (list, listApplyType) compareOp
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = predicate
+                                             , function = GlobalExpression Global {name = FunctionGlobal FindFunction}
+                                             }
+          } -> stepFind (ApplyExpression apply') (list, listApplyType) predicate
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = predicate
+                                             , function = GlobalExpression Global {name = FunctionGlobal AllFunction}
+                                             }
+          } -> stepAll (ApplyExpression apply') (list, listApplyType) predicate
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = predicate
+                                             , function = GlobalExpression Global {name = FunctionGlobal AnyFunction}
+                                             }
+          } -> stepAny (ApplyExpression apply') (list, listApplyType) predicate
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = compareOp
+                                             , function = GlobalExpression Global {name = FunctionGlobal DistinctFunction}
+                                             }
+          } ->
+      stepDistinct (ApplyExpression apply') (list, listApplyType) compareOp
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = compareOp
+                                             , function = GlobalExpression Global {name = FunctionGlobal MaximumFunction}
+                                             }
+          } ->
+      stepMaximum (ApplyExpression apply') (list, listApplyType) compareOp
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = compareOp
+                                             , function = GlobalExpression Global {name = FunctionGlobal MinimumFunction}
+                                             }
+          } ->
+      stepMinimum (ApplyExpression apply') (list, listApplyType) compareOp
+    Apply { argument = ArrayExpression list
+          , typ = listApplyType
+          , function = ApplyExpression Apply { argument = fromIntegerOp
+                                             , typ = fromIntegerApplyType
+                                             , function = ApplyExpression Apply { argument = addOp
+                                                                                , typ = addOpType
+                                                                                , function = GlobalExpression Global {name = FunctionGlobal SumFunction}
+                                                                                }
+                                             }
+          } ->
+      stepSum
+        (list, listApplyType)
+        (addOp, addOpType)
+        (fromIntegerOp, fromIntegerApplyType)
+    _ -> do
+      case function' of
+        LambdaExpression Lambda {body} -> do
+          body' <- betaReduce body argument'
+          stepExpression body'
+        GlobalExpression (Global {name = FunctionGlobal func})
+          | elem func [NullFunction] -> stepFunction1 typ func argument'
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal FromIntegerIntegerInstance)})
+                              }
+          | LiteralExpression (NumberLiteral (Number {number = IntegerNumber {}})) <-
+             argument' -> pure (Ok argument')
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromDecimalGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromDecimalDecimalInstance fromDecimalInstance))})
+                              }
+          | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
+                                                     , typ = typ'
+                                                     })) <- argument' -> do
+            decimal' <- fromDecimalStep fromDecimalInstance decimal?
+            pure
+              (Ok
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number {number = DecimalNumber decimal', typ = typ', ..}))))
+        ApplyExpression Apply { function = GlobalExpression (Global {name = FromIntegerGlobal})
+                              , argument = GlobalExpression (Global {name = (InstanceGlobal (FromIntegerDecimalInstance supersetPlaces))})
+                              }
+          | LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
+                                                     , typ = typ'
+                                                     })) <- argument' -> do
+            pure
+              (Ok
+                 (LiteralExpression
+                    (NumberLiteral
+                       (Number
+                          { number =
+                              DecimalNumber
+                                (decimalFromInteger integer supersetPlaces)
+                          , typ = typ'
+                          , ..
+                          }))))
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal functionName}
+                              , argument = functionExpression
+                              , location = applyLocation
+                              }
+          | functionName `elem` [MapFunction, FilterFunction] ->
+            stepFunction2
+              functionName
+              argument'
+              functionExpression
+              location
+              applyLocation
+              typ
+        _ ->
+          pure
+            (Ok
+               (ApplyExpression
+                  Apply {function = function', argument = argument', ..}))
 
 --------------------------------------------------------------------------------
 -- Function stepper
-
-data Find e
-  = FoundHole
-  | FoundStop e
 
 stepFind ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepFind asis (Array {expressions}, typ) predicate = do
   result <-
     traverseE_
       (\e -> do
-         e' <- stepExpression e
+         e' <- stepExpression e?
          case e' of
-           HoleExpression {} -> pure (Left FoundHole)
+           HoleExpression {} -> pure (FoundHole e')
            _ -> do
              boolish <-
                stepExpression
@@ -439,34 +463,39 @@ stepFind asis (Array {expressions}, typ) predicate = do
                        , argument = e'
                        , location = BuiltIn
                        , typ = typeOutput (expressionType predicate)
-                       }))
+                       }))?
              boolR <- reify boolish
              case boolR of
-               Right (BoolR _ True) -> pure (Left (FoundStop e'))
-               Right (BoolR _ False) -> pure (Right ())
-               _ -> pure (Left FoundHole))
+               Ok (BoolR _ True) -> pure (Returned e')
+               Ok (BoolR _ False) -> pure (Ok ())
+               Ok _ -> pure (Errored ShouldGetBool)
+               Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+               FoundHole h -> pure (FoundHole h)
+
+               Errored err -> pure (Errored err))
       (toList expressions)
   case result of
-    Left (FoundStop e) -> pure (someVariantSigged typ e)
-    Left FoundHole -> pure asis
-    Right () -> pure (noneVariantSigged typ)
+    Returned e -> pure (Ok (someVariantSigged typ e))
+    FoundHole {} -> pure (Ok asis)
+    Errored e -> pure (Errored e)
+    Ok () -> pure (Ok (noneVariantSigged typ))
 
 -- | Any is a bool-specific version of find.
 stepAny ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepAny asis (Array {expressions}, typ) predicate = do
   if V.null expressions
-    then pure (noneVariantSigged typ)
+    then pure (Ok (noneVariantSigged typ))
     else do
       result <-
         traverseE_
           (\e -> do
-             e' <- stepExpression e
+             e' <- stepExpression e?
              case e' of
-               HoleExpression {} -> pure (Left FoundHole)
+               HoleExpression {} -> pure (FoundHole e')
                _ -> do
                  boolish <-
                    stepExpression
@@ -476,35 +505,39 @@ stepAny asis (Array {expressions}, typ) predicate = do
                            , argument = e'
                            , location = BuiltIn
                            , typ = typeOutput (expressionType predicate)
-                           }))
+                           }))?
                  boolR <- reify boolish
                  case boolR of
-                   Right (BoolR _ True) ->
-                     pure (Left (FoundStop (trueVariant BuiltIn)))
-                   Right (BoolR _ False) -> pure (Right ())
-                   _ -> pure (Left FoundHole))
+                   Ok (BoolR _ True) ->
+                     pure (Returned (trueVariant BuiltIn))
+                   Ok (BoolR _ False) -> pure (Ok ())
+                   Ok _ -> pure (Errored ShouldGetBool)
+                   Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+                   FoundHole h -> pure (FoundHole h)
+                   Errored err -> pure (Errored err))
           (toList expressions)
       case result of
-        Left (FoundStop e) -> pure (someVariantSigged typ e)
-        Left FoundHole -> pure asis
-        Right () -> pure (someVariantSigged typ (falseVariant BuiltIn))
+        Ok () -> pure (Ok (someVariantSigged typ (falseVariant BuiltIn)))
+        Returned e -> pure (Ok (someVariantSigged typ e))
+        FoundHole{} -> pure (Ok asis)
+        Errored e -> pure (Errored e)
 
 -- | All is a bool-specific version of find.
 stepAll ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepAll asis (Array {expressions}, typ) predicate = do
   if V.null expressions
-    then pure (noneVariantSigged typ)
+    then pure (Ok (noneVariantSigged typ))
     else do
       result <-
         traverseE_
           (\e -> do
-             e' <- stepExpression e
+             e' <- stepExpression e?
              case e' of
-               HoleExpression {} -> pure (Left FoundHole)
+               HoleExpression {} -> pure (FoundHole e')
                _ -> do
                  boolish <-
                    stepExpression
@@ -514,105 +547,117 @@ stepAll asis (Array {expressions}, typ) predicate = do
                            , argument = e'
                            , location = BuiltIn
                            , typ = typeOutput (expressionType predicate)
-                           }))
+                           }))?
                  boolR <- reify boolish
                  case boolR of
-                   Right (BoolR _ True) -> pure (Right ())
-                   Right (BoolR _ False) -> pure (Left (FoundStop ()))
-                   _ -> pure (Left FoundHole))
+                   Ok (BoolR _ True) -> pure (Ok ())
+                   Ok (BoolR _ False) -> pure (Returned (falseVariant BuiltIn))
+                   Ok _ -> pure (Errored ShouldGetBool)
+                   Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+                   FoundHole h -> pure (FoundHole h)
+                   Errored err -> pure (Errored err))
           (toList expressions)
       case result of
-        Left (FoundStop ()) ->
-          pure (someVariantSigged typ (falseVariant BuiltIn))
-        Left FoundHole -> pure asis
-        Right () -> pure (someVariantSigged typ (trueVariant BuiltIn))
+        Returned false -> pure (Ok (someVariantSigged typ false))
+        Ok () -> pure (Ok (someVariantSigged typ (trueVariant BuiltIn)))
+        FoundHole{} -> pure (Ok asis)
+        Errored e -> pure (Errored e)
 
 stepDistinct ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepDistinct asis (list@Array {expressions}, _listApplyType) _cmpInst = do
   result <-
     traverseE
       (\e -> do
-         e' <- stepExpression e
+         e' <- stepExpression e?
          reify e')
       (toList expressions)
   case result of
-    Left () -> pure asis
-    Right es ->
+    FoundHole {} -> pure (Ok asis)
+    Ok es ->
       pure
-        (ArrayExpression
-           list {expressions = V.fromList (map originalR (nubOrd es))})
+        (Ok
+           (ArrayExpression
+              list {expressions = V.fromList (map originalR (nubOrd es))}))
+    Errored e -> pure (Errored e)
+    Returned e -> pure (Returned e)
 
 stepSort ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepSort asis (list@Array {expressions}, _listApplyType) _cmpInst = do
   result <-
     traverseE
       (\e -> do
-         e' <- stepExpression e
+         e' <- stepExpression e?
          reify e')
       (toList expressions)
   case result of
-    Left () -> pure asis
-    Right es ->
+    FoundHole {} -> pure (Ok asis)
+    Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+    Errored err -> pure (Errored err)
+    Ok es ->
       pure
-        (ArrayExpression
-           list {expressions = V.fromList (map originalR (List.sort es))})
+        (Ok (ArrayExpression
+            list {expressions = V.fromList (map originalR (List.sort es))}))
 
 stepMinimum ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepMinimum asis (Array {expressions}, typ) _cmpInst = do
   result <-
     traverseE
       (\e -> do
-         e' <- stepExpression e
+         e' <- stepExpression e?
          reify e')
       (toList expressions)
   case result of
-    Left () -> pure asis
-    Right [] -> pure (noneVariantSigged typ)
-    Right es -> pure (someVariantSigged typ (originalR (minimum es)))
+    FoundHole {} -> pure (Ok asis)
+    Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+    Errored err -> pure (Errored err)
+    Ok [] -> pure (Ok (noneVariantSigged typ))
+    Ok es -> pure (Ok (someVariantSigged typ (originalR (minimum es))))
 
 stepMaximum ::
      Expression Resolved
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepMaximum asis (Array {expressions}, typ) _cmpInst = do
   result <-
     traverseE
       (\e -> do
-         e' <- stepExpression e
+         e' <- stepExpression e?
          reify e')
       (toList expressions)
   case result of
-    Left () -> pure asis
-    Right [] -> pure (noneVariantSigged typ)
-    Right es -> pure (someVariantSigged typ (originalR (maximum es)))
+    FoundHole {} -> pure (Ok asis)
+    Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+    Errored err -> pure (Errored err)
+    Ok [] -> pure (Ok (noneVariantSigged typ))
+    Ok es -> pure (Ok (someVariantSigged typ (originalR (maximum es))))
 
 stepAverage ::
      (Array Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) fromInt =
   loop Nothing (V.toList expressions)
   where
     loop nil [] =
       case nil of
-        Nothing -> pure (noneVariant listApplyType)
+        Nothing -> pure (Ok (noneVariant listApplyType))
         Just total -> do
-          lenE <- stepLength list fromInt
+          lenE <- stepLength list fromInt?
           avgE <-
             stepInfix
               Infix
@@ -634,8 +679,8 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
                 , left = total
                 , right = lenE
                 , typ = listApplyType
-                }
-          pure (someVariant listApplyType avgE)
+                }?
+          pure (Ok (someVariant listApplyType avgE))
     loop nil (e:es) =
       case nil of
         Nothing -> loop (Just e) es
@@ -661,13 +706,13 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
                 , left = acc
                 , right = e
                 , typ = listApplyType
-                }
+                }?
           loop (Just nil') es
 
 stepLength ::
      (Array Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepLength (Array {expressions}, listApplyType) (fromIntegerOp, _fromIntegerType) =
   stepApply
     Apply
@@ -701,14 +746,14 @@ stepSum ::
      (Array Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
   -> (Expression Resolved, Type Generalised)
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepSum (Array {expressions}, listApplyType) (addOp, _addOpType) (_fromIntegerOp, _fromIntegerType) =
   loop Nothing (V.toList expressions)
   where
     loop nil [] =
       case nil of
-        Nothing -> pure (noneVariant listApplyType)
-        Just thing -> pure (someVariant listApplyType thing)
+        Nothing -> pure (Ok (noneVariant listApplyType))
+        Just thing -> pure (Ok (someVariant listApplyType thing))
     loop nil (e:es) =
       case nil of
         Nothing -> loop (Just e) es
@@ -734,14 +779,14 @@ stepSum (Array {expressions}, listApplyType) (addOp, _addOpType) (_fromIntegerOp
                 , left = acc
                 , right = e
                 , typ = listApplyType
-                }
+                }?
           loop (Just nil') es
 
 stepFunction1 ::
      Type Generalised
   -> Function
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepFunction1 returnType func argument =
   case func of
     NullFunction ->
@@ -762,14 +807,14 @@ stepFunction2 ::
   -> Cursor
   -> Cursor
   -> Type Generalised
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepFunction2 function argument' functionExpression location applyLocation originalArrayType =
   case function of
     MapFunction ->
       case argument' of
         ArrayExpression Array {expressions} -> do
           expressions' <-
-            traverse
+            traverseE
               (\arrayItem ->
                  stepExpression
                    (ApplyExpression
@@ -779,28 +824,25 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                          , location = location
                          , typ = typeOutput (expressionType functionExpression)
                          })))
-              expressions
-          stepped' <- get
-          case stepped' of
-            Stepped -> error "TODO: stepped form."
-            Continue ->
-              pure
-                (ArrayExpression
-                   Array
-                     { typ =
-                         ArrayType
-                           (typeOutput (expressionType functionExpression))
-                     , location = applyLocation
-                     , expressions = expressions'
-                     })
+              expressions?
+          pure
+            (Ok
+               (ArrayExpression
+                  Array
+                    { typ =
+                        ArrayType
+                          (typeOutput (expressionType functionExpression))
+                    , location = applyLocation
+                    , expressions = expressions'
+                    }))
         _ -> error "Invalid argument to function."
     FilterFunction ->
       case argument' of
         ArrayExpression Array {expressions} -> do
           expressions' <-
-            traverse
+            traverseE
               (\arrayItem -> do
-                 arrayItem' <- stepExpression arrayItem
+                 arrayItem' <- stepExpression arrayItem?
                  bool <-
                    stepExpression
                      (ApplyExpression
@@ -810,90 +852,85 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                            , location = location
                            , typ =
                                typeOutput (expressionType functionExpression)
-                           }))
+                           }))?
                  boolR <- reify bool
                  case boolR of
-                   Right (BoolR _ True) -> pure (Just arrayItem')
-                   Right (BoolR _ False) -> pure Nothing
-                   _ ->
-                     pure (Just (holeExpression (expressionType arrayItem))))
-              expressions
-          stepped' <- get
-          case stepped' of
-            Stepped -> error "TODO: stepped form."
-            Continue ->
-              pure
-                (ArrayExpression
-                   Array
-                     { typ = originalArrayType
-                     , location = applyLocation
-                     , expressions = (V.mapMaybe id expressions')
-                     })
+                   Ok (BoolR _ True) -> pure (Ok (Just arrayItem'))
+                   Ok (BoolR _ False) -> pure (Ok Nothing)
+                   Ok _ -> pure (Errored ShouldGetBool)
+                   Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+                   FoundHole e -> pure (Ok (Just e))
+                   Errored e -> pure (Errored e))
+              expressions?
+          pure
+            (Ok
+               (ArrayExpression
+                  Array
+                    { typ = originalArrayType
+                    , location = applyLocation
+                    , expressions = (V.mapMaybe id expressions')
+                    }))
         _ -> error "Invalid argument to function."
     _ -> error "TODO: Missing function implementation!"
 
 --------------------------------------------------------------------------------
 -- Infix stepper
 
-stepInfix :: Infix Resolved -> Step e (Expression Resolved)
+stepInfix :: Infix Resolved -> Step (Result (Expression Resolved))
 stepInfix Infix {..} = do
-  global' <- stepExpression global
-  left' <- stepExpression left
-  right' <- stepExpression right
-  stepped <- get
+  global' <- stepExpression global?
+  left' <- stepExpression left?
+  right' <- stepExpression right?
   let asis =
         (InfixExpression
            Infix {global = global', left = left', right = right', ..})
-  case stepped of
-    Stepped -> pure asis
-    Continue ->
-      case (left', right') of
-        (HoleExpression {}, _) -> pure asis
-        (_, HoleExpression {}) -> pure asis
-        _ ->
-          case global' of
-            -- Arithmetic
-            ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
-                                  } ->
-              stepIntegerOp asis numericBinOp left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
-                                  } ->
-              stepDecimalOp asis precision numericBinOp left' right'
-            -- Equality
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
-                                  , location = location'
-                                  } ->
-              stepAtomicEquality asis location' equality left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualTextInstance}
-                                  , location = location'
-                                  } ->
-              stepAtomicEquality asis location' equality left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance {}}
-                                  , location = location'
-                                  } ->
-              stepAtomicEquality asis location' equality left' right'
-            -- Compareity
-            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareIntegerInstance}
-                                  , location = location'
-                                  } ->
-              stepAtomicComparison asis location' compareity left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareTextInstance}
-                                  , location = location'
-                                  } ->
-              stepAtomicComparison asis location' compareity left' right'
-            ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
-                                  , argument = GlobalExpression Global {name = InstanceGlobal CompareDecimalInstance {}}
-                                  , location = location'
-                                  } ->
-              stepAtomicComparison asis location' compareity left' right'
-            _ -> error ("stepInfix: " ++ show global')
+  case (left', right') of
+    (HoleExpression {}, _) -> pure (Ok asis)
+    (_, HoleExpression {}) -> pure (Ok asis)
+    _ ->
+      case global'
+        -- Arithmetic
+            of
+        ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
+                              , argument = GlobalExpression Global {name = InstanceGlobal (IntegerOpInstance numericBinOp)}
+                              } -> stepIntegerOp asis numericBinOp left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = NumericBinOpGlobal {}}
+                              , argument = GlobalExpression Global {name = InstanceGlobal (DecimalOpInstance precision numericBinOp)}
+                              } ->
+          stepDecimalOp asis precision numericBinOp left' right'
+        -- Equality
+        ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
+                              , argument = GlobalExpression Global {name = InstanceGlobal EqualIntegerInstance}
+                              , location = location'
+                              } ->
+          stepAtomicEquality asis location' equality left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
+                              , argument = GlobalExpression Global {name = InstanceGlobal EqualTextInstance}
+                              , location = location'
+                              } ->
+          stepAtomicEquality asis location' equality left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = EqualGlobal equality}
+                              , argument = GlobalExpression Global {name = InstanceGlobal EqualDecimalInstance {}}
+                              , location = location'
+                              } ->
+          stepAtomicEquality asis location' equality left' right'
+        -- Compareity
+        ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                              , argument = GlobalExpression Global {name = InstanceGlobal CompareIntegerInstance}
+                              , location = location'
+                              } ->
+          stepAtomicComparison asis location' compareity left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                              , argument = GlobalExpression Global {name = InstanceGlobal CompareTextInstance}
+                              , location = location'
+                              } ->
+          stepAtomicComparison asis location' compareity left' right'
+        ApplyExpression Apply { function = GlobalExpression Global {name = CompareGlobal compareity}
+                              , argument = GlobalExpression Global {name = InstanceGlobal CompareDecimalInstance {}}
+                              , location = location'
+                              } ->
+          stepAtomicComparison asis location' compareity left' right'
+        _ -> error ("stepInfix: " ++ show global')
 
 --------------------------------------------------------------------------------
 -- Equality
@@ -905,20 +942,20 @@ stepAtomicEquality ::
   -> Equality
   -> Expression Resolved
   -> Expression Resolved
-  -> f (Expression Resolved)
+  -> f (Result (Expression Resolved))
 stepAtomicEquality asis location equality left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
       pure
-        (if comparator left right
-           then trueVariant location
-           else falseVariant location)
+        (Ok (if comparator left right
+            then trueVariant location
+            else falseVariant location))
     (LiteralExpression (TextLiteral LiteralText {text = left}), LiteralExpression (TextLiteral LiteralText {text = right})) -> do
       pure
-        (if comparator left right
-           then trueVariant location
-           else falseVariant location)
-    _ -> pure asis
+        (Ok (if comparator left right
+            then trueVariant location
+            else falseVariant location))
+    _ -> pure (Ok asis)
   where
     comparator :: Eq a => a -> a -> Bool
     comparator =
@@ -936,8 +973,8 @@ stepAtomicComparison ::
   -> Comparison
   -> Expression s1
   -> Expression s2
-  -> f (Expression Resolved)
-stepAtomicComparison asis location compareity left' right' =
+  -> f (Result (Expression Resolved))
+stepAtomicComparison asis location compareity left' right' = fmap Ok $
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = left}), LiteralExpression (NumberLiteral Number {number = right})) -> do
       pure
@@ -967,29 +1004,31 @@ stepIntegerOp ::
   -> NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepIntegerOp asis numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number {number = IntegerNumber left, typ}), LiteralExpression (NumberLiteral Number {number = IntegerNumber right}))
-      | DivideOp <- numericBinOp, 0 <- right -> pure asis -- Nothing to do for division by zero.
+      | DivideOp <- numericBinOp
+      , 0 <- right -> pure (Ok asis) -- Nothing to do for division by zero.
       | otherwise -> do
         pure
-          (LiteralExpression
-             (NumberLiteral
-                Number
-                  { number =
-                      IntegerNumber
-                        (case numericBinOp of
-                           AddOp -> left + right
-                           SubtractOp -> left - right
-                           MulitplyOp -> left * right
-                           DivideOp -> div left right)
-                  , location = SteppedCursor
-                  , ..
-                  }))
+          (Ok
+             (LiteralExpression
+                (NumberLiteral
+                   Number
+                     { number =
+                         IntegerNumber
+                           (case numericBinOp of
+                              AddOp -> left + right
+                              SubtractOp -> left - right
+                              MulitplyOp -> left * right
+                              DivideOp -> div left right)
+                     , location = SteppedCursor
+                     , ..
+                     })))
     _ {-Step (lift (lift (Left (InvalidIntegerOpOperands left' right'))))-}
      -- warn
-     -> pure asis
+     -> pure (Ok asis)
 
 stepDecimalOp ::
      Expression Resolved
@@ -997,7 +1036,7 @@ stepDecimalOp ::
   -> NumericBinOp
   -> Expression Resolved
   -> Expression Resolved
-  -> Step e (Expression Resolved)
+  -> Step (Result (Expression Resolved))
 stepDecimalOp asis places numericBinOp left' right' =
   case (left', right') of
     (LiteralExpression (NumberLiteral Number { number = DecimalNumber (decimalToFixed -> left)
@@ -1017,22 +1056,22 @@ stepDecimalOp asis places numericBinOp left' right' =
                         then Left () -- We stop due to division by zero.
                         else pure (x / y)
                 pure (fixedToDecimal (SomeFixed places result))) of
-        Nothing -> Step (lift (lift (Left MismatchingPrecisionsInOp)))
-        Just (Left ()) -> pure asis -- Division by zero has no answer, so we stop.
+        Nothing -> pure (Errored MismatchingPrecisionsInOp)
+        Just (Left ()) -> pure (Ok asis) -- Division by zero has no answer, so we stop.
         Just (Right result) ->
           pure
-            (LiteralExpression
-               (NumberLiteral
-                  Number
-                    { number = DecimalNumber result
-                    , location = SteppedCursor
-                    -- TODO: Add "step number X" or something to say
-                    -- "this is where the value came from". Could be
-                    -- useful for finding 0's which hit an x/0.
-                    , ..
-                    }))
+            (Ok (LiteralExpression
+                (NumberLiteral
+                   Number
+                     { number = DecimalNumber result
+                     , location = SteppedCursor
+                     -- TODO: Add "step number X" or something to say
+                     -- "this is where the value came from". Could be
+                     -- useful for finding 0's which hit an x/0.
+                     , ..
+                     })))
     -- _ -> Step (lift (lift (Left (InvalidDecimalOpOperands left' right'))))
-    _ -> pure asis
+    _ -> pure (Ok asis)
 
 --------------------------------------------------------------------------------
 -- Beta reduction
@@ -1088,6 +1127,12 @@ betaReduce body0 arg = go 0 body0
         PropExpression Prop {..} -> do
           expression' <- go deBrujinNesting expression
           pure (PropExpression Prop {expression = expression', ..})
+        EarlyExpression Early {..} -> do
+          expression' <- go deBrujinNesting expression
+          pure (EarlyExpression Early {expression = expression', ..})
+        BoundaryExpression Boundary {..} -> do
+          expression' <- go deBrujinNesting expression
+          pure (BoundaryExpression Boundary {expression = expression', ..})
         ArrayExpression Array {..} -> do
           expressions' <- traverse (go deBrujinNesting) expressions
           pure (ArrayExpression Array {expressions = expressions', ..})
@@ -1119,27 +1164,21 @@ betaReduce body0 arg = go 0 body0
 --------------------------------------------------------------------------------
 -- FromDecimal instance stepping
 
-fromDecimalStep :: FromDecimalInstance -> Decimal -> Step e Decimal
+fromDecimalStep :: FromDecimalInstance -> Decimal -> Step (Result Decimal)
 fromDecimalStep fromDecimalInstance decimal =
   if thisSubsetPlaces == subsetPlaces
     then if thisSubsetPlaces == supersetPlaces
-           then pure decimal
+           then pure (Ok decimal)
            else if thisSubsetPlaces < supersetPlaces
-                  then pure (expandDecimalPrecision supersetPlaces decimal)
-                  else Step
-                         (lift
-                            (lift
-                               (Left
-                                  (CannotShrinkADecimalFromTo
-                                     thisSubsetPlaces
-                                     supersetPlaces))))
-    else Step
-           (lift
-              (lift
-                 (Left
-                    (MismatchingPrecisionsInFromDecimal
-                       thisSubsetPlaces
-                       subsetPlaces))))
+                  then pure (Ok (expandDecimalPrecision supersetPlaces decimal))
+                  else pure
+                         (Errored
+                            (CannotShrinkADecimalFromTo
+                               thisSubsetPlaces
+                               supersetPlaces))
+    else pure
+           (Errored
+              (MismatchingPrecisionsInFromDecimal thisSubsetPlaces subsetPlaces))
   where
     Decimal {places = thisSubsetPlaces} = decimal
     FromDecimalInstance {supersetPlaces, subsetPlaces} = fromDecimalInstance
@@ -1152,6 +1191,9 @@ holeExpression typ = HoleExpression Hole {location = BuiltIn, typ}
 
 --------------------------------------------------------------------------------
 -- Reification
+
+-- Define a specific reification result type like Reified | GotHole
+-- rewrite the one in function stepper
 
 data Reified e
   = TextR e !Text
@@ -1184,18 +1226,19 @@ originalR =
     DecimalR e _ -> e
     BoolR e _ -> e
 
-reify :: Expression s -> Step e (Either () (Reified (Expression s)))
+reify :: Expression Resolved -> Step (Result (Reified (Expression Resolved)))
 reify e' =
   case e' of
     LiteralExpression literal ->
       case literal of
-        TextLiteral LiteralText {text} -> pure (Right (TextR e' text))
+        TextLiteral LiteralText {text} -> pure (Ok (TextR e' text))
         NumberLiteral Number {number = IntegerNumber integer} ->
-          pure (Right (IntegerR e' integer))
+          pure (Ok (IntegerR e' integer))
         NumberLiteral Number {number = DecimalNumber decimal} ->
-          pure (Right (DecimalR e' decimal))
+          pure (Ok (DecimalR e' decimal))
     VariantExpression Variant {tag = TagName "true", argument = Nothing} ->
-      pure (Right (BoolR e' True))
+      pure (Ok (BoolR e' True))
     VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
-      pure (Right (BoolR e' False))
-    _ -> pure (Left ())
+      pure (Ok (BoolR e' False))
+    HoleExpression {} -> pure (FoundHole e')
+    _ -> pure (Errored (InvalidReifyValue e'))

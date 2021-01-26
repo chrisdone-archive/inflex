@@ -44,12 +44,20 @@ instance Display (Expression Resolved) where
       LetExpression let' -> display let'
       IfExpression if' -> display if'
       CaseExpression case' -> display case'
+      BoundaryExpression boundary' -> display boundary'
+      EarlyExpression early' -> display early'
       InfixExpression infix' -> display infix'
 
 instance Display (Case Resolved) where
   display Case{..} = "case " <> display scrutinee <> " {" <>
     mconcat (intersperse ", " (map display (toList alternatives)))
     <> "}"
+
+instance Display (Early Resolved) where
+  display Early{..} = display expression <> "?"
+
+instance Display (Boundary Resolved) where
+  display Boundary{..} = "early { " <> display expression <> " }"
 
 instance Display (If Resolved) where
   display If {..} =
@@ -184,6 +192,8 @@ instance Display (Expression Renamed) where
   display =
     \case
       RecordExpression record -> display record
+      BoundaryExpression boundary' -> display boundary'
+      EarlyExpression early' -> display early'
       IfExpression if' -> display if'
       CaseExpression case' -> display case'
       VariantExpression variant -> display variant
@@ -197,6 +207,12 @@ instance Display (Expression Renamed) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Early Renamed) where
+  display Early{..} = display expression <> "?"
+
+instance Display (Boundary Renamed) where
+  display Boundary{..} = "early { " <> display expression <> " }"
 
 instance Display (Case Renamed) where
   display Case{..} = "case " <> display scrutinee <> " {" <>
@@ -341,6 +357,8 @@ instance Display (Expression Parsed) where
   display =
     \case
       RecordExpression record -> display record
+      BoundaryExpression boundary' -> display boundary'
+      EarlyExpression early' -> display early'
       IfExpression if' -> display if'
       CaseExpression case' -> display case'
       VariantExpression variant -> display variant
@@ -354,6 +372,12 @@ instance Display (Expression Parsed) where
       GlobalExpression global -> display global
       LetExpression let' -> display let'
       InfixExpression infix' -> display infix'
+
+instance Display (Early Parsed) where
+  display Early{..} = display expression <> "?"
+
+instance Display (Boundary Parsed) where
+  display Boundary{..} = "early { " <> display expression <> " }"
 
 instance Display (Case Parsed) where
   display Case{..} = "case " <> display scrutinee <> " {" <>

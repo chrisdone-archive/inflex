@@ -36,6 +36,9 @@ import           Inflex.Location
 import qualified Inflex.Renamer as Renamer
 import           Inflex.Type
 import           Inflex.Types
+import qualified Inflex.Types as Alternative (Alternative(..))
+import qualified Inflex.Types as Bind (Bind(..))
+import qualified Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Optics
@@ -107,6 +110,10 @@ expressionGenerator =
       fmap LetExpression (letGenerator let')
     CaseExpression case' ->
       fmap CaseExpression (caseGenerator case')
+    EarlyExpression early' ->
+      fmap EarlyExpression (earlyGenerator early')
+    BoundaryExpression boundary' ->
+      fmap BoundaryExpression (boundaryGenerator boundary')
     IfExpression if' ->
       fmap IfExpression (ifGenerator if')
     InfixExpression infix' ->
@@ -171,6 +178,31 @@ caseGenerator Case {..} = do
       { scrutinee = scrutinee'
       , alternatives = alternatives'
       , typ = commonResult
+      , ..
+      }
+
+earlyGenerator :: Early Filled -> Generate e (Early Generated)
+earlyGenerator Early {..} = do
+  expression' <- expressionGenerator expression
+  rowVariable <- generateTypeVariable location EarlyPrefix RowKind
+  innerType <- generateVariableType location EarlyPrefix TypeKind
+  let outerType = expressionType expression'
+  addEqualityConstraint
+    EqualityConstraint
+      { location
+      , type1 = outerType
+      , type2 = okishType location rowVariable innerType
+      }
+  pure Early {expression = expression', typ = innerType, ..}
+
+boundaryGenerator :: Boundary Filled -> Generate e (Boundary Generated)
+boundaryGenerator Boundary {..} = do
+  expression' <- expressionGenerator expression
+  rowVariable <- generateTypeVariable location BoundaryPrefix RowKind
+  pure
+    Boundary
+      { expression = expression'
+      , typ = okishType location rowVariable (expressionType expression')
       , ..
       }
 

@@ -36,6 +36,7 @@ expressionType :: Expression s -> StagedType s
 expressionType =
   \case
     CaseExpression case' -> caseType case'
+    EarlyExpression early' -> earlyType early'
     IfExpression if' -> ifType if'
     LiteralExpression literal -> literalType literal
     ArrayExpression array -> arrayType array
@@ -49,6 +50,10 @@ expressionType =
     PropExpression prop -> propType prop
     HoleExpression hole -> holeType hole
     VariantExpression variant -> variantType variant
+    BoundaryExpression e -> boundaryType e
+
+boundaryType :: Boundary s -> StagedType s
+boundaryType Boundary{typ} = typ
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
@@ -58,6 +63,9 @@ ifType If {typ} = typ
 
 caseType :: Case s -> StagedType s
 caseType Case {typ} = typ
+
+earlyType :: Early s -> StagedType s
+earlyType Early {typ} = typ
 
 arrayType :: Array s -> StagedType s
 arrayType Array {typ} = typ
@@ -167,6 +175,18 @@ maybeType location a =
           , fields =
               [ Field {location, name = "ok", typ = a}
               , Field {location, name = "none", typ = nullType location}
+              ]
+          }))
+
+okishType :: StagedLocation s -> TypeVariable s -> Type s -> Type s
+okishType location variable a =
+  VariantType
+    (RowType
+       (TypeRow
+          { location
+          , typeVariable = Just variable
+          , fields =
+              [ Field {location, name = "ok", typ = a}
               ]
           }))
 

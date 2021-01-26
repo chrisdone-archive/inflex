@@ -59,12 +59,20 @@ instance Printer (Expression Resolved) where
       LetExpression let' -> printer let'
       IfExpression if' -> printer if'
       CaseExpression case' -> printer case'
+      EarlyExpression early' -> printer early'
+      BoundaryExpression boundary' -> printer boundary'
       InfixExpression infix' -> printer infix'
 
 instance Printer (Case Resolved) where
   printer Case{..} = "case " <> printer scrutinee <> " {" <>
     mconcat (List.intersperse ", " (map printer (toList alternatives)))
     <> "}"
+
+instance Printer (Early Resolved) where
+  printer Early{..} = printer expression <> "?"
+
+instance Printer (Boundary Resolved) where
+  printer Boundary{..} = "early { " <> printer expression <> " }"
 
 instance Printer (If Resolved) where
   printer If {..} =

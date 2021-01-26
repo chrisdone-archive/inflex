@@ -29,6 +29,8 @@ expressionFill globals =
   \case
     RecordExpression record -> fmap RecordExpression (recordFill globals record)
     CaseExpression case' -> fmap CaseExpression (caseFill globals case')
+    EarlyExpression early' -> fmap EarlyExpression (earlyFill globals early')
+    BoundaryExpression boundary' -> fmap BoundaryExpression (boundaryFill globals boundary')
     IfExpression if' -> fmap IfExpression (ifFill globals if')
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
@@ -75,6 +77,16 @@ caseFill globals Case {..} = do
   scrutinee' <- expressionFill globals scrutinee
   alternatives' <- traverse (alternativeFill globals) alternatives
   pure Case {alternatives = alternatives', scrutinee = scrutinee', ..}
+
+earlyFill :: Map Text (Either e Hash) -> Early Renamed -> Filler e (Early Filled)
+earlyFill globals Early {..} = do
+  expression' <- expressionFill globals expression
+  pure Early {expression = expression', ..}
+
+boundaryFill :: Map Text (Either e Hash) -> Boundary Renamed -> Filler e (Boundary Filled)
+boundaryFill globals Boundary {..} = do
+  expression' <- expressionFill globals expression
+  pure Boundary {expression = expression', ..}
 
 alternativeFill ::
      Map Text (Either e Hash)

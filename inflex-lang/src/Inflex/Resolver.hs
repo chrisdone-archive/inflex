@@ -107,6 +107,10 @@ expressionResolver nesting =
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
       fmap PropExpression (propResolver nesting prop)
+    EarlyExpression early ->
+      fmap EarlyExpression (earlyResolver nesting early)
+    BoundaryExpression boundary ->
+      fmap BoundaryExpression (boundaryResolver nesting boundary)
     ArrayExpression array ->
       fmap ArrayExpression (arrayResolver nesting array)
     VariantExpression variant ->
@@ -205,6 +209,16 @@ propResolver :: DeBrujinNesting -> Prop Generalised -> Resolve (Prop Resolved)
 propResolver nesting Prop {..} = do
   expression' <- expressionResolver nesting expression
   pure Prop {expression = expression', ..}
+
+earlyResolver :: DeBrujinNesting -> Early Generalised -> Resolve (Early Resolved)
+earlyResolver nesting Early {..} = do
+  expression' <- expressionResolver nesting expression
+  pure Early {expression = expression', ..}
+
+boundaryResolver :: DeBrujinNesting -> Boundary Generalised -> Resolve (Boundary Resolved)
+boundaryResolver nesting Boundary {..} = do
+  expression' <- expressionResolver nesting expression
+  pure Boundary {expression = expression', ..}
 
 arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved)
 arrayResolver nesting Array {..} = do
@@ -547,6 +561,8 @@ expressionCollect =
   \case
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
+    EarlyExpression early -> earlyCollect early
+    BoundaryExpression boundary -> boundaryCollect boundary
     HoleExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
     VariantExpression variant -> variantCollect variant
@@ -573,6 +589,12 @@ recordCollect Record {..} =
 
 propCollect :: Prop Generalised -> Set (ClassConstraint Generalised)
 propCollect Prop {..} = expressionCollect expression
+
+earlyCollect :: Early Generalised -> Set (ClassConstraint Generalised)
+earlyCollect Early {..} = expressionCollect expression
+
+boundaryCollect :: Boundary Generalised -> Set (ClassConstraint Generalised)
+boundaryCollect Boundary {..} = expressionCollect expression
 
 arrayCollect :: Array Generalised -> Set (ClassConstraint Generalised)
 arrayCollect Array {..} = foldMap expressionCollect expressions

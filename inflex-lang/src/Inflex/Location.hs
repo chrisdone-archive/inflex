@@ -21,6 +21,8 @@ expressionLocation =
     LetExpression let' -> letLocation let'
     IfExpression if' -> ifLocation if'
     CaseExpression case' -> caseLocation case'
+    EarlyExpression early' -> earlyLocation early'
+    BoundaryExpression boundary' -> boundaryLocation boundary'
     InfixExpression infix' -> infixLocation infix'
     GlobalExpression global -> globalLocation global
     ApplyExpression apply -> applyLocation apply
@@ -52,6 +54,12 @@ letLocation Let {location} = location
 
 caseLocation :: Case s -> StagedLocation s
 caseLocation Case {location} = location
+
+earlyLocation :: Early s -> StagedLocation s
+earlyLocation Early {location} = location
+
+boundaryLocation :: Boundary s -> StagedLocation s
+boundaryLocation Boundary {location} = location
 
 ifLocation :: If s -> StagedLocation s
 ifLocation If {location} = location

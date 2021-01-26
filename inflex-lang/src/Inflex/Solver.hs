@@ -23,7 +23,6 @@ module Inflex.Solver
   , runSolver
   , solveTextRepl
   , freezeSubstitutions
-  , prettyEquality
   , Substitution(..)
   , SolveError(..)
   , IsSolved(..)
@@ -33,10 +32,9 @@ module Inflex.Solver
   ) where
 
 import           Control.DeepSeq
-import           Control.Early
+import           Control.Early (early, earlyThen)
 import           Control.Monad.State.Strict
 import           Data.Bifunctor
-import           Data.Char
 import           Data.Early
 import           Data.Foldable
 import           Data.Function
@@ -83,27 +81,6 @@ solveGenerated HasConstraints {thing = expression, mappings, equalities} =
        (runSolver
           (do unifyConstraints equalities?
               fmap Right freezeSubstitutions))
-
-prettyEquality :: EqualityConstraint -> String
-prettyEquality EqualityConstraint {type1,type2} =
-  prettyType type1 <> " ~ " <> prettyType type2
-
-prettyType :: Type Generated -> String
-prettyType =
-  \case
-    VariableType TypeVariable {prefix, index} -> map toLower (show prefix) ++ show index
-    ArrayType t -> "[" ++ prettyType t ++ "]"
-
-    ApplyType TypeApplication { function = ApplyType TypeApplication { function = ConstantType (TypeConstant {name = FunctionTypeName})
-                                                                     , argument = i
-                                                                     }
-                              , argument = o
-                              } ->
-      "(" ++ prettyType i ++ " -> " ++ prettyType o ++ ")"
-    ApplyType TypeApplication {function = f, argument = x} ->
-      "(" ++ prettyType f ++ " " ++ prettyType x ++ ")"
-    ConstantType TypeConstant {name} -> show name
-    _ -> "?"
 
 runSolver :: Solve a -> RIO SolveReader a
 runSolver = runSolve
@@ -400,6 +377,10 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     PropExpression prop ->
       PropExpression (propSolve substitutions prop)
+    EarlyExpression early' ->
+      EarlyExpression (earlySolve substitutions early')
+    BoundaryExpression boundary' ->
+      BoundaryExpression (boundarySolve substitutions boundary')
     HoleExpression hole ->
       HoleExpression (holeSolve substitutions hole)
     ArrayExpression array ->
@@ -437,6 +418,22 @@ lambdaSolve substitutions Lambda {..} =
 propSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Prop Generated -> Prop Solved
 propSolve substitutions Prop {..} =
   Prop
+    { expression = expressionSolve substitutions expression
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+earlySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Early Generated -> Early Solved
+earlySolve substitutions Early {..} =
+  Early
+    { expression = expressionSolve substitutions expression
+    , typ = solveType substitutions typ
+    , ..
+    }
+
+boundarySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Boundary Generated -> Boundary Solved
+boundarySolve substitutions Boundary {..} =
+  Boundary
     { expression = expressionSolve substitutions expression
     , typ = solveType substitutions typ
     , ..

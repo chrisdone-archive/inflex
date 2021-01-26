@@ -186,6 +186,10 @@ expressionGeneralise substitutions =
       LiteralExpression (literalGeneralise substitutions literal)
     PropExpression prop ->
       PropExpression (propGeneralise substitutions prop)
+    EarlyExpression early ->
+      EarlyExpression (earlyGeneralise substitutions early)
+    BoundaryExpression boundary ->
+      BoundaryExpression (boundaryGeneralise substitutions boundary)
     HoleExpression hole ->
       HoleExpression (holeGeneralise substitutions hole)
     ArrayExpression array ->
@@ -269,6 +273,28 @@ propGeneralise ::
   -> Prop Generalised
 propGeneralise substitutions Prop {..} =
   Prop
+    { expression = expressionGeneralise substitutions expression
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+earlyGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Early Solved
+  -> Early Generalised
+earlyGeneralise substitutions Early {..} =
+  Early
+    { expression = expressionGeneralise substitutions expression
+    , typ = generaliseType substitutions typ
+    , ..
+    }
+
+boundaryGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> Boundary Solved
+  -> Boundary Generalised
+boundaryGeneralise substitutions Boundary {..} =
+  Boundary
     { expression = expressionGeneralise substitutions expression
     , typ = generaliseType substitutions typ
     , ..
