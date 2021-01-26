@@ -568,4 +568,9 @@ early =
           "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?"
           (shouldReturn
              (stepDefaultedTextly "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?")
-             (Right "#oops")))
+             (Right "#oops"))
+        it
+          "case (x: find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }"
+          (shouldReturn
+             (stepDefaultedTextly "case (x: find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }")
+             (Right "1")))
