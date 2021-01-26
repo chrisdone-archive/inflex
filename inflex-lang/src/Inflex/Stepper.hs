@@ -1241,4 +1241,6 @@ reify e' =
     VariantExpression Variant {tag = TagName "false", argument = Nothing} ->
       pure (Ok (BoolR e' False))
     HoleExpression {} -> pure (FoundHole e')
-    _ -> pure (Errored (InvalidReifyValue e'))
+    _ -> pure (FoundHole e') -- This could error out, but in the case
+                             -- of _(1) for example, the hole is there
+                             -- but nested. So for now we leave it as a hole find.

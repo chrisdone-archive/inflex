@@ -261,6 +261,26 @@ functions2 = do
   describe
     "all"
     (do it
+          "all(_, [1])"
+          (shouldReturn
+             (stepDefaultedTextly "all(_, [1])")
+             (Right "all(_, [1])"))
+        it
+          "all(_, [])"
+          (shouldReturn
+             (stepDefaultedTextly "all(_, [])")
+             (Right "#none"))
+        it
+          "all(r:r=2, _)"
+          (shouldReturn
+             (stepDefaultedTextly "all(r:r=2,_)")
+             (Right "all(:($0 = fromInteger(2)), _)"))
+        it
+          "all(r:r=2,[2,2,_])"
+          (shouldReturn
+             (stepDefaultedTextly "all(r:r=2,[2,2,_])")
+             (Right "all(:($0 = fromInteger(2)), [2, 2, _])"))
+        it
           "all(r:r=2,[2,2,2])"
           (shouldReturn
              (stepDefaultedTextly "all(r:r=2,[2,2,2])")
