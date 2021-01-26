@@ -27,6 +27,7 @@ module Inflex.Lexer
   , _BackslashToken
   , _RightArrowToken
   , _CamelCaseToken
+  , _QuestionToken
   , _AnyWordToken
   , _OpenRoundToken
   , _CloseRoundToken
@@ -96,6 +97,7 @@ data Token
   | StringToken !Text
   | HoleToken
   | HashToken
+  | QuestionToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -185,6 +187,7 @@ tokenLexer =
         (Mega.choice
            [ HoleToken <$ Mega.char '_'
            , HashToken <$ Mega.char '#'
+           , QuestionToken <$ Mega.char '?'
            , OpenSquareToken <$ Mega.char '['
            , CloseSquareToken <$ Mega.char ']'
            , OpenCurlyToken <$ Mega.char '{'

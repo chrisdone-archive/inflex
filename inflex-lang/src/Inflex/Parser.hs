@@ -333,12 +333,12 @@ operatorlessExpressionParser =
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
-       , applyParser
+       , wrapEarly applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
-       , VariantExpression <$> variantParser
+       , wrapEarly (VariantExpression <$> variantParser)
        , parensParser
        ])
 
@@ -578,6 +578,24 @@ variantParser = do
            pure (pure e)
          else pure Nothing
   pure Variant {tag = TagName name, location, typ = Nothing, argument}
+
+wrapEarly :: Parser (Expression Parsed) -> Parser (Expression Parsed)
+wrapEarly p = do
+  v <- p
+  early <-
+    fmap
+      (const True)
+      (token_ (ExpectedToken QuestionToken) (preview _QuestionToken)) <>
+    pure False
+  pure
+    (if early
+       then EarlyExpression
+              Early
+                { location = expressionLocation v -- TODO:
+                , typ = Nothing
+                , expression = v
+                }
+       else v)
 
 holeParser :: Parser (Hole Parsed)
 holeParser = do

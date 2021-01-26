@@ -137,6 +137,7 @@ spec = do
   functions
   if'
   case'
+  early
 
 equality :: SpecWith ()
 equality =
@@ -538,3 +539,33 @@ case' =
              (stepDefaultedTextly
                 "case 2>4 { #true: \"early\", #false: case 2=2 { #true: \"ok\", #false: \"nope\" } }")
              (Right "\"ok\"")))
+
+early :: Spec
+early =
+  describe
+    "Early"
+    (do it
+          "#none? + 1"
+          (shouldReturn
+             (stepDefaultedTextly "#none? + 1 + #wibble?")
+             (Right "#none"))
+        it
+          "#ok(3)? + 1"
+          (shouldReturn
+             (stepDefaultedTextly "#ok(3)? + 1")
+             (Right "#ok(4)"))
+        it
+          "#ok(3)? + 1 + #ok(4)?"
+          (shouldReturn
+             (stepDefaultedTextly "#ok(3)? + 1 + #ok(4)?")
+             (Right "#ok(8)"))
+        it
+          "find(x:x>5,[5,2,63,1,3])? + 3"
+          (shouldReturn
+             (stepDefaultedTextly "find(x:x>5,[5,2,63,1,3])? + 3")
+             (Right "#ok(66)"))
+        it
+          "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?"
+          (shouldReturn
+             (stepDefaultedTextly "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?")
+             (Right "#oops")))
