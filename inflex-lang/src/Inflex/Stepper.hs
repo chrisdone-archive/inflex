@@ -73,6 +73,7 @@ data StepError
   | EarlyReturnWithoutBoundary (Expression Resolved)
   | InvalidReifyValue (Expression Resolved)
   | ShouldGetBool
+  | Didn'tExpectFoundHoleHere
   deriving (Show, Eq)
 
 data Result e
@@ -194,10 +195,20 @@ stepExpression expression = do
 -- Early return
 
 stepEarly :: Early Resolved -> Step (Result (Expression Resolved))
-stepEarly Early {expression} = pure (Ok expression) -- TODO:
+stepEarly Early {expression} = do
+  tag <- stepExpression expression?
+  case tag of
+    VariantExpression Variant {tag = TagName "ok", argument = Just v} -> pure (Ok v)
+    _ -> pure (Returned tag)
 
 stepBoundary :: Boundary Resolved -> Step (Result (Expression Resolved))
-stepBoundary Boundary {expression} = pure (Ok expression) -- TODO:
+stepBoundary Boundary {expression, typ} = do
+  result <- stepExpression expression
+  case result of
+    Returned e -> pure (Ok e)
+    Ok e -> pure (Ok (someVariantSigged typ e))
+    FoundHole{} -> pure (Errored Didn'tExpectFoundHoleHere)
+    Errored e -> pure (Errored e)
 
 --------------------------------------------------------------------------------
 -- Records
