@@ -9,8 +9,8 @@
 
 module Inflex.Variants where
 
-import Inflex.Type
-import Inflex.Types
+import           Inflex.Type
+import           Inflex.Types
 
 --------------------------------------------------------------------------------
 -- Bool
@@ -55,29 +55,20 @@ moreVariant location =
 --------------------------------------------------------------------------------
 -- Option
 
-noneVariant :: StagedType Resolved -> Expression Resolved
-noneVariant ty = noneVariantSigged ty
-
--- | None variant given a complete type signature.
-noneVariantSigged :: StagedType Resolved -> Expression Resolved
-noneVariantSigged ty =
+-- | Variant given a complete type signature.
+variantSigged ::
+     TagName
+  -> StagedType Resolved
+  -> Maybe (Expression Resolved)
+  -> Expression Resolved
+variantSigged tag typ argument =
   VariantExpression
     Variant
       { location = BuiltIn
-      , typ = ty
-      , tag = TagName "none"
-      , argument = Nothing
+      , typ
+      , tag
+      , argument
       }
 
-someVariant :: StagedType Resolved -> Expression Resolved -> Expression Resolved
-someVariant ty thing = someVariantSigged (maybeType BuiltIn ty) thing
-
-someVariantSigged :: StagedType Resolved -> Expression Resolved -> Expression Resolved
-someVariantSigged ty thing =
-  VariantExpression
-    Variant
-      { location = BuiltIn
-      , typ = ty
-      , tag = TagName "ok"
-      , argument = Just thing
-      }
+okTagName :: TagName
+okTagName = TagName "ok"

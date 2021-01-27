@@ -270,7 +270,7 @@ functions2 = do
           "all(_, [])"
           (shouldReturn
              (stepDefaultedTextly "all(_, [])")
-             (Right "#none"))
+             (Right "#all_empty"))
         it
           "all(r:r=2, _)"
           (shouldReturn
@@ -295,7 +295,7 @@ functions2 = do
           "all(r:r=6,[])"
           (shouldReturn
              (stepDefaultedTextly "all(r:r=6,[])")
-             (Right "#none")))
+             (Right "#all_empty")))
   describe
     "any"
     (do it
@@ -312,7 +312,7 @@ functions2 = do
           "any(r:r=6,[])"
           (shouldReturn
              (stepDefaultedTextly "any(r:r=6,[])")
-             (Right "#none")))
+             (Right "#any_empty")))
 
 functions1 :: Spec
 functions1 = do
@@ -339,7 +339,7 @@ functions1 = do
           "find(r:r.name=\"jane\",[])"
           (shouldReturn
              (stepDefaultedTextly "find(r:r.name=\"jane\",[])")
-             (Right "#none"))
+             (Right "#find_empty"))
         it
           "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
           (shouldReturn
@@ -351,7 +351,7 @@ functions1 = do
           (shouldReturn
              (stepDefaultedTextly
                 "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
-             (Right "#none"))
+             (Right "#find_failed"))
         it
           "find(x:x>4,[1,2,3,4,5,6,7])"
           (shouldReturn
@@ -392,10 +392,10 @@ functions1 = do
           "sum(filter(x:x>5,[1,2,3]))"
           (shouldReturn
              (stepDefaultedTextly "sum(filter(x:x>5,[1,2,3]))")
-             (Right "#none"))
+             (Right "#sum_empty"))
         it
           "sum([])"
-          (shouldReturn (stepDefaultedTextly "sum([])") (Right "#none"))
+          (shouldReturn (stepDefaultedTextly "sum([])") (Right "#sum_empty"))
         it
           "sum(map(x:x.p,[{p:1},{p:2}]))"
           (shouldReturn
@@ -422,10 +422,10 @@ functions1 = do
           "average(filter(x:x>5,[1,2,3]))"
           (shouldReturn
              (stepDefaultedTextly "average(filter(x:x>5,[1,2,3]))")
-             (Right "#none"))
+             (Right "#average_empty"))
         it
           "average([])"
-          (shouldReturn (stepDefaultedTextly "average([])") (Right "#none"))
+          (shouldReturn (stepDefaultedTextly "average([])") (Right "#average_empty"))
         it
           "average(map(x:x.p,[{p:1},{p:2}]))"
           (shouldReturn
@@ -460,7 +460,7 @@ functions1 = do
     "maximum"
     (do it
           "maximum([])"
-          (shouldReturn (stepDefaultedTextly "maximum([])") (Right "#none"))
+          (shouldReturn (stepDefaultedTextly "maximum([])") (Right "#maximum_empty"))
         it
           "maximum([2,3,1,5])"
           (shouldReturn
@@ -470,7 +470,7 @@ functions1 = do
     "minimum"
     (do it
           "minimum([])"
-          (shouldReturn (stepDefaultedTextly "minimum([])") (Right "#none"))
+          (shouldReturn (stepDefaultedTextly "minimum([])") (Right "#minimum_empty"))
         it
           "minimum([2,3,1,5])"
           (shouldReturn

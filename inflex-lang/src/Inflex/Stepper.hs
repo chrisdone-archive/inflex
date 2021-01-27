@@ -206,7 +206,7 @@ stepBoundary Boundary {expression, typ} = do
   result <- stepExpression expression
   case result of
     Returned e -> pure (Ok e)
-    Ok e -> pure (Ok (someVariantSigged typ e))
+    Ok e -> pure (Ok (variantSigged okTagName typ (pure e)))
     FoundHole{} -> pure (Errored Didn'tExpectFoundHoleHere)
     Errored e -> pure (Errored e)
 
@@ -458,38 +458,40 @@ stepFind ::
   -> (Array Resolved, Type Generalised)
   -> Expression Resolved
   -> Step (Result (Expression Resolved))
-stepFind asis (Array {expressions}, typ) predicate = do
-  result <-
-    traverseE_
-      (\e -> do
-         e' <- stepExpression e?
-         case e' of
-           HoleExpression {} -> pure (FoundHole e')
-           _ -> do
-             boolish <-
-               stepExpression
-                 (ApplyExpression
-                    (Apply
-                       { function = predicate
-                       , argument = e'
-                       , location = BuiltIn
-                       , typ = typeOutput (expressionType predicate)
-                       }))?
-             boolR <- reify boolish
-             case boolR of
-               Ok (BoolR _ True) -> pure (Returned e')
-               Ok (BoolR _ False) -> pure (Ok ())
-               Ok _ -> pure (Errored ShouldGetBool)
-               Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
-               FoundHole h -> pure (FoundHole h)
-
-               Errored err -> pure (Errored err))
-      (toList expressions)
-  case result of
-    Returned e -> pure (Ok (someVariantSigged typ e))
-    FoundHole {} -> pure (Ok asis)
-    Errored e -> pure (Errored e)
-    Ok () -> pure (Ok (noneVariantSigged typ))
+stepFind asis (Array {expressions}, typ) predicate =
+  if null expressions
+    then pure (Ok (variantSigged (TagName "find_empty") typ Nothing))
+    else do
+      result <-
+        traverseE_
+          (\e -> do
+             e' <- stepExpression e?
+             case e' of
+               HoleExpression {} -> pure (FoundHole e')
+               _ -> do
+                 boolish <-
+                   stepExpression
+                     (ApplyExpression
+                        (Apply
+                           { function = predicate
+                           , argument = e'
+                           , location = BuiltIn
+                           , typ = typeOutput (expressionType predicate)
+                           }))?
+                 boolR <- reify boolish
+                 case boolR of
+                   Ok (BoolR _ True) -> pure (Returned e')
+                   Ok (BoolR _ False) -> pure (Ok ())
+                   Ok _ -> pure (Errored ShouldGetBool)
+                   Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
+                   FoundHole h -> pure (FoundHole h)
+                   Errored err -> pure (Errored err))
+          (toList expressions)
+      case result of
+        Returned e -> pure (Ok (variantSigged okTagName typ (pure e)))
+        FoundHole {} -> pure (Ok asis)
+        Errored e -> pure (Errored e)
+        Ok () -> pure (Ok (variantSigged (TagName "find_failed") typ Nothing))
 
 -- | Any is a bool-specific version of find.
 stepAny ::
@@ -499,7 +501,7 @@ stepAny ::
   -> Step (Result (Expression Resolved))
 stepAny asis (Array {expressions}, typ) predicate = do
   if V.null expressions
-    then pure (Ok (noneVariantSigged typ))
+    then pure (Ok (variantSigged (TagName "any_empty") typ Nothing))
     else do
       result <-
         traverseE_
@@ -528,8 +530,8 @@ stepAny asis (Array {expressions}, typ) predicate = do
                    Errored err -> pure (Errored err))
           (toList expressions)
       case result of
-        Ok () -> pure (Ok (someVariantSigged typ (falseVariant BuiltIn)))
-        Returned e -> pure (Ok (someVariantSigged typ e))
+        Ok () -> pure (Ok (variantSigged okTagName typ (pure (falseVariant BuiltIn))))
+        Returned e -> pure (Ok (variantSigged okTagName typ (pure e)))
         FoundHole{} -> pure (Ok asis)
         Errored e -> pure (Errored e)
 
@@ -541,7 +543,7 @@ stepAll ::
   -> Step (Result (Expression Resolved))
 stepAll asis (Array {expressions}, typ) predicate = do
   if V.null expressions
-    then pure (Ok (noneVariantSigged typ))
+    then pure (Ok (variantSigged (TagName "all_empty") typ Nothing))
     else do
       result <-
         traverseE_
@@ -569,8 +571,8 @@ stepAll asis (Array {expressions}, typ) predicate = do
                    Errored err -> pure (Errored err))
           (toList expressions)
       case result of
-        Returned false -> pure (Ok (someVariantSigged typ false))
-        Ok () -> pure (Ok (someVariantSigged typ (trueVariant BuiltIn)))
+        Returned false -> pure (Ok (variantSigged okTagName typ (pure false)))
+        Ok () -> pure (Ok (variantSigged okTagName typ (pure (trueVariant BuiltIn))))
         FoundHole{} -> pure (Ok asis)
         Errored e -> pure (Errored e)
 
@@ -633,8 +635,8 @@ stepMinimum asis (Array {expressions}, typ) _cmpInst = do
     FoundHole {} -> pure (Ok asis)
     Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
     Errored err -> pure (Errored err)
-    Ok [] -> pure (Ok (noneVariantSigged typ))
-    Ok es -> pure (Ok (someVariantSigged typ (originalR (minimum es))))
+    Ok [] -> pure (Ok (variantSigged (TagName "minimum_empty") typ Nothing))
+    Ok es -> pure (Ok (variantSigged okTagName typ (pure (originalR (minimum es)))))
 
 stepMaximum ::
      Expression Resolved
@@ -652,8 +654,12 @@ stepMaximum asis (Array {expressions}, typ) _cmpInst = do
     FoundHole {} -> pure (Ok asis)
     Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
     Errored err -> pure (Errored err)
-    Ok [] -> pure (Ok (noneVariantSigged typ))
-    Ok es -> pure (Ok (someVariantSigged typ (originalR (maximum es))))
+    Ok [] -> pure (Ok (variantSigged empty_case typ Nothing))
+    Ok es ->
+      pure
+        (Ok (variantSigged okTagName typ (pure (originalR (maximum es)))))
+  where
+    empty_case = TagName "maximum_empty"
 
 stepAverage ::
      (Array Resolved, Type Generalised)
@@ -666,7 +672,7 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
   where
     loop nil [] =
       case nil of
-        Nothing -> pure (Ok (noneVariant listApplyType))
+        Nothing -> pure (Ok (variantSigged (TagName "average_empty") listApplyType Nothing))
         Just total -> do
           lenE <- stepLength list fromInt?
           avgE <-
@@ -691,7 +697,7 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
                 , right = lenE
                 , typ = listApplyType
                 }?
-          pure (Ok (someVariant listApplyType avgE))
+          pure (Ok (variantSigged okTagName listApplyType (pure avgE)))
     loop nil (e:es) =
       case nil of
         Nothing -> loop (Just e) es
@@ -763,8 +769,8 @@ stepSum (Array {expressions}, listApplyType) (addOp, _addOpType) (_fromIntegerOp
   where
     loop nil [] =
       case nil of
-        Nothing -> pure (Ok (noneVariant listApplyType))
-        Just thing -> pure (Ok (someVariant listApplyType thing))
+        Nothing -> pure (Ok (variantSigged (TagName "sum_empty") listApplyType Nothing))
+        Just thing -> pure (Ok (variantSigged okTagName listApplyType (pure thing)))
     loop nil (e:es) =
       case nil of
         Nothing -> loop (Just e) es

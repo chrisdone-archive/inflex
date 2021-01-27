@@ -10,8 +10,9 @@
 
 module Inflex.Type where
 
-import Inflex.Types
-import Numeric.Natural
+import           Data.Text (Text)
+import           Inflex.Types
+import           Numeric.Natural
 
 -- | Return the final output type.
 --
@@ -165,17 +166,18 @@ boolType location =
 boolT :: Type Polymorphic
 boolT = boolType BuiltIn
 
-maybeType :: StagedLocation s -> Type s -> Type s
-maybeType location a =
+maybeType :: [Text] -> StagedLocation s -> Type s -> Type s
+maybeType alts location a =
   VariantType
     (RowType
        (TypeRow
           { location
           , typeVariable = Nothing
           , fields =
-              [ Field {location, name = "ok", typ = a}
-              , Field {location, name = "none", typ = nullType location}
-              ]
+              (Field {location, name = "ok", typ = a} :
+               [ Field {location, name = FieldName name, typ = nullType location}
+               | name <- alts
+               ])
           }))
 
 okishType :: StagedLocation s -> TypeVariable s -> Type s -> Type s
@@ -260,31 +262,44 @@ functionOutput func =
 functionScheme :: Cursor -> Function -> Scheme Polymorphic
 functionScheme location =
   \case
-    -- Done ones:
     VegaFunction -> mono (a .-> vegaT)
     MapFunction -> mono ((a .-> b) .-> ArrayType a .-> ArrayType b)
     FilterFunction -> mono ((a .-> boolT) .-> ArrayType a .-> ArrayType a)
-    SumFunction -> poly [addable a, frominteger a] (ArrayType a .-> maybeType location a)
+    SumFunction ->
+      poly
+        [addable a, frominteger a]
+        (ArrayType a .-> maybeType ["sum_empty"] location a)
     LengthFunction -> poly [frominteger a] (ArrayType a .-> a)
     NullFunction -> mono (ArrayType a .-> boolT)
-    AverageFunction -> poly [addable a, divisible a, frominteger a] (ArrayType a .-> maybeType location a)
-    -- Not done yet:
+    AverageFunction ->
+      poly
+        [addable a, divisible a, frominteger a]
+        (ArrayType a .-> maybeType ["average_empty"] location a)
     DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     AndFunction -> mono (ArrayType boolT .-> boolT)
     OrFunction -> mono (ArrayType boolT .-> integerT)
-    MinimumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
-    MaximumFunction -> poly [comparable a] (ArrayType a .-> maybeType location a)
-    FindFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location a)
-    AllFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location boolT)
-    AnyFunction -> mono ((a .-> boolT) .-> ArrayType a .-> maybeType location boolT)
+    MinimumFunction ->
+      poly [comparable a] (ArrayType a .-> maybeType ["minimum_empty"] location a)
+    MaximumFunction ->
+      poly [comparable a] (ArrayType a .-> maybeType ["maximum_empty"] location a)
+    FindFunction ->
+      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["find_empty","find_failed"] location a)
+    AllFunction ->
+      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["all_empty"] location boolT)
+    AnyFunction ->
+      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["any_empty"] location boolT)
   where
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
-    comparable t = ClassConstraint {className = CompareClassName, typ = pure t, location}
-    addable t = ClassConstraint {className = AddOpClassName, typ = pure t, location}
-    divisible t = ClassConstraint {className = DivideOpClassName, typ = pure t, location}
-    frominteger t = ClassConstraint {className = FromIntegerClassName, typ = pure t, location}
+    comparable t =
+      ClassConstraint {className = CompareClassName, typ = pure t, location}
+    addable t =
+      ClassConstraint {className = AddOpClassName, typ = pure t, location}
+    divisible t =
+      ClassConstraint {className = DivideOpClassName, typ = pure t, location}
+    frominteger t =
+      ClassConstraint {className = FromIntegerClassName, typ = pure t, location}
     a = typeVariable 0
     b = typeVariable 1
     typeVariable index =
