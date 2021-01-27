@@ -61,7 +61,7 @@
   .cell-body:hover {
     border: 2px solid #9fb6c8;
   }
-  .cell-header input, .cell-body input {
+  .cell-header input, .cell-body input, .cell-body .CodeMirror {
     background: #f9f9fa;
     border: 0px;
     /* width: 100%; */
@@ -71,6 +71,9 @@
     font-family: dejavu mono, monospace !important;
     border: 2px solid #0a1623;
     border-radius: 3px;
+  }
+  .cell-body .CodeMirror {
+    height: auto;
   }
   .cell-body input:focus, .cell-header input:focus {
     border: 2px solid #6a8daa;

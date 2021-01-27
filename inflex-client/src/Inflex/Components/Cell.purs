@@ -14,7 +14,7 @@ import Data.Either (Either(..), either)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Effect.Class (class MonadEffect)
+import Effect.Aff.Class
 import Effect.Class.Console (log)
 import Effect (Effect)
 import Halogen as H
@@ -91,7 +91,7 @@ instance showCell :: Show Cell where show x = genericShow x
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall m. MonadEffect m => H.Component HH.HTML Query Input Output m
+component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
@@ -176,7 +176,7 @@ toEditor =
 -- Query
 
 query ::
-     forall a action output m t0 t1 x. Ord t1 => (MonadEffect m)
+     forall a action output m t0 t1 x. Ord t1 => (MonadAff m)
   => Query a
   -> H.HalogenM State action (editor :: H.Slot Editor.Query t0 t1 | x) output m (Maybe a)
 query =
@@ -209,12 +209,12 @@ query =
 foreign import clearDragImage :: DE.DragEvent -> Effect Unit
 foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 
--- eval' :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
+-- eval' :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
 -- eval' cmd = do
 --   log (show cmd)
 --   eval cmd
 
-eval :: forall q i m. MonadEffect m =>  Command -> H.HalogenM State q i Output m Unit
+eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
     TriggerUpdatePath update -> do
@@ -268,7 +268,7 @@ eval =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall keys q m. MonadEffect m =>
+render :: forall keys q m. MonadAff m =>
           State
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)

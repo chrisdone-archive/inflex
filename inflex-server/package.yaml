@@ -10,6 +10,7 @@ extra-source-files:
 - README.md
 - ChangeLog.md
 - config/*
+- js/*.js
 - templates/*.lucius
 - templates/*.julius
 - svg/*.svg

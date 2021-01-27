@@ -14,7 +14,6 @@ import Data.Symbol (SProxy(..))
 import Data.UUID (UUID, genUUIDV4, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (class MonadEffect)
 import Effect.Class.Console (error)
 import Halogen as H
 import Halogen.HTML as HH
@@ -85,7 +84,7 @@ component =
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall keys m. MonadEffect m =>
+render :: forall keys m. MonadAff m =>
    State
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot Cell.Query Cell.Output String | keys) m Command) Command
 render state =
@@ -199,7 +198,7 @@ mediaType = (MediaType "text/plain")
 
 
 eval :: forall t122 t125 t129 t130 t131.
-  MonadEffect t129 => MonadAff t129 => Command
+  MonadAff t129 => MonadAff t129 => Command
                                        -> H.HalogenM
                                             State
                                             t131
@@ -332,7 +331,7 @@ eval =
 
 refresh ::
      forall t60. Bind t60
-  => MonadEffect t60 =>
+  => MonadAff t60 =>
        MonadAff t60 =>
          MonadState State t60 =>
            Array InputCell1 -> t60 Unit
@@ -349,7 +348,7 @@ refresh cells = do
     Right outputDocument -> setOutputDocument outputDocument
 
 update :: forall t60.
-  Bind t60 => MonadEffect t60 => MonadAff t60 => MonadState
+  Bind t60 => MonadAff t60 => MonadAff t60 => MonadState
                                                    State
                                                    t60
                                                   => Shared.Update -> t60 (Maybe Shared.NestedCellError)

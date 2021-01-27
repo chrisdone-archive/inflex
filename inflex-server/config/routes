@@ -37,6 +37,7 @@
 /editor/#DocumentSlug AppEditorR GET
 /app/js AppJsR GET
 /app/vega VegaJsR GET
+/app/codemirror CodemirrorJsR GET
 /app/css AppCssR GET
 /file/upload UploadFileR POST
 

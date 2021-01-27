@@ -9,6 +9,7 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
+import Effect.Aff.Class (class MonadAff)
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
@@ -21,7 +22,6 @@ import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -32,10 +32,11 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
+import Inflex.Components.CodeMirror as CodeMirror
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -135,6 +136,7 @@ type Slots i =
   ( editor :: H.Slot i Output String
   , fieldname :: H.Slot i String String
   , textEditor :: H.Slot i String Unit
+  , codemirror :: H.Slot CodeMirror.Query CodeMirror.Output Unit
   )
 
 data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
@@ -158,7 +160,7 @@ editorRef = (H.RefLabel "editor")
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall m. MonadEffect m => H.Component HH.HTML Query Input Output m
+component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
@@ -178,7 +180,7 @@ component =
 -- Query
 
 query ::
-     forall a action m t0 t1 x. Ord t1 => (MonadEffect m)
+     forall a action m t0 t1 x. Ord t1 => (MonadAff m)
   => Query a
   -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
@@ -203,12 +205,12 @@ query =
 --------------------------------------------------------------------------------
 -- Eval
 
-eval :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
+eval :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval cmd = do
   -- log (show cmd)
   eval' cmd
 
-eval' :: forall i t45 t48. MonadEffect t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
+eval' :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
 
@@ -232,7 +234,8 @@ eval' =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.modify_ (\(State s) -> State (s {lastInput = Nothing}))
+      log ("[FinishEditing] Got code:  "<> code)
+      H.modify_ (\(State s) -> State (s {lastInput = Nothing, display = DisplayCode, code = code}))
       H.raise
         (NewCode
            (if trim code == ""
@@ -285,7 +288,7 @@ foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
 --------------------------------------------------------------------------------
 -- Render main component
 
-render :: forall a. MonadEffect a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+render :: forall a. MonadAff a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 render (State {display, code, editor, path, cellError}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
@@ -295,22 +298,41 @@ render (State {display, code, editor, path, cellError}) =
         else wrapper (renderEditor path editor)
   where
     renderControl =
-      [ HH.input
-          [ HP.value
-              (if code == "_"
-                 then ""
-                 else code)
-          , HP.class_ (HH.ClassName "form-control")
-          , HP.placeholder "Type code here"
-          , manage (InputElementChanged <<< ElemRef')
-          , HE.onKeyUp
-              (\k ->
-                 case K.code k of
-                   "Enter" -> Just (FinishEditing code)
-                   _ -> Nothing)
-          , HE.onValueChange (\i -> pure (SetInput i))
-          , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
-          ]
+      [ if false
+           then HH.input
+                  [ HP.value
+                      (if code == "_"
+                         then ""
+                         else code)
+                  , HP.class_ (HH.ClassName "form-control")
+                  , HP.placeholder "Type code here"
+                  , manage (InputElementChanged <<< ElemRef')
+                  , HE.onKeyUp
+                      (\k ->
+                         case K.code k of
+                           "Enter" -> Just (FinishEditing code)
+                           _ -> Nothing)
+                  , HE.onValueChange (\i -> pure (SetInput i))
+                  , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
+                  ]
+           else HH.text ""
+      , HH.slot
+          (SProxy :: SProxy "codemirror")
+          unit
+          CodeMirror.component
+          (CodeMirror.Config
+             { readOnly: false
+             , theme:  "default"
+             , selection: CodeMirror.noSelection
+             , mode: "haskell"
+             , value: code
+             , styleActiveLine: true
+             , lineNumbers: false
+             , lineWrapping: true
+             , autofocus: true
+             })
+          (case _ of
+             CodeMirror.EnteredText text -> Just (FinishEditing text)) -- get output, call FinishEditing
       ]
     wrapper inner =
       case display of
@@ -350,7 +372,7 @@ render (State {display, code, editor, path, cellError}) =
 -- Render inner editor
 
 renderEditor ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
@@ -373,7 +395,7 @@ renderEditor path editor =
 -- Variant display
 
 renderVariantEditor ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> String
   -> Maybe Editor
@@ -412,7 +434,7 @@ renderVariantEditor path tag marg =
 -- Vega display
 
 renderVegaEditor ::
-     forall i a. MonadEffect a
+     forall i a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> String
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
@@ -431,7 +453,7 @@ renderVegaEditor path vegaSpec =
 -- Text editor
 
 renderTextEditor ::
-     forall i a. MonadEffect a
+     forall i a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> String
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
@@ -464,7 +486,7 @@ renderTextEditor path text =
 -- Tables
 
 renderTableEditor ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Array Row
@@ -543,7 +565,7 @@ originateFromField columns key code =
   "}"
 
 tableRow ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Int
@@ -660,7 +682,7 @@ bodyGuide emptyTable emptyRows =
            else []
 
 tableHeading :: forall t627 t628 t629.
-   MonadEffect t628
+   MonadAff t628
   => (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Boolean
@@ -684,7 +706,7 @@ tableHeading path columns emptyTable =
      [newColumnButton path columns])
 
 columnNameSlot :: forall t627 t628 t629.
-    MonadEffect t628
+    MonadAff t628
  => Set String -> (Shared.DataPath -> Shared.DataPath)
  -> Int
  -> String
@@ -779,7 +801,7 @@ generateColumnName columns = iterate 1
 -- Render arrays
 
 renderArrayEditor ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -869,7 +891,7 @@ renderArrayEditor path editors =
 -- Records
 
 renderRecordEditor ::
-     forall a. MonadEffect a
+     forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
   -> Array Field
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
