@@ -410,9 +410,10 @@ propParser :: Parser (Prop Parsed)
 propParser = do
   expression <-
     (RecordExpression <$> recordParser) <>
-    (HoleExpression <$> holeParser) <>
-    (VariableExpression <$> variableParser) <>
-    parensParser
+    wrapEarly (HoleExpression <$> holeParser) <>
+    wrapEarly applyParser <>
+    wrapEarly (VariableExpression <$> variableParser) <>
+    wrapEarly parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   (name, _) <- fieldNameParser
   pure Prop {typ = Nothing, ..}
