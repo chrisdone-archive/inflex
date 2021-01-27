@@ -469,36 +469,58 @@ bindParser = do
 applyParser :: Parser (Expression Parsed)
 applyParser = do
   function <- functionParser
-  token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
-  let loop = do
-        bind <- expressionParser
-        comma <-
-          fmap
-            (const True)
-            (token_ (ExpectedToken CommaToken) (preview _CommaToken)) <>
-          pure False
-        rest <-
-          if comma
-            then fmap NE.toList loop
-            else pure []
-        pure (bind :| rest)
-  arguments <- loop
-  token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
-  typ <- optionalSignatureParser
-  pure
-    (foldl'
-       (\function' (i, argument) ->
-          ApplyExpression
-            Apply
-              { function = function'
-              , argument
-              , location = expressionLocation argument -- TODO: Look at this.
-              , typ = if i == length arguments
-                         then typ
-                         else Nothing
-              })
-       function
-       (zip [1..] (toList arguments)))
+  tuple function <> list function <> record function
+  where
+    list function = do
+      array <- arrayParser
+      pure
+        (ApplyExpression Apply
+           { location = expressionLocation (ArrayExpression array)
+           , function
+           , argument = ArrayExpression array
+           , typ = Nothing
+           })
+    record function = do
+      record' <- recordParser
+      pure
+        (ApplyExpression Apply
+           { location = expressionLocation (RecordExpression record')
+           , function
+           , argument = RecordExpression record'
+           , typ = Nothing
+           })
+    tuple function = do
+      token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+      let loop = do
+            bind <- expressionParser
+            comma <-
+              fmap
+                (const True)
+                (token_ (ExpectedToken CommaToken) (preview _CommaToken)) <>
+              pure False
+            rest <-
+              if comma
+                then fmap NE.toList loop
+                else pure []
+            pure (bind :| rest)
+      arguments <- loop
+      token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+      typ <- optionalSignatureParser
+      pure
+        (foldl'
+           (\function' (i, argument) ->
+              ApplyExpression
+                Apply
+                  { function = function'
+                  , argument
+                  , location = expressionLocation argument -- TODO: Look at this.
+                  , typ =
+                      if i == length arguments
+                        then typ
+                        else Nothing
+                  })
+           function
+           (zip [1 ..] (toList arguments)))
 
 optionalSignatureParser :: Parser (Maybe (Type Parsed))
 optionalSignatureParser = do
