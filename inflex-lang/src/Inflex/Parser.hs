@@ -329,7 +329,7 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [ PropExpression <$> propParser
+       [ wrapEarly (PropExpression <$> propParser)
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
