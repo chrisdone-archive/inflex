@@ -23,6 +23,8 @@ exports.codeMirror = function(parent){
           }
         }
       };
+      if (config.highlightSelectionMatches)
+        config.highlightSelectionMatches = {showToken: /[A-Za-z][A-Za-z0-9_]*/};
       let cm = CodeMirror(parent, config);
       return cm;
     };

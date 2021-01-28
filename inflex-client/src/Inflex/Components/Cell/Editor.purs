@@ -331,6 +331,7 @@ render (State {display, code, editor, path, cellError}) =
              , lineWrapping: true
              , autofocus: true
              , autoCloseBrackets: true
+             , highlightSelectionMatches: true
              })
           (case _ of
              CodeMirror.EnteredText text -> Just (FinishEditing text)) -- get output, call FinishEditing
