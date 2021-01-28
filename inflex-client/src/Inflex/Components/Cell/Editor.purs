@@ -234,7 +234,7 @@ eval' =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      log ("[FinishEditing] Got code:  "<> code)
+      -- log ("[FinishEditing] Got code:  "<> code)
       H.modify_ (\(State s) -> State (s {lastInput = Nothing, display = DisplayCode, code = code}))
       H.raise
         (NewCode

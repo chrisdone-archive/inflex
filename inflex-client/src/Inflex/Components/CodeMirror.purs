@@ -105,11 +105,11 @@ eval EnterEvent = do
   State {codeMirror: c} <- H.get
   case c of
     Nothing -> do
-      warn "[EnterEvent] CodeMirror is not here."
+      -- warn "[EnterEvent] CodeMirror is not here."
       pure unit
     Just cm -> do
       value <- H.liftEffect $ getValue cm
-      log ("[EnterEvent] Got value: " <> value)
+      -- log ("[EnterEvent] Got value: " <> value)
       H.raise (EnteredText value)
 eval (Initializer a) = do
   State {config: Config config} <- H.get
