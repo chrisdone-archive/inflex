@@ -41,6 +41,7 @@ type InternalConfig =
   , lineNumbers :: Boolean
   , lineWrapping :: Boolean
   , autofocus :: Boolean
+  , autoCloseBrackets :: Boolean
   }
 
 type Range =
