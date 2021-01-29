@@ -545,6 +545,11 @@ early =
   describe
     "Early"
     (do it
+          "(#ok({x:1}))?.x + _"
+          (shouldReturn
+             (stepDefaultedTextly "(#ok({x:1}))?.x + _")
+             (Right "#ok((1 + _))"))
+        it
           "(#ok({x:1}))?.x + 2"
           (shouldReturn
              (stepDefaultedTextly "(#ok({x:1}))?.x + 2")
