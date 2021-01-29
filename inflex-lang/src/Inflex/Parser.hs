@@ -152,7 +152,7 @@ token_ err parser =
 -- Precedence from loosest to tightest.
 operatorPrecedence :: [Text]
 operatorPrecedence =
-  concat [["=", "/=", "<", ">", "<=", ">="], ["-", "+"], ["*", "/"]]
+  concat [["=", "/=", "<", ">", "<=", ">="], ["|"], ["-", "+"], ["*", "/"]]
 
 expressionParser :: Parser (Expression Parsed)
 expressionParser = caseParser <> ifParser <> chainParser

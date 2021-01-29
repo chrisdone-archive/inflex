@@ -386,6 +386,7 @@ renameGlobal Env {cursor} Global {..} = do
       "+" -> op AddOp
       "-" -> op SubtractOp
       "/" -> op DivideOp
+      "|" -> pure CatchGlobal
       "=" -> pure (EqualGlobal Equal)
       "/=" -> pure (EqualGlobal NotEqual)
       ">" -> pure (CompareGlobal GreaterThan)

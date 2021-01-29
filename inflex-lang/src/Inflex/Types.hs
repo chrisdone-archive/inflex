@@ -538,6 +538,7 @@ data GlobalRef s where
   CompareGlobal :: !Comparison -> GlobalRef s
   InstanceGlobal :: !InstanceName -> GlobalRef Resolved
   FunctionGlobal :: !Function -> GlobalRef s
+  CatchGlobal :: GlobalRef s
 
 data Comparison
   = LessThan
