@@ -3,6 +3,33 @@
 
 var mirrors = {};
 
+exports.setOnFocused = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.on('focus',function(){ f(); });
+      return {};
+    }
+  }
+}
+
+exports.setOnBlurred = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.on('blur',function(){ f(); });
+      return {};
+    }
+  }
+}
+
+exports.setOnCursorActivity = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.on('cursorActivity',function(){ f(); });
+      return {};
+    }
+  }
+}
+
 exports.setOnEnter = function(codemirror){
   return function(f){
     return function(){

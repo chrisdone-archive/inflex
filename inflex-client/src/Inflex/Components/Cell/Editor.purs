@@ -334,7 +334,11 @@ render (State {display, code, editor, path, cellError}) =
              , highlightSelectionMatches: true
              })
           (case _ of
-             CodeMirror.EnteredText text -> Just (FinishEditing text)) -- get output, call FinishEditing
+             CodeMirror.EnteredText text -> Just (FinishEditing text)
+             CodeMirror.CMEventOut event -> Nothing)
+      , HH.div [HP.class_
+                  (HH.ClassName "completion-wrap")]
+               [HH.text "Completion here!"]
       ]
     wrapper inner =
       case display of

@@ -10,18 +10,19 @@ module Inflex.Components.CodeMirror
   , Pos
   , Query
   , Output(..)
+  , CMEvent(..)
   ) where
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (warn, log)
+-- import Effect.Class.Console (warn, log)
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource (effectEventSource, emit) as H
-import Prelude (Unit, bind, const, discard, mempty, pure, unit, void, ($), (/=), (<>))
+import Prelude (Unit, bind, const, discard, mempty, pure, unit, void, ($), (/=))
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -63,9 +64,17 @@ data State = State
 data Query a
   = Initializer a
   | Receive Config a
-  | EnterEvent
+  | CMEventIn CMEvent
 
-data Output = EnteredText String
+data Output
+  = EnteredText String
+  | CMEventOut CMEvent
+
+data CMEvent
+  = Focused
+  | Blurred
+  | CursorActivity
+  | Enter
 
 foreign import data CodeMirror :: Type
 
@@ -102,16 +111,17 @@ render :: forall t1 t3 t4. t1 -> HH.HTML t4 t3
 render = const (HH.div [HP.ref refLabel] [])
 
 eval :: forall t33 t35 t81. MonadEffect t33 => MonadAff t33 => Query Unit -> H.HalogenM State (Query t81) t35 Output t33 Unit
-eval EnterEvent = do
-  State {codeMirror: c} <- H.get
-  case c of
-    Nothing -> do
-      -- warn "[EnterEvent] CodeMirror is not here."
-      pure unit
-    Just cm -> do
-      value <- H.liftEffect $ getValue cm
-      -- log ("[EnterEvent] Got value: " <> value)
-      H.raise (EnteredText value)
+eval (CMEventIn event) =
+  case event of
+    Enter -> do
+      State {codeMirror: c} <- H.get
+      case c of
+        Nothing -> do
+          pure unit
+        Just cm -> do
+          value <- H.liftEffect $ getValue cm
+          H.raise (EnteredText value)
+    _ -> pure unit
 eval (Initializer a) = do
   State {config: Config config} <- H.get
   melement <- H.getHTMLElementRef refLabel
@@ -123,7 +133,10 @@ eval (Initializer a) = do
         (H.subscribe
            (H.effectEventSource
               (\emitter -> do
-                 setOnEnter cm (H.emit emitter EnterEvent)
+                 setOnEnter cm (H.emit emitter (CMEventIn Enter))
+                 setOnFocused cm (H.emit emitter (CMEventIn Focused))
+                 setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
+                 setOnCursorActivity cm (H.emit emitter (CMEventIn CursorActivity))
                  pure mempty)))
       H.put
         (State
@@ -173,6 +186,21 @@ foreign import setValue
   -> Effect Unit
 
 foreign import setOnEnter
+  :: CodeMirror
+  -> Effect Unit
+  -> Effect Unit
+
+foreign import setOnBlurred
+  :: CodeMirror
+  -> Effect Unit
+  -> Effect Unit
+
+foreign import setOnFocused
+  :: CodeMirror
+  -> Effect Unit
+  -> Effect Unit
+
+foreign import setOnCursorActivity
   :: CodeMirror
   -> Effect Unit
   -> Effect Unit
