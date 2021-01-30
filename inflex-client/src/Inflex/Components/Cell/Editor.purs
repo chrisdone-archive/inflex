@@ -32,7 +32,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query.Input as Input
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
-import Inflex.Components.CodeMirror as CodeMirror
+import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
@@ -136,7 +136,7 @@ type Slots i =
   ( editor :: H.Slot i Output String
   , fieldname :: H.Slot i String String
   , textEditor :: H.Slot i String Unit
-  , codemirror :: H.Slot CodeMirror.Query CodeMirror.Output Unit
+  , code :: H.Slot Code.Query Code.Output Unit
   )
 
 data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
@@ -299,46 +299,34 @@ render (State {display, code, editor, path, cellError}) =
   where
     renderControl =
       [ if false
-           then HH.input
-                  [ HP.value
-                      (if code == "_"
-                         then ""
-                         else code)
-                  , HP.class_ (HH.ClassName "form-control")
-                  , HP.placeholder "Type code here"
-                  , manage (InputElementChanged <<< ElemRef')
-                  , HE.onKeyUp
-                      (\k ->
-                         case K.code k of
-                           "Enter" -> Just (FinishEditing code)
-                           _ -> Nothing)
-                  , HE.onValueChange (\i -> pure (SetInput i))
-                  , HE.onClick (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
-                  ]
-           else HH.text ""
+          then HH.input
+                 [ HP.value
+                     (if code == "_"
+                        then ""
+                        else code)
+                 , HP.class_ (HH.ClassName "form-control")
+                 , HP.placeholder "Type code here"
+                 , manage (InputElementChanged <<< ElemRef')
+                 , HE.onKeyUp
+                     (\k ->
+                        case K.code k of
+                          "Enter" -> Just (FinishEditing code)
+                          _ -> Nothing)
+                 , HE.onValueChange (\i -> pure (SetInput i))
+                 , HE.onClick
+                     (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
+                 ]
+          else HH.text ""
       , HH.slot
-          (SProxy :: SProxy "codemirror")
+          (SProxy :: SProxy "code")
           unit
-          CodeMirror.component
-          (CodeMirror.Config
-             { readOnly: false
-             , theme:  "default"
-             , selection: CodeMirror.noSelection
-             , mode: "haskell"
-             , value: code
-             , styleActiveLine: true
-             , lineNumbers: false
-             , lineWrapping: true
-             , autofocus: true
-             , autoCloseBrackets: true
-             , highlightSelectionMatches: true
-             })
+          Code.component
+          (Code.Input { code })
           (case _ of
-             CodeMirror.EnteredText text -> Just (FinishEditing text)
-             CodeMirror.CMEventOut event -> Nothing)
-      , HH.div [HP.class_
-                  (HH.ClassName "completion-wrap")]
-               [HH.text "Completion here!"]
+             Code.TextOutput text -> Just (FinishEditing text))
+      , HH.div
+          [HP.class_ (HH.ClassName "completion-wrap")]
+          [HH.text "Completion here!"]
       ]
     wrapper inner =
       case display of

@@ -9,21 +9,25 @@ import Halogen.HTML as HH
 import Prelude (Unit, pure, unit, (<<<))
 
 --------------------------------------------------------------------------------
--- Types
+-- Interface
 
 type Input = Unit
+
 type Output = Unit
 
 data Query a = SomeQuery
 
-data Command = NoOp | HandleInput Input
+--------------------------------------------------------------------------------
+-- Internal protocol
+
+data Command
+  = NoOp
+  | HandleInput Input
 
 data State =
   State
 
-type Slots (i :: Type -> Type) =
-  (
-  )
+type Slots (i :: Type -> Type) = ()
 
 --------------------------------------------------------------------------------
 -- Component

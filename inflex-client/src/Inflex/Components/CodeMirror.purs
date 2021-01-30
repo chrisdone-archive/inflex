@@ -1,4 +1,4 @@
--- |
+-- | CodeMirror component.
 
 module Inflex.Components.CodeMirror
   ( component
@@ -8,7 +8,7 @@ module Inflex.Components.CodeMirror
   , InternalConfig
   , Range
   , Pos
-  , Query
+  , Query(..)
   , Output(..)
   , CMEvent(..)
   ) where
@@ -17,18 +17,41 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
--- import Effect.Class.Console (warn, log)
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource (effectEventSource, emit) as H
-import Prelude (Unit, bind, const, discard, mempty, pure, unit, void, ($), (/=))
+import Prelude
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
--- Types
+-- Interface
 
 type Input = Config
+
+data Output
+  = CMEventOut CMEvent
+
+data Query a =
+  GetTextValue (String -> a)
+
+--------------------------------------------------------------------------------
+-- Internal protocol
+
+type Slots a = ()
+
+data State = State
+  { codeMirror :: Maybe CodeMirror
+  , config :: Config
+  }
+
+data Command
+  = Initializer
+  | SetConfig Config
+  | CMEventIn CMEvent
+
+--------------------------------------------------------------------------------
+-- Types
 
 data Config = Config InternalConfig
 
@@ -55,20 +78,6 @@ type Pos =
   { line :: Int
   , ch :: Int
   }
-
-data State = State
-  { codeMirror :: Maybe CodeMirror
-  , config :: Config
-  }
-
-data Query a
-  = Initializer a
-  | Receive Config a
-  | CMEventIn CMEvent
-
-data Output
-  = EnteredText String
-  | CMEventOut CMEvent
 
 data CMEvent
   = Focused
@@ -98,35 +107,44 @@ component =
     , eval: H.mkEval
               H.defaultEval
                 { handleAction = eval
-                , receive = receiver
-                , initialize = Just (Initializer unit)
+                , receive = pure <<< SetConfig
+                , initialize = Just Initializer
+                , handleQuery = query
                 }
     }
   where
     initialState :: Input -> State
     initialState (config) = State {codeMirror: Nothing, config}
-    receiver (c) = Just (Receive c unit)
 
-render :: forall t1 t3 t4. t1 -> HH.HTML t4 t3
-render = const (HH.div [HP.ref refLabel] [])
+--------------------------------------------------------------------------------
+-- Query
 
-eval :: forall t33 t35 t81. MonadEffect t33 => MonadAff t33 => Query Unit -> H.HalogenM State (Query t81) t35 Output t33 Unit
-eval (CMEventIn event) =
-  case event of
-    Enter -> do
+query ::
+     forall i m a. (MonadAff m)
+  => Query a
+  -> H.HalogenM State Command (Slots i) Output m (Maybe a)
+query =
+  case _ of
+    GetTextValue reply -> do
       State {codeMirror: c} <- H.get
       case c of
         Nothing -> do
-          pure unit
+          pure Nothing
         Just cm -> do
           value <- H.liftEffect $ getValue cm
-          H.raise (EnteredText value)
-    _ -> pure unit
-eval (Initializer a) = do
+          pure (Just (reply value))
+
+--------------------------------------------------------------------------------
+-- Eval
+
+eval :: forall t11 t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command t11 Output t9 Unit
+eval (CMEventIn event) =
+  H.raise (CMEventOut event)
+eval Initializer = do
   State {config: Config config} <- H.get
   melement <- H.getHTMLElementRef refLabel
   case melement of
-    Nothing -> pure a
+    Nothing -> pure unit
     Just element -> do
       cm <- H.liftEffect (codeMirror element config)
       void
@@ -143,8 +161,7 @@ eval (Initializer a) = do
            { codeMirror: Just cm
            , config: Config config
            })
-      pure a
-eval (Receive (Config config') a) = do
+eval (SetConfig (Config config')) = do
   State {codeMirror: mcm, config: Config config} <- H.get
   case mcm of
     Just cm -> do
@@ -156,7 +173,12 @@ eval (Receive (Config config') a) = do
         else pure unit
     Nothing -> pure unit
   H.put (State {codeMirror: mcm, config: Config config'})
-  pure a
+
+--------------------------------------------------------------------------------
+-- Render
+
+render :: forall t1 t3 t4. t1 -> HH.HTML t4 t3
+render = const (HH.div [HP.ref refLabel] [])
 
 --------------------------------------------------------------------------------
 -- Foreign
