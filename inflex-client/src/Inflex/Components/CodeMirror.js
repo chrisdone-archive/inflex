@@ -52,43 +52,14 @@ exports.setOnCursorActivity = function(codemirror){
   }
 }
 
-exports.setOnEnter = function(codemirror){
-  return function(f){
-    return function(){
-      codemirror.myonenter = f;
-      return {};
-    }
-  }
-}
-
 exports.codeMirror = function(parent){
   return function(config){
     return function(){
       config.viewportMargin = Infinity;
-      config.extraKeys = {
-        "Enter": function(cm){
-          if (cm.myonenter) {
-            cm.myonenter();
-          }
-        }
-      };
       if (config.highlightSelectionMatches)
         config.highlightSelectionMatches = {showToken: /[A-Za-z][A-Za-z0-9_]*/};
       let cm = CodeMirror(parent, config);
       return cm;
-    };
-  };
-}
-
-exports.on = function(codemirror){
-  return function(event){
-    return function(callback){
-      return function(){
-        codemirror.on(event,function(doc, change){
-          if (!change || change.origin != 'setValue')
-            callback();
-        });
-      }
     };
   };
 }
@@ -124,3 +95,29 @@ exports.scrollToLine = function(codemirror) {
     };
   };
 }
+
+exports.addKeyMap = function(codemirror){
+  return function(name){
+    return function(object){
+      return function(){
+        var obj = object.clone();
+        obj.name = name
+        codemirror.addKeyMap(obj);
+        return {};
+      }
+    }
+  }
+}
+
+exports.removeKeyMap = function(codemirror){
+  return function(name){
+    return function(){
+      codemirror.removeKeyMap(name);
+      return {};
+    }
+  }
+}
+
+exports.keyHandled = undefined;
+
+exports.keyPass = CodeMirror.Pass;

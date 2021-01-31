@@ -6,22 +6,30 @@ module Inflex.Components.CodeMirror
   , Input
   , Config(..)
   , InternalConfig
+  , Key(..)
   , Range
   , Pos
   , Query(..)
   , Output(..)
   , CMEvent(..)
+  , KeyResult
+  , keyHandled
+  , keyPass
   ) where
 
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
+import Foreign.Object
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource (effectEventSource, emit) as H
-import Prelude
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), (<>))
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -32,8 +40,10 @@ type Input = Config
 data Output
   = CMEventOut CMEvent
 
-data Query a =
-  GetTextValue (String -> a)
+data Query a
+  = GetTextValue (String -> a)
+  | AddKeyMap String (Object (Effect KeyResult))
+  | RemoveKeyMap String
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -67,6 +77,7 @@ type InternalConfig =
   , autofocus :: Boolean
   , autoCloseBrackets :: Boolean
   , highlightSelectionMatches :: Boolean
+  , extraKeys :: Object (Effect KeyResult)
   }
 
 type Range =
@@ -83,9 +94,29 @@ data CMEvent
   = Focused
   | Blurred
   | CursorActivity
-  | KeyHandled String
+  | KeyHandled Key
   | InputRead
+
+derive instance genericCMEvent :: Generic CMEvent _
+instance showCMEvent :: Show CMEvent where show x = genericShow x
+
+data Key
+  = Backspace
+  | Up
+  | Down
   | Enter
+
+derive instance genericKey :: Generic Key _
+instance showKey :: Show Key where show x = genericShow x
+
+parseKey :: String -> Maybe Key
+parseKey =
+  case _ of
+    "Backspace" -> Just Backspace
+    "Up" -> Just Up
+    "Down" -> Just Down
+    "Enter" -> Just Enter
+    _ -> Nothing
 
 foreign import data CodeMirror :: Type
 
@@ -127,13 +158,25 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
+    AddKeyMap string keys -> do
+      State {codeMirror: c} <- H.get
+      case c of
+        Nothing -> pure unit
+        Just cm -> H.liftEffect (addKeyMap cm string keys)
+      pure Nothing
+    RemoveKeyMap string -> do
+      State {codeMirror: c} <- H.get
+      case c of
+        Nothing -> pure unit
+        Just cm -> H.liftEffect (removeKeyMap cm string)
+      pure Nothing
     GetTextValue reply -> do
       State {codeMirror: c} <- H.get
       case c of
         Nothing -> do
           pure Nothing
         Just cm -> do
-          value <- H.liftEffect $ getValue cm
+          value <- H.liftEffect (getValue cm)
           pure (Just (reply value))
 
 --------------------------------------------------------------------------------
@@ -153,11 +196,17 @@ eval Initializer = do
         (H.subscribe
            (H.effectEventSource
               (\emitter -> do
-                 setOnEnter cm (H.emit emitter (CMEventIn Enter))
                  setOnFocused cm (H.emit emitter (CMEventIn Focused))
                  setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
-                 setOnCursorActivity cm (H.emit emitter (CMEventIn CursorActivity))
-                 setOnKeyHandled cm (\name -> H.emit emitter (CMEventIn (KeyHandled name)))
+                 setOnCursorActivity
+                   cm
+                   (H.emit emitter (CMEventIn CursorActivity))
+                 setOnKeyHandled
+                   cm
+                   (\name -> do
+                      case parseKey name of
+                        Just key -> H.emit emitter (CMEventIn (KeyHandled key))
+                        Nothing -> log ("KeyHandled: Unknown key " <> name))
                  setOnInputRead cm (H.emit emitter (CMEventIn InputRead))
                  pure mempty)))
       H.put
@@ -192,12 +241,6 @@ foreign import codeMirror
   -> InternalConfig
   -> Effect CodeMirror
 
-foreign import on
-  :: CodeMirror
-  -> String
-  -> Effect Unit
-  -> Effect Unit
-
 foreign import getValue
   :: CodeMirror
   -> Effect String
@@ -211,10 +254,6 @@ foreign import setValue
   -> String
   -> Effect Unit
 
-foreign import setOnEnter
-  :: CodeMirror
-  -> Effect Unit
-  -> Effect Unit
 
 foreign import setOnBlurred
   :: CodeMirror
@@ -245,3 +284,20 @@ foreign import scrollToLine
   :: CodeMirror
   -> Int
   -> Effect Unit
+
+foreign import addKeyMap
+  :: CodeMirror
+  -> String
+  -> Object (Effect KeyResult)
+  -> Effect Unit
+
+foreign import removeKeyMap
+  :: CodeMirror
+  -> String
+  -> Effect Unit
+
+foreign import data KeyResult :: Type
+
+foreign import keyHandled :: KeyResult
+
+foreign import keyPass :: KeyResult

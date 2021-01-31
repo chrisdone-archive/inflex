@@ -321,12 +321,9 @@ render (State {display, code, editor, path, cellError}) =
           (SProxy :: SProxy "code")
           unit
           Code.component
-          (Code.Input { code })
+          (Code.Input {code})
           (case _ of
              Code.TextOutput text -> Just (FinishEditing text))
-      , HH.div
-          [HP.class_ (HH.ClassName "completion-wrap")]
-          [HH.text "Completion here!"]
       ]
     wrapper inner =
       case display of

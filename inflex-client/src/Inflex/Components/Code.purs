@@ -11,10 +11,10 @@ module Inflex.Components.Code
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (log)
+import Foreign.Object (fromHomogeneous)
 import Halogen as H
 import Halogen.HTML as HH
-import Inflex.Components.CodeMirror as CodeMirror
+import Inflex.Components.CodeMirror as CM
 import Prelude
 
 --------------------------------------------------------------------------------
@@ -34,14 +34,14 @@ data Query a = SomeQuery
 
 data Command
   = HandleInput Input
-  | CMEvent CodeMirror.CMEvent
+  | CMEvent CM.CMEvent
 
 data State = State
   { code :: String
   }
 
 type Slots (i :: Type -> Type) =
-  ( codemirror :: H.Slot CodeMirror.Query CodeMirror.Output Unit
+  ( codemirror :: H.Slot CM.Query CM.Output Unit
   )
 
 --------------------------------------------------------------------------------
@@ -83,18 +83,20 @@ eval =
     HandleInput _ -> pure unit
     CMEvent event ->
       case event of
-        CodeMirror.Focused -> log "CodeMirror.Focused"
-        CodeMirror.Blurred -> log "CodeMirror.Blurred"
-        CodeMirror.CursorActivity -> log "CodeMirror.CursorActivity"
-        CodeMirror.InputRead -> log "CodeMirror.InputRead"
-        CodeMirror.KeyHandled name -> log ("CodeMirror.KeyHandled: " <> name)
-        CodeMirror.Enter -> do
-          log "CodeMirror.Enter"
-          mvalue <-
-            H.query (SProxy :: SProxy "codemirror") unit (H.request CodeMirror.GetTextValue)
-          case mvalue of
-            Just value -> do H.raise (TextOutput value)
-            Nothing -> pure unit
+        CM.KeyHandled key ->
+          case key of
+            CM.Enter -> do
+              mvalue <-
+                H.query
+                  (SProxy :: SProxy "codemirror")
+                  unit
+                  (H.request CM.GetTextValue)
+              case mvalue of
+                Just value -> do
+                  H.raise (TextOutput value)
+                Nothing -> pure unit
+            _ -> pure unit
+        _ -> pure unit
 
 --------------------------------------------------------------------------------
 -- Render
@@ -107,11 +109,11 @@ render (State state) =
   HH.slot
     (SProxy :: SProxy "codemirror")
     unit
-    CodeMirror.component
-    (CodeMirror.Config
+    CM.component
+    (CM.Config
        { readOnly: false
        , theme: "default"
-       , selection: CodeMirror.noSelection
+       , selection: CM.noSelection
        , mode: "haskell"
        , value: state.code
        , styleActiveLine: true
@@ -120,6 +122,7 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
+       , extraKeys: fromHomogeneous {"Enter": pure CM.keyHandled}
        })
     (case _ of
-       CodeMirror.CMEventOut event -> Just (CMEvent event))
+       CM.CMEventOut event -> Just (CMEvent event))
