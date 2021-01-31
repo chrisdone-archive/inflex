@@ -11,6 +11,7 @@ module Inflex.Components.Code
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class.Console (log)
 import Foreign.Object (fromHomogeneous)
 import Halogen as H
 import Halogen.HTML as HH
@@ -81,7 +82,8 @@ eval ::
 eval =
   case _ of
     HandleInput _ -> pure unit
-    CMEvent event ->
+    CMEvent event -> do
+      log (show event)
       case event of
         CM.KeyHandled key ->
           case key of
