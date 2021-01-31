@@ -83,6 +83,8 @@ data CMEvent
   = Focused
   | Blurred
   | CursorActivity
+  | KeyHandled String
+  | InputRead
   | Enter
 
 foreign import data CodeMirror :: Type
@@ -155,6 +157,8 @@ eval Initializer = do
                  setOnFocused cm (H.emit emitter (CMEventIn Focused))
                  setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
                  setOnCursorActivity cm (H.emit emitter (CMEventIn CursorActivity))
+                 setOnKeyHandled cm (\name -> H.emit emitter (CMEventIn (KeyHandled name)))
+                 setOnInputRead cm (H.emit emitter (CMEventIn InputRead))
                  pure mempty)))
       H.put
         (State
@@ -223,6 +227,16 @@ foreign import setOnFocused
   -> Effect Unit
 
 foreign import setOnCursorActivity
+  :: CodeMirror
+  -> Effect Unit
+  -> Effect Unit
+
+foreign import setOnKeyHandled
+  :: CodeMirror
+  -> (String -> Effect Unit)
+  -> Effect Unit
+
+foreign import setOnInputRead
   :: CodeMirror
   -> Effect Unit
   -> Effect Unit

@@ -3,6 +3,28 @@
 
 var mirrors = {};
 
+exports.setOnKeyHandled = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.on('keyHandled',function(cm, string, event){
+        f(string)();
+      });
+      return {};
+    }
+  }
+}
+
+exports.setOnInputRead = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.on('inputRead',function(cm, change){
+        f();
+      });
+      return {};
+    }
+  }
+}
+
 exports.setOnFocused = function(codemirror){
   return function(f){
     return function(){

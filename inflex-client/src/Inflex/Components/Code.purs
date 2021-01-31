@@ -86,6 +86,8 @@ eval =
         CodeMirror.Focused -> log "CodeMirror.Focused"
         CodeMirror.Blurred -> log "CodeMirror.Blurred"
         CodeMirror.CursorActivity -> log "CodeMirror.CursorActivity"
+        CodeMirror.InputRead -> log "CodeMirror.InputRead"
+        CodeMirror.KeyHandled name -> log ("CodeMirror.KeyHandled: " <> name)
         CodeMirror.Enter -> do
           log "CodeMirror.Enter"
           mvalue <-
