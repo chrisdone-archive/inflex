@@ -11,6 +11,7 @@ module Inflex.Components.Code
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CodeMirror
@@ -82,10 +83,11 @@ eval =
     HandleInput _ -> pure unit
     CMEvent event ->
       case event of
-        CodeMirror.Focused -> pure unit
-        CodeMirror.Blurred -> pure unit
-        CodeMirror.CursorActivity -> pure unit
+        CodeMirror.Focused -> log "CodeMirror.Focused"
+        CodeMirror.Blurred -> log "CodeMirror.Blurred"
+        CodeMirror.CursorActivity -> log "CodeMirror.CursorActivity"
         CodeMirror.Enter -> do
+          log "CodeMirror.Enter"
           mvalue <-
             H.query (SProxy :: SProxy "codemirror") unit (H.request CodeMirror.GetTextValue)
           case mvalue of
