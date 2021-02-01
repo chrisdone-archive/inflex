@@ -66,18 +66,18 @@ data Command
 data Config = Config InternalConfig
 
 type InternalConfig =
-  { readOnly  :: Boolean
-  , theme     :: String
-  , selection :: Range
-  , mode      :: String
-  , value     :: String
-  , styleActiveLine :: Boolean
-  , lineNumbers :: Boolean
-  , lineWrapping :: Boolean
-  , autofocus :: Boolean
-  , autoCloseBrackets :: Boolean
+  { readOnly                  :: Boolean
+  , theme                     :: String
+  , selection                 :: Range
+  , mode                      :: String
+  , value                     :: String
+  , styleActiveLine           :: Boolean
+  , lineNumbers               :: Boolean
+  , lineWrapping              :: Boolean
+  , autofocus                 :: Boolean
+  , autoCloseBrackets         :: Boolean
   , highlightSelectionMatches :: Boolean
-  , extraKeys :: Object (Effect KeyResult)
+  , extraKeys                 :: Object (Effect KeyResult)
   }
 
 type Range =
@@ -105,6 +105,7 @@ data Key
   | Up
   | Down
   | Enter
+
 
 derive instance genericKey :: Generic Key _
 instance showKey :: Show Key where show x = genericShow x
