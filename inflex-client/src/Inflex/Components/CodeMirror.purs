@@ -78,6 +78,7 @@ type InternalConfig =
   , autoCloseBrackets         :: Boolean
   , highlightSelectionMatches :: Boolean
   , extraKeys                 :: Object (Effect KeyResult)
+  , namesInScope              :: Array String
   }
 
 type Range =

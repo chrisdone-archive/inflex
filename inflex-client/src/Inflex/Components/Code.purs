@@ -23,12 +23,13 @@ import Prelude
 
 data Input = Input
   { code :: String
+  , namesInScope :: Array String
   }
 
 data Output =
   TextOutput String
 
-data Query a = SomeQuery
+data Query a = SetNamesInScope (Array String)
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -39,6 +40,7 @@ data Command
 
 data State = State
   { code :: String
+  , namesInScope :: Array String
   }
 
 type Slots (i :: Type -> Type) =
@@ -52,7 +54,11 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\(Input input) -> State {code: input . code})
+        (\(Input input) ->
+           State
+             { code: input . code
+             , namesInScope: input . namesInScope
+             })
     , render
     , eval:
         H.mkEval
@@ -70,7 +76,11 @@ query ::
      forall i m a. (MonadAff m)
   => Query a
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
-query _ = pure Nothing
+query =
+  case _ of
+    SetNamesInScope namesInScope -> do
+      H.modify_ (\(State s) -> State (s {namesInScope = namesInScope}))
+      pure Nothing
 
 --------------------------------------------------------------------------------
 -- Eval
@@ -125,6 +135,7 @@ render (State state) =
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
        , extraKeys: fromHomogeneous {"Enter": pure CM.keyHandled}
+       , namesInScope: state.namesInScope
        })
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))

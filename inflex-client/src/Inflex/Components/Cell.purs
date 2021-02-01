@@ -3,6 +3,7 @@
 module Inflex.Components.Cell
   ( component
   , Pos(..)
+  , Input(..)
   , Query(..)
   , Cell(..)
   , Output(..)
@@ -14,7 +15,7 @@ import Data.Either (Either(..), either)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Effect.Aff.Class
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Effect (Effect)
 import Halogen as H
@@ -35,7 +36,10 @@ import Web.UIEvent.MouseEvent as ME
 --------------------------------------------------------------------------------
 -- Component types
 
-type Input = Shared.OutputCell
+data Input = Input {
+  cell :: Shared.OutputCell,
+  namesInScope :: Array String
+  }
 
 type Pos = { x :: Int, y :: Int }
 
@@ -54,10 +58,11 @@ data State = State
   , pos :: Maybe Pos
   , offset :: Maybe {x::Int,y::Int, innerx :: Int, innery :: Int}
   , dirty :: Boolean
+  , namesInScope:: Array String
   }
 
 data Command
-  = SetCellFromInput Cell
+  = SetCellFromInput Input
   | CodeUpdate Cell
   | DeleteCell
   | DragStarted DragEvent'
@@ -74,6 +79,9 @@ instance showMouseEvent :: Show MouseEvent' where show _ = "MouseEvent"
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
+
+derive instance genericInput :: Generic Input _
+instance showInput :: Show Input where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
@@ -95,19 +103,20 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\cell ->
+        (\(Input { cell, namesInScope }) ->
            State
              { cell: outputCellToCell cell
              , dirty: false
              , pos: Nothing
              , offset: Nothing
+             , namesInScope
              })
     , render
     , eval:
         H.mkEval
           H.defaultEval
             { handleAction = eval
-            , receive = pure <<< SetCellFromInput <<< outputCellToCell
+            , receive = pure <<< SetCellFromInput
             , handleQuery = query
             }
     }
@@ -223,7 +232,8 @@ eval =
     CodeUpdate (Cell {name, code}) -> do
       -- H.modify_ (\(State s) -> State (s {dirty = true}))
       H.raise (CellUpdate {name, code})
-    SetCellFromInput cell@(Cell {hash, name}) -> do
+    SetCellFromInput (Input {cell: c, namesInScope} ) -> do
+      let cell@(Cell {hash, name}) = outputCellToCell c
       -- State s0 <- H.get
       -- let Cell cell0 = s0 . cell
       -- if s0 . dirty || cell0 . hash /= hash
@@ -233,7 +243,7 @@ eval =
       --        else log ("Updating changed cell " <> name)
 
       --   else pure unit {-log ("Ignoring unchanged clean cell " <> name)-}
-      H.modify_ (\(State s) -> State (s {dirty = false, cell = cell}))
+      H.modify_ (\(State s) -> State (s {dirty = false, cell = cell, namesInScope = namesInScope}))
     DeleteCell -> H.raise RemoveCell
     DragStarted (DragEvent' dragEvent) -> do
       H.liftEffect
@@ -273,7 +283,7 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {cell: Cell {name, code, result, hash}, pos}) =
+render (State {cell: Cell {name, code, result, hash}, pos, namesInScope}) =
   HH.div
     [ HP.class_ (HH.ClassName "cell-wrapper")
     -- Disabling dragging for now
@@ -326,6 +336,7 @@ render (State {cell: Cell {name, code, result, hash}, pos}) =
                 (Editor.EditorAndCode
                    { editor: either Editor.ErrorE identity result
                    , code: code
+                   , namesInScope
                    , path: identity
                    })
                 (\output ->

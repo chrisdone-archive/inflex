@@ -152,7 +152,7 @@ render state =
                  (SProxy :: SProxy "Cell")
                  (uuidToString uuid)
                  Cell.component
-                 cell
+                 (Cell.Input {cell, namesInScope})
                  (\update0 ->
                     pure
                       (case update0 of
@@ -170,6 +170,26 @@ render state =
              [HP.class_ (HH.ClassName "modal-wrap")]
              [renderCsvWizard wizard]
          ])
+  where namesInScope = standardNames <>
+                       map (\(OutputCell {name}) -> name) (state.cells)
+
+standardNames :: Array String
+standardNames =
+  [ "map"
+  , "filter"
+  , "sum"
+  , "average"
+  , "vega"
+  , "null"
+  , "length"
+  , "distinct"
+  , "minimum"
+  , "maximum"
+  , "sort"
+  , "find"
+  , "all"
+  , "any"
+  ]
 
 renderCsvWizard :: forall t46. CsvWizard -> HH.HTML t46 Command
 renderCsvWizard wizard =
