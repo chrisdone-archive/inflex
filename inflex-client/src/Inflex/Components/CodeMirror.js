@@ -34,6 +34,15 @@ exports.setOnFocused = function(codemirror){
   }
 }
 
+exports.setOnEntered = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror.onenter = f;
+      return {};
+    }
+  }
+}
+
 exports.setOnBlurred = function(codemirror){
   return function(f){
     return function(){
@@ -73,6 +82,7 @@ exports.codeMirror = function(parent){
           while (start && /\w/.test(line.charAt(start - 1))) --start
           while (end < line.length && /\w/.test(line.charAt(end))) ++end
           var word = line.slice(start, end).toLowerCase()
+          if (word.length == 0) return accept(null);
           let candidates = [];
           for (var i = 0; i < comp.length; i++) {
             if (isPrefixOf(word, comp[i])) {
@@ -91,6 +101,11 @@ exports.codeMirror = function(parent){
       config.hintOptions = {
         hint: getPrefixMatches,
         updateOnCursorActivity: true
+      };
+      config.extraKeys = {
+        "Enter": function(inst) {
+          cm.onenter();
+        }
       };
       ////////////////////////////////////////////////////////////////////////////////
       let cm = CodeMirror(parent, config);
@@ -162,3 +177,9 @@ exports.removeKeyMap = function(codemirror){
 exports.keyHandled = undefined;
 
 exports.keyPass = CodeMirror.Pass;
+
+exports.completionActive = function(cm){
+  return function(){
+    return cm.state.completionActive;
+  }
+};

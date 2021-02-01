@@ -11,8 +11,6 @@ module Inflex.Components.Code
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (log)
-import Foreign.Object (fromHomogeneous)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
@@ -93,21 +91,17 @@ eval =
   case _ of
     HandleInput _ -> pure unit
     CMEvent event -> do
-      log (show event)
       case event of
-        CM.KeyHandled key ->
-          case key of
-            CM.Enter -> do
-              mvalue <-
-                H.query
-                  (SProxy :: SProxy "codemirror")
-                  unit
-                  (H.request CM.GetTextValue)
-              case mvalue of
-                Just value -> do
-                  H.raise (TextOutput value)
-                Nothing -> pure unit
-            _ -> pure unit
+        CM.Entered -> do
+          mvalue <-
+            H.query
+              (SProxy :: SProxy "codemirror")
+              unit
+              (H.request CM.GetTextValue)
+          case mvalue of
+            Just value -> do
+              H.raise (TextOutput value)
+            Nothing -> pure unit
         _ -> pure unit
 
 --------------------------------------------------------------------------------
@@ -134,7 +128,6 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
-       , extraKeys: fromHomogeneous {"Enter": pure CM.keyHandled}
        , namesInScope: state.namesInScope
        })
     (case _ of

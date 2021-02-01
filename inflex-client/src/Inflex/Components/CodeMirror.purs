@@ -6,7 +6,6 @@ module Inflex.Components.CodeMirror
   , Input
   , Config(..)
   , InternalConfig
-  , Key(..)
   , Range
   , Pos
   , Query(..)
@@ -23,13 +22,12 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Effect.Class.Console (log)
 import Foreign.Object
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource (effectEventSource, emit) as H
-import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), (<>))
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<))
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -77,7 +75,6 @@ type InternalConfig =
   , autofocus                 :: Boolean
   , autoCloseBrackets         :: Boolean
   , highlightSelectionMatches :: Boolean
-  , extraKeys                 :: Object (Effect KeyResult)
   , namesInScope              :: Array String
   }
 
@@ -94,31 +91,10 @@ type Pos =
 data CMEvent
   = Focused
   | Blurred
-  | CursorActivity
-  | KeyHandled Key
-  | InputRead
+  | Entered
 
 derive instance genericCMEvent :: Generic CMEvent _
 instance showCMEvent :: Show CMEvent where show x = genericShow x
-
-data Key
-  = Backspace
-  | Up
-  | Down
-  | Enter
-
-
-derive instance genericKey :: Generic Key _
-instance showKey :: Show Key where show x = genericShow x
-
-parseKey :: String -> Maybe Key
-parseKey =
-  case _ of
-    "Backspace" -> Just Backspace
-    "Up" -> Just Up
-    "Down" -> Just Down
-    "Enter" -> Just Enter
-    _ -> Nothing
 
 foreign import data CodeMirror :: Type
 
@@ -200,16 +176,7 @@ eval Initializer = do
               (\emitter -> do
                  setOnFocused cm (H.emit emitter (CMEventIn Focused))
                  setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
-                 setOnCursorActivity
-                   cm
-                   (H.emit emitter (CMEventIn CursorActivity))
-                 setOnKeyHandled
-                   cm
-                   (\name -> do
-                      case parseKey name of
-                        Just key -> H.emit emitter (CMEventIn (KeyHandled key))
-                        Nothing -> log ("KeyHandled: Unknown key " <> name))
-                 setOnInputRead cm (H.emit emitter (CMEventIn InputRead))
+                 setOnEntered cm (H.emit emitter (CMEventIn Entered))
                  pure mempty)))
       H.put
         (State
@@ -267,6 +234,11 @@ foreign import setOnFocused
   -> Effect Unit
   -> Effect Unit
 
+foreign import setOnEntered
+  :: CodeMirror
+  -> Effect Unit
+  -> Effect Unit
+
 foreign import setOnCursorActivity
   :: CodeMirror
   -> Effect Unit
@@ -297,6 +269,10 @@ foreign import removeKeyMap
   :: CodeMirror
   -> String
   -> Effect Unit
+
+foreign import completionActive
+  :: CodeMirror
+  -> Effect Boolean
 
 foreign import data KeyResult :: Type
 
