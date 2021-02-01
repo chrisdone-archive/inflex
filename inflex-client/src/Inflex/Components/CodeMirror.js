@@ -66,7 +66,7 @@ exports.codeMirror = function(parent){
     return function(){
       config.viewportMargin = Infinity;
       if (config.highlightSelectionMatches)
-        config.highlightSelectionMatches = {showToken: /[A-Za-z][A-Za-z0-9_]*/};
+        config.highlightSelectionMatches = {showToken: true};
       let comp = config.namesInScope;
       function isPrefixOf(sub,sup){
         if (sub.length == 0) throw 'invalid substring';
