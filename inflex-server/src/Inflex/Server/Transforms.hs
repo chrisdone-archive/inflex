@@ -7,6 +7,7 @@
 
 module Inflex.Server.Transforms
   ( applyRename
+  , applyDelete
   , applyUpdateToDocument
   , TransformError(..)
   ) where
@@ -44,6 +45,15 @@ applyRename (Shared.RenameCell {uuid = uuid0, newname}) inputDocument1 =
                      else name
                , ..
                })
+          (InputDocument1.cells inputDocument1)
+    }
+
+applyDelete :: Shared.DeleteCell -> Shared.InputDocument1 -> Shared.InputDocument1
+applyDelete (Shared.DeleteCell {uuid = uuid0}) inputDocument1 =
+  inputDocument1
+    { InputDocument1.cells =
+        V.filter
+          (\Shared.InputCell1 {..} -> uuid /= uuid0)
           (InputDocument1.cells inputDocument1)
     }
 

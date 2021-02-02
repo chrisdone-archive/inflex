@@ -101,6 +101,21 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
        RevisedDocument {..} <-
          runDB (getRevisedDocument loginAccountId documentId)
        case update' of
+         Shared.CellDelete delete' -> do
+               start <- liftIO getTime
+               let inputDocument = applyDelete delete' (revisionContent revision)
+               outputDocument <- liftIO (loadInputDocument inputDocument)
+               end <- liftIO getTime
+               now <- liftIO getCurrentTime
+               runDB
+                 (setInputDocument
+                    now
+                    loginAccountId
+                    documentKey
+                    revisionId
+                    inputDocument)
+               glog (CellUpdated (end - start))
+               pure (Shared.UpdatedDocument outputDocument)
          Shared.CellRename rename -> do
                start <- liftIO getTime
                let inputDocument = applyRename rename (revisionContent revision)

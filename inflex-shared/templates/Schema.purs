@@ -203,6 +203,11 @@ instance showUpdateCell :: Show UpdateCell where show = genericShow
 instance decodeUpdateCell :: Decode UpdateCell where decode = genericDecode opts
 instance encodeUpdateCell :: Encode UpdateCell where encode = genericEncode opts
 
+derive instance genericDeleteCell :: Generic DeleteCell _
+instance showDeleteCell :: Show DeleteCell where show = genericShow
+instance decodeDeleteCell :: Decode DeleteCell where decode = genericDecode opts
+instance encodeDeleteCell :: Encode DeleteCell where encode = genericEncode opts
+
 derive instance genericRenameCell :: Generic RenameCell _
 instance showRenameCell :: Show RenameCell where show = genericShow
 instance decodeRenameCell :: Decode RenameCell where decode = genericDecode opts

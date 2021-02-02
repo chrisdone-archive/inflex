@@ -252,14 +252,6 @@ eval =
             ] <>
             map toInputCell (s . cells)
       refresh cells'
-    DeleteCell uuid -> do
-      state <- H.get
-      refresh
-        (map
-           toInputCell
-           (filter
-              (\(OutputCell {uuid: uuid'}) -> uuid' /= uuid)
-              (state . cells)))
     UpdatePath uuid update' -> do
       result <-
         update
@@ -274,6 +266,11 @@ eval =
               (uuidToString uuid)
               (Cell.NestedCellError cellError)
           pure unit
+    DeleteCell uuid -> do
+      result <- update (Shared.CellDelete (Shared.DeleteCell {uuid}))
+      case result of
+        Nothing -> pure unit
+        Just cellError -> pure unit
     RenameCell uuid name' -> do
       result <-
         update
@@ -281,13 +278,7 @@ eval =
              (Shared.RenameCell {uuid, newname: name'}))
       case result of
         Nothing -> pure unit
-        Just cellError -> do
-          _ <-
-            H.query
-              (SProxy :: SProxy "Cell")
-              (uuidToString uuid)
-              (Cell.NestedCellError cellError)
-          pure unit
+        Just cellError -> pure unit
     Undo -> do
       result <- rpcUndoDocument (DocumentId (meta . documentId))
       case result of

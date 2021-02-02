@@ -70,6 +70,11 @@ data NestedCellError = NestedCellError
 data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
+  | CellDelete DeleteCell
+
+data DeleteCell = DeleteCell {
+  uuid :: UUID
+ }
 
 data RenameCell = RenameCell {
   uuid :: UUID,

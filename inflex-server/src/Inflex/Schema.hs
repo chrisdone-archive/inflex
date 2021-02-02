@@ -101,6 +101,11 @@ data NestedCellError = NestedCellError
 data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
+  | CellDelete DeleteCell
+
+data DeleteCell = DeleteCell {
+  uuid :: UUID
+ }
 
 data RenameCell = RenameCell {
   uuid :: UUID,
@@ -583,6 +588,12 @@ deriving instance Generic UpdateCell
 deriving instance Show UpdateCell
 instance ToJSON UpdateCell
 instance FromJSON UpdateCell
+
+instance NFData DeleteCell
+deriving instance Generic DeleteCell
+deriving instance Show DeleteCell
+instance ToJSON DeleteCell
+instance FromJSON DeleteCell
 
 instance NFData RenameCell
 deriving instance Generic RenameCell
