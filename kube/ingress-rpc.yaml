@@ -10,7 +10,7 @@ metadata:
       more_set_headers "X-Ingress: inflex-rpc-ingress";
       proxy_set_header HTTPS on;
     nginx.ingress.kubernetes.io/limit-connections: "5"
-    nginx.ingress.kubernetes.io/limit-rps: "1"
+    nginx.ingress.kubernetes.io/limit-rps: "3"
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "1"
 spec:
   rules:
