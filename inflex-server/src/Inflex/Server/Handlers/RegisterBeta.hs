@@ -41,11 +41,9 @@ import           Yesod.Lucid
 
 intro_ :: Lucid App ()
 intro_ = do
-  h1_ "Create a username and password"
-  p_
-    (do "Don't forget, you can also join the community forum at "
-        a_ [href_ "https://community.inflex.io/"] "community.inflex.io"
-        " to share your (much needed) feedback!")
+  h1_ "Create a quick username and password"
+  p_ "It takes 10 seconds and you're good to go! \
+     \You just need this to associate documents with you."
 
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
