@@ -31,6 +31,7 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Database.Persist.Sql
 import qualified Inflex.Schema as Shared
+import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
 import           Inflex.Server.App
 import           Inflex.Server.Compute
 import           Inflex.Server.Csv
@@ -101,39 +102,63 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
        RevisedDocument {..} <-
          runDB (getRevisedDocument loginAccountId documentId)
        case update' of
+         Shared.CellNew Shared.NewCell {code} -> do
+           let inputDocument0@Shared.InputDocument1 {cells} =
+                 revisionContent revision
+           uuid <- liftIO UUID.nextRandom
+           let newcell =
+                 Shared.InputCell1
+                   { uuid = Shared.UUID (UUID.toText uuid)
+                   , name = ""
+                   , code
+                   , order = V.length cells + 1
+                   , version = Shared.versionRefl
+                   }
+               inputDocument =
+                 inputDocument0 {InputDocument1.cells = cells <> pure newcell}
+           outputDocument <- liftIO (loadInputDocument inputDocument)
+           now <- liftIO getCurrentTime
+           runDB
+             (setInputDocument
+                now
+                loginAccountId
+                documentKey
+                revisionId
+                inputDocument)
+           pure (Shared.UpdatedDocument outputDocument)
          Shared.CellDelete delete' -> do
-               start <- liftIO getTime
-               let inputDocument = applyDelete delete' (revisionContent revision)
-               outputDocument <- liftIO (loadInputDocument inputDocument)
-               end <- liftIO getTime
-               now <- liftIO getCurrentTime
-               runDB
-                 (setInputDocument
-                    now
-                    loginAccountId
-                    documentKey
-                    revisionId
-                    inputDocument)
-               glog (CellUpdated (end - start))
-               pure (Shared.UpdatedDocument outputDocument)
+           start <- liftIO getTime
+           let inputDocument = applyDelete delete' (revisionContent revision)
+           outputDocument <- liftIO (loadInputDocument inputDocument)
+           end <- liftIO getTime
+           now <- liftIO getCurrentTime
+           runDB
+             (setInputDocument
+                now
+                loginAccountId
+                documentKey
+                revisionId
+                inputDocument)
+           glog (CellUpdated (end - start))
+           pure (Shared.UpdatedDocument outputDocument)
          Shared.CellRename rename -> do
-               start <- liftIO getTime
-               let inputDocument = applyRename rename (revisionContent revision)
-               outputDocument <- liftIO (loadInputDocument inputDocument)
-               end <- liftIO getTime
-               now <- liftIO getCurrentTime
-               runDB
-                 (setInputDocument
-                    now
-                    loginAccountId
-                    documentKey
-                    revisionId
-                    inputDocument)
-               glog (CellUpdated (end - start))
-               pure (Shared.UpdatedDocument outputDocument)
+           start <- liftIO getTime
+           let inputDocument = applyRename rename (revisionContent revision)
+           outputDocument <- liftIO (loadInputDocument inputDocument)
+           end <- liftIO getTime
+           now <- liftIO getCurrentTime
+           runDB
+             (setInputDocument
+                now
+                loginAccountId
+                documentKey
+                revisionId
+                inputDocument)
+           glog (CellUpdated (end - start))
+           pure (Shared.UpdatedDocument outputDocument)
          Shared.CellUpdate update''@Shared.UpdateCell { uuid
-                                             , update = Shared.UpdatePath {path}
-                                             } -> do
+                                                      , update = Shared.UpdatePath {path}
+                                                      } -> do
            start <- liftIO getTime
            case applyUpdateToDocument update'' (revisionContent revision) of
              Left transformError -> do

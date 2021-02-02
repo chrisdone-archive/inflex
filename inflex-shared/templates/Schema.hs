@@ -295,6 +295,12 @@ deriving instance Show DeleteCell
 instance ToJSON DeleteCell
 instance FromJSON DeleteCell
 
+instance NFData NewCell
+deriving instance Generic NewCell
+deriving instance Show NewCell
+instance ToJSON NewCell
+instance FromJSON NewCell
+
 instance NFData RenameCell
 deriving instance Generic RenameCell
 deriving instance Show RenameCell

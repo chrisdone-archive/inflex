@@ -71,6 +71,11 @@ data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
   | CellDelete DeleteCell
+  | CellNew NewCell
+
+data NewCell = NewCell {
+  code :: Text
+ }
 
 data DeleteCell = DeleteCell {
   uuid :: UUID

@@ -7,11 +7,10 @@ module Inflex.Components.Doc
 import Control.Monad.State (class MonadState)
 import Data.Array (filter)
 import Data.Either (Either(..))
-import Data.Foldable (maximum)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.MediaType (MediaType(..))
 import Data.Symbol (SProxy(..))
-import Data.UUID (UUID, genUUIDV4, uuidToString)
+import Data.UUID (UUID, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (error)
@@ -20,10 +19,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
-import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument)
+import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell(..), OutputDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<>))
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (/=), (<>))
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -234,24 +233,10 @@ eval =
           error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
         Right outputDocument -> setOutputDocument outputDocument
     NewCell code -> do
-      uuid <- H.liftEffect genUUIDV4
-      s <- H.get
-      let cells' =
-            [ InputCell1
-                { uuid: uuid
-                , name: ""
-                , code
-                , order:
-                    fromMaybe
-                      0
-                      (maximum
-                         (map (\(OutputCell {order}) -> order) (s . cells))) +
-                    1
-                , version: versionRefl
-                }
-            ] <>
-            map toInputCell (s . cells)
-      refresh cells'
+      result <- update (Shared.CellNew (Shared.NewCell {code}))
+      case result of
+        Nothing -> pure unit
+        Just cellError -> pure unit
     UpdatePath uuid update' -> do
       result <-
         update
@@ -316,24 +301,6 @@ eval =
 
 --------------------------------------------------------------------------------
 -- API calls
-
-refresh ::
-     forall t60. Bind t60
-  => MonadAff t60 =>
-       MonadAff t60 =>
-         MonadState State t60 =>
-           Array InputCell1 -> t60 Unit
-refresh cells = do
-  result <-
-    rpcRefreshDocument
-      (RefreshDocument
-         { documentId: DocumentId (meta.documentId)
-         , document: InputDocument1 {cells: cells}
-         })
-  case result of
-    Left err -> do
-      error err -- TODO:Display this to the user properly.
-    Right outputDocument -> setOutputDocument outputDocument
 
 update :: forall t60.
   Bind t60 => MonadAff t60 => MonadAff t60 => MonadState

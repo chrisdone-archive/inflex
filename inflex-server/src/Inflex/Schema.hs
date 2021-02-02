@@ -102,6 +102,11 @@ data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
   | CellDelete DeleteCell
+  | CellNew NewCell
+
+data NewCell = NewCell {
+  code :: Text
+ }
 
 data DeleteCell = DeleteCell {
   uuid :: UUID
@@ -594,6 +599,12 @@ deriving instance Generic DeleteCell
 deriving instance Show DeleteCell
 instance ToJSON DeleteCell
 instance FromJSON DeleteCell
+
+instance NFData NewCell
+deriving instance Generic NewCell
+deriving instance Show NewCell
+instance ToJSON NewCell
+instance FromJSON NewCell
 
 instance NFData RenameCell
 deriving instance Generic RenameCell
