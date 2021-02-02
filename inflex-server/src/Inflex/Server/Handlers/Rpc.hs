@@ -42,7 +42,6 @@ import           Inflex.Server.Types
 import           Inflex.Types
 import qualified RIO
 import           RIO (glog)
-import           System.Timeout
 import           Yesod hiding (Html)
 
 --------------------------------------------------------------------------------
@@ -54,9 +53,6 @@ rpcLoadDocument docId =
     (\_ (LoginState {loginAccountId}) -> do
        revisedDocument <- runDB (getRevisedDocument loginAccountId docId)
        loadRevisedDocument revisedDocument)
-
-milliseconds :: Int
-milliseconds = 1000
 
 --------------------------------------------------------------------------------
 -- Update document
@@ -82,7 +78,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                    }
                inputDocument =
                  inputDocument0 {InputDocument1.cells = cells <> pure newcell}
-           outputDocument <- liftIO (loadInputDocument inputDocument)
+           outputDocument <- forceTimeout (loadInputDocument inputDocument)
            now <- liftIO getCurrentTime
            runDB
              (setInputDocument
@@ -95,7 +91,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
          Shared.CellDelete delete' -> do
            start <- liftIO getTime
            let inputDocument = applyDelete delete' (revisionContent revision)
-           outputDocument <- liftIO (loadInputDocument inputDocument)
+           outputDocument <- forceTimeout (loadInputDocument inputDocument)
            end <- liftIO getTime
            now <- liftIO getCurrentTime
            runDB
@@ -110,7 +106,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
          Shared.CellRename rename -> do
            start <- liftIO getTime
            let inputDocument = applyRename rename (revisionContent revision)
-           outputDocument <- liftIO (loadInputDocument inputDocument)
+           outputDocument <- forceTimeout (loadInputDocument inputDocument)
            end <- liftIO getTime
            now <- liftIO getCurrentTime
            runDB
@@ -136,7 +132,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
                        , path = path
                        }))
              Right inputDocument -> do
-               outputDocument <- liftIO (loadInputDocument inputDocument)
+               outputDocument <- forceTimeout (loadInputDocument inputDocument)
                case cellHadErrorInNestedPlace uuid path outputDocument of
                  Nothing -> do
                    end <- liftIO getTime
@@ -288,22 +284,8 @@ setInputDocument now accountId documentId revisionId inputDocument = do
 -- Loading
 
 loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
-loadRevisedDocument RevisedDocument{..} = do
-  start <- liftIO getTime
-  mloaded <-
-    liftIO
-      (timeout
-         (1000 * milliseconds)
-         (do !x <- loadInputDocument (revisionContent revision)
-             pure x))
-  end <- liftIO getTime
-  case mloaded of
-    Just loaded -> do
-      glog (DocumentLoaded (end - start))
-      pure loaded
-    Nothing -> do
-      glog TimeoutExceeded
-      invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"]
+loadRevisedDocument RevisedDocument {..} =
+  forceTimeout (loadInputDocument (revisionContent revision))
 
 --------------------------------------------------------------------------------
 -- Importing CSV
@@ -387,13 +369,15 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
              Left err ->
                error
                  ("Unexpected CSV parse fail; the schema should have \
-                 \been validated, so this is a bug." <> show err)
+                 \been validated, so this is a bug." <>
+                  show err)
              Right (_headers, rows0 :: Vector (HashMap Text Text)) ->
                case importViaSchema file csvImportSpec rows0 of
                  Left err ->
                    error
                      ("Unexpected CSV parse fail; the schema should have \
-                     \been validated, so this is a bug: " <> show err)
+                     \been validated, so this is a bug: " <>
+                      show err)
                  Right rows -> do
                    RevisedDocument {..} <-
                      runDB (getRevisedDocument loginAccountId documentId)
@@ -402,12 +386,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                        (insertImportedCsv file rows (revisionContent revision))
                    now <- liftIO getCurrentTime
                    start <- liftIO getTime
-                   mloaded <-
-                     liftIO
-                       (timeout
-                          (1000 * milliseconds)
-                          (do !x <- loadInputDocument document
-                              pure x))
+                   loaded <- forceTimeout (loadInputDocument document)
                    end <- liftIO getTime
                    runDB
                      (setInputDocument
@@ -416,16 +395,8 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                         documentKey
                         revisionId
                         document)
-                   case mloaded of
-                     Just loaded -> do
-                       glog (DocumentRefreshed (end - start))
-                       pure loaded
-                     Nothing -> do
-                       glog TimeoutExceeded
-                       invalidArgs
-                         [ "timeout: exceeded " <> T.pack (show milliseconds) <>
-                           "ms"
-                         ])
+                   glog (DocumentRefreshed (end - start))
+                   pure loaded)
 
 insertImportedCsv ::
      Shared.File
@@ -466,3 +437,15 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
     brackets x = "[" <> x <> "]"
     commas :: [LT.Builder] -> LT.Builder
     commas = mconcat . List.intersperse ","
+
+--------------------------------------------------------------------------------
+-- Timeouts
+
+forceTimeout :: IO (Maybe a) -> Handler a
+forceTimeout m = do
+  v' <- liftIO m
+  case v' of
+    Nothing -> do
+      glog TimeoutExceeded
+      invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"]
+    Just v'' -> pure v''

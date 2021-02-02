@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+{-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,6 +10,7 @@
 
 module Inflex.Server.Compute where
 
+import           Control.Early
 import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.List
@@ -28,42 +31,68 @@ import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import qualified RIO
 
-loadInputDocument :: Shared.InputDocument1 -> IO Shared.OutputDocument
+milliseconds :: Int
+milliseconds = 1000
+
+loadInputDocument :: Shared.InputDocument1 -> IO (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
   loaded <-
     RIO.runRIO
       DocumentReader
-      (loadDocument1
-         (map
-            (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
-               Named {uuid = Uuid uuid, name, thing = code, order, code})
-            (toList cells)))
-  defaulted <- RIO.runRIO DefaulterReader (defaultDocument1 loaded)
+      (RIO.timeout
+         (1000 * milliseconds)
+         (loadDocument1
+            (map
+               (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
+                  Named {uuid = Uuid uuid, name, thing = code, order, code})
+               (toList cells))))?
+  defaulted <-
+    RIO.runRIO
+      DefaulterReader
+      (RIO.timeout (1000 * milliseconds) (defaultDocument1' loaded))?
   topo <-
-    RIO.runRIO StepReader (evalDocument1 (evalEnvironment1 loaded) defaulted)
+    (RIO.runRIO
+       StepReader
+       (RIO.timeout
+          (1000 * milliseconds)
+          (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
   pure
-    (Shared.OutputDocument
-       (V.fromList
-          (sortBy
-             (comparing (\Shared.OutputCell {order} -> order))
-             (fmap
-                (\Named {uuid = Uuid uuid, name, thing, order, code} ->
-                   hashOutputCell (Shared.OutputCell
-                      { uuid = Shared.UUID uuid
-                      , hash = Shared.Hash mempty
-                      , result =
-                          either
-                            (Shared.ResultError . toCellError)
-                            (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
-                               Shared.ResultOk
-                                 (Shared.ResultTree
-                                    (toTree (pure renamed) resultExpression)))
-                            thing
-                      , code
-                      , name
-                      , order
-                      }))
-                (unToposorted topo)))))
+    (Just
+       (Shared.OutputDocument
+          (V.fromList
+             (sortBy
+                (comparing (\Shared.OutputCell {order} -> order))
+                (fmap
+                   (\Named {uuid = Uuid uuid, name, thing, order, code} ->
+                      hashOutputCell
+                        (Shared.OutputCell
+                           { uuid = Shared.UUID uuid
+                           , hash = Shared.Hash mempty
+                           , result =
+                               either
+                                 (Shared.ResultError . toCellError)
+                                 (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
+                                    Shared.ResultOk
+                                      (Shared.ResultTree
+                                         (toTree (pure renamed) resultExpression)))
+                                 thing
+                           , code
+                           , name
+                           , order
+                           }))
+                   (unToposorted topo))))))
+  where defaultDocument1' top = do
+          !v <- defaultDocument1 top
+          pure v
+
+-- | Evaluate and force the result.
+evalDocument1' ::
+     RIO.Map Hash (Expression Resolved)
+  -> Toposorted (Named (Either LoadError Cell1))
+  -> RIO.RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
+evalDocument1' env cells = do
+  !v <- evalDocument1 env cells
+  pure v
 
 hashOutputCell :: Shared.OutputCell -> Shared.OutputCell
 hashOutputCell cell =

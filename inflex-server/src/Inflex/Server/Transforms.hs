@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -72,7 +73,9 @@ applyUpdateToDocument Shared.UpdateCell {uuid, update} =
         uuid
         (pure . renameFieldInCode path (FieldName from) (FieldName to0))
     Shared.CodeUpdate (Shared.Code code) ->
-      mapUuidPath uuid path (MapExpression (setParsed code))
+      case path of
+        Shared.DataHere -> mapUuid uuid (const (pure code))
+        _ -> mapUuidPath uuid path (MapExpression (setParsed code))
     Shared.AddToEndUpdate ->
       mapUuidPath uuid path (MapArray (pure . addArrayItem))
     Shared.RemoveUpdate (Shared.Removal {index}) ->

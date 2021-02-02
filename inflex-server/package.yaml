@@ -33,6 +33,7 @@ dependencies:
 - mutable-containers
 - prometheus
 - async
+- early
 - yesod-core
 - profunctors
 - contravariant
