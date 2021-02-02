@@ -2,7 +2,6 @@
 
 module Inflex.Components.Cell
   ( component
-  , Pos(..)
   , Input(..)
   , Query(..)
   , Cell(..)
@@ -12,7 +11,6 @@ module Inflex.Components.Cell
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Either (Either(..), either)
-import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
@@ -27,11 +25,7 @@ import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Schema as Shared
 import Inflex.FieldName (validFieldName)
 import Prelude
-import Web.DOM.Node as Node
-import Web.Event.Event (currentTarget)
 import Web.HTML.Event.DragEvent as DE
-import Web.HTML.HTMLElement as HTML
-import Web.UIEvent.MouseEvent as ME
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -41,23 +35,16 @@ data Input = Input {
   namesInScope :: Array String
   }
 
-type Pos = { x :: Int, y :: Int }
-
 data Query a
-  = SetXY Pos
-  | NestedCellError Shared.NestedCellError
+  = NestedCellError Shared.NestedCellError
 
 data Output
   = CellUpdate { name :: String, code :: String}
   | RemoveCell
-  | CellDragStart DE.DragEvent
   | UpdatePath Shared.UpdatePath
 
 data State = State
   { cell :: Cell
-  , pos :: Maybe Pos
-  , offset :: Maybe {x::Int,y::Int, innerx :: Int, innery :: Int}
-  , dirty :: Boolean
   , namesInScope:: Array String
   }
 
@@ -65,17 +52,7 @@ data Command
   = SetCellFromInput Input
   | CodeUpdate Cell
   | DeleteCell
-  | DragStarted DragEvent'
-  | MouseDown MouseEvent'
   | TriggerUpdatePath Shared.UpdatePath
-
-newtype DragEvent' = DragEvent' DE.DragEvent
-derive instance genericDragEvent :: Generic DragEvent' _
-instance showDragEvent :: Show DragEvent' where show _ = "DragEvent"
-
-newtype MouseEvent' = MouseEvent' ME.MouseEvent
-derive instance genericMouseEvent :: Generic MouseEvent' _
-instance showMouseEvent :: Show MouseEvent' where show _ = "MouseEvent"
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -103,14 +80,8 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\(Input { cell, namesInScope }) ->
-           State
-             { cell: outputCellToCell cell
-             , dirty: false
-             , pos: Nothing
-             , offset: Nothing
-             , namesInScope
-             })
+        (\(Input {cell, namesInScope}) ->
+           State {cell: outputCellToCell cell, namesInScope})
     , render
     , eval:
         H.mkEval
@@ -195,22 +166,6 @@ query =
       _ <- H.queryAll (SProxy :: SProxy "editor")
                  (Editor.NestedCellError cellError)
       pure Nothing
-    SetXY xy -> do
-      State s <- H.get
-      H.modify_
-        (\(State s') ->
-           State
-             (s'
-                { pos =
-                    case s . offset of
-                      Nothing -> Nothing
-                      Just off ->
-                        Just
-                          { x: (xy . x) - off . x - off . innerx
-                          , y: (xy . y) - off . y - off . innery
-                          }
-                }))
-      pure Nothing
 
 --------------------------------------------------------------------------------
 -- Eval
@@ -226,54 +181,13 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
-    TriggerUpdatePath update -> do
-      -- H.modify_ (\(State s) -> State (s {dirty = true}))
-      H.raise (UpdatePath update)
-    CodeUpdate (Cell {name, code}) -> do
-      -- H.modify_ (\(State s) -> State (s {dirty = true}))
-      H.raise (CellUpdate {name, code})
-    SetCellFromInput (Input {cell: c, namesInScope} ) -> do
+    TriggerUpdatePath update -> H.raise (UpdatePath update)
+    CodeUpdate (Cell {name, code}) -> H.raise (CellUpdate {name, code})
+    SetCellFromInput (Input {cell: c, namesInScope}) -> do
       let cell@(Cell {hash, name}) = outputCellToCell c
-      -- State s0 <- H.get
-      -- let Cell cell0 = s0 . cell
-      -- if s0 . dirty || cell0 . hash /= hash
-      --   then do
-      --     if s0.dirty
-      --        then log ("Updating dirty cell " <> name)
-      --        else log ("Updating changed cell " <> name)
-
-      --   else pure unit {-log ("Ignoring unchanged clean cell " <> name)-}
-      H.modify_ (\(State s) -> State (s {dirty = false, cell = cell, namesInScope = namesInScope}))
+      H.modify_
+        (\(State s) -> State (s {cell = cell, namesInScope = namesInScope}))
     DeleteCell -> H.raise RemoveCell
-    DragStarted (DragEvent' dragEvent) -> do
-      H.liftEffect
-        (do setEmptyData dragEvent
-            clearDragImage dragEvent)
-      H.raise (CellDragStart dragEvent)
-    MouseDown (MouseEvent' mouseEvent) -> do
-      case currentTarget (ME.toEvent mouseEvent) >>= HTML.fromEventTarget of
-        Nothing -> pure unit
-        Just el -> do
-          myRect <- H.liftEffect (HTML.getBoundingClientRect el)
-          let xcoord = ME.clientX mouseEvent - round (myRect . left)
-              ycoord = ME.clientY mouseEvent - round (myRect . top)
-          mparent <- H.liftEffect (Node.parentElement (HTML.toNode el))
-          case mparent >>= HTML.fromElement of
-            Nothing -> pure unit
-            Just parent -> do
-              rect <- H.liftEffect (HTML.getBoundingClientRect parent)
-              H.modify_
-                (\(State s) ->
-                   State
-                     (s
-                        { offset =
-                            Just
-                              { x: round (rect . left)
-                              , y: round (rect . top)
-                              , innerx: xcoord
-                              , innery: ycoord
-                              }
-                        }))
 
 --------------------------------------------------------------------------------
 -- Render
@@ -283,44 +197,32 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State {cell: Cell {name, code, result, hash}, pos, namesInScope}) =
+render (State { cell: Cell {name, code, result, hash}
+              , namesInScope
+              }) =
   HH.div
-    [ HP.class_ (HH.ClassName "cell-wrapper")
-    -- Disabling dragging for now
-    -- , HP.draggable true
-    -- , HE.onDragStart (Just <<< DragStarted <<< DragEvent')
-    -- , HE.onMouseDown (Just <<< MouseDown <<< MouseEvent')
-    , HP.prop
-        (H.PropName "style")
-        (case pos of
-           Nothing -> ""
-           Just p ->
-             "left:" <> show (p . x) <> "px; top:" <>
-             show (p . y) <>
-             "px; position:absolute")
-    ]
+    [HP.class_ (HH.ClassName "cell-wrapper")]
     [ HH.div
-        [ HP.class_ (HH.ClassName "cell")
-        ]
+        [HP.class_ (HH.ClassName "cell")]
         [ HH.div
             [HP.class_ (HH.ClassName "cell-header")]
             [ HH.slot
                 (SProxy :: SProxy "declname")
                 unit
                 (TextInput.component
-                  (TextInput.Config
-                     { placeholder: "Type a name here"
-                     , unfilled: "(unnamed)"
-                     , title: "Click to edit cell's name"
-                     , validator: validFieldName
-                     }))
-                (TextInput.Input {text: name, notThese: mempty})
+                   (TextInput.Config
+                      { placeholder: "Type a name here"
+                      , unfilled: "(unnamed)"
+                      , title: "Click to edit cell's name"
+                      , validator: validFieldName
+                      }))
+                (TextInput.Input
+                   {text: name, notThese: mempty})
                 (\name' ->
                    pure
                      (CodeUpdate
                         (Cell {name: name', result, code, hash})))
             , HH.button
-
                 [ HP.class_ (HH.ClassName "delete-cell")
                 , HE.onClick (\_ -> pure DeleteCell)
                 , HP.title "Delete this cell"
@@ -340,12 +242,13 @@ render (State {cell: Cell {name, code, result, hash}, pos, namesInScope}) =
                    , path: identity
                    })
                 (\output ->
-                  case output of
-                    Editor.UpdatePath update -> Just (TriggerUpdatePath update)
-                    Editor.NewCode code' ->
-                     pure
-                     (CodeUpdate
-                        (Cell {name, result, code: code', hash})))
+                   case output of
+                     Editor.UpdatePath update -> Just (TriggerUpdatePath update)
+                     Editor.NewCode code' ->
+                       pure
+                         (CodeUpdate
+                            (Cell
+                               {name, result, code: code', hash})))
             ]
         ]
     ]

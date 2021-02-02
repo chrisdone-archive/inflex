@@ -23,8 +23,7 @@ import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<<<), (<>), (==))
-import Web.Event.Event (preventDefault)
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<>), (==))
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -44,9 +43,6 @@ data Command
   | NewCell String
   | DeleteCell UUID
   | UpdatePath UUID Shared.UpdatePath
-  | DragStart UUID DE.DragEvent
-  | OnDragOver DE.DragEvent
-  | OnDrop DE.DragEvent
   | Undo
   | Redo
   | ImportCsvStart
@@ -142,24 +138,23 @@ render state =
              ]
          ]
      , HH.div
-         [ HP.class_ (HH.ClassName "canvas")
-         , HE.onDragOver (Just <<< OnDragOver)
-         , HE.onDrop (Just <<< OnDrop)
-         ]
+         [HP.class_ (HH.ClassName "canvas")]
          (map
             (\cell@(OutputCell {uuid, name}) ->
                HH.slot
                  (SProxy :: SProxy "Cell")
                  (uuidToString uuid)
                  Cell.component
-                 (Cell.Input {cell, namesInScope: filter (_ /= name) namesInScope})
+                 (Cell.Input
+                    { cell
+                    , namesInScope:
+                        filter (_ /= name) namesInScope
+                    })
                  (\update0 ->
                     pure
                       (case update0 of
                          Cell.CellUpdate update' -> UpdateCell uuid update'
                          Cell.RemoveCell -> DeleteCell uuid
-                         Cell.CellDragStart dragEvent ->
-                           DragStart uuid dragEvent
                          Cell.UpdatePath update' -> UpdatePath uuid update')))
             (state . cells))
      ] <>
@@ -170,8 +165,9 @@ render state =
              [HP.class_ (HH.ClassName "modal-wrap")]
              [renderCsvWizard wizard]
          ])
-  where namesInScope = standardNames <>
-                       map (\(OutputCell {name}) -> name) (state.cells)
+  where
+    namesInScope =
+      standardNames <> map (\(OutputCell {name}) -> name) (state . cells)
 
 standardNames :: Array String
 standardNames =
@@ -230,25 +226,6 @@ eval :: forall t122 t125 t129 t130 t131.
                                             Unit
 eval =
   case _ of
-    OnDrop dragEvent -> do
-      pure unit
-      H.liftEffect (preventDefault (DE.toEvent dragEvent)) -- To prevent navigating to thing?
-    DragStart uuid dragEvent -> do
-      H.modify_ (\s -> s {dragUUID = Just uuid})
-    OnDragOver dragEvent -> do
-      H.liftEffect (preventDefault (DE.toEvent dragEvent)) -- To prevent animation?
-      muuid <- H.gets (_ . dragUUID)
-      case muuid of
-        Nothing -> pure unit
-        Just uuid -> do
-          let x = ME.clientX (dragEventToMouseEvent dragEvent)
-              y = ME.clientY (dragEventToMouseEvent dragEvent)
-          _ <-
-            H.query
-              (SProxy :: SProxy "Cell")
-              (uuidToString uuid)
-              (Cell.SetXY {x, y})
-          pure unit
     Initialize -> do
       result <- rpcLoadDocument (DocumentId (meta . documentId))
       case result of
@@ -330,7 +307,7 @@ eval =
     ChooseCsvFile file -> do
       result <- rpcCsvGuessSchema file
       case result of
-        Left err -> error ("rpcCsvGuessSchema: " <> err)
+        Left err -> error ("rpcCsvGuessSchema:" <> err)
         Right csvGuess ->
           case csvGuess of
             Shared.GuessCassavaFailure err -> error err
@@ -341,7 +318,7 @@ eval =
               -- file. But next, we'll provide a UI display of the guessed
               -- schema, with the option to tweak the types of fields before importing.
               case result2 of
-                Left err -> error ("CsvImport: " <> err)
+                Left err -> error ("CsvImport:" <> err)
                 Right outputDocument -> setOutputDocument outputDocument
   where
     documentId = DocumentId (meta . documentId)
