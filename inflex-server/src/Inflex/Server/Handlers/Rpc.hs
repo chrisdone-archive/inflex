@@ -101,11 +101,26 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
        RevisedDocument {..} <-
          runDB (getRevisedDocument loginAccountId documentId)
        case update' of
-         Shared.CellUpdate Shared.UpdateCell { uuid
+         Shared.CellRename rename -> do
+               start <- liftIO getTime
+               let inputDocument = applyRename rename (revisionContent revision)
+               outputDocument <- liftIO (loadInputDocument inputDocument)
+               end <- liftIO getTime
+               now <- liftIO getCurrentTime
+               runDB
+                 (setInputDocument
+                    now
+                    loginAccountId
+                    documentKey
+                    revisionId
+                    inputDocument)
+               glog (CellUpdated (end - start))
+               pure (Shared.UpdatedDocument outputDocument)
+         Shared.CellUpdate update''@Shared.UpdateCell { uuid
                                              , update = Shared.UpdatePath {path}
                                              } -> do
            start <- liftIO getTime
-           case applyUpdateToDocument update' (revisionContent revision) of
+           case applyUpdateToDocument update'' (revisionContent revision) of
              Left transformError -> do
                glog UpdateTransformError
                pure

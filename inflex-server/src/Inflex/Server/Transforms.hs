@@ -5,13 +5,18 @@
 
 -- | Well-structured updates/transforms to the AST.
 
-module Inflex.Server.Transforms where
+module Inflex.Server.Transforms
+  ( applyRename
+  , applyUpdateToDocument
+  , TransformError(..)
+  ) where
 
 import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Vector as V
 import           Inflex.Display ()
 import           Inflex.Parser
+import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Types
 import qualified Inflex.Types as Field (Field(..))
@@ -26,11 +31,27 @@ data TransformError
 --------------------------------------------------------------------------------
 -- General dispatcher
 
+applyRename :: Shared.RenameCell -> Shared.InputDocument1 -> Shared.InputDocument1
+applyRename (Shared.RenameCell {uuid = uuid0, newname}) inputDocument1 =
+  inputDocument1
+    { InputDocument1.cells =
+        fmap
+          (\Shared.InputCell1 {..} ->
+             Shared.InputCell1
+               { name =
+                   if uuid == uuid0
+                     then newname
+                     else name
+               , ..
+               })
+          (InputDocument1.cells inputDocument1)
+    }
+
 applyUpdateToDocument ::
-     Shared.Update
+     Shared.UpdateCell
   -> Shared.InputDocument1
   -> Either TransformError Shared.InputDocument1
-applyUpdateToDocument (Shared.CellUpdate Shared.UpdateCell {uuid, update}) =
+applyUpdateToDocument Shared.UpdateCell {uuid, update} =
   case cmd of
     Shared.NewFieldUpdate Shared.NewField {name = name0} ->
       mapUuid uuid (pure . addNewFieldInCode path (FieldName name0))

@@ -93,6 +93,12 @@ data NestedCellError = NestedCellError
 
 data Update
   = CellUpdate UpdateCell
+  | CellRename RenameCell
+
+data RenameCell = RenameCell {
+  uuid :: UUID,
+  newname :: Text
+ }
 
 data UpdateCell = UpdateCell {
   uuid :: UUID,
@@ -491,6 +497,11 @@ derive instance genericUpdateCell :: Generic UpdateCell _
 instance showUpdateCell :: Show UpdateCell where show = genericShow
 instance decodeUpdateCell :: Decode UpdateCell where decode = genericDecode opts
 instance encodeUpdateCell :: Encode UpdateCell where encode = genericEncode opts
+
+derive instance genericRenameCell :: Generic RenameCell _
+instance showRenameCell :: Show RenameCell where show = genericShow
+instance decodeRenameCell :: Decode RenameCell where decode = genericDecode opts
+instance encodeRenameCell :: Encode RenameCell where encode = genericEncode opts
 
 derive instance genericUpdatePath :: Generic UpdatePath _
 instance showUpdatePath :: Show UpdatePath where show = genericShow

@@ -69,6 +69,12 @@ data NestedCellError = NestedCellError
 
 data Update
   = CellUpdate UpdateCell
+  | CellRename RenameCell
+
+data RenameCell = RenameCell {
+  uuid :: UUID,
+  newname :: Text
+ }
 
 data UpdateCell = UpdateCell {
   uuid :: UUID,

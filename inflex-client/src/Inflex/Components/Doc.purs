@@ -23,7 +23,7 @@ import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcRefreshDocument, rpcUndoDocument, rpcUpdateDocument)
 import Inflex.Schema (DocumentId(..), InputCell1(..), InputDocument1(..), OutputCell(..), OutputDocument(..), RefreshDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<>), (==))
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (+), (/=), (<>))
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -39,10 +39,11 @@ foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
 
 data Command
   = Initialize
-  | UpdateCell UUID {name :: String, code :: String}
+  -- | UpdateCell UUID {name :: String, code :: String}
   | NewCell String
   | DeleteCell UUID
   | UpdatePath UUID Shared.UpdatePath
+  | RenameCell UUID String
   | Undo
   | Redo
   | ImportCsvStart
@@ -153,9 +154,9 @@ render state =
                  (\update0 ->
                     pure
                       (case update0 of
-                         Cell.CellUpdate update' -> UpdateCell uuid update'
                          Cell.RemoveCell -> DeleteCell uuid
-                         Cell.UpdatePath update' -> UpdatePath uuid update')))
+                         Cell.UpdatePath update' -> UpdatePath uuid update'
+                         Cell.RenameCell name' -> RenameCell uuid name')))
             (state . cells))
      ] <>
      case state . modal of
@@ -251,21 +252,6 @@ eval =
             ] <>
             map toInputCell (s . cells)
       refresh cells'
-    UpdateCell uuid cell -> do
-      state <- H.get
-      refresh
-        (map
-           (\original@(InputCell1 {uuid: uuid', order, version}) ->
-              if uuid' == uuid
-                then InputCell1
-                       { uuid
-                       , code: cell . code
-                       , name: cell . name
-                       , order
-                       , version
-                       }
-                else original)
-           (map toInputCell (state . cells)))
     DeleteCell uuid -> do
       state <- H.get
       refresh
@@ -279,6 +265,20 @@ eval =
         update
           (Shared.CellUpdate
              (Shared.UpdateCell {uuid, update: update'}))
+      case result of
+        Nothing -> pure unit
+        Just cellError -> do
+          _ <-
+            H.query
+              (SProxy :: SProxy "Cell")
+              (uuidToString uuid)
+              (Cell.NestedCellError cellError)
+          pure unit
+    RenameCell uuid name' -> do
+      result <-
+        update
+          (Shared.CellRename
+             (Shared.RenameCell {uuid, newname: name'}))
       case result of
         Nothing -> pure unit
         Just cellError -> do

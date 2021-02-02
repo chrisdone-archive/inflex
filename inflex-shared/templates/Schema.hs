@@ -289,6 +289,12 @@ deriving instance Show UpdateCell
 instance ToJSON UpdateCell
 instance FromJSON UpdateCell
 
+instance NFData RenameCell
+deriving instance Generic RenameCell
+deriving instance Show RenameCell
+instance ToJSON RenameCell
+instance FromJSON RenameCell
+
 instance NFData UpdatePath
 deriving instance Generic UpdatePath
 deriving instance Show UpdatePath

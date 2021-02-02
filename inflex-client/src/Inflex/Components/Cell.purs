@@ -39,9 +39,9 @@ data Query a
   = NestedCellError Shared.NestedCellError
 
 data Output
-  = CellUpdate { name :: String, code :: String}
-  | RemoveCell
+  = RemoveCell
   | UpdatePath Shared.UpdatePath
+  | RenameCell String
 
 data State = State
   { cell :: Cell
@@ -50,9 +50,9 @@ data State = State
 
 data Command
   = SetCellFromInput Input
-  | CodeUpdate Cell
   | DeleteCell
   | TriggerUpdatePath Shared.UpdatePath
+  | TriggerRenameCell String
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -182,7 +182,7 @@ eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Un
 eval =
   case _ of
     TriggerUpdatePath update -> H.raise (UpdatePath update)
-    CodeUpdate (Cell {name, code}) -> H.raise (CellUpdate {name, code})
+    TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, namesInScope}) -> do
       let cell@(Cell {hash, name}) = outputCellToCell c
       H.modify_
@@ -218,10 +218,7 @@ render (State { cell: Cell {name, code, result, hash}
                       }))
                 (TextInput.Input
                    {text: name, notThese: mempty})
-                (\name' ->
-                   pure
-                     (CodeUpdate
-                        (Cell {name: name', result, code, hash})))
+                (\name' -> pure (TriggerRenameCell name'))
             , HH.button
                 [ HP.class_ (HH.ClassName "delete-cell")
                 , HE.onClick (\_ -> pure DeleteCell)
@@ -244,11 +241,14 @@ render (State { cell: Cell {name, code, result, hash}
                 (\output ->
                    case output of
                      Editor.UpdatePath update -> Just (TriggerUpdatePath update)
-                     Editor.NewCode code' ->
-                       pure
-                         (CodeUpdate
-                            (Cell
-                               {name, result, code: code', hash})))
+                     Editor.NewCode text ->
+                       Just
+                         (TriggerUpdatePath
+                            (Shared.UpdatePath
+                               { path: Shared.DataHere
+                               , update:
+                                   Shared.CodeUpdate (Shared.Code {text})
+                               })))
             ]
         ]
     ]
