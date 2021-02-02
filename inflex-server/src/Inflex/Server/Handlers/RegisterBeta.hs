@@ -44,6 +44,7 @@ intro_ = do
   h1_ "Create a quick username and password"
   p_ "It takes 10 seconds and you're good to go! \
      \You just need this to associate documents with you."
+  p_ "You don't need to confirm your email address or anything like that."
 
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
