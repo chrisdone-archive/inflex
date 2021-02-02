@@ -55,40 +55,6 @@ rpcLoadDocument docId =
        revisedDocument <- runDB (getRevisedDocument loginAccountId docId)
        loadRevisedDocument revisedDocument)
 
---------------------------------------------------------------------------------
--- Refresh document
-
-rpcRefreshDocument :: Shared.RefreshDocument -> Handler Shared.OutputDocument
-rpcRefreshDocument Shared.RefreshDocument {documentId, document} =
-  withLogin
-    (\_ (LoginState {loginAccountId}) -> do
-       RevisedDocument {..} <-
-         runDB (getRevisedDocument loginAccountId documentId)
-       now <- liftIO getCurrentTime
-       start <- liftIO getTime
-       mloaded <-
-         liftIO
-           (timeout
-              (1000 * milliseconds)
-              (do !x <- (loadInputDocument document)
-                  pure x))
-       end <- liftIO getTime
-       runDB
-         (setInputDocument
-            now
-            loginAccountId
-            documentKey
-            revisionId
-            document)
-       case mloaded of
-         Just loaded -> do
-           glog (DocumentRefreshed (end - start))
-           pure loaded
-         Nothing -> do
-           glog TimeoutExceeded
-           invalidArgs
-             ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"])
-
 milliseconds :: Int
 milliseconds = 1000
 

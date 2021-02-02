@@ -1,9 +1,6 @@
 LoadDocument:
   input: DocumentId
   output: OutputDocument
-RefreshDocument:
-  input: RefreshDocument
-  output: OutputDocument
 UpdateDocument:
   input: UpdateDocument
   output: UpdateResult

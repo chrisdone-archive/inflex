@@ -38,9 +38,6 @@ rpcLoadDocument = rpcCall "LoadDocument"
 rpcRedoDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
 rpcRedoDocument = rpcCall "RedoDocument"
 
-rpcRefreshDocument :: forall m. MonadAff m => RefreshDocument -> m (Either String OutputDocument)
-rpcRefreshDocument = rpcCall "RefreshDocument"
-
 rpcUndoDocument :: forall m. MonadAff m => DocumentId -> m (Either String OutputDocument)
 rpcUndoDocument = rpcCall "UndoDocument"
 
