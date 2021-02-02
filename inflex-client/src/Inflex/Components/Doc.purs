@@ -147,12 +147,12 @@ render state =
          , HE.onDrop (Just <<< OnDrop)
          ]
          (map
-            (\cell@(OutputCell {uuid}) ->
+            (\cell@(OutputCell {uuid, name}) ->
                HH.slot
                  (SProxy :: SProxy "Cell")
                  (uuidToString uuid)
                  Cell.component
-                 (Cell.Input {cell, namesInScope})
+                 (Cell.Input {cell, namesInScope: filter (_ /= name) namesInScope})
                  (\update0 ->
                     pure
                       (case update0 of
