@@ -41,7 +41,6 @@ import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (HTMLElement, fromElement)
-import Web.UIEvent.KeyboardEvent as K
 import Web.UIEvent.MouseEvent (toEvent)
 
 --------------------------------------------------------------------------------
@@ -309,30 +308,17 @@ render (State {display, code, editor, path, cellError, namesInScope}) =
         else wrapper (renderEditor path namesInScope editor)
   where
     renderControl =
-      [ if false
-          then HH.input
-                 [ HP.value
-                     (if code == "_"
-                        then ""
-                        else code)
-                 , HP.class_ (HH.ClassName "form-control")
-                 , HP.placeholder "Type code here"
-                 , manage (InputElementChanged <<< ElemRef')
-                 , HE.onKeyUp
-                     (\k ->
-                        case K.code k of
-                          "Enter" -> Just (FinishEditing code)
-                          _ -> Nothing)
-                 , HE.onValueChange (\i -> pure (SetInput i))
-                 , HE.onClick
-                     (\e -> pure (PreventDefault (Event' (toEvent e)) NoOp))
-                 ]
-          else HH.text ""
-      , HH.slot
+      [ HH.slot
           (SProxy :: SProxy "code")
           unit
           Code.component
-          (Code.Input {code, namesInScope})
+          (Code.Input
+             { code:
+                 if code == "_"
+                   then ""
+                   else code
+             , namesInScope
+             })
           (case _ of
              Code.TextOutput text -> Just (FinishEditing text))
       ]
