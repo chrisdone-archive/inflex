@@ -581,7 +581,7 @@ tableRow ::
 tableRow columns path namesInScope rowIndex HoleRow =
   HH.tr
     []
-    ([rowNumber] <>
+    ([rowNumber rowIndex path] <>
      mapWithIndex
        (\fieldIndex key ->
           let editor' = MiscE Shared.NoOriginalSource "_"
@@ -614,19 +614,24 @@ tableRow columns path namesInScope rowIndex HoleRow =
                                             Shared.DataHere)
                                    , update:
                                        Shared.CodeUpdate
-                                         (Shared.Code {text: originateFromField columns key rhs})
+                                         (Shared.Code
+                                            { text:
+                                                originateFromField
+                                                  columns
+                                                  key
+                                                  rhs
+                                            })
                                    })))
                 ])
        columns <>
      [addColumnBlank])
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
-    rowNumber =
-      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show (1+rowIndex))]
+
 tableRow _ path namesInScope rowIndex (Row {fields}) =
   HH.tr
     []
-    ([rowNumber] <>
+    ([rowNumber rowIndex path] <>
      mapWithIndex
        (\fieldIndex (Field {key, value: editor'}) ->
           HH.td
@@ -667,8 +672,35 @@ tableRow _ path namesInScope rowIndex (Row {fields}) =
      [addColumnBlank])
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
-    rowNumber =
-      HH.td [HP.class_ (HH.ClassName "row-number")] [HH.text (show (1+rowIndex))]
+
+rowNumber :: forall t19. Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t19 Command
+rowNumber rowIndex path =
+  HH.td
+    [HP.class_ (HH.ClassName "row-number")]
+    [ HH.div
+        [HP.class_ (HH.ClassName "row-number-div")]
+        [ HH.div
+            [HP.class_ (HH.ClassName "row-number-text")]
+            [HH.text (show (rowIndex + 1))]
+        , HH.button
+            [ HP.class_ (HH.ClassName "remove-row-button")
+            , HE.onClick
+                (\e ->
+                   pure
+                     (PreventDefault
+                        (Event' (toEvent e))
+                        (TriggerUpdatePath
+                           (Shared.UpdatePath
+                              { path: path Shared.DataHere
+                              , update:
+                                  Shared.RemoveUpdate
+                                    (Shared.Removal
+                                       {index: rowIndex})
+                              }))))
+            ]
+            [HH.text "×"]
+        ]
+    ]
 
 bodyGuide :: forall t651 t652. Boolean -> Boolean -> Array (HH.HTML t652 t651)
 bodyGuide emptyTable emptyRows =
@@ -835,13 +867,9 @@ renderArrayEditor path namesInScope editors =
       mapWithIndex
         (\i editor' ->
            let childPath = path <<< Shared.DataElemOf i
-               rowNumber =
-                 HH.td
-                   [HP.class_ (HH.ClassName "row-number")]
-                   [HH.text (show (i + 1))]
             in HH.tr
                  []
-                 [ rowNumber
+                 [ rowNumber i path
                  , HH.td
                      [HP.class_ (HH.ClassName "array-datum-value")]
                      [ HH.slot

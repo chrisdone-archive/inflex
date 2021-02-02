@@ -196,6 +196,9 @@
       }
     }
     .table-body {
+
+
+
       .add-row {
         position: relative;
         width: 1.5em;
@@ -248,6 +251,21 @@
         color: #666;
         cursor: default;
         cursor: not-allowed;
+      }
+
+      .remove-row-button {
+        opacity: 0.5;
+        border: 0;
+        background: inherit;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .remove-row-button:hover {
+        background: #15263b;
+        color: #fff;
+      }
+      .row-number-div {
+        display: flex;
       }
       tr > .row-number + .table-datum-value {
         border-left: 1px solid #dadeea
@@ -397,6 +415,18 @@
       }
     }
     .array-body {
+      .remove-row-button {
+        opacity: 0.5;
+        border: 0;
+        background: inherit;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .remove-row-button:hover {
+        background: #15263b;
+        color: #fff;
+      }
+
       .add-row {
         position: relative;
         width: 1.5em;
@@ -434,6 +464,9 @@
       td.bottom-blank {
         background: #e9eef2;
         border-top: 1px solid #dadeea;
+      }
+      .row-number-div {
+        display: flex;
       }
       tr > .row-number {
         color: #777;
