@@ -19,6 +19,8 @@ spec:
       - name: config-yml
         secret:
           secretName: inflex-server-config
+      - name: uploads-storage
+        emptyDir: {}
       imagePullSecrets:
       - name: gitlab-registry
       containers:
@@ -34,6 +36,8 @@ spec:
         - name: config-yml
           mountPath: "/etc/inflex/"
           readOnly: true
+        - name: uploads-storage
+          mountPath: "/data/uploads/"
         readinessProbe:
           httpGet:
             path: "/health"
