@@ -64,13 +64,13 @@ getAppDashboardR =
                         "Your work in Inflex is split up into documents. We've added some \
                       \example documents for you below. You can create a new document to \
                       \start from scratch by hitting New Document."
-                      p_
+                      {-p_
                         (do "Don't forget to check out the "
                             a_
                               [ href_
                                   "https://community.inflex.io/t/the-inflex-document/17"
                               ]
-                              "community forum guide on working with documents.")
+                              "community forum guide on working with documents.")-}
                       form_
                         [action_ (url NewDocumentR), method_ "post"]
                         (button_ [class_ "new-document"] "New Document")
