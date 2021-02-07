@@ -230,6 +230,7 @@ instance Printer InstanceName where
 instance Printer Function where
   printer = \case
     MapFunction -> "map"
+    FromOkFunction -> "from_ok"
     VegaFunction -> "vega"
     FilterFunction -> "filter"
     DistinctFunction -> "distinct"

@@ -137,6 +137,12 @@ spec = do
   functions
   if'
   case'
+  it
+    "from_ok(0,#ok(2)) + 1"
+    (shouldReturn (stepDefaultedTextly "from_ok(0,#ok(2)) + 1") (Right "3"))
+  it
+    "from_ok(0,#oops) + 1"
+    (shouldReturn (stepDefaultedTextly "from_ok(0,#oops) + 1") (Right "1"))
   {-early-}
 
 equality :: SpecWith ()

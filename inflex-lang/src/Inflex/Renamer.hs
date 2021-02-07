@@ -92,6 +92,7 @@ wiredInGlobals =
     , ("find", FunctionGlobal FindFunction)
     , ("any", FunctionGlobal AnyFunction)
     , ("all", FunctionGlobal AllFunction)
+    , ("from_ok", FunctionGlobal FromOkFunction)
     ]
 
 --------------------------------------------------------------------------------

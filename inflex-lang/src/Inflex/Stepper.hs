@@ -436,7 +436,7 @@ stepApply Apply {..} = do
                               , argument = functionExpression
                               , location = applyLocation
                               }
-          | functionName `elem` [MapFunction, FilterFunction] ->
+          | functionName `elem` [MapFunction, FilterFunction, FromOkFunction] ->
             stepFunction2
               functionName
               argument'
@@ -827,6 +827,20 @@ stepFunction2 ::
   -> Step (Result (Expression Resolved))
 stepFunction2 function argument' functionExpression location applyLocation originalArrayType =
   case function of
+    FromOkFunction ->
+      do result <- stepApply
+           Apply
+             { location = BuiltIn
+             , function = ApplyExpression Apply
+                                            { location = BuiltIn
+                                            , function = from_okFunction
+                                            , argument = functionExpression
+                                            , typ = typeOutput (expressionType functionExpression)
+                                            }
+             , argument = argument'
+             , typ = originalArrayType
+             }
+         pure result
     MapFunction ->
       case argument' of
         ArrayExpression Array {expressions} -> do

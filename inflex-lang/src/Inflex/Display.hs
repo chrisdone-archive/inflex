@@ -534,6 +534,7 @@ instance Display Function where
   display =
     \case
       MapFunction -> "map"
+      FromOkFunction -> "from_ok"
       VegaFunction -> "vega"
       FilterFunction -> "filter"
       DistinctFunction -> "distinct"

@@ -280,15 +280,26 @@ functionScheme location =
     AndFunction -> mono (ArrayType boolT .-> boolT)
     OrFunction -> mono (ArrayType boolT .-> integerT)
     MinimumFunction ->
-      poly [comparable a] (ArrayType a .-> maybeType ["minimum_empty"] location a)
+      poly
+        [comparable a]
+        (ArrayType a .-> maybeType ["minimum_empty"] location a)
     MaximumFunction ->
-      poly [comparable a] (ArrayType a .-> maybeType ["maximum_empty"] location a)
+      poly
+        [comparable a]
+        (ArrayType a .-> maybeType ["maximum_empty"] location a)
     FindFunction ->
-      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["find_empty","find_failed"] location a)
+      mono
+        ((a .-> boolT) .-> ArrayType a .->
+         maybeType ["find_empty", "find_failed"] location a)
     AllFunction ->
-      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["all_empty"] location boolT)
+      mono
+        ((a .-> boolT) .-> ArrayType a .->
+         maybeType ["all_empty"] location boolT)
     AnyFunction ->
-      mono ((a .-> boolT) .-> ArrayType a .-> maybeType ["any_empty"] location boolT)
+      mono
+        ((a .-> boolT) .-> ArrayType a .->
+         maybeType ["any_empty"] location boolT)
+    FromOkFunction -> mono (b .-> okishType BuiltIn c b .-> b)
   where
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
@@ -300,12 +311,12 @@ functionScheme location =
       ClassConstraint {className = DivideOpClassName, typ = pure t, location}
     frominteger t =
       ClassConstraint {className = FromIntegerClassName, typ = pure t, location}
+    c = typeVariable' 2 RowKind
     a = typeVariable 0
     b = typeVariable 1
-    typeVariable index =
-      VariableType
-        (TypeVariable
-           {location = (), prefix = (), index = index, kind = TypeKind})
+    typeVariable index = VariableType (typeVariable' index TypeKind)
+    typeVariable' index k =
+      TypeVariable {location = (), prefix = (), index = index, kind = k}
 
 -- TODO: implement properly
 binOpType :: NumericBinOp -> Type Generalised

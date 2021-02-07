@@ -575,6 +575,7 @@ data Function
   | FindFunction
   | AllFunction
   | AnyFunction
+  | FromOkFunction
   -- TODO:
   | AndFunction
   | OrFunction
