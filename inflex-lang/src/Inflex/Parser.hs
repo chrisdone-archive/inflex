@@ -329,16 +329,16 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [ wrapEarly (PropExpression <$> propParser)
+       [  (PropExpression <$> propParser)
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
-       , wrapEarly applyParser
+       ,  applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
-       , wrapEarly (VariantExpression <$> variantParser)
+       ,  (VariantExpression <$> variantParser)
        , parensParser
        ])
 
@@ -410,10 +410,10 @@ propParser :: Parser (Prop Parsed)
 propParser = do
   expression <-
     (RecordExpression <$> recordParser) <>
-    wrapEarly (HoleExpression <$> holeParser) <>
-    wrapEarly applyParser <>
-    wrapEarly (VariableExpression <$> variableParser) <>
-    wrapEarly parensParser
+     (HoleExpression <$> holeParser) <>
+     applyParser <>
+     (VariableExpression <$> variableParser) <>
+     parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   (name, _) <- fieldNameParser
   pure Prop {typ = Nothing, ..}
@@ -602,23 +602,23 @@ variantParser = do
          else pure Nothing
   pure Variant {tag = TagName name, location, typ = Nothing, argument}
 
-wrapEarly :: Parser (Expression Parsed) -> Parser (Expression Parsed)
-wrapEarly p = do
-  v <- p
-  early <-
-    fmap
-      (const True)
-      (token_ (ExpectedToken QuestionToken) (preview _QuestionToken)) <>
-    pure False
-  pure
-    (if early
-       then EarlyExpression
-              Early
-                { location = expressionLocation v -- TODO:
-                , typ = Nothing
-                , expression = v
-                }
-       else v)
+-- wrapEarly :: Parser (Expression Parsed) -> Parser (Expression Parsed)
+-- wrapEarly p = do
+--   v <- p
+--   early <-
+--     fmap
+--       (const True)
+--       (token_ (ExpectedToken QuestionToken) (preview _QuestionToken)) <>
+--     pure False
+--   pure
+--     (if early
+--        then EarlyExpression
+--               Early
+--                 { location = expressionLocation v -- TODO:
+--                 , typ = Nothing
+--                 , expression = v
+--                 }
+--        else v)
 
 holeParser :: Parser (Hole Parsed)
 holeParser = do

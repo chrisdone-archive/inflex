@@ -26,7 +26,7 @@ spec = do
   apply
   records
   implicitcalls
-  early
+  {-early-}
   it
     "Let"
     (shouldBe
@@ -1478,8 +1478,8 @@ implicitcalls =
                       , typ = Nothing
                       })))))
 
-early :: SpecWith ()
-early =
+_early :: SpecWith ()
+_early =
   describe
     "Early"
     (it

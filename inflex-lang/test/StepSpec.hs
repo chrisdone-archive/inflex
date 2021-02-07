@@ -137,7 +137,7 @@ spec = do
   functions
   if'
   case'
-  early
+  {-early-}
 
 equality :: SpecWith ()
 equality =
@@ -540,8 +540,8 @@ case' =
                 "case 2>4 { #true: \"early\", #false: case 2=2 { #true: \"ok\", #false: \"nope\" } }")
              (Right "\"ok\"")))
 
-early :: Spec
-early =
+_early :: Spec
+_early =
   describe
     "Early"
     (do it
