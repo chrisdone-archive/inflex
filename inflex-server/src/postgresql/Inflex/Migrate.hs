@@ -126,28 +126,33 @@ INSERT INTO schema_versions VALUES (1);
 CREATE INDEX document_account ON document (account);
 |]
 
-schema7 stripeConfig = do
-  accounts <- selectList [AccountCustomerId ==. Nothing] []
-  results <- forM
-    accounts
-    (\(Entity accountId Account {accountEmail}) -> do
-       customerCreateResult <- createCustomer stripeConfig (coerce accountEmail)
-       case customerCreateResult of
-         Left err -> do
-           liftIO $ putStrLn ("Error creating customer:" ++ show err)
-           pure False
-         Right CreateCustomerResponse {id = customerId} -> do
-           update accountId [AccountCustomerId =. Just (coerce customerId)]
-           now <- liftIO $ getCurrentTime
-           liftIO $ putStrLn (show now ++ ": OK.")
-           liftIO $ threadDelay (1000 * 100)
-           pure True)
-  if and results || null results
-     then do
-          liftIO $ putStrLn (show (length results) ++ " customers created in Stripe.")
-          run
-             [s|
-           INSERT INTO schema_versions VALUES (1);
-           ALTER TABLE account ALTER customer_id SET NOT NULL;
-           |]
-     else liftIO $ putStrLn "Migration failed, keeping existing schema version."
+schema7 _stripeConfig = do
+  liftIO $ putStrLn "Migration requires manual intervention."
+  --
+  -- This code no longer compiles; the migration it performs has now
+  -- been added to the type system. So no further action is required.
+  --
+  -- accounts <- selectList [AccountCustomerId ==. Nothing] []
+  -- results <- forM
+  --   accounts
+  --   (\(Entity accountId Account {accountEmail}) -> do
+  --      customerCreateResult <- createCustomer stripeConfig (coerce accountEmail)
+  --      case customerCreateResult of
+  --        Left err -> do
+  --          liftIO $ putStrLn ("Error creating customer:" ++ show err)
+  --          pure False
+  --        Right CreateCustomerResponse {id = customerId} -> do
+  --          update accountId [AccountCustomerId =. Just (coerce customerId)]
+  --          now <- liftIO $ getCurrentTime
+  --          liftIO $ putStrLn (show now ++ ": OK.")
+  --          liftIO $ threadDelay (1000 * 100)
+  --          pure True)
+  -- if and results || null results
+  --    then do
+  --         liftIO $ putStrLn (show (length results) ++ " customers created in Stripe.")
+  --         run
+  --            [s|
+  --          INSERT INTO schema_versions VALUES (1);
+  --          ALTER TABLE account ALTER customer_id SET NOT NULL;
+  --          |]
+  --    else liftIO $ putStrLn "Migration failed, keeping existing schema version."

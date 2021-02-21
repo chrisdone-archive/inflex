@@ -258,7 +258,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                              , accountPassword = sha256Password salt registerPassword
                              , accountSalt = salt
                              , accountEmail = registerEmail
-                             , accountCustomerId = pure customerId
+                             , accountCustomerId = customerId
                              }
                        updateSession
                          sessionId

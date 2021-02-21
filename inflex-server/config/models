@@ -6,7 +6,7 @@ Account
   email Email
   password Sha256
   salt Salt
-  customerId CustomerId Maybe
+  customerId CustomerId
   deriving Show
 
 Session

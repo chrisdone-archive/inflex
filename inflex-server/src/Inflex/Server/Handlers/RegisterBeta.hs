@@ -98,7 +98,7 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                                      sha256Password salt registerPassword
                                  , accountSalt = salt
                                  , accountEmail = registerEmail
-                                 , accountCustomerId = pure (coerce customerId)
+                                 , accountCustomerId = (coerce customerId)
                                  }
                            copySampleDocuments key
                            updateSession
