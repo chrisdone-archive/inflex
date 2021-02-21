@@ -25,7 +25,7 @@ spec:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        image: registry.gitlab.com/sky-above/inflex/prod:259392989
+        image: registry.gitlab.com/sky-above/inflex/prod:259398010
         env:
           - name: PORT
             value: "80"
