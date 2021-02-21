@@ -70,6 +70,15 @@ instance FromJSON CreateSessionResponse where
          checkoutSessionId <- o .: "id"
          pure CreateSessionResponse {..})
 
+data CreateCustomerError =
+  CreateCustomerError | CustomerBadJson JSONException
+  deriving (Show)
+
+data CreateCustomerResponse = CreateCustomerResponse
+  { id :: Text
+  } deriving (Show, Generic)
+instance FromJSON CreateCustomerResponse
+
 --------------------------------------------------------------------------------
 -- Commands
 
@@ -105,4 +114,23 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
               then "true"
               else "false")
         , ("client_reference_id", T.encodeUtf8 clientReferenceId)
+        ]
+
+createCustomer ::
+     (MonadIO m, MonadThrow m)
+  => StripeConfig
+  -> Text
+  -> m (Either CreateCustomerError CreateCustomerResponse)
+createCustomer StripeConfig {secretApiKey} email = do
+  request <-
+    fmap hydrate (parseRequest "https://api.stripe.com/v1/customers")
+    -- TODO: Handle errors or set fields manually.
+  fmap (Right . getResponseBody) (httpJSON request) -- TODO: Use robust HTTP with retries.
+  where
+    hydrate =
+      setRequestMethod "POST" .
+      setRequestSecure True .
+      setRequestBasicAuth (T.encodeUtf8 (unSecretApiKey secretApiKey)) mempty .
+      setRequestBodyURLEncoded
+        [ ("email", T.encodeUtf8 email)
         ]

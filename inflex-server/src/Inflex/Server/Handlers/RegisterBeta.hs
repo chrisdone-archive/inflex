@@ -18,6 +18,7 @@ module Inflex.Server.Handlers.RegisterBeta
   ) where
 
 import           Control.Monad.Reader
+import           Data.Coerce
 import           Data.Foldable
 import           Data.Time
 import qualified Data.UUID as UUID
@@ -35,6 +36,8 @@ import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
 import           Optics
+import           RIO (glog)
+import           Stripe
 import           Yesod hiding (Html, Field, toHtml)
 import           Yesod.Forge
 import           Yesod.Lucid
@@ -68,38 +71,52 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                             (traverse_ showError errors)
                           v))
             Success RegistrationDetails {..} -> do
-              void
-                (runDB
-                   (do resetSessionNonce sessionId
-                       salt <-
-                         fmap (Salt . UUID.toText) (liftIO UUID.nextRandom)
-                       key <-
-                         insert
-                           Account
-                             { accountUsername = Nothing
-                             , accountPassword =
-                                 sha256Password salt registerPassword
-                             , accountSalt = salt
-                             , accountEmail = registerEmail
-                             , accountCustomerId = Nothing
-                             }
-                       copySampleDocuments key
-                       updateSession
-                         sessionId
-                         (Registered
-                            LoginState
-                              { loginEmail = registerEmail
-                              , loginUsername = Nothing
-                              , loginAccountId = fromAccountId key
-                              })))
-              htmlWithUrl
-                (shopTemplate
-                   state
-                   (div_
-                      [class_ "register-page"]
-                      (do h1_ "Registered!"
-                          p_ "Taking you to the dashboard..."
-                          redirect_ 3 AppDashboardR)))
+              Config {stripeConfig} <- fmap appConfig getYesod
+              customerCreateResult <- createCustomer stripeConfig (coerce registerEmail)
+              case customerCreateResult of
+                Left createErr -> do
+                  RIO.glog (StripeCreateCustomerFailed (coerce registerEmail) createErr)
+                  htmlWithUrl
+                    (shopTemplate
+                       state
+                       (div_
+                          [class_ "register-page"]
+                          (do h1_ "Oops!"
+                              p_ "Stripe returned an unexpected response, so we can't create an account. \
+                                 \Please complain loudly to us on Twitter.")))
+                Right CreateCustomerResponse{id = customerId} -> do
+                  void
+                    (runDB
+                       (do resetSessionNonce sessionId
+                           salt <-
+                             fmap (Salt . UUID.toText) (liftIO UUID.nextRandom)
+                           key <-
+                             insert
+                               Account
+                                 { accountUsername = Nothing
+                                 , accountPassword =
+                                     sha256Password salt registerPassword
+                                 , accountSalt = salt
+                                 , accountEmail = registerEmail
+                                 , accountCustomerId = pure (coerce customerId)
+                                 }
+                           copySampleDocuments key
+                           updateSession
+                             sessionId
+                             (Registered
+                                LoginState
+                                  { loginEmail = registerEmail
+                                  , loginUsername = Nothing
+                                  , loginAccountId = fromAccountId key
+                                  })))
+                  htmlWithUrl
+                    (shopTemplate
+                       state
+                       (div_
+                          [class_ "register-page"]
+                          (do h1_ "Registered!"
+                              p_ "Taking you to the dashboard..."
+                              redirect_ 3 AppDashboardR)))
 
 copySampleDocuments :: AccountId -> YesodDB App ()
 copySampleDocuments targetAccountId = do

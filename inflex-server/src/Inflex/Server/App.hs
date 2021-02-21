@@ -47,6 +47,7 @@ import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
 import           RIO hiding (Handler, preview)
 import           RIO.Warp
 import           RIO.Yesod
+import           Stripe
 import           Yesod hiding (Html, Field, fileName)
 import qualified Yesod.Core.Types as Yesod
 import           Yesod.Lucid
@@ -79,6 +80,7 @@ data ServerMsg
   | CreateDocument
   | DeleteDocument
   | RenameDocument
+  | StripeCreateCustomerFailed Text CreateCustomerError
   deriving (Show)
 
 -- | A generic log output.
