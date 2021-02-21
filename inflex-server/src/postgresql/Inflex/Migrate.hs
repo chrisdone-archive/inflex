@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -10,18 +12,24 @@
 
 module Inflex.Migrate where
 
+import           Control.Concurrent
 import           Control.Monad
+import           Control.Monad.Catch
 import           Control.Monad.Trans.Reader
+import           Data.Coerce
 import           Data.String.Quote
 import           Data.Text (Text)
 import qualified Data.Text.IO as T
+import           Data.Time
 import           Database.Persist
 import           Database.Persist.Postgresql as X
 import           Inflex.Server.App
+import           Inflex.Server.Types
+import           Stripe
 import           Yesod
 
-manualMigration :: (MonadIO m) => x -> ReaderT SqlBackend m ()
-manualMigration _x
+manualMigration :: (MonadIO m, MonadThrow m) => StripeConfig -> x -> ReaderT SqlBackend m ()
+manualMigration stripeConfig _x
   -- Set isolation, and validate it.
  = do
   run "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
@@ -51,7 +59,7 @@ manualMigration _x
           4 -> schema4 >> loop
           5 -> schema5 >> loop
           6 -> schema6 >> loop
-          -- 7 -> schema7 >> loop
+          7 -> schema7 stripeConfig >> loop
           8 -> liftIO $ putStrLn "OK."
           _ -> error ("At mysterious schema version: " ++ show version)
   loop
@@ -118,8 +126,28 @@ INSERT INTO schema_versions VALUES (1);
 CREATE INDEX document_account ON document (account);
 |]
 
-schema7  = do
-  run [s|
-  INSERT INTO schema_versions VALUES (1);
-  ALTER TABLE account ALTER customer_id SET NOT NULL;
-  |]
+schema7 stripeConfig = do
+  accounts <- selectList [AccountCustomerId ==. Nothing] []
+  results <- forM
+    accounts
+    (\(Entity accountId Account {accountEmail}) -> do
+       customerCreateResult <- createCustomer stripeConfig (coerce accountEmail)
+       case customerCreateResult of
+         Left err -> do
+           liftIO $ putStrLn ("Error creating customer:" ++ show err)
+           pure False
+         Right CreateCustomerResponse {id = customerId} -> do
+           update accountId [AccountCustomerId =. Just (coerce customerId)]
+           now <- liftIO $ getCurrentTime
+           liftIO $ putStrLn (show now ++ ": OK.")
+           liftIO $ threadDelay (1000 * 100)
+           pure True)
+  if and results || null results
+     then do
+          liftIO $ putStrLn (show (length results) ++ " customers created in Stripe.")
+          run
+             [s|
+           INSERT INTO schema_versions VALUES (1);
+           ALTER TABLE account ALTER customer_id SET NOT NULL;
+           |]
+     else liftIO $ putStrLn "Migration failed, keeping existing schema version."

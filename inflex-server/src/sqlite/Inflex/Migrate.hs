@@ -8,4 +8,4 @@ module Inflex.Migrate (manualMigration) where
 
 import           Database.Persist.Sqlite as X
 
-manualMigration = runMigration
+manualMigration _ = runMigration

@@ -62,7 +62,7 @@ main = do
        (\pool -> do
           runSqlPool
             (do when False (printMigration migrateAll) -- Enable when updating the DB.
-                manualMigration migrateAll)
+                manualMigration (stripeConfig config) migrateAll)
             pool
           logFunc <- liftIO (makeAppLogFunc registry)
           app <-
