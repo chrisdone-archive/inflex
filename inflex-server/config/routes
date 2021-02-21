@@ -25,6 +25,10 @@
 /blog/#BlogEntryName BlogEntryR GET
 /blog BlogR GET
 
+-- Legal
+/terms TermsR GET
+/privacy PrivacyR GET
+
 -- Auth
 /login LoginR
 /logout LogoutR POST

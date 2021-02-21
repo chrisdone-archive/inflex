@@ -1,6 +1,9 @@
 # Privacy Policy
 
+See [Terms of Use](/terms) for our full terms of use.
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+
 **Table of Contents**
 
 - [Privacy Policy](#privacy-policy)
@@ -21,7 +24,7 @@
 We are Sky Above Limited (registered in England and Wales under
 company number 12447208) and we are the controller and are responsible
 for your personal data. If you have any questions about this policy or
-our privacy practices please contact #{supportEmailAddress}.
+our privacy practices please contact support@inflex.io.
 
 ## General Goals
 
@@ -288,18 +291,17 @@ rights. Please note after an account has been deleted:
 
 * Data will be removed from the current running system immediately.
 
-* Caches and ambient retained data will take
-  #{cacheGarbageCollectionDays} days to be garbage collected.
+* Caches and ambient retained data will take 1 day to be garbage
+  collected.
 
-* There will be #{backupsDeletionDays} days before backups are deleted.
+* There will be 100 days before backups are deleted.
 
 * Logs related to card payments within the Stripe system will not be
   deleted, as they are necessary for accounting purposes. Refer to
   [Stripe's privacy policy](https://stripe.com/gb/privacy) on this.
 
-* In addition, general system logs will have a retention period of
-  #{systemLogsRetentionDays} days before they are deleted entirely from
-  the system.
+* In addition, general system logs will have a retention period of 7
+  days days before they are deleted entirely from the system.
 
 ## Your rights
 

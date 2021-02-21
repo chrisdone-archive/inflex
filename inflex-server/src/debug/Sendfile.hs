@@ -4,8 +4,9 @@
 
 module Sendfile where
 
+import qualified Data.ByteString as S
 import           Data.FileEmbed.Stack
-import qualified Data.Text.IO as T
+import qualified Data.Text.Encoding as T
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import           Yesod
@@ -20,4 +21,4 @@ openFileFrom :: FilePath -> Q Exp
 openFileFrom fp0 = do
   fp <- wrapStackRoot fp0
   addDependentFile fp
-  [|T.readFile fp|]
+  [|fmap T.decodeUtf8 (S.readFile fp)|]
