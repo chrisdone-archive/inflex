@@ -50,7 +50,8 @@ manualMigration _x
           4 -> schema4 >> loop
           5 -> schema5 >> loop
           6 -> schema6 >> loop
-          7 -> liftIO $ putStrLn "OK."
+          7 -> schema7 >> loop
+          8 -> liftIO $ putStrLn "OK."
           _ -> error ("At mysterious schema version: " ++ show version)
   loop
 
@@ -115,3 +116,9 @@ schema6  = run [s|
 INSERT INTO schema_versions VALUES (1);
 CREATE INDEX document_account ON document (account);
 |]
+
+schema7  = do
+  run [s|
+  INSERT INTO schema_versions VALUES (1);
+  ALTER TABLE account ALTER customer_id SET NOT NULL;
+  |]
