@@ -110,20 +110,12 @@ flags:
 library:
   source-dirs: src
   exposed-modules:
-    - Sendfile
-    - Shakespearean
     - Inflex.Server.Types
     - Inflex.Backend
-    - Inflex.Server.Handlers.Shop
-    - Inflex.Server.Handlers.Register
-    - Inflex.Server.Handlers.Document
-    - Inflex.Server.Handlers.Rpc
-    - Inflex.Server.Forms
     - Inflex.Server.App
     - Inflex.Server.Dispatch
-    - Inflex.Server.Handlers.Blog
+    - Inflex.Migrate
     - RIO.Warp
-    - RIO.Yesod
   when:
   - condition: flag(release)
     then:

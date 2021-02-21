@@ -19,6 +19,7 @@ import           Data.Time
 import           Data.Yaml
 import           GitInfo (gitHash)
 import           Inflex.Backend
+import           Inflex.Migrate
 import           Inflex.Server.App
 import           Inflex.Server.Dispatch ()
 import           Inflex.Server.Types
@@ -175,6 +176,7 @@ makeAppLogFunc registry = do
                 CreateDocument -> Counter.inc createDocument
                 DeleteDocument -> Counter.inc deleteDocument
                 RenameDocument -> Counter.inc renameDocument
+                StripeCreateCustomerFailed{} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))
