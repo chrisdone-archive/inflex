@@ -47,7 +47,7 @@ getTermsR = do
        url <- ask
        head_ $ do
          link_ [href_ "#", rel_ "shortcut icon"]
-         title_ "Terms of Service"
+         title_ "Terms of Use"
          meta_ [content_ "utf-8", name_ "charset"]
          meta_
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
@@ -104,7 +104,7 @@ getPrivacyR = do
        url <- ask
        head_ $ do
          link_ [href_ "#", rel_ "shortcut icon"]
-         title_ "Privacy of Service"
+         title_ "Privacy Policy"
          meta_ [content_ "utf-8", name_ "charset"]
          meta_
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
