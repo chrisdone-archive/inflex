@@ -17,8 +17,14 @@ sendFileFrom typ fp0 = do
   addDependentFile fp
   [|sendFile typ fp|]
 
-openFileFrom :: FilePath -> Q Exp
-openFileFrom fp0 = do
+openFileFromBS :: FilePath -> Q Exp
+openFileFromBS fp0 = do
+  fp <- wrapStackRoot fp0
+  addDependentFile fp
+  [|(S.readFile fp)|]
+
+openFileFromT :: FilePath -> Q Exp
+openFileFromT fp0 = do
   fp <- wrapStackRoot fp0
   addDependentFile fp
   [|fmap T.decodeUtf8 (S.readFile fp)|]

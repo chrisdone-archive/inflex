@@ -40,7 +40,7 @@ getBlogR = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
   articles <-
     liftIO
       (traverse
@@ -129,7 +129,7 @@ getBlogEntryR entryName = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
   Article {..} <- liftIO (getArticleByEntryName entryName)
   nextArticle <-
     traverse

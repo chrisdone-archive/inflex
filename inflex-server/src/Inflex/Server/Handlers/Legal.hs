@@ -40,8 +40,8 @@ getTermsR = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
-  terms <- liftIO $(openFileFrom "legal/terms.md")
+  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  terms <- liftIO $(openFileFromT "legal/terms.md")
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -97,8 +97,8 @@ getPrivacyR = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
-  privacy <- liftIO $(openFileFrom "legal/privacy-policy.md")
+  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  privacy <- liftIO $(openFileFromT "legal/privacy-policy.md")
   htmlWithUrl
     (html_ $ do
        url <- ask

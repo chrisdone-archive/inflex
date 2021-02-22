@@ -62,7 +62,7 @@ getHomeR = do
       css1 <- $(luciusFileFrom "inflex-server/templates/home.lucius")
       css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
       js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
-      logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+      logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
       htmlWithUrl
         (do doctype_
             url <- ask
@@ -170,7 +170,7 @@ postEarlyAccessRequestR = do
                 }))
     Nothing -> redirect HomeR
   css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
-  logo <- liftIO $(openFileFrom "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
   htmlWithUrl
     (html_ $ do
        url <- ask
