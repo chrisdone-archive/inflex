@@ -53,6 +53,13 @@ shopTemplate state body = do
                                    [action_ (url LoginR), method_ "get"]
                                    (button_ [class_ "login full-button"] "Login")
                                Registered _loginState -> do
+                                 when
+                                   False
+                                   (form_
+                                      [action_ (url PortalR), method_ "post"]
+                                      (button_
+                                         [class_ "logout full-button"]
+                                         "Subscription"))
                                  form_
                                    [action_ (url LogoutR), method_ "post"]
                                    (button_

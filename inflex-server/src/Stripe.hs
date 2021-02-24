@@ -79,6 +79,15 @@ data CreateCustomerResponse = CreateCustomerResponse
   } deriving (Show, Generic)
 instance FromJSON CreateCustomerResponse
 
+data CreatePortalError =
+  CreatePortalError | PortalBadJson JSONException
+  deriving (Show)
+
+data CreatePortalResponse = CreatePortalResponse
+  { url :: Text
+  } deriving (Show, Generic)
+instance FromJSON CreatePortalResponse
+
 --------------------------------------------------------------------------------
 -- Commands
 
@@ -133,4 +142,26 @@ createCustomer StripeConfig {secretApiKey} email = do
       setRequestBasicAuth (T.encodeUtf8 (unSecretApiKey secretApiKey)) mempty .
       setRequestBodyURLEncoded
         [ ("email", T.encodeUtf8 email)
+        ]
+
+-- | https://stripe.com/docs/api/customer_portal/sessions/create
+createPortal ::
+     (MonadIO m, MonadThrow m)
+  => StripeConfig
+  -> Text
+  -> Text
+  -> m (Either CreatePortalError CreatePortalResponse)
+createPortal StripeConfig {secretApiKey} customer returnUrl = do
+  request <-
+    fmap hydrate (parseRequest "https://api.stripe.com/v1/billing_portal/sessions")
+    -- TODO: Handle errors or set fields manually.
+  fmap (Right . getResponseBody) (httpJSON request) -- TODO: Use robust HTTP with retries.
+  where
+    hydrate =
+      setRequestMethod "POST" .
+      setRequestSecure True .
+      setRequestBasicAuth (T.encodeUtf8 (unSecretApiKey secretApiKey)) mempty .
+      setRequestBodyURLEncoded
+        [ ("customer", T.encodeUtf8 customer)
+        , ("return_url", T.encodeUtf8 returnUrl)
         ]

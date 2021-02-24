@@ -32,6 +32,7 @@
 -- Auth
 /login LoginR
 /logout LogoutR POST
+/stripe/portal PortalR POST
 
 -- App
 /dashboard AppDashboardR GET POST

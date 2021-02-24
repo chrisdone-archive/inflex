@@ -19,6 +19,7 @@ import Inflex.Server.Handlers.Shop
 import Inflex.Server.Handlers.Stripe
 import Inflex.Server.Handlers.Files
 import Inflex.Server.Handlers.Legal
+import Inflex.Server.Handlers.Portal
 import Yesod
 
 $(mkYesodDispatch "App" $(parseRoutesFile "config/routes"))
