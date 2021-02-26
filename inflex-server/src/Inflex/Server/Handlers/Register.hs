@@ -154,8 +154,8 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             , successUrl = render CheckoutWaitingR
             , cancelUrl = render CheckoutCancelR
             , customerEmail = unEmail (registerEmail registrationDetails)
-            , trialFromPlan = True
             , clientReferenceId = maybe "" (UUID.toText . unNonceUUID) (sessionNonce session)
+            , mcustomerId = Nothing
             }
       case result of
         Left err -> error (show err) -- TODO: handle this properly.

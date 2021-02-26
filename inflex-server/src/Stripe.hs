@@ -46,8 +46,8 @@ data StripeSession = StripeSession
   , successUrl :: Text
   , cancelUrl :: Text
   , customerEmail :: Text
-  , trialFromPlan :: Bool
   , clientReferenceId :: Text
+  , mcustomerId :: Maybe Text
   }
 
 newtype CheckoutSessionId = CheckoutSessionId
@@ -99,8 +99,8 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
                             , successUrl
                             , cancelUrl
                             , customerEmail
-                            , trialFromPlan
                             , clientReferenceId
+                            , mcustomerId
                             } = do
   request <-
     fmap hydrate (parseRequest "https://api.stripe.com/v1/checkout/sessions")
@@ -113,17 +113,13 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
       setRequestBasicAuth (T.encodeUtf8 (unSecretApiKey secretApiKey)) mempty .
       -- TODO: Add https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-client_reference_id
       setRequestBodyURLEncoded
-        [ ("payment_method_types[]", "card")
+        ([ ("payment_method_types[]", "card")
         , ("subscription_data[items][][plan]", T.encodeUtf8 (unPlanId planId))
         , ("success_url", T.encodeUtf8 successUrl)
         , ("cancel_url", T.encodeUtf8 cancelUrl)
         , ("customer_email", T.encodeUtf8 customerEmail)
-        , ( "subscription_data[trial_from_plan]"
-          , if trialFromPlan
-              then "true"
-              else "false")
         , ("client_reference_id", T.encodeUtf8 clientReferenceId)
-        ]
+        ] <> [("customer", T.encodeUtf8 customerId) | Just customerId <- [mcustomerId]])
 
 createCustomer ::
      (MonadIO m, MonadThrow m)
