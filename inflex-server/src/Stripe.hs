@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -10,12 +10,16 @@
 module Stripe where
 
 import           Data.Aeson
+import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy.Builder as LT
 import qualified Data.Text.Lazy.Encoding as LT
+import           Lucid
+import           Lucid.Julius
 import           Network.HTTP.Simple
 import           RIO
 import           Text.Julius
+import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
 -- Types
@@ -161,3 +165,24 @@ createPortal StripeConfig {secretApiKey} customer returnUrl = do
         [ ("customer", T.encodeUtf8 customer)
         , ("return_url", T.encodeUtf8 returnUrl)
         ]
+
+--------------------------------------------------------------------------------
+-- JavaScript
+
+-- TODO: display error messsage to the user (see JS comment below).
+stripeCheckout_ :: PublishableApiKey -> CheckoutSessionId -> Lucid app ()
+stripeCheckout_ stripePublishableKey checkoutSessionId = do
+  script_ [src_ "https://js.stripe.com/v3/"] ("" :: Text)
+  julius_ [julius|
+    var stripe = Stripe(#{stripePublishableKey});
+    setTimeout (function () {
+    stripe.redirectToCheckout({
+      sessionId: #{checkoutSessionId}
+    }).then(function (result) {
+      // If `redirectToCheckout` fails due to a browser or network
+      // error, display the localized error message to your customer
+      // using `result.error.message`.
+      console.log(result);
+    });
+    }, 1000);
+  |]

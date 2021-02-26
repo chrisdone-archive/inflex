@@ -23,7 +23,6 @@ module Inflex.Server.Handlers.Register
   ) where
 
 import           Control.Monad.Reader
-import           Data.Text (Text)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
 import           Data.Validation
@@ -37,7 +36,6 @@ import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
-import           Lucid.Julius
 import           Optics
 import           Stripe
 import           Yesod hiding (Html, Field, toHtml)
@@ -86,10 +84,13 @@ withRegistrationState theCons cont = do
                state
                (containedColumn_
                   (do h1_ "Registered!"
-                      p_
-                        "You are registered! Taking you to the dashboard..."
+                      p_ "You are registered! Taking you to the dashboard..."
                       spinner_
                       redirect_ 2 AppDashboardR)))
+        -- Just start a fresh session.
+        UnregisteredBeta {} -> do
+          runDB (updateSession sessionId registerStart)
+          redirect EnterDetailsR
         NoSessionState {} -> do
           runDB (updateSession sessionId registerStart)
           redirect EnterDetailsR
@@ -154,7 +155,8 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             , successUrl = render CheckoutWaitingR
             , cancelUrl = render CheckoutCancelR
             , customerEmail = unEmail (registerEmail registrationDetails)
-            , clientReferenceId = maybe "" (UUID.toText . unNonceUUID) (sessionNonce session)
+            , clientReferenceId =
+                maybe "" (UUID.toText . unNonceUUID) (sessionNonce session)
             , mcustomerId = Nothing
             }
       case result of
@@ -168,32 +170,14 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             (shopTemplate
                state
                (containedColumn_
-                (do script_ [src_ "https://js.stripe.com/v3/"] ("" :: Text)
-                    h1_ "Redirecting you to secure payment"
-                    noscript_
-                      "Please enable JavaScript so that we can securely send you to Stripe."
-                    p_ "Redirecting you to Stripe ..."
-                    spinner_
-                    julius_
-                      (stripeJavaScript
-                         (publishableApiKey stripeConfig)
-                         checkoutSessionId))))
-
--- TODO: display error messsage to the user (see JS comment below).
-stripeJavaScript :: PublishableApiKey -> CheckoutSessionId -> JavascriptUrl (Route App)
-stripeJavaScript stripePublishableKey checkoutSessionId = [julius|
-var stripe = Stripe(#{stripePublishableKey});
-setTimeout (function () {
-stripe.redirectToCheckout({
-  sessionId: #{checkoutSessionId}
-}).then(function (result) {
-  // If `redirectToCheckout` fails due to a browser or network
-  // error, display the localized error message to your customer
-  // using `result.error.message`.
-  console.log(result);
-});
-}, 1000);
-|]
+                  (do h1_ "Redirecting you to secure payment"
+                      noscript_
+                        "Please enable JavaScript so that we can securely send you to Stripe."
+                      p_ "Redirecting you to Stripe ..."
+                      spinner_
+                      stripeCheckout_
+                        (publishableApiKey stripeConfig)
+                        checkoutSessionId)))
 
 --------------------------------------------------------------------------------
 -- Checkout waiting page
