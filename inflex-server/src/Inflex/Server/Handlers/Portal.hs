@@ -81,6 +81,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                               , loginUsername = Nothing
                               , loginAccountId = fromAccountId key
                               , loginSubscriptionState = Subscribed
+                              , loginCustomerId = customerId
                               })))
             _ ->
               error

@@ -23,7 +23,6 @@ module Inflex.Server.Handlers.Register
 
 import           Control.Monad.Reader
 import qualified Data.UUID as UUID
-import qualified Data.UUID.V4 as UUID
 import           Data.Validation
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
@@ -153,14 +152,13 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
             { stripeConfig
             , successUrl = render CheckoutWaitingR
             , cancelUrl = render CheckoutCancelR
-            , customerEmail = unEmail (registerEmail registrationDetails)
+            , customer = NewCustomer (unEmail (registerEmail registrationDetails))
             , clientReferenceId =
                 maybe "" (UUID.toText . unNonceUUID) (sessionNonce session)
-            , mcustomerId = Nothing
             }
       case result of
         Left err -> error (show err) -- TODO: handle this properly.
-        Right CreateSessionResponse {checkoutSessionId} -> do
+        Right CreateSessionResponse {id=checkoutSessionId} -> do
           runDB
             (updateSession
                sessionId

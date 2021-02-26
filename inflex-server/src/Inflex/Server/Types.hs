@@ -183,6 +183,7 @@ data LoginState = LoginState
   { loginEmail :: Email
   , loginUsername :: Maybe Username
   , loginAccountId :: AccountID
+  , loginCustomerId :: CustomerId
   , loginSubscriptionState :: SubscriptionState
   }deriving (Show, Generic)
 instance FromJSON LoginState

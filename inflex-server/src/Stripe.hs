@@ -49,10 +49,13 @@ data StripeSession = StripeSession
   { stripeConfig :: StripeConfig
   , successUrl :: Text
   , cancelUrl :: Text
-  , customerEmail :: Text
   , clientReferenceId :: Text
-  , mcustomerId :: Maybe Text
+  , customer :: StripeCustomerSpec
   }
+
+data StripeCustomerSpec
+  = ExistingCustomer Text -- CustomerId
+  | NewCustomer Text -- Email
 
 newtype CheckoutSessionId = CheckoutSessionId
   { unCheckoutSessionId :: Text
@@ -64,15 +67,9 @@ data CreateSessionError =
   deriving (Show)
 
 data CreateSessionResponse = CreateSessionResponse
-  { checkoutSessionId :: CheckoutSessionId
-  } deriving (Show)
-instance FromJSON CreateSessionResponse where
-  parseJSON =
-    withObject
-      "CreateSessionResponse"
-      (\o -> do
-         checkoutSessionId <- o .: "id"
-         pure CreateSessionResponse {..})
+  { id :: CheckoutSessionId
+  } deriving (Show, Generic)
+instance FromJSON CreateSessionResponse
 
 data CreateCustomerError =
   CreateCustomerError | CustomerBadJson JSONException
@@ -102,9 +99,8 @@ createSession ::
 createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
                             , successUrl
                             , cancelUrl
-                            , customerEmail
                             , clientReferenceId
-                            , mcustomerId
+                            , customer
                             } = do
   request <-
     fmap hydrate (parseRequest "https://api.stripe.com/v1/checkout/sessions")
@@ -121,9 +117,9 @@ createSession StripeSession { stripeConfig = StripeConfig {secretApiKey, planId}
         , ("subscription_data[items][][plan]", T.encodeUtf8 (unPlanId planId))
         , ("success_url", T.encodeUtf8 successUrl)
         , ("cancel_url", T.encodeUtf8 cancelUrl)
-        , ("customer_email", T.encodeUtf8 customerEmail)
         , ("client_reference_id", T.encodeUtf8 clientReferenceId)
-        ] <> [("customer", T.encodeUtf8 customerId) | Just customerId <- [mcustomerId]])
+        ] <> [("customer_email", T.encodeUtf8 customerEmail) | NewCustomer customerEmail <- [customer]]
+          <> [("customer", T.encodeUtf8 customerId) | ExistingCustomer customerId <- [customer]])
 
 createCustomer ::
      (MonadIO m, MonadThrow m)

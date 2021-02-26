@@ -5,6 +5,7 @@
 module Inflex.Server.Handlers.Account where
 
 import           Control.Monad.Reader
+import           Data.Coerce
 import qualified Data.UUID as UUID
 import           Inflex.Server.App
 import           Inflex.Server.Lucid
@@ -50,7 +51,7 @@ getAccountR = do
 postSubscribeR :: Handler (Html ())
 postSubscribeR =
   withLogin
-    (\sessionId loginState@LoginState{loginEmail} -> do
+    (\sessionId loginState@LoginState{loginEmail, loginCustomerId} -> do
        render <- getUrlRender
        Config {stripeConfig} <- fmap appConfig getYesod
        nonce <- runDB (freshSessionNonce sessionId)
@@ -60,14 +61,13 @@ postSubscribeR =
              { stripeConfig
              , successUrl = render ConfirmSubscribeR
              , cancelUrl = render AccountR
-             , customerEmail = unEmail loginEmail
              , clientReferenceId =
                  UUID.toText nonce
-             , mcustomerId = Nothing
+             , customer = ExistingCustomer (coerce loginCustomerId)
              }
        case result of
          Left err -> error (show err) -- TODO: handle this properly.
-         Right CreateSessionResponse {checkoutSessionId} -> do
+         Right CreateSessionResponse {id=checkoutSessionId} -> do
            htmlWithUrl
              (shopTemplate
                 (Registered loginState)
