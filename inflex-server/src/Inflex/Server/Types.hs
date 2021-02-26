@@ -192,7 +192,6 @@ instance ToJSON LoginState
 data SubscriptionState
   = Subscribed
   | Unsubscribed
-  | CreateCheckoutForSubscribe
   | WaitingForStripeForSubscribe
   deriving (Show, Generic)
 instance FromJSON SubscriptionState

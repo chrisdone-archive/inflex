@@ -110,6 +110,7 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                                   , loginUsername = Nothing
                                   , loginAccountId = fromAccountId key
                                   , loginSubscriptionState = Unsubscribed
+                                  , loginCustomerId = coerce customerId
                                   })))
                   htmlWithUrl
                     (shopTemplate

@@ -51,23 +51,29 @@ getAccountR = do
 postSubscribeR :: Handler (Html ())
 postSubscribeR =
   withLogin
-    (\sessionId loginState@LoginState{loginEmail, loginCustomerId} -> do
+    (\sessionId loginState@LoginState {loginCustomerId} -> do
        render <- getUrlRender
        Config {stripeConfig} <- fmap appConfig getYesod
-       nonce <- runDB (freshSessionNonce sessionId)
+       nonce <-
+         runDB
+           (do updateSession
+                 sessionId
+                 (Registered
+                    (loginState
+                       {loginSubscriptionState = WaitingForStripeForSubscribe}))
+               freshSessionNonce sessionId)
        result <-
          Stripe.createSession
            StripeSession
              { stripeConfig
              , successUrl = render ConfirmSubscribeR
              , cancelUrl = render AccountR
-             , clientReferenceId =
-                 UUID.toText nonce
+             , clientReferenceId = UUID.toText nonce
              , customer = ExistingCustomer (coerce loginCustomerId)
              }
        case result of
          Left err -> error (show err) -- TODO: handle this properly.
-         Right CreateSessionResponse {id=checkoutSessionId} -> do
+         Right CreateSessionResponse {id = checkoutSessionId} -> do
            htmlWithUrl
              (shopTemplate
                 (Registered loginState)
