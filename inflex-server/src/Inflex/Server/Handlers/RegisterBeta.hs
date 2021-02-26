@@ -99,6 +99,7 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                                  , accountSalt = salt
                                  , accountEmail = registerEmail
                                  , accountCustomerId = (coerce customerId)
+                                 , accountSubscribed = False
                                  }
                            copySampleDocuments key
                            updateSession
@@ -108,6 +109,7 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                                   { loginEmail = registerEmail
                                   , loginUsername = Nothing
                                   , loginAccountId = fromAccountId key
+                                  , loginSubscriptionState = Unsubscribed
                                   })))
                   htmlWithUrl
                     (shopTemplate

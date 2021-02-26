@@ -38,6 +38,10 @@ handleLoginR = do
                    { loginEmail = accountEmail account
                    , loginUsername = accountUsername account
                    , loginAccountId = fromAccountId key
+                   , loginSubscriptionState =
+                       if accountSubscribed account
+                         then Subscribed
+                         else Unsubscribed
                    })
           redirect AppDashboardR
 

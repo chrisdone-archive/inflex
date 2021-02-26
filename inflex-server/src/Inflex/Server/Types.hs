@@ -157,7 +157,7 @@ newtype NonceUUID = NonceUUID {unNonceUUID :: UUID}
   deriving (Show, PersistField, PersistFieldSql)
 
 newtype CustomerId = CustomerId {unCustomerId :: Text}
-  deriving (Show, PersistField, PersistFieldSql, FromJSON)
+  deriving (Show, PersistField, PersistFieldSql, FromJSON, ToJSON)
 
 data DecIn = DecIn
   { name :: Text
@@ -183,9 +183,19 @@ data LoginState = LoginState
   { loginEmail :: Email
   , loginUsername :: Maybe Username
   , loginAccountId :: AccountID
+  , loginSubscriptionState :: SubscriptionState
   }deriving (Show, Generic)
 instance FromJSON LoginState
 instance ToJSON LoginState
+
+data SubscriptionState
+  = Subscribed
+  | Unsubscribed
+  | CreateCheckoutForSubscribe
+  | WaitingForStripeForSubscribe
+  deriving (Show, Generic)
+instance FromJSON SubscriptionState
+instance ToJSON SubscriptionState
 
 newtype AccountID = AccountID Int64
   deriving (Show, Generic)

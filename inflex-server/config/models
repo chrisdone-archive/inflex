@@ -7,6 +7,7 @@ Account
   password Sha256
   salt Salt
   customerId CustomerId
+  subscribed Bool
   deriving Show
 
 Session

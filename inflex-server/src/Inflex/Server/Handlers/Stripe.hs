@@ -12,7 +12,7 @@ import qualified Data.ByteString.Char8 as S8
 import           Data.Text (Text)
 import           Data.UUID as UUID
 import           Inflex.Server.App
-import           Inflex.Server.Handlers.Register
+import           Inflex.Server.Handlers.Portal
 import           Inflex.Server.Types
 import           Yesod
 

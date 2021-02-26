@@ -15,7 +15,6 @@
 /register/checkout/create CheckoutCreateR GET
 /register/checkout/cancel CheckoutCancelR GET
 /register/checkout/waiting CheckoutWaitingR GET
-/account ShopAccountR GET POST
 /shop/css ShopCssR GET
 
 /early-access-request EarlyAccessRequestR POST
@@ -33,6 +32,9 @@
 /login LoginR
 /logout LogoutR POST
 /stripe/portal PortalR POST
+/account AccountR GET
+/account/subscribe SubscribeR POST
+/account/subscribe/confirm ConfirmSubscribeR GET
 
 -- App
 /dashboard AppDashboardR GET POST

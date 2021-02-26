@@ -18,6 +18,7 @@ module Inflex.Server.Session
   , HasLoginCookie(..)
   , hasLoginCookie
   , createSession
+  , freshSessionNonce
   ) where
 
 import           Data.Text (Text)
@@ -135,3 +136,9 @@ generateSession sessionState = loop
       case result of
         Nothing -> loop
         Just sessionId -> pure (Entity sessionId session)
+
+freshSessionNonce :: SessionId -> YesodDB App UUID
+freshSessionNonce sessionId  = do
+  nonce <- liftIO UUID.nextRandom
+  update sessionId [SessionNonce =. Just (NonceUUID nonce)]
+  pure nonce

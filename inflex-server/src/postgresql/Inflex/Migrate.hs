@@ -60,7 +60,8 @@ manualMigration stripeConfig _x
           5 -> schema5 >> loop
           6 -> schema6 >> loop
           7 -> schema7 stripeConfig >> loop
-          8 -> liftIO $ putStrLn "OK."
+          8 -> schema8 >> loop
+          9 -> liftIO $ putStrLn "OK."
           _ -> error ("At mysterious schema version: " ++ show version)
   loop
 
@@ -156,3 +157,8 @@ schema7 _stripeConfig = do
   --          ALTER TABLE account ALTER customer_id SET NOT NULL;
   --          |]
   --    else liftIO $ putStrLn "Migration failed, keeping existing schema version."
+
+schema8  = run [s|
+INSERT INTO schema_versions VALUES (1);
+ALTER TABLE account ADD subscribed BOOL NOT NULL DEFAULT FALSE;
+|]

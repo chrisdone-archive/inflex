@@ -263,3 +263,19 @@ body {
 
 
 }
+
+.subscribed {
+  background: green;
+  text: white;
+  padding: 5px;
+  border-radius: 3px;
+  color: white;
+}
+
+.unsubscribed {
+  background: red;
+  text: white;
+  padding: 5px;
+  border-radius: 3px;
+  color: white;
+}

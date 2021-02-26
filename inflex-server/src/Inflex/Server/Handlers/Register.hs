@@ -19,7 +19,6 @@ module Inflex.Server.Handlers.Register
    getCheckoutCreateR
   , getCheckoutCancelR
   , getCheckoutWaitingR
-  , getCheckoutSessionCompletedR
   ) where
 
 import           Control.Monad.Reader
@@ -192,7 +191,7 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
            (containedColumn_
               (do refresh_ 5
                   h1_ "Waiting for Stripe"
-                  p_ "We're waiting for the Stripe payment service to tell us whether payment succeeded..."
+                  p_ "We're waiting for the Stripe service to tell us whether subscription succeeded..."
                   spinner_
                   url <- ask
                   p_ (a_ [href_ (url CheckoutCancelR)] "Cancel"))))
@@ -215,45 +214,3 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
                p_ "Going back to registration..."
                spinner_
                redirect_ 3 EnterDetailsR))
-
---------------------------------------------------------------------------------
--- Checkout success page
-
-getCheckoutSessionCompletedR :: NonceUUID -> CustomerId -> HandlerFor App ()
-getCheckoutSessionCompletedR nonceUUID customerId = do
-  msession <- runDB (queryNonceSession nonceUUID)
-  case msession of
-    Nothing -> error "Invalid session -- do not retry."
-    Just (Entity sessionId Session {sessionState}) ->
-      case sessionState of
-        NoSessionState {} -> error "Session has no state -- do not retry."
-        Registered {} -> error "Already registered. Bug?"
-        Unregistered unregisteredState ->
-          case unregisteredState of
-            WaitingForStripe RegistrationDetails {..} ->
-              void
-                (runDB
-                   (do resetSessionNonce sessionId
-                       salt <- fmap (Salt . UUID.toText) (liftIO UUID.nextRandom)
-                       key <-
-                         insert
-                           Account
-                             { accountUsername = Nothing
-                             , accountPassword = sha256Password salt registerPassword
-                             , accountSalt = salt
-                             , accountEmail = registerEmail
-                             , accountCustomerId = customerId
-                             }
-                       updateSession
-                         sessionId
-                         (Registered
-                            LoginState
-                              { loginEmail = registerEmail
-                              , loginUsername = Nothing
-                              , loginAccountId =
-                                  fromAccountId key
-                              })))
-            _ ->
-              error
-                ("Not expecting stripe at this point: " <>
-                 show unregisteredState)
