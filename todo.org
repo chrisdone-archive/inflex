@@ -445,6 +445,10 @@ chris@precision:~$
     https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20
 
 * References
+  - Note taken on [2021-03-11 Thu 17:33] \\
+    Excel Will Never Die
+
+    https://www.notboring.co/p/excel-never-dies
   - Note taken on [2020-11-24 Tue 12:33] \\
     On testing for fastness
     https://fabiensanglard.net/silicone/index.html
