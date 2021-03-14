@@ -158,7 +158,8 @@ makeAppLogFunc registry = do
     (mkGLogFunc
        (\_callStack ->
           \case
-            ServerMsg msg ->
+            ServerMsg msg -> do
+              prettyWrite msg
               case msg of
                 DocumentLoaded ms -> do
                   Histogram.observe ms documentLoadedMS
@@ -177,6 +178,7 @@ makeAppLogFunc registry = do
                 DeleteDocument -> Counter.inc deleteDocument
                 RenameDocument -> Counter.inc renameDocument
                 StripeCreateCustomerFailed{} -> pure ()
+                SubscriptionUpdated {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))

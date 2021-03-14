@@ -184,18 +184,9 @@ data LoginState = LoginState
   , loginUsername :: Maybe Username
   , loginAccountId :: AccountID
   , loginCustomerId :: CustomerId
-  , loginSubscriptionState :: SubscriptionState
-  }deriving (Show, Generic)
+  } deriving (Show, Generic)
 instance FromJSON LoginState
 instance ToJSON LoginState
-
-data SubscriptionState
-  = Subscribed
-  | Unsubscribed
-  | WaitingForStripeForSubscribe
-  deriving (Show, Generic)
-instance FromJSON SubscriptionState
-instance ToJSON SubscriptionState
 
 newtype AccountID = AccountID Int64
   deriving (Show, Generic)

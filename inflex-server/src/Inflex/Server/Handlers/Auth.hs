@@ -39,10 +39,6 @@ handleLoginR = do
                    , loginUsername = accountUsername account
                    , loginAccountId = fromAccountId key
                    , loginCustomerId = accountCustomerId account
-                   , loginSubscriptionState =
-                       if accountSubscribed account
-                         then Subscribed
-                         else Unsubscribed
                    })
           redirect AppDashboardR
 

@@ -39,6 +39,7 @@ getAppDashboardR =
   withLogin
     (\_ state@LoginState {loginAccountId} -> do
        submitGA
+       account <- runDB (get404 (fromAccountID loginAccountId))
        documents <-
          runDB
            (selectList
@@ -62,8 +63,7 @@ getAppDashboardR =
                       h1_ "Documents"
                       p_
                         "Your work in Inflex is split up into documents. We've added some \
-                      \example documents for you below. You can create a new document to \
-                      \start from scratch by hitting New Document."
+                      \example documents for you below."
                       {-p_
                         (do "Don't forget to check out the "
                             a_
@@ -71,9 +71,20 @@ getAppDashboardR =
                                   "https://community.inflex.io/t/the-inflex-document/17"
                               ]
                               "community forum guide on working with documents.")-}
-                      form_
-                        [action_ (url NewDocumentR), method_ "post"]
-                        (button_ [class_ "new-document"] "New Document")
+                      if accountSubscribed account
+                        then do
+                          p_ "You can create a new document to \
+                               \start from scratch by hitting New Document."
+                          form_
+                               [action_ (url NewDocumentR), method_ "post"]
+                               (button_ [class_ "new-document"] "New Document")
+                        else do
+                          p_
+                            (do "You can create new documents when subscribed. "
+                                )
+                          form_
+                            [action_ (url SubscribeR), method_ "post"]
+                            (p_ (button_ [class_ "full-button"] "Subscribe Now"))
                       if null documents
                         then p_ "No documents yet."
                         else div_
@@ -149,8 +160,8 @@ getAppDashboardR =
                                toHtml
                                  (bytesShorthand (maxUploadSizeBytes config))
                                ". (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
-                      -- p_ (strong_ "Currently disabled.")
-                      form_
+                      p_ (strong_ "Currently disabled.")
+                      {-form_
                         [ action_ (url UploadFileR)
                         , method_ "post"
                         , id_ "file-upload-form"
@@ -165,7 +176,7 @@ getAppDashboardR =
                               ]
                             button_
                               [class_ "new-document", id_ "file-select"]
-                              "Upload File")
+                              "Upload File")-}
                       if null files
                         then p_ "No files yet."
                         else div_
@@ -180,7 +191,8 @@ getAppDashboardR =
                                              (do p_
                                                    [class_ "document-title"]
                                                    (a_ (toHtml fileName)))
-                                           p_ [class_ "file-size"]
+                                           p_
+                                             [class_ "file-size"]
                                              (do "Size: "
                                                  toHtml
                                                    (bytesShorthand fileBytes))

@@ -81,6 +81,7 @@ data ServerMsg
   | DeleteDocument
   | RenameDocument
   | StripeCreateCustomerFailed Text CreateCustomerError
+  | SubscriptionUpdated Text Text (Maybe Bool)
   deriving (Show)
 
 -- | A generic log output.

@@ -39,20 +39,9 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
     Just (Entity sessionId Session {sessionState}) ->
       case sessionState of
         NoSessionState {} -> error "Session has no state -- do not retry."
-        Registered loginState@LoginState { loginSubscriptionState
-                                         , loginAccountId
-                                         } ->
-          case loginSubscriptionState of
-            WaitingForStripeForSubscribe -> do
-              runDB
-                (do update
-                      (fromAccountID loginAccountId)
-                      [AccountSubscribed =. True]
-                    updateSession
-                      sessionId
-                      (Registered
-                         loginState {loginSubscriptionState = Subscribed}))
-            other -> error ("Unexpected subscription state: " ++ show other)
+        Registered loginState@LoginState {loginAccountId} ->
+          runDB
+            (update (fromAccountID loginAccountId) [AccountSubscribed =. True])
         UnregisteredBeta {} -> error "UnregisteredBeta is wrong here."
         Unregistered unregisteredState ->
           case unregisteredState of
@@ -80,7 +69,6 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                               { loginEmail = registerEmail
                               , loginUsername = Nothing
                               , loginAccountId = fromAccountId key
-                              , loginSubscriptionState = Subscribed
                               , loginCustomerId = customerId
                               })))
             _ ->

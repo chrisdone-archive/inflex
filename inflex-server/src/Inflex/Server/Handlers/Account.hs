@@ -21,32 +21,28 @@ import           Yesod.Lucid
 getAccountR :: Handler (Html ())
 getAccountR = do
   withLogin
-    (\_ sessionState -> do
+    (\_ sessionState@LoginState {loginAccountId} -> do
+       account <- runDB (get404 (fromAccountID loginAccountId))
        htmlWithUrl
          (shopTemplate
             (Registered sessionState)
             (do h1_ "Account"
                 url <- ask
-                let subscribed =
-                      case sessionState of
-                        LoginState {loginSubscriptionState} ->
-                          case loginSubscriptionState of
-                            Subscribed -> True
-                            _ -> False
+                let subscribed = accountSubscribed account
                 if subscribed
                   then do
                     p_ (strong_ [class_ "subscribed"] "Subscribed")
-                    form_
-                      [action_ (url PortalR), method_ "post"]
-                      (p_
-                         (button_
-                            [class_ "full-button"]
-                            "Manage Subscription and Payment Methods"))
                   else do
                     p_ (strong_ [class_ "unsubscribed"] "Not Subscribed")
                     form_
                       [action_ (url SubscribeR), method_ "post"]
-                      (p_ (button_ [class_ "full-button"] "Subscribe Now")))))
+                      (p_ (button_ [class_ "full-button"] "Subscribe Now"))
+                form_
+                  [action_ (url PortalR), method_ "post"]
+                  (p_
+                     (button_
+                        [class_ "full-button"]
+                        "Manage Subscription and Payment Methods")))))
 
 postSubscribeR :: Handler (Html ())
 postSubscribeR =
@@ -54,14 +50,7 @@ postSubscribeR =
     (\sessionId loginState@LoginState {loginCustomerId} -> do
        render <- getUrlRender
        Config {stripeConfig} <- fmap appConfig getYesod
-       nonce <-
-         runDB
-           (do updateSession
-                 sessionId
-                 (Registered
-                    (loginState
-                       {loginSubscriptionState = WaitingForStripeForSubscribe}))
-               freshSessionNonce sessionId)
+       nonce <- runDB (freshSessionNonce sessionId)
        result <-
          Stripe.createSession
            StripeSession
@@ -90,11 +79,22 @@ postSubscribeR =
 getConfirmSubscribeR :: Handler (Html ())
 getConfirmSubscribeR = do
   withLogin
-    (\_ sessionState -> do
-       htmlWithUrl
-         (shopTemplate
-            (Registered sessionState)
-            (do h1_ "Waiting for Stripe"
-                p_
-                  "We're waiting for the Stripe service to tell us whether subscription succeeded..."
-                spinner_)))
+    (\_ sessionState@LoginState {loginAccountId} -> do
+       account <- runDB (get404 (fromAccountID loginAccountId))
+       if accountSubscribed account
+         then do
+           htmlWithUrl
+             (shopTemplate
+                (Registered sessionState)
+                (do h1_ "Got response from Stripe"
+                    redirect_ 2 AccountR
+                    p_ "OK, you're subscribed!"
+                    spinner_))
+         else htmlWithUrl
+                (shopTemplate
+                   (Registered sessionState)
+                   (do h1_ "Waiting for Stripe"
+                       refresh_ 2
+                       p_
+                         "We're waiting for the Stripe service to tell us whether subscription succeeded..."
+                       spinner_)))

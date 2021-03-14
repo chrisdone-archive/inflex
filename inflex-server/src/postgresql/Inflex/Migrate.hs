@@ -161,4 +161,5 @@ schema7 _stripeConfig = do
 schema8  = run [s|
 INSERT INTO schema_versions VALUES (1);
 ALTER TABLE account ADD subscribed BOOL NOT NULL DEFAULT FALSE;
+
 |]

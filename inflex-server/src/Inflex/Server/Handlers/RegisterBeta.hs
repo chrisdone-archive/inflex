@@ -109,7 +109,6 @@ handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
                                   { loginEmail = registerEmail
                                   , loginUsername = Nothing
                                   , loginAccountId = fromAccountId key
-                                  , loginSubscriptionState = Unsubscribed
                                   , loginCustomerId = coerce customerId
                                   })))
                   htmlWithUrl
