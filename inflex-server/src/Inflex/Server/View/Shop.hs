@@ -54,7 +54,7 @@ shopTemplate state body = do
                                    (button_ [class_ "login full-button"] "Login")
                                Registered _loginState -> do
                                  when
-                                   True
+                                   False
                                    (form_
                                       [action_ (url AccountR), method_ "get"]
                                       (button_

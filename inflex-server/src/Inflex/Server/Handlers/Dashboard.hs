@@ -71,7 +71,7 @@ getAppDashboardR =
                                   "https://community.inflex.io/t/the-inflex-document/17"
                               ]
                               "community forum guide on working with documents.")-}
-                      if accountSubscribed account
+                      if accountSubscribed account || True
                         then do
                           p_ "You can create a new document to \
                                \start from scratch by hitting New Document."
