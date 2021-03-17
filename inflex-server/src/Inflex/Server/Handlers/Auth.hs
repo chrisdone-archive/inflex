@@ -49,12 +49,13 @@ loginView :: SessionState -> Lucid App () -> Lucid App ()
 loginView state formView =
   shopTemplate
     state
-    (containedColumn_
-     (do h1_ "Login"
-         form_
-           [method_ "POST"]
-           (do formView
-               p_ (button_ "Continue"))))
+    (div_
+       [class_ "login-page"]
+       (do h1_ "Login"
+           form_
+             [method_ "POST"]
+             (do formView
+                 p_ (button_ "Continue"))))
 
 postLogoutR :: Handler ()
 postLogoutR = do

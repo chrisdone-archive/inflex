@@ -76,7 +76,6 @@ body {
 
 .dashboard {
   margin: 10px;
-  font-family: sans-serif;
   max-width: 60em;
   margin: 0 auto;
   margin-top: 50px;
@@ -86,7 +85,6 @@ body {
 
   h1 {
     font-size: 50px;
-    font-family: sans-serif;
     color: #333;
     margin-top: 0;
     margin-bottom: 10px;
@@ -128,7 +126,6 @@ body {
 
   .documents {
     margin-top: 5px;
-    font-family: sans-serif;
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -194,7 +191,6 @@ body {
 }
 
 .register-page {
-  font-family: sans-serif;
   max-width: 40em;
   margin: 0 auto;
   text-align: center;
@@ -265,4 +261,23 @@ body {
     border-radius: 3px;
     color: white;
   }
+}
+
+.login-page {
+    max-width: 60em;
+    margin: 0 auto;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    font-size: 20px;
+    line-height: 1.6em;
+    label {
+      width: 7em;
+      display: inline-block;
+      line-height: 2em;
+    }
+    input {
+      border: 1px solid #aaa;
+      border-radius: 3px;
+      padding: 5px;
+    }
 }
