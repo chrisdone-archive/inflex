@@ -184,3 +184,17 @@ li.CodeMirror-hint-active {
   background: #15263b;
   color: white;
 }
+
+.hidden {
+  display: none;
+}
+.full-button[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.canvas.readonly {
+  opacity: 0.8;
+  pointer-events: none;
+  cursor: not-allowed;
+}

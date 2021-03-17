@@ -48,6 +48,7 @@ getAppEditorR slug =
   withLogin
     (\_ state@(LoginState {loginAccountId}) -> do
        submitGA
+       account <- runDB (get404 (fromAccountID loginAccountId))
        documentId <-
          do mdoc <-
               runDB
@@ -73,6 +74,8 @@ getAppEditorR slug =
                               [ "documentId" .= documentId
                               , "logout" .= url LogoutR
                               , "dashboard" .= url AppDashboardR
+                              , "loggedin" .= True
+                              , "readonly" .= not (accountSubscribed account)
                               ])))
                 script_ [type_ "text/javascript", src_ (url VegaJsR)] ""
                 script_ [type_ "text/javascript", src_ (url CodemirrorJsR)] ""

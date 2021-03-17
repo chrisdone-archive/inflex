@@ -29,7 +29,13 @@ import Web.UIEvent.MouseEvent as ME
 --------------------------------------------------------------------------------
 -- Foreign
 
-foreign import meta :: { documentId :: Int, logout :: String, dashboard :: String }
+foreign import meta :: {
+  documentId :: Int,
+  logout :: String,
+  dashboard :: String,
+  readonly :: Boolean,
+  loggedin :: Boolean
+ }
 
 foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
 
@@ -94,43 +100,57 @@ render state =
              [ HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\e -> pure Undo)
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Undo"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\e -> pure Redo)
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Redo"]
              , HH.button
-                 [HP.class_ (HH.ClassName "new-prefix full-button")]
+                 [ HP.class_ (HH.ClassName "new-prefix full-button")
+                 , HP.disabled (meta . readonly)
+                 ]
                  [HH.text "New"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\e -> pure (NewCell ""))
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Formula"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\_ -> pure (NewCell "\"\""))
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Text"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\_ -> pure (NewCell "[]"))
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "List"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Table"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\_ -> pure ImportCsvStart)
+                 , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Import"]
              , HH.form
-                 [HP.action (meta . logout), HP.method HP.POST]
+                 [ HP.action (meta . logout)
+                 , HP.method HP.POST
+                 , if meta . loggedin
+                     then HP.class_ (HH.ClassName "")
+                     else HP.class_ (HH.ClassName "hidden")
+                 ]
                  [ HH.button
                      [HP.class_ (HH.ClassName "logout full-button")]
                      [HH.text "Logout"]
@@ -138,7 +158,13 @@ render state =
              ]
          ]
      , HH.div
-         [HP.class_ (HH.ClassName "canvas")]
+         [ HP.class_
+             (HH.ClassName
+                ("canvas" <>
+                 if meta . readonly
+                   then " readonly"
+                   else ""))
+         ]
          (map
             (\cell@(OutputCell {uuid, name}) ->
                HH.slot

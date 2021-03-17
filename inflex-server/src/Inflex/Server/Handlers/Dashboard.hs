@@ -64,14 +64,7 @@ getAppDashboardR =
                       p_
                         "Your work in Inflex is split up into documents. We've added some \
                       \example documents for you below."
-                      {-p_
-                        (do "Don't forget to check out the "
-                            a_
-                              [ href_
-                                  "https://community.inflex.io/t/the-inflex-document/17"
-                              ]
-                              "community forum guide on working with documents.")-}
-                      if accountSubscribed account || True
+                      if accountSubscribed account
                         then do
                           p_ "You can create a new document to \
                                \start from scratch by hitting New Document."
@@ -79,9 +72,7 @@ getAppDashboardR =
                                [action_ (url NewDocumentR), method_ "post"]
                                (button_ [class_ "new-document"] "New Document")
                         else do
-                          p_
-                            (do "You can create new documents when subscribed. "
-                                )
+                          p_ (do "You can create and edit documents when subscribed.")
                           form_
                             [action_ (url SubscribeR), method_ "post"]
                             (p_ (button_ [class_ "full-button"] "Subscribe Now"))
