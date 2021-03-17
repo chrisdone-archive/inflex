@@ -126,12 +126,20 @@ registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =
   shopTemplate
     sessionState
-    (div_ [class_ "register-page"]
+    (div_
+       [class_ "register-page"]
        (do url <- ask
            intro_
            form_
              [action_ (url EnterDetailsR), method_ "POST"]
              (do formView
+                 p_
+                   (do p_
+                         (do "By continuing you agree to our "
+                             a_ [href_ (url TermsR)] "Terms of Use"
+                             " and accept our "
+                             a_ [href_ (url PrivacyR)] "Privacy Policy"
+                             "."))
                  p_ (button_ [class_ "btn btn-primary"] "Continue"))))
 
 verifiedRegisterForm :: Forge.Default RegistrationDetails -> VerifiedForm RegisterError RegistrationDetails
