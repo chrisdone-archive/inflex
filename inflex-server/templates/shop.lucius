@@ -1,21 +1,3 @@
-/* Reboot */
-
-body {
-  font-family:
-  /* Safari for OS X and iOS (San Francisco) */
-  -apple-system,
-  /* Chrome < 56 for OS X (San Francisco) */
-  BlinkMacSystemFont,
-  /* Windows */
-  "Segoe UI",
-  /* Android */
-  "Roboto",
-  /* Basic web fallback */
-  "Helvetica Neue", Arial, sans-serif,
-  /* Emoji fonts */
-  "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
-}
-
 /********************************************************************************
  * Forms
  */
@@ -27,20 +9,8 @@ body {
 
 /* Reboot */
 
-body {
-  font-family:
-  /* Safari for OS X and iOS (San Francisco) */
-  -apple-system,
-  /* Chrome < 56 for OS X (San Francisco) */
-  BlinkMacSystemFont,
-  /* Windows */
-  "Segoe UI",
-  /* Android */
-  "Roboto",
-  /* Basic web fallback */
-  "Helvetica Neue", Arial, sans-serif,
-  /* Emoji fonts */
-  "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+body, input, button {
+  font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" ;
 }
 
 /********************************************************************************
@@ -264,18 +234,35 @@ body {
 
 }
 
-.subscribed {
-  background: green;
-  text: white;
-  padding: 5px;
-  border-radius: 3px;
-  color: white;
-}
-
-.unsubscribed {
-  background: red;
-  text: white;
-  padding: 5px;
-  border-radius: 3px;
-  color: white;
+.account-page {
+  padding: 0 15px;
+  button {
+    margin-bottom:15px;
+    font-size: 15px;
+    background: #e9eef2;
+    padding: 10px;
+    font-weight: bold;
+    box-shadow: 0px 0px 3px #9fb6c8;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #15263b;
+    color: #fff;
+  }
+  .subscribed {
+    background: green;
+    text: white;
+    padding: 7px;
+    border-radius: 3px;
+    color: white;
+  }
+  .unsubscribed {
+    background: red;
+    text: white;
+    padding: 7px;
+    border-radius: 3px;
+    color: white;
+  }
 }

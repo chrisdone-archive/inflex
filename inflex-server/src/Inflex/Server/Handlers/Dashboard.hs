@@ -60,19 +60,21 @@ getAppDashboardR =
                 div_
                   [class_ "dashboard"]
                   (do url <- ask
-                      h1_ "Documents"
+                      h1_ "Dashboard"
                       p_
                         "Your work in Inflex is split up into documents. We've added some \
                       \example documents for you below."
                       if accountSubscribed account
                         then do
-                          p_ "You can create a new document to \
+                          p_
+                            "You can create a new document to \
                                \start from scratch by hitting New Document."
                           form_
-                               [action_ (url NewDocumentR), method_ "post"]
-                               (button_ [class_ "new-document"] "New Document")
+                            [action_ (url NewDocumentR), method_ "post"]
+                            (button_ [class_ "new-document"] "New Document")
                         else do
-                          p_ (do "You can create and edit documents when subscribed.")
+                          p_
+                            (do "You can create and edit documents when subscribed.")
                           form_
                             [action_ (url SubscribeR), method_ "post"]
                             (p_ (button_ [class_ "full-button"] "Subscribe Now"))
@@ -142,60 +144,68 @@ getAppDashboardR =
                                                    (diffUTCTime
                                                       documentCreated
                                                       now'))))))
-                      h1_ "Files"
-                      p_
-                        "You can upload CSV files so that they can be used in your documents."
-                      p_
-                        (small_
-                           (do "At the moment, the maximum file size is "
-                               toHtml
-                                 (bytesShorthand (maxUploadSizeBytes config))
-                               ". (This may be adjusted during the beta. Please contact us in the forum if you need something slightly larger than this for your testing.)"))
-                      p_ (strong_ "Currently disabled.")
-                      {-form_
-                        [ action_ (url UploadFileR)
-                        , method_ "post"
-                        , id_ "file-upload-form"
-                        , enctype_ "multipart/form-data"
-                        ]
-                        (do input_
-                              [ type_ "file"
-                              , id_ "file-input"
-                              , accept_ "text/csv"
-                              , style_ "display:none"
-                              , name_ "file"
+                      when
+                        False
+                        (do h1_ "Files"
+                            p_
+                              "You can upload CSV files so that they can be used in your documents."
+                            p_
+                              (small_
+                                 (do "At the moment, the maximum file size is "
+                                     toHtml
+                                       (bytesShorthand
+                                          (maxUploadSizeBytes config))))
+                            form_
+                              [ action_ (url UploadFileR)
+                              , method_ "post"
+                              , id_ "file-upload-form"
+                              , enctype_ "multipart/form-data"
                               ]
-                            button_
-                              [class_ "new-document", id_ "file-select"]
-                              "Upload File")-}
-                      if null files
-                        then p_ "No files yet."
-                        else div_
-                               [class_ "documents"]
-                               (forM_
-                                  files
-                                  (\(Entity _fileId File {..}) ->
-                                     div_
-                                       [class_ "document"]
-                                       (do div_
-                                             [class_ "document-header"]
-                                             (do p_
-                                                   [class_ "document-title"]
-                                                   (a_ (toHtml fileName)))
-                                           p_
-                                             [class_ "file-size"]
-                                             (do "Size: "
-                                                 toHtml
-                                                   (bytesShorthand fileBytes))
-                                           p_
-                                             [ class_ "document-date"
-                                             , title_
-                                                 (T.pack (show fileCreated))
-                                             ]
-                                             (toHtml
-                                                (Formatting.format
-                                                   (Formatting.Time.diff True)
-                                                   (diffUTCTime fileCreated now'))))))))))
+                              (do input_
+                                    [ type_ "file"
+                                    , id_ "file-input"
+                                    , accept_ "text/csv"
+                                    , style_ "display:none"
+                                    , name_ "file"
+                                    ]
+                                  button_
+                                    [class_ "new-document", id_ "file-select"]
+                                    "Upload File")
+                            if null files
+                              then p_ "No files yet."
+                              else div_
+                                     [class_ "documents"]
+                                     (forM_
+                                        files
+                                        (\(Entity _fileId File {..}) ->
+                                           div_
+                                             [class_ "document"]
+                                             (do div_
+                                                   [class_ "document-header"]
+                                                   (do p_
+                                                         [ class_
+                                                             "document-title"
+                                                         ]
+                                                         (a_ (toHtml fileName)))
+                                                 p_
+                                                   [class_ "file-size"]
+                                                   (do "Size: "
+                                                       toHtml
+                                                         (bytesShorthand
+                                                            fileBytes))
+                                                 p_
+                                                   [ class_ "document-date"
+                                                   , title_
+                                                       (T.pack
+                                                          (show fileCreated))
+                                                   ]
+                                                   (toHtml
+                                                      (Formatting.format
+                                                         (Formatting.Time.diff
+                                                            True)
+                                                         (diffUTCTime
+                                                            fileCreated
+                                                            now')))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())

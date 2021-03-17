@@ -26,23 +26,27 @@ getAccountR = do
        htmlWithUrl
          (shopTemplate
             (Registered sessionState)
-            (do h1_ "Account"
-                url <- ask
-                let subscribed = accountSubscribed account
-                if subscribed
-                  then do
-                    p_ (strong_ [class_ "subscribed"] "Subscribed")
-                  else do
-                    p_ (strong_ [class_ "unsubscribed"] "Not Subscribed")
-                    form_
-                      [action_ (url SubscribeR), method_ "post"]
-                      (p_ (button_ [class_ "full-button"] "Subscribe Now"))
-                form_
-                  [action_ (url PortalR), method_ "post"]
-                  (p_
-                     (button_
-                        [class_ "full-button"]
-                        "Manage Subscription and Payment Methods")))))
+            (div_ [class_ "account-page"]
+             (do h1_ "Account"
+                 url <- ask
+                 let subscribed = accountSubscribed account
+                 if subscribed
+                   then do
+                     p_ (strong_ [class_ "subscribed"] "Subscribed")
+                     p_ "All features of the service are available to you. You can unsubscribe at any time by hitting the button below."
+                   else do
+                     p_ (strong_ [class_ "unsubscribed"] "Not Subscribed")
+                     p_ "The service is in read-only mode: you can view your work but not edit it or create new work."
+                     form_
+                       [action_ (url SubscribeR), method_ "post"]
+                       (p_ (button_ [class_ "full-button"] "Subscribe Now"))
+                 form_
+                   [action_ (url PortalR), method_ "post"]
+                   (p_
+                      (button_
+                         [class_ "full-button"]
+                         "Manage Subscription and Payment Methods"))
+                 p_ (a_ [href_ (url AppDashboardR)] "Back to dashboard")))))
 
 postSubscribeR :: Handler (Html ())
 postSubscribeR =
