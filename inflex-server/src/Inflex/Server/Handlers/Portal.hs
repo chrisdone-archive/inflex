@@ -10,6 +10,7 @@ import           Data.Functor
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
 import           Inflex.Server.App
+import           Inflex.Server.Handlers.RegisterBeta
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Network.HTTP.Types.Status
@@ -62,6 +63,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                              , accountCustomerId = customerId
                              , accountSubscribed = True
                              }
+                       copySampleDocuments key
                        updateSession
                          sessionId
                          (Registered

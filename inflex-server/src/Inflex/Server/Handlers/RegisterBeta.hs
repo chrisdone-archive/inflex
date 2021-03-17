@@ -14,7 +14,9 @@
 -- |
 
 module Inflex.Server.Handlers.RegisterBeta
-  ( handleEnterDetailsR
+  ( {-handleEnterDetailsR-}
+   copySampleDocuments
+   , intro_
   ) where
 
 import           Control.Monad.Reader

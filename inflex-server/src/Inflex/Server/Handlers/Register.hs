@@ -15,8 +15,8 @@
 
 module Inflex.Server.Handlers.Register
   ( -- Disabled while we're in beta. Alternative registration is provided by Inflex.Server.Handlers.RegisterBeta.
-    -- handleEnterDetailsR
-   getCheckoutCreateR
+   handleEnterDetailsR
+  , getCheckoutCreateR
   , getCheckoutCancelR
   , getCheckoutWaitingR
   ) where
@@ -29,6 +29,7 @@ import qualified Forge.Verify as Forge
 import           GA
 import           Inflex.Server.App
 import           Inflex.Server.Forms
+import           Inflex.Server.Handlers.RegisterBeta
 import           Inflex.Server.Lucid
 import           Inflex.Server.Session
 import           Inflex.Server.Types
@@ -80,7 +81,7 @@ withRegistrationState theCons cont = do
           htmlWithUrl
             (shopTemplate
                state
-               (containedColumn_
+               (div_ [class_ "register-page"]
                   (do h1_ "Registered!"
                       p_ "You are registered! Taking you to the dashboard..."
                       spinner_
@@ -125,9 +126,9 @@ registerView :: SessionState -> Lucid App () -> Lucid App ()
 registerView sessionState formView =
   shopTemplate
     sessionState
-    (containedColumn_
+    (div_ [class_ "register-page"]
        (do url <- ask
-           h1_ "Register"
+           intro_
            form_
              [action_ (url EnterDetailsR), method_ "POST"]
              (do formView
@@ -186,7 +187,7 @@ getCheckoutWaitingR = withRegistrationState _WaitingForStripe go
       htmlWithUrl
         (shopTemplate
            state
-           (containedColumn_
+           (div_ [class_ "register-page"]
               (do refresh_ 5
                   h1_ "Waiting for Stripe"
                   p_ "We're waiting for the Stripe service to tell us whether subscription succeeded..."
@@ -208,7 +209,8 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
       htmlWithUrl
         (shopTemplate
            state
-           (do h1_ "Checkout cancelled"
-               p_ "Going back to registration..."
-               spinner_
-               redirect_ 3 EnterDetailsR))
+           (div_ [class_ "register-page"]
+            (do h1_ "Checkout cancelled"
+                p_ "Going back to registration..."
+                spinner_
+                redirect_ 3 EnterDetailsR)))
