@@ -271,3 +271,29 @@ hr {
     color: #959697
   }
 }
+
+pre, code {
+    background: #554d86;
+    color: white;
+    font-size: 15px;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+pre {
+  padding: 10px;
+}
+code {
+    /* border: 1px solid #aaa; */
+
+    padding: 2px 5px;
+
+}
+pre > code { padding: 0; }
+
+.cell-wrapper {
+  pointer-events: none;
+}
+
+table th, table td { text-align: left; }
+
+table td, table th { padding-bottom: 10px; }

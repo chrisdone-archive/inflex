@@ -46,10 +46,8 @@ import           Yesod.Lucid
 
 intro_ :: Lucid App ()
 intro_ = do
-  h1_ "Create a quick username and password"
-  p_ "It takes 10 seconds and you're good to go! \
-     \You just need this to associate documents with you."
-  p_ "You don't need to confirm your email address or anything like that."
+  h1_ "Create a username and password"
+  p_ "An account subscription is $10/month. You can cancel immediately at any time."
 
 handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _BetaEnterDetails go

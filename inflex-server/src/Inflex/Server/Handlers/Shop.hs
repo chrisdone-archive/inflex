@@ -91,13 +91,13 @@ getHomeR = do
                     div_ [class_ "logo"] (toHtmlRaw logo)
                     span_ [class_ "beta-badge"] "beta"
                     div_ [class_ "rhs-nav"] $ do
-                      {-form_
+                      form_
                         [class_ "community-link"]
                         (do a_
-                              [ href_ "https://community.inflex.io"
+                              [ href_ (url IntroR)
                               , class_ "full-button"
                               ]
-                              "Community")-}
+                              "Docs")
                       form_
                         []
                         (do a_ [href_ (url BlogR), class_ "full-button"] "Blog")

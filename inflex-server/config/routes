@@ -28,6 +28,9 @@
 /terms TermsR GET
 /privacy PrivacyR GET
 
+-- Documentation
+/docs/intro IntroR GET
+
 -- Auth
 /login LoginR
 /logout LogoutR POST
