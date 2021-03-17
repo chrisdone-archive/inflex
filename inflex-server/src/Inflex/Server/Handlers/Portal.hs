@@ -40,7 +40,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
     Just (Entity sessionId Session {sessionState}) ->
       case sessionState of
         NoSessionState {} -> error "Session has no state -- do not retry."
-        Registered loginState@LoginState {loginAccountId} ->
+        Registered LoginState {loginAccountId} ->
           runDB
             (update (fromAccountID loginAccountId) [AccountSubscribed =. True])
         UnregisteredBeta {} -> error "UnregisteredBeta is wrong here."
