@@ -131,7 +131,7 @@ getHomeR = do
                                  , placeholder_ "Your email address"
                                  , required_ ""
                                  ])-}
-                        (do button_ [class_ "button tagline-action"] "Try now!")
+                        (do button_ [class_ "button tagline-action"] "Register now")
                     div_
                       [class_ "hero-pic"]
                       (do button_ [class_ "play", onclick_ "play();"] (pure ()))
@@ -144,7 +144,7 @@ getHomeR = do
                   div_ [class_ "margin-wrapper"] $ do
                     p_ $
                       form_ [action_ (url EnterDetailsR), method_ "get"] $
-                      button_ [class_ "button tagline-action"] "Try now!"
+                      button_ [class_ "button tagline-action"] "Register now"
                 div_ [class_ "footer"] $ do
                   div_ [class_ "margin-wrapper"] $ do
                     p_ "© 2020 Sky Above Limited"
