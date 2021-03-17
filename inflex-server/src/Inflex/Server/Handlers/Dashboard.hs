@@ -64,6 +64,7 @@ getAppDashboardR =
                       p_
                         "Your work in Inflex is split up into documents. We've added some \
                       \example documents for you below."
+                      p_ (do "Make sure to check out our "; a_ [href_ (url IntroR)] "introduction!")
                       if accountSubscribed account
                         then do
                           p_

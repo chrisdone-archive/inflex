@@ -47,30 +47,35 @@ shopTemplate state body = do
                       (do div_ [class_ "logo"] (pure ())
                           div_
                             [class_ "rhs-nav"]
-                            (case state of
-                               NoSessionState ->
-                                 form_
-                                   [action_ (url LoginR), method_ "get"]
-                                   (button_ [class_ "login full-button"] "Login")
-                               Registered _loginState -> do
-                                 when
-                                   True
-                                   (form_
-                                      [action_ (url AccountR), method_ "get"]
+                            (do form_
+                                  [action_ (url IntroR), method_ "get"]
+                                  (button_
+                                     [class_ "logout full-button"]
+                                     "Docs")
+                                case state of
+                                  NoSessionState ->
+                                    form_
+                                      [action_ (url LoginR), method_ "get"]
+                                      (button_ [class_ "login full-button"] "Login")
+                                  Registered _loginState -> do
+                                    when
+                                      True
+                                      (form_
+                                         [action_ (url AccountR), method_ "get"]
+                                         (button_
+                                            [class_ "logout full-button"]
+                                            "Account"))
+                                    form_
+                                      [action_ (url LogoutR), method_ "post"]
                                       (button_
                                          [class_ "logout full-button"]
-                                         "Account"))
-                                 form_
-                                   [action_ (url LogoutR), method_ "post"]
-                                   (button_
-                                      [class_ "logout full-button"]
-                                      "Logout")
-                               UnregisteredBeta {} ->
-                                 form_
-                                   [action_ (url LoginR), method_ "get"]
-                                   (button_ [class_ "login full-button"] "Login")
-                               Unregistered {} ->
-                                 form_
-                                   [action_ (url LoginR), method_ "get"]
-                                   (button_ [class_ "login full-button"] "Login")))
+                                         "Logout")
+                                  UnregisteredBeta {} ->
+                                    form_
+                                      [action_ (url LoginR), method_ "get"]
+                                      (button_ [class_ "login full-button"] "Login")
+                                  Unregistered {} ->
+                                    form_
+                                      [action_ (url LoginR), method_ "get"]
+                                      (button_ [class_ "login full-button"] "Login")))
                     body)))
