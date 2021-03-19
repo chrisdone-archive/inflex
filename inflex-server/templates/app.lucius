@@ -198,3 +198,25 @@ li.CodeMirror-hint-active {
   pointer-events: none;
   cursor: not-allowed;
 }
+
+.sandbox {
+  .undo-button, .import-button {
+    display: none;
+  }
+
+  .sandbox-note {
+    font-weight: bold;
+    color: #fff;
+    font-family: sans-serif;
+    font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    /* margin-left: auto; */
+    display: flex;
+    flex-direction: row;
+    margin-right: 5px;
+    font-size: 20px;
+    flex: 0;
+    justify-content: center;
+    align-items: center;
+    margin-left: 9px;
+  }
+}

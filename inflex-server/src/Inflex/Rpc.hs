@@ -57,6 +57,11 @@ rpcHandler name =
       output <- rpcUpdateDocument (input :: UpdateDocument)
       pure (toJSON (output :: UpdateResult))
 
+    "UpdateSandbox" -> do
+      input <- requireCheckJsonBody
+      output <- rpcUpdateSandbox (input :: UpdateSandbox)
+      pure (toJSON (output :: UpdateResult))
+
 
     _ -> Prelude.error "Invalid RPC function."
 

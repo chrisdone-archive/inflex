@@ -30,8 +30,8 @@ import           Data.UUID.V4 as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Database.Persist.Sql
-import qualified Inflex.Schema as Shared
 import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
+import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
 import           Inflex.Server.Csv
@@ -57,101 +57,88 @@ rpcLoadDocument docId =
 --------------------------------------------------------------------------------
 -- Update document
 
+rpcUpdateSandbox :: Shared.UpdateSandbox -> Handler Shared.UpdateResult
+rpcUpdateSandbox Shared.UpdateSandbox {document, update = update'} =
+  applyUpdate update' document updateDocument
+  where updateDocument _ = pure ()
+
 rpcUpdateDocument :: Shared.UpdateDocument -> Handler Shared.UpdateResult
 rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        RevisedDocument {..} <-
          runDB (getRevisedDocument loginAccountId documentId)
-       case update' of
-         Shared.CellNew Shared.NewCell {code} -> do
-           let inputDocument0@Shared.InputDocument1 {cells} =
-                 revisionContent revision
-           uuid <- liftIO UUID.nextRandom
-           let newcell =
-                 Shared.InputCell1
-                   { uuid = Shared.UUID (UUID.toText uuid)
-                   , name = ""
-                   , code
-                   , order = V.length cells + 1
-                   , version = Shared.versionRefl
-                   }
-               inputDocument =
-                 inputDocument0 {InputDocument1.cells = cells <> pure newcell}
-           outputDocument <- forceTimeout (loadInputDocument inputDocument)
-           now <- liftIO getCurrentTime
-           runDB
-             (setInputDocument
-                now
-                loginAccountId
-                documentKey
-                revisionId
-                inputDocument)
-           pure (Shared.UpdatedDocument outputDocument)
-         Shared.CellDelete delete' -> do
-           start <- liftIO getTime
-           let inputDocument = applyDelete delete' (revisionContent revision)
-           outputDocument <- forceTimeout (loadInputDocument inputDocument)
-           end <- liftIO getTime
-           now <- liftIO getCurrentTime
-           runDB
-             (setInputDocument
-                now
-                loginAccountId
-                documentKey
-                revisionId
-                inputDocument)
-           glog (CellUpdated (end - start))
-           pure (Shared.UpdatedDocument outputDocument)
-         Shared.CellRename rename -> do
-           start <- liftIO getTime
-           let inputDocument = applyRename rename (revisionContent revision)
-           outputDocument <- forceTimeout (loadInputDocument inputDocument)
-           end <- liftIO getTime
-           now <- liftIO getCurrentTime
-           runDB
-             (setInputDocument
-                now
-                loginAccountId
-                documentKey
-                revisionId
-                inputDocument)
-           glog (CellUpdated (end - start))
-           pure (Shared.UpdatedDocument outputDocument)
-         Shared.CellUpdate update''@Shared.UpdateCell { uuid
-                                                      , update = Shared.UpdatePath {path}
-                                                      } -> do
-           start <- liftIO getTime
-           case applyUpdateToDocument update'' (revisionContent revision) of
-             Left transformError -> do
-               glog UpdateTransformError
-               pure
-                 (Shared.NestedError
-                    (Shared.NestedCellError
-                       { Shared.error = transformErrorToCellError transformError
-                       , path = path
-                       }))
-             Right inputDocument -> do
-               outputDocument <- forceTimeout (loadInputDocument inputDocument)
-               case cellHadErrorInNestedPlace uuid path outputDocument of
-                 Nothing -> do
-                   end <- liftIO getTime
-                   now <- liftIO getCurrentTime
-                   runDB
-                     (setInputDocument
-                        now
-                        loginAccountId
-                        documentKey
-                        revisionId
-                        inputDocument)
-                   glog (CellUpdated (end - start))
-                   pure (Shared.UpdatedDocument outputDocument)
-                 Just cellError -> do
-                   glog CellErrorInNestedPlace
-                   pure
-                     (Shared.NestedError
-                        (Shared.NestedCellError
-                           {Shared.error = cellError, path = path})))
+       now <- liftIO getCurrentTime
+       applyUpdate
+         update'
+         (revisionContent revision)
+         (runDB . setInputDocument now loginAccountId documentKey revisionId))
+
+applyUpdate ::
+     Shared.Update
+  -> Shared.InputDocument1
+  -> (Shared.InputDocument1 -> HandlerFor App ())
+  -> HandlerFor App Shared.UpdateResult
+applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
+  case update' of
+    Shared.CellNew Shared.NewCell {code} -> do
+      uuid <- liftIO UUID.nextRandom
+      let newcell =
+            Shared.InputCell1
+              { uuid = Shared.UUID (UUID.toText uuid)
+              , name = ""
+              , code
+              , order = V.length cells + 1
+              , version = Shared.versionRefl
+              }
+          inputDocument =
+            inputDocument0 {InputDocument1.cells = cells <> pure newcell}
+      outputDocument <- forceTimeout (loadInputDocument inputDocument)
+      setInputDoc inputDocument
+      pure (Shared.UpdatedDocument outputDocument)
+    Shared.CellDelete delete' -> do
+      start <- liftIO getTime
+      let inputDocument = applyDelete delete' inputDocument0
+      outputDocument <- forceTimeout (loadInputDocument inputDocument)
+      end <- liftIO getTime
+      setInputDoc inputDocument
+      glog (CellUpdated (end - start))
+      pure (Shared.UpdatedDocument outputDocument)
+    Shared.CellRename rename -> do
+      start <- liftIO getTime
+      let inputDocument = applyRename rename inputDocument0
+      outputDocument <- forceTimeout (loadInputDocument inputDocument)
+      end <- liftIO getTime
+      setInputDoc inputDocument
+      glog (CellUpdated (end - start))
+      pure (Shared.UpdatedDocument outputDocument)
+    Shared.CellUpdate update''@Shared.UpdateCell { uuid
+                                                 , update = Shared.UpdatePath {path}
+                                                 } -> do
+      start <- liftIO getTime
+      case applyUpdateToDocument update'' inputDocument0 of
+        Left transformError -> do
+          glog UpdateTransformError
+          pure
+            (Shared.NestedError
+               (Shared.NestedCellError
+                  { Shared.error = transformErrorToCellError transformError
+                  , path = path
+                  }))
+        Right inputDocument -> do
+          outputDocument <- forceTimeout (loadInputDocument inputDocument)
+          case cellHadErrorInNestedPlace uuid path outputDocument of
+            Nothing -> do
+              end <- liftIO getTime
+              setInputDoc inputDocument
+              glog (CellUpdated (end - start))
+              pure (Shared.UpdatedDocument outputDocument)
+            Just cellError -> do
+              glog CellErrorInNestedPlace
+              pure
+                (Shared.NestedError
+                   (Shared.NestedCellError
+                      {Shared.error = cellError, path = path}))
 
 -- | Determine whether there was an error in the cell at the place of
 -- the update. If so, return it! We can then nicely display it to the

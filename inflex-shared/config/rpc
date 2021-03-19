@@ -4,6 +4,9 @@ LoadDocument:
 UpdateDocument:
   input: UpdateDocument
   output: UpdateResult
+UpdateSandbox:
+  input: UpdateSandbox
+  output: UpdateResult
 UndoDocument:
   input: DocumentId
   output: OutputDocument

@@ -44,6 +44,9 @@ rpcUndoDocument = rpcCall "UndoDocument"
 rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String UpdateResult)
 rpcUpdateDocument = rpcCall "UpdateDocument"
 
+rpcUpdateSandbox :: forall m. MonadAff m => UpdateSandbox -> m (Either String UpdateResult)
+rpcUpdateSandbox = rpcCall "UpdateSandbox"
+
 
 
 --------------------------------------------------------------------------------

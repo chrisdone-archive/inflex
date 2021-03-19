@@ -178,6 +178,11 @@ instance showUpdateDocument :: Show UpdateDocument where show = genericShow
 instance decodeUpdateDocument :: Decode UpdateDocument where decode = genericDecode opts
 instance encodeUpdateDocument :: Encode UpdateDocument where encode = genericEncode opts
 
+derive instance genericUpdateSandbox :: Generic UpdateSandbox _
+instance showUpdateSandbox :: Show UpdateSandbox where show = genericShow
+instance decodeUpdateSandbox :: Decode UpdateSandbox where decode = genericDecode opts
+instance encodeUpdateSandbox :: Encode UpdateSandbox where encode = genericEncode opts
+
 derive instance genericNewField :: Generic NewField _
 instance showNewField :: Show NewField where show = genericShow
 instance decodeNewField :: Decode NewField where decode = genericDecode opts

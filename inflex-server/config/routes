@@ -7,6 +7,7 @@
 
 -- General
 /favicon.png FaviconR GET
+/preview.png PreviewR GET
 /logo.svg LogoR GET
 
 -- Shop
@@ -44,6 +45,7 @@
 /dashboard/new NewDocumentR POST
 /dashboard/delete/#DocumentId DeleteDocumentR POST
 /dashboard/rename/#DocumentId RenameDocumentR POST
+/try SandboxR GET
 /editor/#DocumentSlug AppEditorR GET
 /app/js AppJsR GET
 /app/vega VegaJsR GET

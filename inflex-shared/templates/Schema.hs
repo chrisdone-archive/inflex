@@ -40,6 +40,12 @@ opts = defaultOptions
 --------------------------------------------------------------------------------
 -- Derivings
 
+instance NFData UpdateSandbox
+deriving instance Generic UpdateSandbox
+deriving instance Show UpdateSandbox
+instance ToJSON UpdateSandbox
+instance FromJSON UpdateSandbox
+
 instance NFData Optionality
 deriving instance Generic Optionality
 deriving instance Show Optionality

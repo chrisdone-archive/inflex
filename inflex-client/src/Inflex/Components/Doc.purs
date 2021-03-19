@@ -7,8 +7,9 @@ module Inflex.Components.Doc
 import Control.Monad.State (class MonadState)
 import Data.Array (filter)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isNothing)
 import Data.MediaType (MediaType(..))
+import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
 import Data.UUID (UUID, uuidToString)
 import Effect.Aff (Aff)
@@ -19,10 +20,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell(..), OutputDocument(..), versionRefl)
 import Inflex.Schema as Shared
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (/=), (<>))
+import Prelude
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -30,11 +31,12 @@ import Web.UIEvent.MouseEvent as ME
 -- Foreign
 
 foreign import meta :: {
-  documentId :: Int,
+  documentId :: Nullable Int,
   logout :: String,
   dashboard :: String,
   readonly :: Boolean,
-  loggedin :: Boolean
+  loggedin :: Boolean,
+  sandbox :: Boolean
  }
 
 foreign import dragEventToMouseEvent :: DE.DragEvent -> ME.MouseEvent
@@ -91,22 +93,31 @@ render :: forall keys m. MonadAff m =>
    -> HH.HTML (H.ComponentSlot HH.HTML ( "Cell" :: H.Slot Cell.Query Cell.Output String | keys) m Command) Command
 render state =
   HH.div
-    [HP.class_ (HH.ClassName "wrapper")]
+    [ HP.class_
+        (HH.ClassName
+           ("wrapper" <>
+            if meta . sandbox
+              then " sandbox"
+              else ""))
+    ]
     ([ HH.div
          [HP.class_ (HH.ClassName "navbar")]
-         [ HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
+         [ if meta.sandbox
+              then HH.div [HP.class_ (HH.ClassName "sandbox-note")] [HH.text "Try"]
+              else HH.text ""
+         , HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
          , HH.div
              [HP.class_ (HH.ClassName "rhs-nav")]
              [ HH.button
-                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 [ HP.class_ (HH.ClassName "new-cell undo-button full-button")
                  , HE.onClick (\e -> pure Undo)
-                 , HP.disabled (meta . readonly)
+                 , HP.disabled undoDisabled
                  ]
                  [HH.text "Undo"]
              , HH.button
-                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 [ HP.class_ (HH.ClassName "new-cell undo-button full-button")
                  , HE.onClick (\e -> pure Redo)
-                 , HP.disabled (meta . readonly)
+                 , HP.disabled undoDisabled
                  ]
                  [HH.text "Redo"]
              , HH.button
@@ -139,22 +150,24 @@ render state =
                  ]
                  [HH.text "Table"]
              , HH.button
-                 [ HP.class_ (HH.ClassName "new-cell full-button")
+                 [ HP.class_ (HH.ClassName "new-cell import-button full-button")
                  , HE.onClick (\_ -> pure ImportCsvStart)
                  , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Import"]
-             , HH.form
-                 [ HP.action (meta . logout)
-                 , HP.method HP.POST
-                 , if meta . loggedin
-                     then HP.class_ (HH.ClassName "")
-                     else HP.class_ (HH.ClassName "hidden")
-                 ]
-                 [ HH.button
-                     [HP.class_ (HH.ClassName "logout full-button")]
-                     [HH.text "Logout"]
-                 ]
+             , if meta.sandbox
+                  then HH.text ""
+                  else HH.form
+                         [ HP.action (meta . logout)
+                         , HP.method HP.POST
+                         , if meta . loggedin
+                             then HP.class_ (HH.ClassName "")
+                             else HP.class_ (HH.ClassName "hidden")
+                         ]
+                         [ HH.button
+                             [HP.class_ (HH.ClassName "logout full-button")]
+                             [HH.text "Logout"]
+                         ]
              ]
          ]
      , HH.div
@@ -252,12 +265,15 @@ eval :: forall t122 t125 t129 t130 t131.
                                             Unit
 eval =
   case _ of
-    Initialize -> do
-      result <- rpcLoadDocument (DocumentId (meta . documentId))
-      case result of
-        Left err -> do
-          error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
-        Right outputDocument -> setOutputDocument outputDocument
+    Initialize ->
+      case documentId of
+        Nothing -> pure unit
+        Just docId -> do
+          result <- rpcLoadDocument (DocumentId docId)
+          case result of
+            Left err -> do
+              error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
+            Right outputDocument -> setOutputDocument outputDocument
     NewCell code -> do
       result <- update (Shared.CellNew (Shared.NewCell {code}))
       case result of
@@ -290,40 +306,48 @@ eval =
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
-    Undo -> do
-      result <- rpcUndoDocument (DocumentId (meta . documentId))
-      case result of
-        Left err -> error err
-        Right outputDocument -> setOutputDocument outputDocument
-    Redo -> do
-      result <- rpcRedoDocument (DocumentId (meta . documentId))
-      case result of
-        Left err -> error err
-        Right outputDocument -> setOutputDocument outputDocument
+    Undo ->
+      case documentId of
+        Nothing -> error "Sandbox doesn't support undo!"
+        Just docId -> do
+          result <- rpcUndoDocument (DocumentId docId)
+          case result of
+            Left err -> error err
+            Right outputDocument -> setOutputDocument outputDocument
+    Redo ->
+      case documentId of
+        Nothing -> error "Sandbox doesn't support redo!"
+        Just docId -> do
+          result <- rpcRedoDocument (DocumentId docId)
+          case result of
+            Left err -> error err
+            Right outputDocument -> setOutputDocument outputDocument
     ImportCsvStart -> do
       result <- rpcGetFiles (Shared.FileQuery {search: ""})
       case result of
         Left err -> error err
         Right (Shared.FilesOutput {files}) ->
           H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})
-    ChooseCsvFile file -> do
-      result <- rpcCsvGuessSchema file
-      case result of
-        Left err -> error ("rpcCsvGuessSchema:" <> err)
-        Right csvGuess ->
-          case csvGuess of
-            Shared.GuessCassavaFailure err -> error err
-            Shared.CsvGuessed csvImportSpec -> do
-              result2 <-
-                rpcCsvImport (Shared.CsvImportFinal {csvImportSpec, documentId})
-              -- For now, we're just going to immediately import the
-              -- file. But next, we'll provide a UI display of the guessed
-              -- schema, with the option to tweak the types of fields before importing.
-              case result2 of
-                Left err -> error ("CsvImport:" <> err)
-                Right outputDocument -> setOutputDocument outputDocument
-  where
-    documentId = DocumentId (meta . documentId)
+    ChooseCsvFile file ->
+      case documentId of
+        Nothing -> error "Sandbox doesn't support CSV import!"
+        Just docId -> do
+          result <- rpcCsvGuessSchema file
+          case result of
+            Left err -> error ("rpcCsvGuessSchema:" <> err)
+            Right csvGuess ->
+              case csvGuess of
+                Shared.GuessCassavaFailure err -> error err
+                Shared.CsvGuessed csvImportSpec -> do
+                  result2 <-
+                    rpcCsvImport
+                      (Shared.CsvImportFinal {csvImportSpec, documentId: DocumentId docId})
+                                      -- For now, we're just going to immediately import the
+                                      -- file. But next, we'll provide a UI display of the guessed
+                                      -- schema, with the option to tweak the types of fields before importing.
+                  case result2 of
+                    Left err -> error ("CsvImport:" <> err)
+                    Right outputDocument -> setOutputDocument outputDocument
 
 --------------------------------------------------------------------------------
 -- API calls
@@ -333,24 +357,45 @@ update :: forall t60.
                                                    State
                                                    t60
                                                   => Shared.Update -> t60 (Maybe Shared.NestedCellError)
-update update' = do
-  result <-
-    rpcUpdateDocument
-      (Shared.UpdateDocument
-         { documentId: DocumentId (meta . documentId)
-         , update: update'
-         })
-  case result of
-    Left err -> do
-      error err -- TODO:Display this to the user properly.
-      pure Nothing
-    Right uresult ->
-      case uresult of
-        Shared.UpdatedDocument outputDocument -> do
-          setOutputDocument outputDocument
+update update' =
+  case toMaybe (meta . documentId) of
+    Nothing -> do
+      state <- H.get
+      result <-
+        rpcUpdateSandbox
+          (Shared.UpdateSandbox
+             { document: Shared.InputDocument1 {cells: map toInputCell (state.cells)}
+             , update: update'
+             })
+      case result of
+        Left err -> do
+          error err -- TODO:Display this to the user properly.
           pure Nothing
-        Shared.NestedError cellError -> do
-          pure (Just cellError)
+        Right uresult ->
+          case uresult of
+            Shared.UpdatedDocument outputDocument -> do
+              setOutputDocument outputDocument
+              pure Nothing
+            Shared.NestedError cellError -> do
+              pure (Just cellError)
+    Just docId -> do
+      result <-
+        rpcUpdateDocument
+          (Shared.UpdateDocument
+             { documentId: DocumentId docId
+             , update: update'
+             })
+      case result of
+        Left err -> do
+          error err -- TODO:Display this to the user properly.
+          pure Nothing
+        Right uresult ->
+          case uresult of
+            Shared.UpdatedDocument outputDocument -> do
+              setOutputDocument outputDocument
+              pure Nothing
+            Shared.NestedError cellError -> do
+              pure (Just cellError)
 
 --------------------------------------------------------------------------------
 -- Internal state helpers
@@ -365,3 +410,9 @@ setOutputDocument (OutputDocument {cells}) =
 toInputCell :: OutputCell -> InputCell1
 toInputCell (OutputCell {uuid, name, code, order}) =
   InputCell1 {uuid, name, code, order, version: versionRefl}
+
+documentId :: Maybe Int
+documentId = toMaybe (meta . documentId)
+
+undoDisabled :: Boolean
+undoDisabled = meta.readonly || isNothing documentId

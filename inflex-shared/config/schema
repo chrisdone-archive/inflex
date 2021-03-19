@@ -45,6 +45,11 @@ data UpdateDocument = UpdateDocument
   , update :: Update
   }
 
+data UpdateSandbox = UpdateSandbox
+  { update :: Update
+  , document :: InputDocument1
+  }
+
 data UpdateResult
   = UpdatedDocument OutputDocument
   | NestedError NestedCellError

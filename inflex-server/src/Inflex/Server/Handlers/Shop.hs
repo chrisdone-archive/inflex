@@ -24,6 +24,7 @@ module Inflex.Server.Handlers.Shop
   , getShopAccountR
   , getHealthR
   , getHomeR
+  , getPreviewR
   , getFaviconR
   , getShopCssR
   , postEarlyAccessRequestR
@@ -131,10 +132,11 @@ getHomeR = do
                                  , placeholder_ "Your email address"
                                  , required_ ""
                                  ])-}
-                        (do button_ [class_ "button tagline-action"] "Register now")
+                        (do a_ [class_ "button try tagline-action", href_ (url SandboxR)] "Try"
+                            button_ [class_ "button tagline-action"] "Register")
                     div_
                       [class_ "hero-pic"]
-                      (do button_ [class_ "play", onclick_ "play();"] (pure ()))
+                      (do img_ [class_ "preview-pic", src_ (url PreviewR)])
                 div_ [class_ "tour tour-light"] $ do
                   tour
                   div_ [class_ "margin-wrapper"] $ do
@@ -259,6 +261,9 @@ getHealthR = do
 
 getFaviconR :: Handler TypedContent
 getFaviconR = $(sendFileFrom "image/png" "inflex-server/img/favicon.png")
+
+getPreviewR :: Handler TypedContent
+getPreviewR = $(sendFileFrom "image/png" "inflex-server/img/preview.png")
 
 getShopCssR :: Handler Css
 getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")

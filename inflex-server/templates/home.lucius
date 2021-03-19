@@ -332,7 +332,12 @@ a {
   .hero .tagline h1 {
     font-size: 60px;
   }
-  .tagline-action { margin-top: 20px; margin-bottom: 20px;}
+  .tagline-action {
+    display: inline-block;
+    margin-top: 20px; margin-bottom: 20px;
+    margin-right: 0 !important;
+  }
+  form { text-align: center;}
   .tour > .margin-wrapper {
     display: block;
   }
@@ -340,4 +345,15 @@ a {
 
 .cta {
   margin-top: 100px;
+}
+
+.try {
+  margin-right: 20px;
+  width: 200px;
+  text-align: center;
+  display: inline-block;
+}
+.preview-pic {
+    width: 100%;
+    object-fit: cover; /*magic*/
 }
