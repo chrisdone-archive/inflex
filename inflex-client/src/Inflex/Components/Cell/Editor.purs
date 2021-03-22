@@ -9,12 +9,11 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
-import Effect.Aff.Class (class MonadAff)
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(..))
+import Data.Maybe
 import Data.Nullable (Nullable)
 import Data.Set (Set)
 import Data.Set as Set
@@ -22,6 +21,7 @@ import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -568,14 +568,14 @@ tableRow columns path namesInScope rowIndex HoleRow =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
-     mapWithIndex
-       (\fieldIndex key ->
+     map
+       (\key ->
           let editor' = MiscE Shared.NoOriginalSource "_"
            in HH.td
                 [HP.class_ (HH.ClassName "table-datum-value")]
                 [ HH.slot
                     (SProxy :: SProxy "editor")
-                    (show rowIndex <> "/" <> show fieldIndex)
+                    (show rowIndex <> "/" <> key)
                     component
                     (EditorAndCode
                        { editor: editor'
@@ -584,7 +584,7 @@ tableRow columns path namesInScope rowIndex HoleRow =
                        , path:
                            path <<<
                            Shared.DataElemOf rowIndex <<<
-                           Shared.DataFieldOf fieldIndex
+                           Shared.DataFieldOf key
                        })
                     (\output ->
                        case output of
@@ -614,47 +614,49 @@ tableRow columns path namesInScope rowIndex HoleRow =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
 
-tableRow _ path namesInScope rowIndex (Row {fields}) =
+tableRow columns path namesInScope rowIndex (Row {fields}) =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
-     mapWithIndex
-       (\fieldIndex (Field {key, value: editor'}) ->
-          HH.td
-            [HP.class_ (HH.ClassName "table-datum-value")]
-            [ HH.slot
-                (SProxy :: SProxy "editor")
-                (show rowIndex <> "/" <> show fieldIndex)
-                component
-                (EditorAndCode
-                   { editor: editor'
-                   , code: editorCode editor'
-                   , namesInScope
-                   , path:
-                       path <<<
-                       Shared.DataElemOf rowIndex <<<
-                       Shared.DataFieldOf fieldIndex
-                   })
-                (\output ->
-                   case output of
-                     UpdatePath update -> Just (TriggerUpdatePath update)
-                     NewCode rhs ->
-                       Just
-                         (TriggerUpdatePath
-                            (Shared.UpdatePath
-                               { path:
-                                   path
-                                     (Shared.DataElemOf
-                                        rowIndex
-                                        (Shared.DataFieldOf
-                                           fieldIndex
-                                           Shared.DataHere))
-                               , update:
-                                   Shared.CodeUpdate
-                                     (Shared.Code {text: rhs})
-                               })))
-            ])
-       fields <>
+     Array.mapMaybe
+       (\key0 ->
+          case Array.find (\(Field{key}) -> key==key0) fields of
+            Just (Field {key, value: editor'}) ->
+              Just (HH.td
+                      [HP.class_ (HH.ClassName "table-datum-value")]
+                      [ HH.slot
+                          (SProxy :: SProxy "editor")
+                          (show rowIndex <> "/" <> key)
+                          component
+                          (EditorAndCode
+                             { editor: editor'
+                             , code: editorCode editor'
+                             , namesInScope
+                             , path:
+                                 path <<<
+                                 Shared.DataElemOf rowIndex <<< Shared.DataFieldOf key
+                             })
+                          (\output ->
+                             case output of
+                               UpdatePath update -> Just (TriggerUpdatePath update)
+                               NewCode rhs ->
+                                 Just
+                                   (TriggerUpdatePath
+                                      (Shared.UpdatePath
+                                         { path:
+                                             path
+                                               (Shared.DataElemOf
+                                                  rowIndex
+                                                  (Shared.DataFieldOf
+                                                     key
+                                                     Shared.DataHere))
+                                         , update:
+                                             Shared.CodeUpdate
+                                               (Shared.Code {text: rhs})
+                                         })))
+                      ])
+            Nothing -> Nothing)
+       columns <>
      [addColumnBlank])
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
@@ -947,9 +949,9 @@ renderRecordEditor path namesInScope fields =
      (case fields of
         [] -> [HH.text "(No fields yet)"]
         _ -> []) <>
-     mapWithIndex
-       (\i (Field {key, value: editor'}) ->
-          let childPath = path <<< Shared.DataFieldOf i
+     map
+       (\(Field {key, value: editor'}) ->
+          let childPath = path <<< Shared.DataFieldOf key
           in HH.tr
             [HP.class_ (HH.ClassName "record-field")]
             [ HH.td
@@ -975,7 +977,7 @@ renderRecordEditor path namesInScope fields =
                                                -- HH.text key
                 , HH.slot
                     (SProxy :: SProxy "fieldname")
-                    (show i)
+                    key
                     (TextInput.component
                       (TextInput.Config
                          { placeholder: "Type field name here"
@@ -1001,13 +1003,13 @@ renderRecordEditor path namesInScope fields =
                 [HP.class_ (HH.ClassName "record-field-value")]
                 [ HH.slot
                     (SProxy :: SProxy "editor")
-                    (show i)
+                    key
                     component
                     (EditorAndCode
                        { editor: editor'
                        , namesInScope
                        , code: editorCode editor'
-                       , path: path <<< Shared.DataFieldOf i
+                       , path: path <<< Shared.DataFieldOf key
                        })
                     (\output ->
                        case output of

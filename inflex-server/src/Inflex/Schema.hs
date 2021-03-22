@@ -155,7 +155,7 @@ data DeleteField = DeleteField { name :: Text }
 data DataPath
   = DataHere
   | DataElemOf Int DataPath
-  | DataFieldOf Int DataPath
+  | DataFieldOf Text DataPath
   | DataVariantOf Text DataPath
 
 --------------------------------------------------------------------------------

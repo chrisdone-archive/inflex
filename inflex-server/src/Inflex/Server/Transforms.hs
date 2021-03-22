@@ -118,14 +118,14 @@ addNewFieldInCode path0 name code =
               record
                 { fields =
                     fmap
-                      (\(i, fielde@FieldE {expression}) ->
+                      (\(fielde@FieldE {expression, name = FieldName name'}) ->
                          fielde
                            { FieldE.expression =
-                               if i == index
+                               if name' == index
                                  then go path' expression
                                  else expression
                            })
-                      (zip [0 ..] fields)
+                      fields
                 }
         RecordExpression record@Record {fields, location}
           | Shared.DataHere <- path ->
@@ -177,14 +177,14 @@ renameFieldInCode path0 from to' code =
               record
                 { fields =
                     fmap
-                      (\(i, fielde@FieldE {expression}) ->
+                      (\(fielde@FieldE {expression, name = FieldName name}) ->
                          fielde
                            { FieldE.expression =
-                               if i == index
+                               if name == index
                                  then go path' expression
                                  else expression
                            })
-                      (zip [0 ..] fields)
+                      fields
                 }
         RecordExpression record@Record {fields}
           | Shared.DataHere <- path ->
@@ -229,14 +229,14 @@ deleteFieldInCode path0 name0 code =
               record
                 { fields =
                     fmap
-                      (\(i, fielde@FieldE {expression}) ->
+                      (\(fielde@FieldE {expression, name = FieldName name}) ->
                          fielde
                            { FieldE.expression =
-                               if i == index
+                               if name == index
                                  then go path' expression
                                  else expression
                            })
-                      (zip [0 ..] fields)
+                      fields
                 }
         RecordExpression record@Record {fields}
           | Shared.DataHere <- path ->
@@ -380,13 +380,13 @@ mapPath path0 mapping code =
           | Shared.DataFieldOf index path' <- path -> do
             fields' <-
               traverse
-                (\(i, fielde@FieldE {expression}) -> do
+                (\(fielde@FieldE {expression, name = FieldName name}) -> do
                    expression' <-
-                     if i == index
+                     if name == index
                        then go path' expression
                        else pure expression
                    pure fielde {FieldE.expression = expression'})
-                (zip [0 ..] fields)
+                fields
             pure (RecordExpression record {fields = fields'})
         e
           | Shared.DataHere <- path ->
