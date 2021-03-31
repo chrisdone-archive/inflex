@@ -19,6 +19,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Data.Sequence (Seq)
 import Data.String
 import Data.Text (Text)
+import Data.UUID (UUID)
 import Data.Vector (Vector)
 import Data.Void
 import GHC.Generics
@@ -155,6 +156,11 @@ instance NFData a => NFData (Named a)
 newtype Uuid = Uuid Text
  deriving (Eq, Ord, Show, Lift, NFData)
 
+-- | A ref @foo in the source code.
+data Ref
+  = UuidRef !UUID
+  | Sha512Ref !SHA512
+  deriving (Show, Eq, Ord)
 
 -- | A "Cell" is a binding that is going to be evaluated and displayed
 -- in the document. Cells are polymorphic and have type-class

@@ -56,6 +56,7 @@ import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Read as T
+import qualified Data.UUID as UUID
 import           Data.Void
 import           GHC.Generics
 import           Inflex.Types
@@ -98,6 +99,7 @@ data Token
   | HoleToken
   | HashToken
   | QuestionToken
+  | RefToken !Ref
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -135,16 +137,21 @@ tokensLexer = fmap Seq.fromList (Mega.many tokenLexer)
 -- | Lex a single token.
 tokenLexer :: Lexer (Located Token)
 tokenLexer =
-  Mega.choice
-    [  string
-    ,  camelWord
-    ,  anyWord
-    ,  symbol
-    ,  integer
-    ,  decimal
-    ] <*
+  Mega.choice [ref, string, camelWord, anyWord, symbol, integer, decimal] <*
   Mega.space
   where
+    ref =
+      located
+        (do void (Mega.char '@')
+            uuid)
+      where
+        uuid = do
+          void (Mega.string "uuid:")
+          txt <-
+            Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['-'])
+          case UUID.fromText txt of
+            Nothing -> fail "Invalid UUID."
+            Just uuid' -> pure (RefToken (UuidRef uuid'))
     string =
       located
         (do void (Mega.char '"')
