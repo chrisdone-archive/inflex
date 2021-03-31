@@ -668,7 +668,7 @@ type family StagedVariableName s where
   StagedVariableName Resolved = DeBrujinIndex
 
 type family StagedGlobalName s where
-  StagedGlobalName Parsed = Text
+  StagedGlobalName Parsed = IncompleteGlobalRef
   StagedGlobalName Renamed = IncompleteGlobalRef
   StagedGlobalName Filled = GlobalRef Renamed
   StagedGlobalName Desugared = GlobalRef Renamed

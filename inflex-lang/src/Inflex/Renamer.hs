@@ -383,16 +383,16 @@ renameGlobal Env {cursor} Global {..} = do
   let op = pure . NumericBinOpGlobal
   name' <-
     case name of
-      "*" -> op MulitplyOp
-      "+" -> op AddOp
-      "-" -> op SubtractOp
-      "/" -> op DivideOp
-      "=" -> pure (EqualGlobal Equal)
-      "/=" -> pure (EqualGlobal NotEqual)
-      ">" -> pure (CompareGlobal GreaterThan)
-      "<" -> pure (CompareGlobal LessThan)
-      "<=" -> pure (CompareGlobal LessEqualTo)
-      ">=" -> pure (CompareGlobal GreaterEqualTo)
+      UnresolvedGlobal "*" -> op MulitplyOp
+      UnresolvedGlobal "+" -> op AddOp
+      UnresolvedGlobal "-" -> op SubtractOp
+      UnresolvedGlobal "/" -> op DivideOp
+      UnresolvedGlobal "=" -> pure (EqualGlobal Equal)
+      UnresolvedGlobal "/=" -> pure (EqualGlobal NotEqual)
+      UnresolvedGlobal ">" -> pure (CompareGlobal GreaterThan)
+      UnresolvedGlobal "<" -> pure (CompareGlobal LessThan)
+      UnresolvedGlobal "<=" -> pure (CompareGlobal LessEqualTo)
+      UnresolvedGlobal ">=" -> pure (CompareGlobal GreaterEqualTo)
       _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
   pure Global {location = final, scheme = RenamedScheme, name = ExactGlobalRef name'}
 

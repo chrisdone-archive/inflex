@@ -294,7 +294,7 @@ resolveChain xs0 = go operatorPrecedence xs0
             (InfixExpression
                Infix
                  { location
-                 , global = Global {location, name, scheme = ParsedScheme}
+                 , global = Global {location, name = UnresolvedGlobal name, scheme = ParsedScheme}
                  , left
                  , right
                  , typ = Nothing

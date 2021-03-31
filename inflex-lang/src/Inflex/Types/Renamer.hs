@@ -29,7 +29,7 @@ data RenameError
   = BUG_MissingVariable [Binding Parsed]
                         (Map Text (GlobalRef Renamed))
                         (Variable Parsed)
-  | BUG_UnknownOperatorName Text
+  | BUG_UnknownOperatorName IncompleteGlobalRef
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
