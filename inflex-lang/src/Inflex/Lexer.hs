@@ -60,6 +60,7 @@ import qualified Data.UUID as UUID
 import           Data.Void
 import           GHC.Generics
 import           Inflex.Types
+import           Inflex.Types.SHA512
 import           Numeric.Natural
 import           Optics
 import qualified Text.Megaparsec as Mega
@@ -143,15 +144,21 @@ tokenLexer =
     ref =
       located
         (do void (Mega.char '@')
-            uuid)
+            uuidRef Mega.<|> sha512Ref)
       where
-        uuid = do
+        uuidRef = do
           void (Mega.string "uuid:")
           txt <-
             Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['-'])
           case UUID.fromText txt of
             Nothing -> fail "Invalid UUID."
             Just uuid' -> pure (RefToken (UuidRef uuid'))
+        sha512Ref = do
+          void (Mega.string "sha512:")
+          txt <- Mega.takeWhile1P Nothing isAlphaNum
+          case sha512HexParser txt of
+            Left e -> fail ("Invalid SHA512 hash: " ++ e)
+            Right uuid' -> pure (RefToken (Sha512Ref uuid'))
     string =
       located
         (do void (Mega.char '"')

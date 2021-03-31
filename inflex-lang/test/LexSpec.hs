@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 -- | Test the lexer.
@@ -19,7 +20,9 @@ spec =
     (shouldBe
        (lexText
           ""
-          "@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7 AB ab d_ex_f 123 456.1 123.456 12.000 ( )[] {:,}")
+          "@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7 \
+          \AB ab d_ex_f 123 456.1 123.456 12.000 ( )[] {:,} \
+          \@sha512:3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279ecb4aab48763b5b84b8c45d9ea2b90bf7356e06b063cc4478f2b817d66f449ad")
        (Right
           (Seq.fromList
              [ Located
@@ -29,7 +32,11 @@ spec =
                        , end = SourcePos {line = 1, column = 43, name = ""}
                        }
                  , thing =
-                     RefToken (UuidRef (fromJust (UUID.fromString "1ea653f3-67f7-4fad-9892-85ce6cbf10a7")))
+                     RefToken
+                       (UuidRef
+                          (fromJust
+                             (UUID.fromString
+                                "1ea653f3-67f7-4fad-9892-85ce6cbf10a7")))
                  }
              , Located
                  { location =
@@ -150,5 +157,16 @@ spec =
                        , end = SourcePos {line = 1, column = 92, name = ""}
                        }
                  , thing = CloseCurlyToken
+                 }
+             , Located
+                 { location =
+                     SourceLocation
+                       { start = SourcePos {line = 1, column = 93, name = ""}
+                       , end = SourcePos {line = 1, column = 229, name = ""}
+                       }
+                 , thing =
+                     RefToken
+                       (Sha512Ref
+                          $$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279"))
                  }
              ])))
