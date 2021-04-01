@@ -24,6 +24,7 @@ import qualified Data.Vector as V
 import           Inflex.Decimal
 import           Inflex.Location
 import           Inflex.Types
+import           Inflex.Types.SHA512
 import           RIO hiding(Alternative)
 
 -- TODO: Avoid unneeded parens.
@@ -510,6 +511,12 @@ instance Display IncompleteGlobalRef where
       UnresolvedGlobal text -> display text
       ExactGlobalRef ref -> display ref
       ResolvedGlobalRef text _ -> display text
+
+instance Display ParsedGlobal where
+  display = \case
+               ParsedTextName name -> display name
+               ParsedHash (Hash hash) -> "#" <> display (sha512AsHexText hash)
+               ParsedUuid (Uuid uuid) -> display uuid
 
 instance Display (GlobalRef Parsed) where
   display =

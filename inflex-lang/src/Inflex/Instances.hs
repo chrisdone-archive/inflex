@@ -928,6 +928,11 @@ deriving instance Ord IncompleteGlobalRef
 deriving instance Show IncompleteGlobalRef
 deriving instance Lift IncompleteGlobalRef
 
+deriving instance Eq ParsedGlobal
+deriving instance Ord ParsedGlobal
+deriving instance Show ParsedGlobal
+deriving instance Lift ParsedGlobal
+
 deriving instance Eq (Default Polymorphic)
 deriving instance Ord (Default Polymorphic)
 deriving instance Show (Default Polymorphic)

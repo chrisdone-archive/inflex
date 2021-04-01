@@ -206,6 +206,11 @@ data Global s = Global
   , scheme :: !(StagedScheme s)
   }
 
+data ParsedGlobal
+  = ParsedHash Hash
+  | ParsedTextName Text
+  | ParsedUuid Uuid
+
 data IncompleteGlobalRef
   = ExactGlobalRef (GlobalRef Renamed)
   | ResolvedGlobalRef Text (GlobalRef Renamed)
@@ -668,7 +673,7 @@ type family StagedVariableName s where
   StagedVariableName Resolved = DeBrujinIndex
 
 type family StagedGlobalName s where
-  StagedGlobalName Parsed = IncompleteGlobalRef
+  StagedGlobalName Parsed = ParsedGlobal
   StagedGlobalName Renamed = IncompleteGlobalRef
   StagedGlobalName Filled = GlobalRef Renamed
   StagedGlobalName Desugared = GlobalRef Renamed
