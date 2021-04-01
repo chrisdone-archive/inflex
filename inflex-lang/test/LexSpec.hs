@@ -6,9 +6,7 @@
 
 module LexSpec where
 
-import           Data.Maybe
 import qualified Data.Sequence as Seq
-import qualified Data.UUID as UUID
 import           Inflex.Lexer
 import           Inflex.Types
 import           Test.Hspec
@@ -32,11 +30,9 @@ spec =
                        , end = SourcePos {line = 1, column = 43, name = ""}
                        }
                  , thing =
-                     RefToken
-                       (UuidRef
-                          (fromJust
-                             (UUID.fromString
-                                "1ea653f3-67f7-4fad-9892-85ce6cbf10a7")))
+                     GlobalToken
+                       (ParsedUuid
+                          (Uuid "1ea653f3-67f7-4fad-9892-85ce6cbf10a7"))
                  }
              , Located
                  { location =
@@ -165,8 +161,8 @@ spec =
                        , end = SourcePos {line = 1, column = 229, name = ""}
                        }
                  , thing =
-                     RefToken
-                       (Sha512Ref
-                          $$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279"))
+                     GlobalToken
+                       (ParsedHash
+                          (Hash $$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279")))
                  }
              ])))

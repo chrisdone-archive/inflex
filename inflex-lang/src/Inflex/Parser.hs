@@ -338,6 +338,7 @@ operatorlessExpressionParser =
        , LambdaExpression <$> lambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
+       , GlobalExpression <$> globalParser
        ,  (VariantExpression <$> variantParser)
        , parensParser
        ])
@@ -412,7 +413,7 @@ propParser = do
     (RecordExpression <$> recordParser) <>
      (HoleExpression <$> holeParser) <>
      applyParser <>
-     (VariableExpression <$> variableParser) <>
+     (VariableExpression <$> variableParser) <> (GlobalExpression <$> globalParser) <>
      parensParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   (name, _) <- fieldNameParser
@@ -537,6 +538,7 @@ functionParser =
     (NE.fromList
        [ HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
+       , GlobalExpression <$> globalParser
        , parensParser
        ])
 
@@ -582,6 +584,12 @@ variableParser = do
   Located {thing = name, location} <-
     token ExpectedVariable (anyWordTokenPreview)
   pure Variable {name, location, typ = Nothing}
+
+globalParser :: Parser (Global Parsed)
+globalParser = do
+  Located {thing = name, location} <-
+    token ExpectedVariable (preview _GlobalToken)
+  pure Global {name, location, scheme = ParsedScheme}
 
 variantParser :: Parser (Variant Parsed)
 variantParser = do

@@ -46,6 +46,7 @@ module Inflex.Lexer
   , _StringToken
   , _HoleToken
   , _HashToken
+  , _GlobalToken
   ) where
 
 import           Data.Bifunctor
@@ -59,6 +60,7 @@ import qualified Data.Text.Read as T
 import qualified Data.UUID as UUID
 import           Data.Void
 import           GHC.Generics
+import           Inflex.Instances ()
 import           Inflex.Types
 import           Inflex.Types.SHA512
 import           Numeric.Natural
@@ -100,7 +102,7 @@ data Token
   | HoleToken
   | HashToken
   | QuestionToken
-  | RefToken !Ref
+  | GlobalToken !ParsedGlobal
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -152,13 +154,13 @@ tokenLexer =
             Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['-'])
           case UUID.fromText txt of
             Nothing -> fail "Invalid UUID."
-            Just uuid' -> pure (RefToken (UuidRef uuid'))
+            Just uuid' -> pure (GlobalToken (ParsedUuid (Uuid (UUID.toText uuid'))))
         sha512Ref = do
           void (Mega.string "sha512:")
           txt <- Mega.takeWhile1P Nothing isAlphaNum
           case sha512HexParser txt of
             Left e -> fail ("Invalid SHA512 hash: " ++ e)
-            Right uuid' -> pure (RefToken (Sha512Ref uuid'))
+            Right sha -> pure (GlobalToken (ParsedHash (Hash sha)))
     string =
       located
         (do void (Mega.char '"')

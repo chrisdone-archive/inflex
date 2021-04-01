@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Test the parser.
@@ -915,6 +916,57 @@ globals =
   it
     "Globals"
     (do shouldBe
+          (parseText
+             ""
+             "[@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7,@sha512:3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279ecb4aab48763b5b84b8c45d9ea2b90bf7356e06b063cc4478f2b817d66f449ad]")
+          (Right
+             (ArrayExpression
+                (Array
+                   { expressions =
+                       V.fromList
+                         [ GlobalExpression
+                             (Global
+                                { location =
+                                    SourceLocation
+                                      { start =
+                                          SourcePos
+                                            {line = 1, column = 2, name = ""}
+                                      , end =
+                                          SourcePos
+                                            {line = 1, column = 44, name = ""}
+                                      }
+                                , name =
+                                    ParsedUuid
+                                      (Uuid
+                                         "1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+                                , scheme = ParsedScheme
+                                })
+                         , GlobalExpression
+                             (Global
+                                { location =
+                                    SourceLocation
+                                      { start =
+                                          SourcePos
+                                            {line = 1, column = 45, name = ""}
+                                      , end =
+                                          SourcePos
+                                            {line = 1, column = 181, name = ""}
+                                      }
+                                , name =
+                                    ParsedHash
+                                      (Hash
+                                         ($$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279")))
+                                , scheme = ParsedScheme
+                                })
+                         ]
+                   , typ = Nothing
+                   , location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 182, name = ""}
+                         }
+                   })))
+        shouldBe
           (parseText "" "abc")
           (Right
              (VariableExpression
@@ -929,10 +981,123 @@ globals =
                    })))
         shouldBe
           (parseText "" "x:y")
-          (Right (LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}, body = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, name = "y", typ = Nothing}), typ = Nothing})))
+          (Right
+             (LambdaExpression
+                (Lambda
+                   { location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 4, name = ""}
+                         }
+                   , param =
+                       Param
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               }
+                         , name = "x"
+                         , typ = Nothing
+                         }
+                   , body =
+                       VariableExpression
+                         (Variable
+                            { location =
+                                SourceLocation
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 3, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 4, name = ""}
+                                  }
+                            , name = "y"
+                            , typ = Nothing
+                            })
+                   , typ = Nothing
+                   })))
         shouldBe
           (parseText "" "x:x(y)")
-          (Right (LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}, body = ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 5, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, function = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 3, name = ""}, end = SourcePos {line = 1, column = 4, name = ""}}, name = "x", typ = Nothing}), argument = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 5, name = ""}, end = SourcePos {line = 1, column = 6, name = ""}}, name = "y", typ = Nothing}), typ = Nothing}), typ = Nothing}))))
+          (Right
+             (LambdaExpression
+                (Lambda
+                   { location =
+                       SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 6, name = ""}
+                         }
+                   , param =
+                       Param
+                         { location =
+                             SourceLocation
+                               { start =
+                                   SourcePos {line = 1, column = 1, name = ""}
+                               , end =
+                                   SourcePos {line = 1, column = 2, name = ""}
+                               }
+                         , name = "x"
+                         , typ = Nothing
+                         }
+                   , body =
+                       ApplyExpression
+                         (Apply
+                            { location =
+                                SourceLocation
+                                  { start =
+                                      SourcePos
+                                        {line = 1, column = 5, name = ""}
+                                  , end =
+                                      SourcePos
+                                        {line = 1, column = 6, name = ""}
+                                  }
+                            , function =
+                                VariableExpression
+                                  (Variable
+                                     { location =
+                                         SourceLocation
+                                           { start =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 3
+                                                 , name = ""
+                                                 }
+                                           , end =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 4
+                                                 , name = ""
+                                                 }
+                                           }
+                                     , name = "x"
+                                     , typ = Nothing
+                                     })
+                            , argument =
+                                VariableExpression
+                                  (Variable
+                                     { location =
+                                         SourceLocation
+                                           { start =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 5
+                                                 , name = ""
+                                                 }
+                                           , end =
+                                               SourcePos
+                                                 { line = 1
+                                                 , column = 6
+                                                 , name = ""
+                                                 }
+                                           }
+                                     , name = "y"
+                                     , typ = Nothing
+                                     })
+                            , typ = Nothing
+                            })
+                   , typ = Nothing
+                   }))))
 
 lambda :: Spec
 lambda = it
