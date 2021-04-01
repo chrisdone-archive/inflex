@@ -223,7 +223,7 @@ toTree original =
 toCellError :: LoadError -> Shared.CellError
 toCellError =
   \case
-    CycleError names -> Shared.CyclicCells (V.fromList names)
+    CycleError _names -> Shared.CyclicCells mempty -- TODO: (V.fromList names)
     RenameLoadError parseRenameError -> parseRename parseRenameError
     DuplicateName -> Shared.DuplicateCellName
     LoadGenerateError e ->
@@ -235,7 +235,9 @@ toCellError =
                (map
                   (\case
                      MissingGlobal _ name -> Shared.NoSuchGlobal name
-                     OtherCellError name _ -> Shared.OtherCellProblem name)
+                     OtherCellError name _ -> Shared.OtherCellProblem name
+                     MissingGlobalUuid _ (Uuid uuid) -> Shared.NoSuchGlobal uuid -- TODO: add constructor to shared
+                     OtherCellUuidError (Uuid uuid) _ -> Shared.OtherCellProblem uuid) -- TODO:
                   (toList errors)))
         GeneratorErrors {} -> Shared.CellTypeError
     LoadSolveError {} -> Shared.CellTypeError
