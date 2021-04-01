@@ -46,6 +46,7 @@ import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
+import           Inflex.Types.Filler
 import qualified RIO
 import           RIO (RIO)
 
@@ -69,7 +70,7 @@ newtype Toposorted a = Toposorted {unToposorted :: [a]}
 
 data Context = Context
   { hashedCells :: Map Hash (Either LoadError LoadedExpression)
-  , nameHashes :: Map Text (Either LoadError Hash)
+  , nameHashes :: FillerEnv LoadError
   }
 
 data LoadedExpression = LoadedExpression
@@ -219,7 +220,7 @@ independentLoadDocument names =
 dependentLoadDocument ::
      Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
   -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
-dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty mempty)
+dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty emptyFillerEnv)
   where
     loadCell ::
          Context
@@ -233,9 +234,9 @@ dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty mempty)
                Left e -> pure (Left e)
                Right c -> resolveRenamedCell hashedCells nameHashes c)
           result
-      let nameHashes' = M.insert name (fmap hashLoaded thing) nameHashes
+      let nameHashes' = insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
             where
-              Named {name, thing} = namedMaybeCell
+              Named {name, uuid, thing} = namedMaybeCell
           hashedCells' =
             case namedMaybeCell of
               Named {thing = Left {}} -> hashedCells
@@ -276,7 +277,7 @@ topologicalSortDocument =
 -- | Load a renamed cell.
 resolveRenamedCell ::
      Map Hash (Either LoadError LoadedExpression)
-  -> Map Text (Either LoadError Hash)
+  -> FillerEnv LoadError
   -> IsRenamed (Expression Renamed)
   -> RIO DocumentReader (Either LoadError LoadedExpression)
 resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do

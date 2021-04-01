@@ -53,11 +53,14 @@ generateText ::
   -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
 generateText globals fp text = do
   isrenamed <- first RenameGenerateError (Renamer.renameText fp text)
-  generateRenamed globals mempty isrenamed
+  generateRenamed
+    globals
+    emptyFillerEnv
+    isrenamed
 
 generateRenamed ::
      Map Hash (Either e (Scheme Polymorphic))
-  -> Map Text (Either e Hash)
+  -> FillerEnv e
   -> Renamer.IsRenamed (Expression Renamed)
   -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
 generateRenamed globalTypes globalNames Renamer.IsRenamed { thing = expressionRenamed

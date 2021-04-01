@@ -11,9 +11,7 @@
 
 module Inflex.Filler where
 
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Text (Text)
 import           Data.Validation
 import           Inflex.Types
 import           Inflex.Types.Filler
@@ -22,7 +20,7 @@ import           Inflex.Types.Filler
 -- Top-level entry points
 
 expressionFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Expression Renamed
   -> Filler e (Expression Filled)
 expressionFill globals =
@@ -48,22 +46,22 @@ expressionFill globals =
 --------------------------------------------------------------------------------
 -- Fillers
 
-propFill :: Map Text (Either e Hash) -> Prop Renamed -> Filler e (Prop Filled)
+propFill :: FillerEnv e -> Prop Renamed -> Filler e (Prop Filled)
 propFill globals Prop {..} = do
   expression' <- expressionFill globals expression
   pure Prop {expression = expression', ..}
 
-arrayFill :: Map Text (Either e Hash) -> Array Renamed -> Filler e (Array Filled)
+arrayFill :: FillerEnv e -> Array Renamed -> Filler e (Array Filled)
 arrayFill globals Array {..} = do
   expressions' <- traverse (expressionFill globals) expressions
   pure Array {expressions = expressions', ..}
 
-variantFill :: Map Text (Either e Hash) -> Variant Renamed -> Filler e (Variant Filled)
+variantFill :: FillerEnv e -> Variant Renamed -> Filler e (Variant Filled)
 variantFill globals Variant {..} = do
   argument' <- traverse (expressionFill globals) argument
   pure Variant {argument = argument', ..}
 
-recordFill :: Map Text (Either e Hash) -> Record Renamed -> Filler e (Record Filled)
+recordFill :: FillerEnv e -> Record Renamed -> Filler e (Record Filled)
 recordFill globals Record {..} = do
   fields' <- traverse fieldFill fields
   pure Record {fields = fields', ..}
@@ -72,24 +70,24 @@ recordFill globals Record {..} = do
       expression' <- expressionFill globals expression
       pure FieldE {expression = expression', location = l, ..}
 
-caseFill :: Map Text (Either e Hash) -> Case Renamed -> Filler e (Case Filled)
+caseFill :: FillerEnv e -> Case Renamed -> Filler e (Case Filled)
 caseFill globals Case {..} = do
   scrutinee' <- expressionFill globals scrutinee
   alternatives' <- traverse (alternativeFill globals) alternatives
   pure Case {alternatives = alternatives', scrutinee = scrutinee', ..}
 
-earlyFill :: Map Text (Either e Hash) -> Early Renamed -> Filler e (Early Filled)
+earlyFill :: FillerEnv e -> Early Renamed -> Filler e (Early Filled)
 earlyFill globals Early {..} = do
   expression' <- expressionFill globals expression
   pure Early {expression = expression', ..}
 
-boundaryFill :: Map Text (Either e Hash) -> Boundary Renamed -> Filler e (Boundary Filled)
+boundaryFill :: FillerEnv e -> Boundary Renamed -> Filler e (Boundary Filled)
 boundaryFill globals Boundary {..} = do
   expression' <- expressionFill globals expression
   pure Boundary {expression = expression', ..}
 
 alternativeFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Alternative Renamed
   -> Filler e (Alternative Filled)
 alternativeFill globals Alternative {location = l, ..} = do
@@ -106,20 +104,29 @@ alternativeFill globals Alternative {location = l, ..} = do
         VariantPattern VariantP {argument, ..} ->
           VariantPattern VariantP {argument = fmap paramFill argument, ..}
 
-globalFill :: Map Text (Either e Hash) -> Global Renamed -> Filler e (Global Filled)
-globalFill globals Global {..} = do
+globalFill :: FillerEnv e -> Global Renamed -> Filler e (Global Filled)
+globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
   case name of
-    UnresolvedGlobal textName ->
-      case M.lookup textName globals of
-        Nothing -> Filler (Failure (pure (MissingGlobal globals textName)))
+    UnresolvedGlobalText textName ->
+      case M.lookup textName namesTohash of
+        Nothing -> Filler (Failure (pure (MissingGlobal env textName)))
         Just result -> do
           case result of
             Left e -> Filler (Failure (pure (OtherCellError textName e)))
             Right globalRef ->
               pure
                 Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
+    UnresolvedUuid uuid ->
+      case M.lookup uuid uuidsToHash of
+        Nothing -> Filler (Failure (pure (MissingGlobalUuid env uuid)))
+        Just result -> do
+          case result of
+            Left e -> Filler (Failure (pure (OtherCellUuidError uuid e)))
+            Right globalRef ->
+              pure
+                Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
     ResolvedGlobalRef textName globalRef ->
-      case M.lookup textName globals of
+      case M.lookup textName namesTohash of
         Nothing -> pure Global {scheme = FilledScheme, name = globalRef, ..}
         Just result -> do
           case result of
@@ -131,7 +138,7 @@ globalFill globals Global {..} = do
       pure Global {scheme = FilledScheme, name = globalRef, ..}
 
 lambdaFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Lambda Renamed
   -> Filler e (Lambda Filled)
 lambdaFill globals Lambda {..} = do
@@ -139,7 +146,7 @@ lambdaFill globals Lambda {..} = do
   pure Lambda {body = body', param = paramFill param, ..}
 
 letFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Let Renamed
   -> Filler e (Let Filled)
 letFill globals Let {..} = do
@@ -148,7 +155,7 @@ letFill globals Let {..} = do
   pure Let {binds = binds', body = body', ..}
 
 infixFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Infix Renamed
   -> Filler e (Infix Filled)
 infixFill globals Infix {..} = do
@@ -158,7 +165,7 @@ infixFill globals Infix {..} = do
   pure Infix {left = left', right = right', global = global', ..}
 
 bindFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Bind Renamed
   -> Filler e (Bind Filled)
 bindFill globals Bind {..} = do
@@ -171,7 +178,7 @@ bindFill globals Bind {..} = do
       }
 
 applyFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> Apply Renamed
   -> Filler e (Apply Filled)
 applyFill globals Apply {..} = do
@@ -184,7 +191,7 @@ applyFill globals Apply {..} = do
     }
 
 ifFill ::
-     Map Text (Either e Hash)
+     FillerEnv e
   -> If Renamed
   -> Filler e (If Filled)
 ifFill globals If {..} = do

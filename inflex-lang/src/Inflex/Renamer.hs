@@ -380,21 +380,40 @@ renameInfix env@Env {cursor} Infix {..} = do
 renameGlobal :: Env -> Global Parsed -> Renamer (Global Renamed)
 renameGlobal Env {cursor} Global {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
-  let op = pure . NumericBinOpGlobal
-  name' <-
-    case name of
-      ParsedTextName "*" -> op MulitplyOp
-      ParsedTextName "+" -> op AddOp
-      ParsedTextName "-" -> op SubtractOp
-      ParsedTextName "/" -> op DivideOp
-      ParsedTextName "=" -> pure (EqualGlobal Equal)
-      ParsedTextName "/=" -> pure (EqualGlobal NotEqual)
-      ParsedTextName ">" -> pure (CompareGlobal GreaterThan)
-      ParsedTextName "<" -> pure (CompareGlobal LessThan)
-      ParsedTextName "<=" -> pure (CompareGlobal LessEqualTo)
-      ParsedTextName ">=" -> pure (CompareGlobal GreaterEqualTo)
-      _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
-  pure Global {location = final, scheme = RenamedScheme, name = ExactGlobalRef name'}
+  let exact name' =
+        pure
+          Global
+            { location = final
+            , scheme = RenamedScheme
+            , name = ExactGlobalRef name'
+            }
+      op = NumericBinOpGlobal
+  case name of
+    ParsedTextName "*" -> exact $ op MulitplyOp
+    ParsedTextName "+" -> exact $ op AddOp
+    ParsedTextName "-" -> exact $ op SubtractOp
+    ParsedTextName "/" -> exact $ op DivideOp
+    ParsedTextName "=" -> exact $ (EqualGlobal Equal)
+    ParsedTextName "/=" -> exact $ (EqualGlobal NotEqual)
+    ParsedTextName ">" -> exact $ (CompareGlobal GreaterThan)
+    ParsedTextName "<" -> exact $ (CompareGlobal LessThan)
+    ParsedTextName "<=" -> exact $ (CompareGlobal LessEqualTo)
+    ParsedTextName ">=" -> exact $ (CompareGlobal GreaterEqualTo)
+    ParsedUuid uuid ->
+      pure
+        Global
+          { location = final
+          , scheme = RenamedScheme
+          , name = UnresolvedUuid uuid
+          }
+    ParsedHash sha512 ->
+      pure
+        Global
+          { location = final
+          , scheme = RenamedScheme
+          , name = ExactGlobalRef (HashGlobal sha512)
+          }
+    _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
 renameBind env@Env {cursor} Bind {param, value, location, typ} = do
@@ -450,7 +469,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
             (GlobalExpression
                (Global
                   { location = final
-                  , name = UnresolvedGlobal name
+                  , name = UnresolvedGlobalText name
                   , scheme = RenamedScheme
                   }))
         Just globalRef -> do

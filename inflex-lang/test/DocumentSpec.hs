@@ -7,7 +7,6 @@ module DocumentSpec where
 
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.Map.Strict as M
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
@@ -98,7 +97,7 @@ errors = do
                          Left
                            (LoadGenerateError
                               (FillErrors
-                                 (MissingGlobal (M.fromList []) "y" :| [])))
+                                 (MissingGlobal emptyFillerEnv "y" :| [])))
                      , code = "y"
                      , order = 0
                      }

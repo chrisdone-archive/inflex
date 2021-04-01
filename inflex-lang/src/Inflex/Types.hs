@@ -214,7 +214,8 @@ data ParsedGlobal
 data IncompleteGlobalRef
   = ExactGlobalRef (GlobalRef Renamed)
   | ResolvedGlobalRef Text (GlobalRef Renamed)
-  | UnresolvedGlobal Text
+  | UnresolvedGlobalText Text
+  | UnresolvedUuid Uuid
 
 data Lambda s = Lambda
   { location :: !(StagedLocation s)

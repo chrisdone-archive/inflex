@@ -121,7 +121,7 @@ spec = do
                        GlobalExpression
                          (Global
                             { location = ExpressionCursor
-                            , name = UnresolvedGlobal "missing"
+                            , name = UnresolvedGlobalText "missing"
                             , scheme = RenamedScheme
                             })
                    , mappings =

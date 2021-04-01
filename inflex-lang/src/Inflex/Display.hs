@@ -508,7 +508,8 @@ instance Display (Global Parsed) where
 instance Display IncompleteGlobalRef where
   display =
     \case
-      UnresolvedGlobal text -> display text
+      UnresolvedGlobalText text -> display text
+      UnresolvedUuid (Uuid uuid) -> display uuid
       ExactGlobalRef ref -> display ref
       ResolvedGlobalRef text _ -> display text
 
