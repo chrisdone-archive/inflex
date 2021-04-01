@@ -51,7 +51,7 @@ renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
   first
     RenamerErrors
-    (let (result, (mappings, unresolvedGlobals)) =
+    (let (result, (mappings, unresolvedGlobals, unresolvedUuids)) =
            runState
              (runValidateT
                 (runRenamer
@@ -66,6 +66,7 @@ renameText fp text = do
                 { thing = addBoundaryImplicitly thing
                 , mappings
                 , unresolvedGlobals
+                , unresolvedUuids
                 })
            result)
 
@@ -118,19 +119,7 @@ renameExpression env =
     HoleExpression Hole {..} -> do
       final <- finalizeCursor (cursor env) TypeCursor location
       pure (HoleExpression Hole {location = final, typ = Nothing})
-    GlobalExpression {} -> error "impossible" -- TODO: Make impossible at type-level.
-    -- Use:
-    --
-    -- data StagedGlobal s where
-    --   ParsedGlobal :: Void -> StagedGlobal Parsed
-    --   RenamedGlobal :: Global s -> StagedGlobal Renamed
-    --   FilledGlobal :: Global s -> StagedGlobal Filled
-    --   GeneratedGlobal :: Global s -> StagedGlobal Generated
-    --   SolvedGlobal :: Global s -> StagedGlobal Solved
-    --   GeneralisedGlobal :: Global s -> StagedGlobal Generalised
-    --   ResolvedGlobal :: Global s -> StagedGlobal Resolved
-    --
-    -- And then use `absurd v` instead of `error "impossible"`.
+    GlobalExpression global -> fmap GlobalExpression (renameGlobal env global)
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Expression Renamed)
 renameLiteral env@Env {cursor} =
@@ -399,7 +388,8 @@ renameGlobal Env {cursor} Global {..} = do
     ParsedTextName "<" -> exact $ (CompareGlobal LessThan)
     ParsedTextName "<=" -> exact $ (CompareGlobal LessEqualTo)
     ParsedTextName ">=" -> exact $ (CompareGlobal GreaterEqualTo)
-    ParsedUuid uuid ->
+    ParsedUuid uuid -> do
+      modify (over _3 (Set.insert uuid))
       pure
         Global
           { location = final
@@ -413,7 +403,7 @@ renameGlobal Env {cursor} Global {..} = do
           , scheme = RenamedScheme
           , name = ExactGlobalRef (HashGlobal sha512)
           }
-    _ -> Renamer (refute (pure (BUG_UnknownOperatorName name)))
+    _ -> Renamer (refute (pure (NotInScope name)))
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
 renameBind env@Env {cursor} Bind {param, value, location, typ} = do

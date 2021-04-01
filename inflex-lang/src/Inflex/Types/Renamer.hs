@@ -29,14 +29,14 @@ data RenameError
   = BUG_MissingVariable [Binding Parsed]
                         (Map Text (GlobalRef Renamed))
                         (Variable Parsed)
-  | BUG_UnknownOperatorName ParsedGlobal
+  | NotInScope ParsedGlobal
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer
-  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation, Set Text)) a
+  { runRenamer :: ValidateT (NonEmpty RenameError) (State (Map Cursor SourceLocation, Set Text, Set Uuid)) a
   } deriving ( Functor
              , Applicative
-             , MonadState (Map Cursor SourceLocation, Set Text)
+             , MonadState (Map Cursor SourceLocation, Set Text, Set Uuid)
              , Monad
              )
 
@@ -57,6 +57,7 @@ data IsRenamed a = IsRenamed
   { thing :: a
   , mappings :: Map Cursor SourceLocation
   , unresolvedGlobals :: Set Text
+  , unresolvedUuids :: Set Uuid
   } deriving (Show, Eq)
 
 $(makeLensesWith (inflexRules ['cursor, 'scope]) ''Env)

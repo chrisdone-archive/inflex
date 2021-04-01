@@ -7,6 +7,7 @@ module DocumentSpec where
 
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Ord
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.UUID as UUID
@@ -34,10 +35,12 @@ evalDocument' ::
      RIO.MonadIO m
   => RIO.Map Hash (Expression Resolved)
   -> m (Toposorted (Named (Either LoadError Cell)))
-  -> m (Toposorted (Named (Either LoadError (Expression Resolved))))
+  -> m [Named (Either LoadError (Expression Resolved))]
 evalDocument' env m = do
   doc <- m
-  RIO.runRIO StepReader (evalDocument env doc)
+  fmap
+    (sortBy (comparing order) . unToposorted)
+    (RIO.runRIO StepReader (evalDocument env doc))
 
 spec :: Spec
 spec = do
@@ -52,89 +55,277 @@ errors = do
     (do u1 <- nextRandom'
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "x"
-                       , order = 0
-                       , code = "x"
-                       }
-                   ]
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "x"
+                      , thing = "x"
+                      , order = 0
+                      , code = "x"
+                      }
+                  ]
               (evalDocument' (evalEnvironment loaded)) (defaultDocument' loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = (Uuid u1)
-                     , name = "x"
-                     , thing = Left (CycleError ["x"])
-                     , order = 0
-                     , code = "x"
-                     }
-                 ]
-             }))
+          [ Named
+              { uuid = (Uuid u1)
+              , name = "x"
+              , thing = Left (CycleError [Uuid u1])
+              , order = 0
+              , code = "x"
+              }
+          ])
   it
     "x = y"
     (do u1 <- nextRandom'
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "y"
-                       , code = "y"
-                       , order = 0
-                       }
-                   ]
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "x"
+                      , thing = "y"
+                      , code = "y"
+                      , order = 0
+                      }
+                  ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = (Uuid u1)
-                     , name = "x"
-                     , thing =
-                         Left
-                           (LoadGenerateError
-                              (FillErrors
-                                 (MissingGlobal emptyFillerEnv "y" :| [])))
-                     , code = "y"
-                     , order = 0
-                     }
-                 ]
-             }))
+          [ Named
+              { uuid = (Uuid u1)
+              , name = "x"
+              , thing =
+                  Left
+                    (LoadGenerateError
+                       (FillErrors (MissingGlobal emptyFillerEnv "y" :| [])))
+              , code = "y"
+              , order = 0
+              }
+          ])
   it
     "y = 1; x = y y"
     (do u1 <- nextRandom'
         u2 <- nextRandom'
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "y(y)"
-                       , code = "y(y)"
-                       , order = 0
-                       }
-                   , Named
-                       { uuid = Uuid u2
-                       , name = "y"
-                       , thing = "1"
-                       , code = "1"
-                       , order = 1
-                       }
-                   ]
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "x"
+                      , thing = "y(y)"
+                      , code = "y(y)"
+                      , order = 0
+                      }
+                  , Named
+                      { uuid = Uuid u2
+                      , name = "y"
+                      , thing = "1"
+                      , code = "1"
+                      , order = 1
+                      }
+                  ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
-          (Toposorted {unToposorted = [Named {uuid = Uuid u2, name = "y", order = 1, code = "1", thing = Right (LiteralExpression (NumberLiteral (Number {location = ExpressionCursor, number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ExpressionCursor, name = IntegerTypeName})})))},Named {uuid = Uuid u1, name = "x", order = 0, code = "y(y)", thing = Left (LoadResolveError (ResolverErrors (NoInstanceForType FromIntegerClassName (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = DefaultedCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind})) :| [])))}]}))
+          [ Named
+              { uuid = Uuid u1
+              , name = "x"
+              , order = 0
+              , code = "y(y)"
+              , thing =
+                  Left
+                    (LoadResolveError
+                       (ResolverErrors
+                          (NoInstanceForType
+                             FromIntegerClassName
+                             (ApplyType
+                                (TypeApplication
+                                   { function =
+                                       ApplyType
+                                         (TypeApplication
+                                            { function =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     { location =
+                                                         ExpressionCursor
+                                                     , name = FunctionTypeName
+                                                     })
+                                            , argument =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     { location =
+                                                         DefaultedCursor
+                                                     , name = IntegerTypeName
+                                                     })
+                                            , location = ExpressionCursor
+                                            , kind = FunKind TypeKind TypeKind
+                                            })
+                                   , argument =
+                                       VariableType
+                                         (TypeVariable
+                                            { location = ()
+                                            , prefix = ()
+                                            , index = 0
+                                            , kind = TypeKind
+                                            })
+                                   , location = ApplyFuncCursor ExpressionCursor
+                                   , kind = TypeKind
+                                   })) :|
+                           [])))
+              }
+          , Named
+              { uuid = Uuid u2
+              , name = "y"
+              , order = 1
+              , code = "1"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = ExpressionCursor
+                             , number = IntegerNumber 1
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          ])
   eval_it
     "Missing field"
     [("x", "{a:3}.z")]
     (\[u1] ->
-       [Named {uuid = Uuid u1, name = "x", order = 0, code = "{a:3}.z", thing = Left (LoadSolveError (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = RowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "z"}, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = FieldTypePrefix, index = 3, kind = TypeKind})}]}) (TypeRow {location = PropExpressionCursor ExpressionCursor, typeVariable = Nothing, fields = [Field {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "a"}) TypeCursor), name = FieldName {unFieldName = "a"}, typ = VariableType (TypeVariable {location = PropExpressionCursor (RecordFieldCursor (FieldName {unFieldName = "a"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))))}])
+       [ Named
+           { uuid = Uuid u1
+           , name = "x"
+           , order = 0
+           , code = "{a:3}.z"
+           , thing =
+               Left
+                 (LoadSolveError
+                    (SolverError
+                       (RowMismatch
+                          (TypeRow
+                             { location = ExpressionCursor
+                             , typeVariable =
+                                 Just
+                                   (TypeVariable
+                                      { location = ExpressionCursor
+                                      , prefix = RowVarPrefix
+                                      , index = 0
+                                      , kind = RowKind
+                                      })
+                             , fields =
+                                 [ Field
+                                     { location = ExpressionCursor
+                                     , name = FieldName {unFieldName = "z"}
+                                     , typ =
+                                         VariableType
+                                           (TypeVariable
+                                              { location = ExpressionCursor
+                                              , prefix = FieldTypePrefix
+                                              , index = 3
+                                              , kind = TypeKind
+                                              })
+                                     }
+                                 ]
+                             })
+                          (TypeRow
+                             { location = PropExpressionCursor ExpressionCursor
+                             , typeVariable = Nothing
+                             , fields =
+                                 [ Field
+                                     { location =
+                                         PropExpressionCursor
+                                           (RecordFieldCursor
+                                              (FieldName {unFieldName = "a"})
+                                              TypeCursor)
+                                     , name = FieldName {unFieldName = "a"}
+                                     , typ =
+                                         VariableType
+                                           (TypeVariable
+                                              { location =
+                                                  PropExpressionCursor
+                                                    (RecordFieldCursor
+                                                       (FieldName
+                                                          {unFieldName = "a"})
+                                                       (RowFieldExpression
+                                                          ExpressionCursor))
+                                              , prefix = ApplyPrefix
+                                              , index = 2
+                                              , kind = TypeKind
+                                              })
+                                     }
+                                 ]
+                             }))))
+           }
+       ])
 
 success :: SpecWith ()
 success = do
+  it
+    "x = 1; y = @uuid:x"
+    (do u1 <- nextRandom'
+        u2 <- nextRandom'
+        shouldReturn
+          (do loaded <-
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "x"
+                      , thing = "1"
+                      , code = "1"
+                      , order = 0
+                      }
+                  , let code = "@uuid:" <> u1
+                     in Named
+                          { uuid = Uuid u2
+                          , name = "y"
+                          , thing = code
+                          , code = code
+                          , order = 1
+                          }
+                  ]
+              evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
+          [ Named
+              { uuid = Uuid u1
+              , name = "x"
+              , order = 0
+              , code = "1"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = ExpressionCursor
+                             , number = IntegerNumber 1
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          , Named
+              { uuid = Uuid u2
+              , name = "y"
+              , order = 1
+              , code = "@uuid:" <> u1
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = ExpressionCursor
+                             , number = IntegerNumber 1
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          ])
   it
     "x = y + 2; z = 2; y = z * 3.1"
     (do u1 <- nextRandom'
@@ -142,98 +333,95 @@ success = do
         u3 <- nextRandom'
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "x"
-                       , thing = "y + 2"
-                       , code = "y + 2"
-                       , order = 0
-                       }
-                   , Named
-                       { uuid = Uuid u2
-                       , name = "y"
-                       , thing = "z * 3.1"
-                       , code = "z * 3.1"
-                       , order = 1
-                       }
-                   , Named
-                       { uuid = Uuid u3
-                       , name = "z"
-                       , thing = "2"
-                       , code = "2"
-                       , order = 2
-                       }
-                   ]
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "x"
+                      , thing = "y + 2"
+                      , code = "y + 2"
+                      , order = 0
+                      }
+                  , Named
+                      { uuid = Uuid u2
+                      , name = "y"
+                      , thing = "z * 3.1"
+                      , code = "z * 3.1"
+                      , order = 1
+                      }
+                  , Named
+                      { uuid = Uuid u3
+                      , name = "z"
+                      , thing = "2"
+                      , code = "2"
+                      , order = 2
+                      }
+                  ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = Uuid u3
-                     , name = "z"
-                     , order = 2
-                     , code = "2"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = ExpressionCursor
-                                    , number = IntegerNumber 2
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location = ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 , Named
-                     { uuid = Uuid u2
-                     , name = "y"
-                     , order = 1
-                     , code = "z * 3.1"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = SteppedCursor
-                                    , number =
-                                        DecimalNumber
-                                          (Decimal {places = 1, integer = 62})
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location = ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 , Named
-                     { uuid = Uuid u1
-                     , name = "x"
-                     , order = 0
-                     , code = "y + 2"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = SteppedCursor
-                                    , number =
-                                        DecimalNumber
-                                          (Decimal {places = 1, integer = 82})
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location = ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 ]
-             }))
+          [ Named
+              { uuid = Uuid u1
+              , name = "x"
+              , order = 0
+              , code = "y + 2"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = SteppedCursor
+                             , number =
+                                 DecimalNumber
+                                   (Decimal {places = 1, integer = 82})
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          , Named
+              { uuid = Uuid u2
+              , name = "y"
+              , order = 1
+              , code = "z * 3.1"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = SteppedCursor
+                             , number =
+                                 DecimalNumber
+                                   (Decimal {places = 1, integer = 62})
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          , Named
+              { uuid = Uuid u3
+              , name = "z"
+              , order = 2
+              , code = "2"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = ExpressionCursor
+                             , number = IntegerNumber 2
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          ])
   it
     "double = x: x * 2; a = double(1); b = double(2.2)"
     (do u1 <- nextRandom'
@@ -241,31 +429,544 @@ success = do
         u3 <- nextRandom'
         shouldReturn
           (do loaded <-
-                 loadDocument'
-                   [ Named
-                       { uuid = Uuid u1
-                       , name = "double"
-                       , thing = "x: x * 2"
-                       , code = "x: x * 2"
-                       , order = 0
-                       }
-                   , Named
-                       { uuid = Uuid u2
-                       , name = "a"
-                       , thing = "double(1)"
-                       , code = "double(1)"
-                       , order = 1
-                       }
-                   , Named
-                       { uuid = Uuid u3
-                       , name = "b"
-                       , thing = "double(2.2)"
-                       , code = "double(2.2)"
-                       , order = 2
-                       }
-                   ]
+                loadDocument'
+                  [ Named
+                      { uuid = Uuid u1
+                      , name = "double"
+                      , thing = "x: x * 2"
+                      , code = "x: x * 2"
+                      , order = 0
+                      }
+                  , Named
+                      { uuid = Uuid u2
+                      , name = "a"
+                      , thing = "double(1)"
+                      , code = "double(1)"
+                      , order = 1
+                      }
+                  , Named
+                      { uuid = Uuid u3
+                      , name = "b"
+                      , thing = "double(2.2)"
+                      , code = "double(2.2)"
+                      , order = 2
+                      }
+                  ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
-          (Toposorted {unToposorted = [Named {uuid = Uuid u1, name = "double", order = 0, code = "x: x * 2", thing = Right (LambdaExpression (Lambda {location = ExpressionCursor, param = Param {location = LambdaParamCursor, name = (), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}, body = InfixExpression (Infix {location = LambdaBodyCursor ExpressionCursor, global = ApplyExpression (Apply {location = ImplicitlyApplicationOn (LambdaBodyCursor (InfixOpCursor ExpressionCursor)), function = GlobalExpression (Global {location = LambdaBodyCursor (InfixOpCursor ExpressionCursor), name = NumericBinOpGlobal MulitplyOp, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal (IntegerOpInstance MulitplyOp), scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), left = VariableExpression (Variable {location = LambdaBodyCursor (InfixLeftCursor ExpressionCursor), name = DeBrujinIndex (DeBrujinNesting 0), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), right = ApplyExpression (Apply {location = BuiltIn, function = ApplyExpression (Apply {location = ImplicitlyApplicationOn BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}))}), argument = GlobalExpression (Global {location = AutoInsertedForDefaulterCursor, name = InstanceGlobal FromIntegerIntegerInstance, scheme = ResolvedScheme (ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = TypeKind}))}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), argument = LiteralExpression (NumberLiteral (Number {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = LambdaBodyCursor (InfixRightCursor ExpressionCursor), name = IntegerTypeName})})), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}), typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = PolyType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = ExpressionCursor, kind = TypeKind})}))},Named {uuid = Uuid u3, name = "b", order = 2, code = "double(2.2)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = DecimalNumber (Decimal {places = 1, integer = 44}), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = NatTypeName 1}), location = ApplyArgCursor ExpressionCursor, kind = TypeKind})})))},Named {uuid = Uuid u2, name = "a", order = 1, code = "double(1)", thing = Right (LiteralExpression (NumberLiteral (Number {location = SteppedCursor, number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})))}]}))
+          [ Named
+              { uuid = Uuid u1
+              , name = "double"
+              , order = 0
+              , code = "x: x * 2"
+              , thing =
+                  Right
+                    (LambdaExpression
+                       (Lambda
+                          { location = ExpressionCursor
+                          , param =
+                              Param
+                                { location = LambdaParamCursor
+                                , name = ()
+                                , typ =
+                                    PolyType
+                                      (TypeVariable
+                                         { location = ()
+                                         , prefix = ()
+                                         , index = 0
+                                         , kind = TypeKind
+                                         })
+                                }
+                          , body =
+                              InfixExpression
+                                (Infix
+                                   { location =
+                                       LambdaBodyCursor ExpressionCursor
+                                   , global =
+                                       ApplyExpression
+                                         (Apply
+                                            { location =
+                                                ImplicitlyApplicationOn
+                                                  (LambdaBodyCursor
+                                                     (InfixOpCursor
+                                                        ExpressionCursor))
+                                            , function =
+                                                GlobalExpression
+                                                  (Global
+                                                     { location =
+                                                         LambdaBodyCursor
+                                                           (InfixOpCursor
+                                                              ExpressionCursor)
+                                                     , name =
+                                                         NumericBinOpGlobal
+                                                           MulitplyOp
+                                                     , scheme =
+                                                         ResolvedScheme
+                                                           (ApplyType
+                                                              (TypeApplication
+                                                                 { function =
+                                                                     ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ConstantType
+                                                                                (TypeConstant
+                                                                                   { location =
+                                                                                       BuiltIn
+                                                                                   , name =
+                                                                                       FunctionTypeName
+                                                                                   })
+                                                                          , argument =
+                                                                              PolyType
+                                                                                (TypeVariable
+                                                                                   { location =
+                                                                                       ()
+                                                                                   , prefix =
+                                                                                       ()
+                                                                                   , index =
+                                                                                       0
+                                                                                   , kind =
+                                                                                       TypeKind
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              FunKind
+                                                                                TypeKind
+                                                                                TypeKind
+                                                                          })
+                                                                 , argument =
+                                                                     ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ApplyType
+                                                                                (TypeApplication
+                                                                                   { function =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                FunctionTypeName
+                                                                                            })
+                                                                                   , argument =
+                                                                                       PolyType
+                                                                                         (TypeVariable
+                                                                                            { location =
+                                                                                                ()
+                                                                                            , prefix =
+                                                                                                ()
+                                                                                            , index =
+                                                                                                0
+                                                                                            , kind =
+                                                                                                TypeKind
+                                                                                            })
+                                                                                   , location =
+                                                                                       BuiltIn
+                                                                                   , kind =
+                                                                                       FunKind
+                                                                                         TypeKind
+                                                                                         TypeKind
+                                                                                   })
+                                                                          , argument =
+                                                                              PolyType
+                                                                                (TypeVariable
+                                                                                   { location =
+                                                                                       ()
+                                                                                   , prefix =
+                                                                                       ()
+                                                                                   , index =
+                                                                                       0
+                                                                                   , kind =
+                                                                                       TypeKind
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              TypeKind
+                                                                          })
+                                                                 , location =
+                                                                     BuiltIn
+                                                                 , kind =
+                                                                     TypeKind
+                                                                 }))
+                                                     })
+                                            , argument =
+                                                GlobalExpression
+                                                  (Global
+                                                     { location =
+                                                         AutoInsertedForDefaulterCursor
+                                                     , name =
+                                                         InstanceGlobal
+                                                           (IntegerOpInstance
+                                                              MulitplyOp)
+                                                     , scheme =
+                                                         ResolvedScheme
+                                                           (ApplyType
+                                                              (TypeApplication
+                                                                 { function =
+                                                                     ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ConstantType
+                                                                                (TypeConstant
+                                                                                   { location =
+                                                                                       BuiltIn
+                                                                                   , name =
+                                                                                       FunctionTypeName
+                                                                                   })
+                                                                          , argument =
+                                                                              ConstantType
+                                                                                (TypeConstant
+                                                                                   { location =
+                                                                                       BuiltIn
+                                                                                   , name =
+                                                                                       IntegerTypeName
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              FunKind
+                                                                                TypeKind
+                                                                                TypeKind
+                                                                          })
+                                                                 , argument =
+                                                                     ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ApplyType
+                                                                                (TypeApplication
+                                                                                   { function =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                FunctionTypeName
+                                                                                            })
+                                                                                   , argument =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                IntegerTypeName
+                                                                                            })
+                                                                                   , location =
+                                                                                       BuiltIn
+                                                                                   , kind =
+                                                                                       FunKind
+                                                                                         TypeKind
+                                                                                         TypeKind
+                                                                                   })
+                                                                          , argument =
+                                                                              ConstantType
+                                                                                (TypeConstant
+                                                                                   { location =
+                                                                                       BuiltIn
+                                                                                   , name =
+                                                                                       IntegerTypeName
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              TypeKind
+                                                                          })
+                                                                 , location =
+                                                                     BuiltIn
+                                                                 , kind =
+                                                                     TypeKind
+                                                                 }))
+                                                     })
+                                            , typ =
+                                                PolyType
+                                                  (TypeVariable
+                                                     { location = ()
+                                                     , prefix = ()
+                                                     , index = 0
+                                                     , kind = TypeKind
+                                                     })
+                                            })
+                                   , left =
+                                       VariableExpression
+                                         (Variable
+                                            { location =
+                                                LambdaBodyCursor
+                                                  (InfixLeftCursor
+                                                     ExpressionCursor)
+                                            , name =
+                                                DeBrujinIndex
+                                                  (DeBrujinNesting 0)
+                                            , typ =
+                                                PolyType
+                                                  (TypeVariable
+                                                     { location = ()
+                                                     , prefix = ()
+                                                     , index = 0
+                                                     , kind = TypeKind
+                                                     })
+                                            })
+                                   , right =
+                                       ApplyExpression
+                                         (Apply
+                                            { location = BuiltIn
+                                            , function =
+                                                ApplyExpression
+                                                  (Apply
+                                                     { location =
+                                                         ImplicitlyApplicationOn
+                                                           BuiltIn
+                                                     , function =
+                                                         GlobalExpression
+                                                           (Global
+                                                              { location =
+                                                                  BuiltIn
+                                                              , name =
+                                                                  FromIntegerGlobal
+                                                              , scheme =
+                                                                  ResolvedScheme
+                                                                    (ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ApplyType
+                                                                                (TypeApplication
+                                                                                   { function =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                FunctionTypeName
+                                                                                            })
+                                                                                   , argument =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                IntegerTypeName
+                                                                                            })
+                                                                                   , location =
+                                                                                       BuiltIn
+                                                                                   , kind =
+                                                                                       FunKind
+                                                                                         TypeKind
+                                                                                         TypeKind
+                                                                                   })
+                                                                          , argument =
+                                                                              PolyType
+                                                                                (TypeVariable
+                                                                                   { location =
+                                                                                       ()
+                                                                                   , prefix =
+                                                                                       ()
+                                                                                   , index =
+                                                                                       0
+                                                                                   , kind =
+                                                                                       TypeKind
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              TypeKind
+                                                                          }))
+                                                              })
+                                                     , argument =
+                                                         GlobalExpression
+                                                           (Global
+                                                              { location =
+                                                                  AutoInsertedForDefaulterCursor
+                                                              , name =
+                                                                  InstanceGlobal
+                                                                    FromIntegerIntegerInstance
+                                                              , scheme =
+                                                                  ResolvedScheme
+                                                                    (ApplyType
+                                                                       (TypeApplication
+                                                                          { function =
+                                                                              ApplyType
+                                                                                (TypeApplication
+                                                                                   { function =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                FunctionTypeName
+                                                                                            })
+                                                                                   , argument =
+                                                                                       ConstantType
+                                                                                         (TypeConstant
+                                                                                            { location =
+                                                                                                BuiltIn
+                                                                                            , name =
+                                                                                                IntegerTypeName
+                                                                                            })
+                                                                                   , location =
+                                                                                       BuiltIn
+                                                                                   , kind =
+                                                                                       FunKind
+                                                                                         TypeKind
+                                                                                         TypeKind
+                                                                                   })
+                                                                          , argument =
+                                                                              ConstantType
+                                                                                (TypeConstant
+                                                                                   { location =
+                                                                                       BuiltIn
+                                                                                   , name =
+                                                                                       IntegerTypeName
+                                                                                   })
+                                                                          , location =
+                                                                              BuiltIn
+                                                                          , kind =
+                                                                              TypeKind
+                                                                          }))
+                                                              })
+                                                     , typ =
+                                                         PolyType
+                                                           (TypeVariable
+                                                              { location = ()
+                                                              , prefix = ()
+                                                              , index = 0
+                                                              , kind = TypeKind
+                                                              })
+                                                     })
+                                            , argument =
+                                                LiteralExpression
+                                                  (NumberLiteral
+                                                     (Number
+                                                        { location =
+                                                            LambdaBodyCursor
+                                                              (InfixRightCursor
+                                                                 ExpressionCursor)
+                                                        , number =
+                                                            IntegerNumber 2
+                                                        , typ =
+                                                            ConstantType
+                                                              (TypeConstant
+                                                                 { location =
+                                                                     LambdaBodyCursor
+                                                                       (InfixRightCursor
+                                                                          ExpressionCursor)
+                                                                 , name =
+                                                                     IntegerTypeName
+                                                                 })
+                                                        }))
+                                            , typ =
+                                                PolyType
+                                                  (TypeVariable
+                                                     { location = ()
+                                                     , prefix = ()
+                                                     , index = 0
+                                                     , kind = TypeKind
+                                                     })
+                                            })
+                                   , typ =
+                                       PolyType
+                                         (TypeVariable
+                                            { location = ()
+                                            , prefix = ()
+                                            , index = 0
+                                            , kind = TypeKind
+                                            })
+                                   })
+                          , typ =
+                              ApplyType
+                                (TypeApplication
+                                   { function =
+                                       ApplyType
+                                         (TypeApplication
+                                            { function =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     { location =
+                                                         ExpressionCursor
+                                                     , name = FunctionTypeName
+                                                     })
+                                            , argument =
+                                                PolyType
+                                                  (TypeVariable
+                                                     { location = ()
+                                                     , prefix = ()
+                                                     , index = 0
+                                                     , kind = TypeKind
+                                                     })
+                                            , location = ExpressionCursor
+                                            , kind = FunKind TypeKind TypeKind
+                                            })
+                                   , argument =
+                                       PolyType
+                                         (TypeVariable
+                                            { location = ()
+                                            , prefix = ()
+                                            , index = 0
+                                            , kind = TypeKind
+                                            })
+                                   , location = ExpressionCursor
+                                   , kind = TypeKind
+                                   })
+                          }))
+              }
+          , Named
+              { uuid = Uuid u2
+              , name = "a"
+              , order = 1
+              , code = "double(1)"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = SteppedCursor
+                             , number = IntegerNumber 2
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location =
+                                          ApplyArgCursor ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          , Named
+              { uuid = Uuid u3
+              , name = "b"
+              , order = 2
+              , code = "double(2.2)"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = SteppedCursor
+                             , number =
+                                 DecimalNumber
+                                   (Decimal {places = 1, integer = 44})
+                             , typ =
+                                 ApplyType
+                                   (TypeApplication
+                                      { function =
+                                          ConstantType
+                                            (TypeConstant
+                                               { location =
+                                                   ApplyArgCursor
+                                                     ExpressionCursor
+                                               , name = DecimalTypeName
+                                               })
+                                      , argument =
+                                          ConstantType
+                                            (TypeConstant
+                                               { location =
+                                                   ApplyArgCursor
+                                                     ExpressionCursor
+                                               , name = NatTypeName 1
+                                               })
+                                      , location =
+                                          ApplyArgCursor ExpressionCursor
+                                      , kind = TypeKind
+                                      })
+                             })))
+              }
+          ])
   describe "Records" records
 
 records :: Spec
@@ -1565,53 +2266,50 @@ duplicate_empty_names_ok =
                 }
             ]
         shouldReturn
-          ((evalDocument' (evalEnvironment loaded)) (defaultDocument' loaded))
-          (Toposorted
-             { unToposorted =
-                 [ Named
-                     { uuid = Uuid u2
-                     , name = ""
-                     , order = 1
-                     , code = "2+3"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = SteppedCursor
-                                    , number = IntegerNumber 5
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location =
-                                                 InfixLeftCursor
-                                                   ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 , Named
-                     { uuid = Uuid u1
-                     , name = ""
-                     , order = 0
-                     , code = "193"
-                     , thing =
-                         Right
-                           (LiteralExpression
-                              (NumberLiteral
-                                 (Number
-                                    { location = ExpressionCursor
-                                    , number = IntegerNumber 193
-                                    , typ =
-                                        ConstantType
-                                          (TypeConstant
-                                             { location = ExpressionCursor
-                                             , name = IntegerTypeName
-                                             })
-                                    })))
-                     }
-                 ]
-             }))
+          (evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
+          [ Named
+              { uuid = Uuid u1
+              , name = ""
+              , order = 0
+              , code = "193"
+              , thing =
+                  Right
+                    (LiteralExpression
+                       (NumberLiteral
+                          (Number
+                             { location = ExpressionCursor
+                             , number = IntegerNumber 193
+                             , typ =
+                                 ConstantType
+                                   (TypeConstant
+                                      { location = ExpressionCursor
+                                      , name = IntegerTypeName
+                                      })
+                             })))
+              }
+          ,  Named
+               { uuid = Uuid u2
+               , name = ""
+               , order = 1
+               , code = "2+3"
+               , thing =
+                   Right
+                     (LiteralExpression
+                        (NumberLiteral
+                           (Number
+                              { location = SteppedCursor
+                              , number = IntegerNumber 5
+                              , typ =
+                                  ConstantType
+                                    (TypeConstant
+                                       { location =
+                                           InfixLeftCursor
+                                             ExpressionCursor
+                                       , name = IntegerTypeName
+                                       })
+                              })))
+               }
+          ])
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -1664,7 +2362,7 @@ eval_it_with desc xs result io =
               evalDocument'
                 (evalEnvironment loaded)
                 (RIO.runRIO DefaulterReader (defaultDocument loaded)))
-          (Toposorted (result (map fst xs'))))
+          (result (map fst xs')))
 
 nextRandom' :: IO Text
 nextRandom' = fmap UUID.toText nextRandom

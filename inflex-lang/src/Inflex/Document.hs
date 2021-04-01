@@ -54,7 +54,7 @@ import           RIO (RIO)
 -- Types
 
 data LoadError
-  = CycleError [Text]
+  = CycleError [Uuid]
   | RenameLoadError ParseRenameError
   | DuplicateName
   | LoadGenerateError (RenameGenerateError LoadError)
@@ -252,24 +252,32 @@ dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty emptyFille
 topologicalSortDocument ::
      [Named (Either LoadError (IsRenamed a))]
   -> Toposorted (Named (Either LoadError (IsRenamed a)))
-topologicalSortDocument =
-  Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode
+topologicalSortDocument nameds =
+  Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode $ nameds
   where
-    toNode named@Named {name, thing = result} =
+    toNode named@Named {uuid, thing = result} =
       case result of
-        Right IsRenamed {unresolvedGlobals} ->
-          (named, name, Set.toList unresolvedGlobals)
-        Left {} -> (named, name, mempty)
+        Right IsRenamed {unresolvedGlobals, unresolvedUuids} ->
+          ( named
+          , uuid
+          , Set.toList unresolvedUuids <>
+            mapMaybe
+              (\nameToLookup -> do
+                 Named {uuid = foundUuid} <-
+                   find (\Named {name = name'} -> nameToLookup == name') nameds
+                 pure foundUuid)
+              (Set.toList unresolvedGlobals))
+        Left {} -> (named, uuid, mempty)
     cycleCheck =
       \case
         AcyclicSCC (named, _, _) -> [named]
-        CyclicSCC nameds ->
+        CyclicSCC cyclicNameds ->
           fmap
             (\(named, _, _) ->
                fmap
-                 (const (Left (CycleError (map (\(_, name, _) -> name) nameds))))
+                 (const (Left (CycleError (map (\(_, uuid, _) -> uuid) cyclicNameds))))
                  named)
-            nameds
+            cyclicNameds
 
 --------------------------------------------------------------------------------
 -- Individual cell loading
