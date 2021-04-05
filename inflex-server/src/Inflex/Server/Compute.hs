@@ -74,16 +74,33 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
                                  (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
                                     Shared.ResultOk
                                       (Shared.ResultTree
-                                         (toTree (pure renamed) resultExpression)))
+                                         (case renamed of
+                                            -- A temporary
+                                            -- specialization to
+                                            -- display lambdas in a
+                                            -- cell as the original
+                                            -- code. But, later,
+                                            -- toTree will render
+                                            -- lambdas structurally.
+                                            LambdaExpression {} ->
+                                              Shared.MiscTree2
+                                                Shared.versionRefl
+                                                (Shared.OriginalSource code)
+                                                code
+                                            _ ->
+                                              toTree
+                                                (pure renamed)
+                                                resultExpression)))
                                  thing
                            , code
                            , name
                            , order
                            }))
                    (unToposorted topo))))))
-  where defaultDocument1' top = do
-          !v <- defaultDocument1 top
-          pure v
+  where
+    defaultDocument1' top = do
+      !v <- defaultDocument1 top
+      pure v
 
 -- | Evaluate and force the result.
 evalDocument1' ::
