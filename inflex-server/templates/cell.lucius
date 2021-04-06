@@ -532,4 +532,10 @@
     margin-bottom: 3px;
   }
 
+  .uuid-overlay {
+    background: #e9eef2;
+    border-radius: 3px;
+    color: #555;
+  }
+
 }
