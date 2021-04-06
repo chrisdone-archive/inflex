@@ -183,3 +183,22 @@ exports.completionActive = function(cm){
     return cm.state.completionActive;
   }
 };
+
+exports.markText = function(codemirror){
+  return function(start){
+    return function(end){
+      return function(opts){
+        return function(){
+          if (opts.replaceText) {
+            var el = document.createElement('span');
+            el.innerText = opts.replaceText;
+            el.className = 'uuid-overlay';
+            opts.replacedWith = el
+          }
+          codemirror.getDoc().markText(start, end, opts);
+          return {};
+        }
+      }
+    }
+  }
+}

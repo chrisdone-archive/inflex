@@ -8,12 +8,15 @@ module Inflex.Components.Code
   , Command(..)
   ) where
 
+import Data.Foldable
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class.Console
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
+import Inflex.Lexer
 import Prelude
 
 --------------------------------------------------------------------------------
@@ -92,6 +95,31 @@ eval =
     HandleInput _ -> pure unit
     CMEvent event -> do
       case event of
+        CM.Focused -> do
+          mvalue <-
+            H.query
+              (SProxy :: SProxy "codemirror")
+              unit
+              (H.request CM.GetTextValue)
+          case mvalue of
+            Just value -> do
+              traverse_
+                (\token ->
+                   when(token.tag == "uuid") $ void $
+                   H.query(SProxy :: SProxy "codemirror") unit
+                     (CM.MarkText
+                        { line: token . location . start . line - 1
+                        , ch: token . location . start . column - 1
+                        }
+                        { line: token . location . end . line - 1
+                        , ch: token . location . end . column - 1
+                        }
+                        {
+                          replaceText: "foo"
+                        }
+                     ))
+                (lexer value)
+            Nothing -> pure unit
         CM.Entered -> do
           mvalue <-
             H.query

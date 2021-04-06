@@ -14,6 +14,8 @@ module Inflex.Components.CodeMirror
   , KeyResult
   , keyHandled
   , keyPass
+  , MarkOptions
+
   ) where
 
 import Data.Generic.Rep (class Generic)
@@ -21,6 +23,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class.Console
 import Effect.Class (class MonadEffect)
 import Foreign.Object
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
@@ -42,6 +45,11 @@ data Query a
   = GetTextValue (String -> a)
   | AddKeyMap String (Object (Effect KeyResult))
   | RemoveKeyMap String
+  | MarkText Pos Pos MarkOptions
+
+type MarkOptions = {
+   replaceText :: String
+ }
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -136,6 +144,14 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
+    MarkText start end opts -> do
+      State {codeMirror: c} <- H.get
+      case c of
+        Nothing -> do
+          pure unit
+        Just cm -> do
+          H.liftEffect (markText cm start end opts)
+      pure Nothing
     AddKeyMap string keys -> do
       State {codeMirror: c} <- H.get
       case c of
@@ -279,3 +295,10 @@ foreign import data KeyResult :: Type
 foreign import keyHandled :: KeyResult
 
 foreign import keyPass :: KeyResult
+
+foreign import markText
+  :: CodeMirror
+  -> Pos
+  -> Pos
+  -> MarkOptions
+  -> Effect Unit
