@@ -85,7 +85,7 @@ exports.codeMirror = function(parent){
           if (word.length == 0) return accept(null);
           let candidates = [];
           for (var i = 0; i < comp.length; i++) {
-            if (isPrefixOf(word, comp[i])) {
+            if (isPrefixOf(word, comp[i].matchText)) {
               candidates.push(comp[i]);
             }
           }
@@ -109,6 +109,7 @@ exports.codeMirror = function(parent){
       };
       ////////////////////////////////////////////////////////////////////////////////
       let cm = CodeMirror(parent, config);
+
       cm.on("inputRead", function (cm, event) {
         /*Enter - do not open autocomplete list just after item has been selected in it*/
         if (!cm.state.completionActive) {
