@@ -12,6 +12,7 @@
 
 -- Shop
 / HomeR GET
+/pricing PricingR GET
 /register EnterDetailsR
 /register/checkout/create CheckoutCreateR GET
 /register/checkout/cancel CheckoutCancelR GET

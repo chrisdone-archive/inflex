@@ -123,7 +123,7 @@ getHomeR = do
                       h1_ "It's time to go off grid"
                       h2_ "Online spreadsheets re-invented"
                       form_
-                        [action_ (url EnterDetailsR), method_ "get"]
+                        [action_ (url PricingR), method_ "get"]
                             {-div_
                               [class_ "email-address"]
                               (input_
@@ -133,7 +133,7 @@ getHomeR = do
                                  , required_ ""
                                  ])-}
                         (do a_ [class_ "button try tagline-action", href_ (url SandboxR)] "Try"
-                            button_ [class_ "button tagline-action"] "Register")
+                            button_ [class_ "button tagline-action"] "Subscribe")
                     div_
                       [class_ "hero-pic"]
                       (do img_ [class_ "preview-pic", src_ (url PreviewR)])
@@ -142,11 +142,11 @@ getHomeR = do
                   div_ [class_ "margin-wrapper"] $ do
                     h1_ "What are you waiting for?"
                   div_ [class_ "margin-wrapper"] $ do
-                    p_ "We're open for beta testing now."
+                    p_ "You can try without an account now."
                   div_ [class_ "margin-wrapper"] $ do
                     p_ $
-                      form_ [action_ (url EnterDetailsR), method_ "get"] $
-                      button_ [class_ "button tagline-action"] "Register now"
+                      form_ [action_ (url SandboxR), method_ "get"] $
+                      button_ [class_ "button tagline-action"] "Try now"
                 div_ [class_ "footer"] $ do
                   div_ [class_ "margin-wrapper"] $ do
                     p_ "© 2020 Sky Above Limited"
