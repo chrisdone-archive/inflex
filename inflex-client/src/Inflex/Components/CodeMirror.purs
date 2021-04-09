@@ -18,14 +18,14 @@ module Inflex.Components.CodeMirror
 
   ) where
 
+import Data.Foldable
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console
 import Effect.Class (class MonadEffect)
-import Foreign.Object
+import Foreign.Object (Object)
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
@@ -69,7 +69,10 @@ data Command
 --------------------------------------------------------------------------------
 -- Types
 
-data Config = Config InternalConfig
+data Config = Config
+  { internalConfig :: InternalConfig
+  , initializers :: Array (Query Unit)
+  }
 
 type InternalConfig =
   { readOnly                  :: Boolean
@@ -176,16 +179,23 @@ query =
 --------------------------------------------------------------------------------
 -- Eval
 
-eval :: forall t11 t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command t11 Output t9 Unit
+eval :: forall i t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command (Slots i) Output t9 Unit
 eval (CMEventIn event) =
   H.raise (CMEventOut event)
 eval Initializer = do
-  State {config: Config config} <- H.get
+  State {config: Config {internalConfig, initializers}} <- H.get
   melement <- H.getHTMLElementRef refLabel
   case melement of
     Nothing -> pure unit
     Just element -> do
-      cm <- H.liftEffect (codeMirror element config)
+      cm <- H.liftEffect (codeMirror element internalConfig)
+      H.put
+        (State
+           { codeMirror: Just cm
+           , config:
+               Config {internalConfig, initializers: []}
+           })
+      traverse_ query initializers
       void
         (H.subscribe
            (H.effectEventSource
@@ -194,20 +204,16 @@ eval Initializer = do
                  setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
                  setOnEntered cm (H.emit emitter (CMEventIn Entered))
                  pure mempty)))
-      H.put
-        (State
-           { codeMirror: Just cm
-           , config: Config config
-           })
+
 eval (SetConfig (Config config')) = do
   State {codeMirror: mcm, config: Config config} <- H.get
   case mcm of
     Just cm -> do
-      if config' . value /= config . value
-        then H.liftEffect (setValue cm (config' . value))
+      if config' . internalConfig . value /= config . internalConfig . value
+        then H.liftEffect (setValue cm (config' . internalConfig . value))
         else pure unit
-      if config' . selection /= config . selection
-        then H.liftEffect (scrollToLine cm (config . selection . head . line))
+      if config' . internalConfig . selection /= config . internalConfig . selection
+        then H.liftEffect (scrollToLine cm (config . internalConfig . selection . head . line))
         else pure unit
     Nothing -> pure unit
   H.put (State {codeMirror: mcm, config: Config config'})

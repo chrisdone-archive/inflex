@@ -26,13 +26,14 @@ import Inflex.Schema as Shared
 import Inflex.FieldName (validFieldName)
 import Prelude
 import Web.HTML.Event.DragEvent as DE
+import           Data.Map (Map)
 
 --------------------------------------------------------------------------------
 -- Component types
 
 data Input = Input {
   cell :: Shared.OutputCell,
-  namesInScope :: Array String
+  namesInScope :: Map String String
   }
 
 data Query a
@@ -45,7 +46,7 @@ data Output
 
 data State = State
   { cell :: Cell
-  , namesInScope:: Array String
+  , namesInScope:: Map String String
   }
 
 data Command

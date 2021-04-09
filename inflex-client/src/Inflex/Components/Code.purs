@@ -8,9 +8,13 @@ module Inflex.Components.Code
   , Command(..)
   ) where
 
+import Data.Array as Array
 import Data.Foldable
+import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Data.Tuple
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console
 import Halogen as H
@@ -24,13 +28,13 @@ import Prelude
 
 data Input = Input
   { code :: String
-  , namesInScope :: Array String
+  , namesInScope :: Map String String -- uuid to title
   }
 
 data Output =
   TextOutput String
 
-data Query a = SetNamesInScope (Array String)
+data Query a = SetNamesInScope (Map String String)
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -41,7 +45,7 @@ data Command
 
 data State = State
   { code :: String
-  , namesInScope :: Array String
+  , namesInScope :: Map String String
   }
 
 type Slots (i :: Type -> Type) =
@@ -95,31 +99,6 @@ eval =
     HandleInput _ -> pure unit
     CMEvent event -> do
       case event of
-        CM.Focused -> do
-          mvalue <-
-            H.query
-              (SProxy :: SProxy "codemirror")
-              unit
-              (H.request CM.GetTextValue)
-          case mvalue of
-            Just value -> do
-              traverse_
-                (\token ->
-                   when(token.tag == "uuid") $ void $
-                   H.query(SProxy :: SProxy "codemirror") unit
-                     (CM.MarkText
-                        { line: token . location . start . line - 1
-                        , ch: token . location . start . column - 1
-                        }
-                        { line: token . location . end . line - 1
-                        , ch: token . location . end . column - 1
-                        }
-                        {
-                          replaceText: "foo"
-                        }
-                     ))
-                (lexer value)
-            Nothing -> pure unit
         CM.Entered -> do
           mvalue <-
             H.query
@@ -145,6 +124,7 @@ render (State state) =
     unit
     CM.component
     (CM.Config
+       { internalConfig:
        { readOnly: false
        , theme: "default"
        , selection: CM.noSelection
@@ -156,7 +136,28 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
-       , namesInScope: state.namesInScope
-       })
+       , namesInScope: map(\(Tuple _ v) -> v) (M.toUnfoldable (state.namesInScope))
+       }
+       , initializers: initializers})
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
+  where initializers =
+          Array.mapMaybe
+            (\token ->
+               if (token.tag == "uuid") then
+                 case M.lookup (token.text) (state.namesInScope) of
+                   Nothing -> Nothing
+                   Just text ->
+                     Just (CM.MarkText
+                           { line: token . location . start . line - 1
+                           , ch: token . location . start . column - 1
+                           }
+                           { line: token . location . end . line - 1
+                           , ch: token . location . end . column - 1
+                           }
+                           {
+                             replaceText: text
+                           })
+               else
+                 Nothing)
+            (lexer (state.code))
