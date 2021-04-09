@@ -52,6 +52,15 @@ exports.setOnBlurred = function(codemirror){
   }
 }
 
+exports.setOnPicked = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror._onPickHook = f;
+      return {};
+    }
+  }
+}
+
 exports.setOnCursorActivity = function(codemirror){
   return function(f){
     return function(){
@@ -109,7 +118,9 @@ exports.codeMirror = function(parent){
       };
       ////////////////////////////////////////////////////////////////////////////////
       let cm = CodeMirror(parent, config);
-
+      cm._onPick = function(completion){
+        cm._onPickHook(completion.key)();
+      }
       cm.on("inputRead", function (cm, event) {
         /*Enter - do not open autocomplete list just after item has been selected in it*/
         if (!cm.state.completionActive) {
