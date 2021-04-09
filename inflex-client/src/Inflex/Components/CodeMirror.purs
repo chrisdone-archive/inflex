@@ -86,7 +86,11 @@ type InternalConfig =
   , autofocus                 :: Boolean
   , autoCloseBrackets         :: Boolean
   , highlightSelectionMatches :: Boolean
-  , namesInScope              :: Array String
+  , namesInScope              :: Array {
+           displayText :: String,
+           text :: String,
+           matchText :: String
+           }
   }
 
 type Range =

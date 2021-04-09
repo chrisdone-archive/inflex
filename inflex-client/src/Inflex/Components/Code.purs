@@ -136,7 +136,13 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
-       , namesInScope: map(\(Tuple _ v) -> v) (M.toUnfoldable (state.namesInScope))
+       , namesInScope: map(\(Tuple uuid v) ->
+                            { text: "@uuid:" <> uuid,
+                              displayText: v, -- we can put whatever in here, and even a render function
+                              -- <https://codemirror.net/doc/manual.html#addons>
+                              matchText: v
+                            } )
+                     (M.toUnfoldable (state.namesInScope))
        }
        , initializers: initializers})
     (case _ of
