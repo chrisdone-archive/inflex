@@ -1049,6 +1049,7 @@ CodeMirror.defineMIME("text/x-haskell", "haskell");
           self.cm.replaceRange(getText(completion), completion.from || data.from,
                                completion.to || data.to, "complete");
         CodeMirror.signal(data, "pick", completion);
+        self.cm._onPick(completion);
         self.cm.scrollIntoView();
       });
       if (this.options.closeOnPick) {

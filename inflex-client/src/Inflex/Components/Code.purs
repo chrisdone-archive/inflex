@@ -9,19 +9,19 @@ module Inflex.Components.Code
   ) where
 
 import Data.Array as Array
-import Data.Foldable
+import Data.Foldable (traverse_)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Tuple
+import Data.Tuple (Tuple(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
-import Inflex.Lexer
-import Prelude
+import Inflex.Lexer (lexer)
+import Prelude (Unit, bind, discard, map, pure, unit, void, when, ($), (&&), (-), (<<<), (<>), (==))
 
 --------------------------------------------------------------------------------
 -- Interface
@@ -109,6 +109,35 @@ eval =
             Just value -> do
               H.raise (TextOutput value)
             Nothing -> pure unit
+        CM.Picked uuid -> do
+          mvalue <-
+            H.query
+              (SProxy :: SProxy "codemirror")
+              unit
+              (H.request CM.GetTextValue)
+          case mvalue of
+            Just value -> do
+              State state <- H.get
+              traverse_
+                (\token ->
+                 case M.lookup uuid (state.namesInScope) of
+                   Nothing -> pure unit
+                   Just displayText ->
+                     when(token.tag == "uuid" && token.text == uuid) $
+                     void $ H.query(SProxy :: SProxy "codemirror") unit
+                       (CM.MarkText
+                          { line: token . location . start . line - 1
+                          , ch: token . location . start . column - 1
+                          }
+                          { line: token . location . end . line - 1
+                          , ch: token . location . end . column - 1
+                          }
+                          {
+                            replaceText: displayText
+                          }
+                       ))
+                (lexer value)
+            Nothing -> pure unit
         _ -> pure unit
 
 --------------------------------------------------------------------------------
@@ -138,6 +167,7 @@ render (State state) =
        , highlightSelectionMatches: true
        , namesInScope: map(\(Tuple uuid v) ->
                             { text: "@uuid:" <> uuid,
+                              key: uuid,
                               displayText: v, -- we can put whatever in here, and even a render function
                               -- <https://codemirror.net/doc/manual.html#addons>
                               matchText: v

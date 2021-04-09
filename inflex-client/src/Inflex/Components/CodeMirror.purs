@@ -89,7 +89,8 @@ type InternalConfig =
   , namesInScope              :: Array {
            displayText :: String,
            text :: String,
-           matchText :: String
+           matchText :: String,
+           key :: String
            }
   }
 
@@ -107,6 +108,7 @@ data CMEvent
   = Focused
   | Blurred
   | Entered
+  | Picked String
 
 derive instance genericCMEvent :: Generic CMEvent _
 instance showCMEvent :: Show CMEvent where show x = genericShow x
@@ -206,6 +208,7 @@ eval Initializer = do
               (\emitter -> do
                  setOnFocused cm (H.emit emitter (CMEventIn Focused))
                  setOnBlurred cm (H.emit emitter (CMEventIn Blurred))
+                 setOnPicked cm (\text -> H.emit emitter (CMEventIn (Picked text)))
                  setOnEntered cm (H.emit emitter (CMEventIn Entered))
                  pure mempty)))
 
@@ -253,6 +256,11 @@ foreign import setValue
 foreign import setOnBlurred
   :: CodeMirror
   -> Effect Unit
+  -> Effect Unit
+
+foreign import setOnPicked
+  :: CodeMirror
+  -> (String -> Effect Unit)
   -> Effect Unit
 
 foreign import setOnFocused
