@@ -7,10 +7,13 @@ module Inflex.Components.Doc
 import Control.Monad.State (class MonadState)
 import Data.Array (filter)
 import Data.Either (Either(..))
+import Data.Map (Map)
+import Data.Map as M
 import Data.Maybe (Maybe(..), isNothing)
 import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
+import Data.Tuple
 import Data.UUID (UUID, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -102,9 +105,11 @@ render state =
     ]
     ([ HH.div
          [HP.class_ (HH.ClassName "navbar")]
-         [ if meta.sandbox
-              then HH.div [HP.class_ (HH.ClassName "sandbox-note")] [HH.text "Try"]
-              else HH.text ""
+         [ if meta . sandbox
+             then HH.div
+                    [HP.class_ (HH.ClassName "sandbox-note")]
+                    [HH.text "Try"]
+             else HH.text ""
          , HH.a [HP.class_ (HH.ClassName "logo"), HP.href (meta . dashboard)] []
          , HH.div
              [HP.class_ (HH.ClassName "rhs-nav")]
@@ -155,19 +160,19 @@ render state =
                  , HP.disabled (meta . readonly)
                  ]
                  [HH.text "Import"]
-             , if meta.sandbox
-                  then HH.text ""
-                  else HH.form
-                         [ HP.action (meta . logout)
-                         , HP.method HP.POST
-                         , if meta . loggedin
-                             then HP.class_ (HH.ClassName "")
-                             else HP.class_ (HH.ClassName "hidden")
-                         ]
-                         [ HH.button
-                             [HP.class_ (HH.ClassName "logout full-button")]
-                             [HH.text "Logout"]
-                         ]
+             , if meta . sandbox
+                 then HH.text ""
+                 else HH.form
+                        [ HP.action (meta . logout)
+                        , HP.method HP.POST
+                        , if meta . loggedin
+                            then HP.class_ (HH.ClassName "")
+                            else HP.class_ (HH.ClassName "hidden")
+                        ]
+                        [ HH.button
+                            [HP.class_ (HH.ClassName "logout full-button")]
+                            [HH.text "Logout"]
+                        ]
              ]
          ]
      , HH.div
@@ -186,8 +191,7 @@ render state =
                  Cell.component
                  (Cell.Input
                     { cell
-                    , namesInScope:
-                        filter (_ /= name) namesInScope
+                    , namesInScope: M.delete name namesInScope
                     })
                  (\update0 ->
                     pure
@@ -206,24 +210,29 @@ render state =
          ])
   where
     namesInScope =
-      standardNames <> map (\(OutputCell {name}) -> name) (state . cells)
+      standardNames <>
+      M.fromFoldable
+        (map
+           (\(OutputCell {uuid, name}) -> Tuple (uuidToString uuid) name)
+           (state . cells))
 
-standardNames :: Array String
+standardNames :: Map String String
 standardNames =
-  [ "map"
-  , "filter"
-  , "sum"
-  , "average"
-  , "vega"
-  , "null"
-  , "length"
-  , "distinct"
-  , "minimum"
-  , "maximum"
-  , "sort"
-  , "find"
-  , "all"
-  , "any"
+  M.fromFoldable
+  [ Tuple "map" "map"
+  , Tuple "filter" "filter"
+  , Tuple "sum" "sum"
+  , Tuple "average" "average"
+  , Tuple "vega" "vega"
+  , Tuple "null" "null"
+  , Tuple "length" "length"
+  , Tuple "distinct" "distinct"
+  , Tuple "minimum" "minimum"
+  , Tuple "maximum" "maximum"
+  , Tuple "sort" "sort"
+  , Tuple "find" "find"
+  , Tuple "all" "all"
+  , Tuple "any" "any"
   ]
 
 renderCsvWizard :: forall t46. CsvWizard -> HH.HTML t46 Command

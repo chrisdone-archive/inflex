@@ -13,6 +13,7 @@ import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Map (Map)
 import Data.Maybe
 import Data.Nullable (Nullable)
 import Data.Set (Set)
@@ -59,7 +60,7 @@ data State = State
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe CellError
   , lastInput :: Maybe EditorAndCode
-  , namesInScope :: Array String
+  , namesInScope :: Map String String
   }
 
 data Command
@@ -119,7 +120,7 @@ data EditorAndCode = EditorAndCode
   { editor :: Editor
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
-  , namesInScope :: Array String
+  , namesInScope :: Map String String
   }
 instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
@@ -362,7 +363,7 @@ render (State {display, code, editor, path, cellError, namesInScope}) =
 renderEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderEditor path namesInScope editor =
@@ -386,7 +387,7 @@ renderEditor path namesInScope editor =
 renderVariantEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> String
   -> Maybe Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -479,7 +480,7 @@ renderTextEditor path text =
 renderTableEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> Array String
   -> Array Row
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
@@ -560,7 +561,7 @@ tableRow ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> Int
   -> Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -832,7 +833,7 @@ generateColumnName columns = iterate 1
 renderArrayEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> Array Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderArrayEditor path namesInScope editors =
@@ -920,7 +921,7 @@ renderArrayEditor path namesInScope editors =
 renderRecordEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Array String
+  -> Map String String
   -> Array Field
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderRecordEditor path namesInScope fields =
