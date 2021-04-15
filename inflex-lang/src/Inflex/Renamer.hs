@@ -403,6 +403,13 @@ renameGlobal Env {cursor} Global {..} = do
           , scheme = RenamedScheme
           , name = ExactGlobalRef (HashGlobal sha512)
           }
+    ParsedPrim fun ->
+      pure
+        Global
+          { location = final
+          , scheme = RenamedScheme
+          , name = ExactGlobalRef (FunctionGlobal fun)
+          }
     _ -> Renamer (refute (pure (NotInScope name)))
 
 renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
