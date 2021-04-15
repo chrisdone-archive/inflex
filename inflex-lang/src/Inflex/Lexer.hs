@@ -52,6 +52,8 @@ module Inflex.Lexer
 import           Data.Bifunctor
 import           Data.Char
 import           Data.Functor
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
@@ -146,8 +148,14 @@ tokenLexer =
     ref =
       located
         (do void (Mega.char '@')
-            uuidRef Mega.<|> sha512Ref)
+            uuidRef Mega.<|> primRef Mega.<|>  sha512Ref)
       where
+        primRef = do
+          void (Mega.string "prim:")
+          txt <- Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
+          case M.lookup txt prims of
+            Nothing -> fail ("Invalid primitive: " <> T.unpack txt)
+            Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
           void (Mega.string "uuid:")
           txt <-
@@ -254,5 +262,25 @@ located m = do
              }
        , thing
        })
+
+prims :: Map Text Function
+prims =
+  M.fromList
+    [ ("array_map", MapFunction)
+    , ("array_filter", FilterFunction)
+    , ("array_length", LengthFunction)
+    , ("array_null", NullFunction)
+    , ("vega_raw", VegaFunction)
+    , ("array_sum", SumFunction)
+    , ("array_average", AverageFunction)
+    , ("array_distinct", DistinctFunction)
+    , ("array_minimum", MinimumFunction)
+    , ("array_maximum", MaximumFunction)
+    , ("array_sort", SortFunction)
+    , ("array_find", FindFunction)
+    , ("array_any", AnyFunction)
+    , ("array_all", AllFunction)
+    , ("from_ok", FromOkFunction)
+    ]
 
 $(makePrisms ''Token)
