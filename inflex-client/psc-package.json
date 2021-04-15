@@ -11,6 +11,7 @@
     "http-methods",
     "ordered-collections",
     "foreign-generic",
-    "node-process"
+    "node-process",
+    "debug"
   ]
 }
