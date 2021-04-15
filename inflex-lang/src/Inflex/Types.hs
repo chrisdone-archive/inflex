@@ -210,6 +210,7 @@ data ParsedGlobal
   = ParsedHash Hash
   | ParsedTextName Text
   | ParsedUuid Uuid
+  | ParsedPrim Function
 
 data IncompleteGlobalRef
   = ExactGlobalRef (GlobalRef Renamed)
