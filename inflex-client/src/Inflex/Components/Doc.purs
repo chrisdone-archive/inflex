@@ -27,6 +27,7 @@ import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell(..), OutputDocument(..), versionRefl)
 import Inflex.Schema as Shared
 import Prelude
+import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
 
@@ -82,7 +83,7 @@ component :: forall q. H.Component HH.HTML q Input Output Aff
 component =
   H.mkComponent
     { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal}
-    , render
+    , render: \state -> timed "Doc.render" (\_ -> render state)
     , eval:
         H.mkEval
           H.defaultEval {initialize = pure Initialize, handleAction = eval}

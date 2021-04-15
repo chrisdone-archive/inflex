@@ -8,25 +8,26 @@ module Inflex.Components.Cell
   , Output(..)
   ) where
 
+import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Either (Either(..), either)
+import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
-import Effect (Effect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
-import Inflex.Schema as Shared
 import Inflex.FieldName (validFieldName)
+import Inflex.Schema as Shared
 import Prelude
+import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
-import           Data.Map (Map)
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -83,7 +84,7 @@ component =
     { initialState:
         (\(Input {cell, namesInScope}) ->
            State {cell: outputCellToCell cell, namesInScope})
-    , render
+    , render: \state -> timed "Cell.render" (\_ -> render state)
     , eval:
         H.mkEval
           H.defaultEval
