@@ -94,7 +94,7 @@ exports.codeMirror = function(parent){
           if (word.length == 0) return accept(null);
           let candidates = [];
           for (var i = 0; i < comp.length; i++) {
-            if (isPrefixOf(word, comp[i].matchText)) {
+            if (isPrefixOf(word, comp[i].matchText.toLowerCase())) {
               candidates.push(comp[i]);
             }
           }

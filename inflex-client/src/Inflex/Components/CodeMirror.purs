@@ -315,6 +315,7 @@ foreign import keyHandled :: KeyResult
 
 foreign import keyPass :: KeyResult
 
+
 foreign import markText
   :: CodeMirror
   -> Pos
