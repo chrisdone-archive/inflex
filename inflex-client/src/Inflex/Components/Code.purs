@@ -132,7 +132,7 @@ eval =
           case mvalue of
             Just value -> do
               State state <- H.get
-              setMarks <- H.liftEffect $ makeSetMarks (state.cells) (state.code)
+              setMarks <- H.liftEffect $ makeSetMarks (state.cells) value
               traverse_ (H.query (SProxy :: SProxy "codemirror") unit) setMarks
             Nothing -> pure unit
         _ -> pure unit
