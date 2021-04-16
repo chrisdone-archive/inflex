@@ -138,11 +138,11 @@ spec = do
   if'
   case'
   it
-    "from_ok(0,#ok(2)) + 1"
-    (shouldReturn (stepDefaultedTextly "from_ok(0,#ok(2)) + 1") (Right "3"))
+    "@prim:from_ok(0,#ok(2)) + 1"
+    (shouldReturn (stepDefaultedTextly "@prim:from_ok(0,#ok(2)) + 1") (Right "3"))
   it
-    "from_ok(0,#oops) + 1"
-    (shouldReturn (stepDefaultedTextly "from_ok(0,#oops) + 1") (Right "1"))
+    "@prim:from_ok(0,#oops) + 1"
+    (shouldReturn (stepDefaultedTextly "@prim:from_ok(0,#oops) + 1") (Right "1"))
   {-early-}
 
 equality :: SpecWith ()
@@ -266,221 +266,221 @@ functions =
 functions2 :: SpecWith ()
 functions2 = do
   describe
-    "all"
+    "@prim:array_all"
     (do it
-          "all(_, [1])"
+          "@prim:array_all(_, [1])"
           (shouldReturn
-             (stepDefaultedTextly "all(_, [1])")
-             (Right "all(_, [1])"))
+             (stepDefaultedTextly "@prim:array_all(_, [1])")
+             (Right "@prim:array_all(_, [1])"))
         it
-          "all(_, [])"
+          "@prim:array_all(_, [])"
           (shouldReturn
-             (stepDefaultedTextly "all(_, [])")
+             (stepDefaultedTextly "@prim:array_all(_, [])")
              (Right "#all_empty"))
         it
-          "all(r:r=2, _)"
+          "@prim:array_all(r:r=2, _)"
           (shouldReturn
-             (stepDefaultedTextly "all(r:r=2,_)")
-             (Right "all(:($0 = fromInteger(2)), _)"))
+             (stepDefaultedTextly "@prim:array_all(r:r=2,_)")
+             (Right "@prim:array_all(:($0 = fromInteger(2)), _)"))
         it
-          "all(r:r=2,[2,2,_])"
+          "@prim:array_all(r:r=2,[2,2,_])"
           (shouldReturn
-             (stepDefaultedTextly "all(r:r=2,[2,2,_])")
-             (Right "all(:($0 = fromInteger(2)), [2, 2, _])"))
+             (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,_])")
+             (Right "@prim:array_all(:($0 = fromInteger(2)), [2, 2, _])"))
         it
-          "all(r:r=2,[2,2,2])"
+          "@prim:array_all(r:r=2,[2,2,2])"
           (shouldReturn
-             (stepDefaultedTextly "all(r:r=2,[2,2,2])")
+             (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,2])")
              (Right "#ok(#true)"))
         it
-          "all(r:r=2,[1,2,3])"
+          "@prim:array_all(r:r=2,[1,2,3])"
           (shouldReturn
-             (stepDefaultedTextly "all(r:r=2,[1,2,3])")
+             (stepDefaultedTextly "@prim:array_all(r:r=2,[1,2,3])")
              (Right "#ok(#false)"))
         it
-          "all(r:r=6,[])"
+          "@prim:array_all(r:r=6,[])"
           (shouldReturn
-             (stepDefaultedTextly "all(r:r=6,[])")
+             (stepDefaultedTextly "@prim:array_all(r:r=6,[])")
              (Right "#all_empty")))
   describe
-    "any"
+    "@prim:array_any"
     (do it
-          "any(r:r=2,[1,2,3])"
+          "@prim:array_any(r:r=2,[1,2,3])"
           (shouldReturn
-             (stepDefaultedTextly "any(r:r=2,[1,2,3])")
+             (stepDefaultedTextly "@prim:array_any(r:r=2,[1,2,3])")
              (Right "#ok(#true)"))
         it
-          "any(r:r=6,[1,2,3])"
+          "@prim:array_any(r:r=6,[1,2,3])"
           (shouldReturn
-             (stepDefaultedTextly "any(r:r=6,[1,2,3])")
+             (stepDefaultedTextly "@prim:array_any(r:r=6,[1,2,3])")
              (Right "#ok(#false)"))
         it
-          "any(r:r=6,[])"
+          "@prim:array_any(r:r=6,[])"
           (shouldReturn
-             (stepDefaultedTextly "any(r:r=6,[])")
+             (stepDefaultedTextly "@prim:array_any(r:r=6,[])")
              (Right "#any_empty")))
 
 functions1 :: Spec
 functions1 = do
   describe
-    "map"
+    "@prim:array_map"
     (do it
-          "map(r:r*2,[])"
+          "@prim:array_map(r:r*2,[])"
           (shouldReturn
-             (stepDefaultedTextly "map(r:r*2,[])")
+             (stepDefaultedTextly "@prim:array_map(r:r*2,[])")
              (Right "[]"))
         it
-          "map(r:r*2,[1,2,3])"
+          "@prim:array_map(r:r*2,[1,2,3])"
           (shouldReturn
-             (stepDefaultedTextly "map(r:r*2,[1,2,3])")
+             (stepDefaultedTextly "@prim:array_map(r:r*2,[1,2,3])")
              (Right "[2, 4, 6]"))
         it
-          "map(r:r.x*2,[{x:1},{x:2},{x:3}])"
+          "@prim:array_map(r:r.x*2,[{x:1},{x:2},{x:3}])"
           (shouldReturn
-             (stepDefaultedTextly "map(r:r.x*2,[{x:1},{x:2},{x:3}])")
+             (stepDefaultedTextly "@prim:array_map(r:r.x*2,[{x:1},{x:2},{x:3}])")
              (Right "[2, 4, 6]")))
   describe
-    "find"
+    "@prim:array_find"
     (do it
-          "find(r:r.name=\"jane\",[])"
+          "@prim:array_find(r:r.name=\"jane\",[])"
           (shouldReturn
-             (stepDefaultedTextly "find(r:r.name=\"jane\",[])")
+             (stepDefaultedTextly "@prim:array_find(r:r.name=\"jane\",[])")
              (Right "#find_empty"))
         it
-          "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+          "@prim:array_find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
           (shouldReturn
              (stepDefaultedTextly
-                "find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+                "@prim:array_find(r:r.name=\"jane\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
              (Right "#ok({\"name\": \"jane\"})"))
         it
-          "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
+          "@prim:array_find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])"
           (shouldReturn
              (stepDefaultedTextly
-                "find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
+                "@prim:array_find(r:r.name=\"janet\",[{\"name\":\"mary\"},{\"name\":\"jane\"}])")
              (Right "#find_failed"))
         it
-          "find(x:x>4,[1,2,3,4,5,6,7])"
+          "@prim:array_find(x:x>4,[1,2,3,4,5,6,7])"
           (shouldReturn
-             (stepDefaultedTextly "find(x:x>4,[1,2,3,4,5,6,7])")
+             (stepDefaultedTextly "@prim:array_find(x:x>4,[1,2,3,4,5,6,7])")
              (Right "#ok(5)"))
         it
-          "find(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+          "@prim:array_find(r:r.x>=2, [{x:1},{x:2},{x:3}])"
           (shouldReturn
-             (stepDefaultedTextly "find(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+             (stepDefaultedTextly "@prim:array_find(r:r.x>=2, [{x:1},{x:2},{x:3}])")
              (Right "#ok({\"x\": 2})")))
   describe
-    "filter"
+    "@prim:array_filter"
     (do it
-          "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
+          "@prim:array_filter(r:r.x>=2, [{x:1},{x:2},{x:3}])"
           (shouldReturn
-             (stepDefaultedTextly "filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
+             (stepDefaultedTextly "@prim:array_filter(r:r.x>=2, [{x:1},{x:2},{x:3}])")
              (Right "[{\"x\": 2}, {\"x\": 3}]")))
   describe
-    "length"
+    "@prim:array_length"
     (do it
-          "length([])"
-          (shouldReturn (stepDefaultedTextly "length([])") (Right "0"))
+          "@prim:array_length([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_length([])") (Right "0"))
         it
-          "length([1,2,3])"
-          (shouldReturn (stepDefaultedTextly "length([1,2,3])") (Right "3"))
+          "@prim:array_length([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_length([1,2,3])") (Right "3"))
         it
-          "null([])"
-          (shouldReturn (stepDefaultedTextly "null([])") (Right "#true"))
+          "@prim:array_null([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_null([])") (Right "#true"))
         it
-          "null([1,2,3])"
-          (shouldReturn (stepDefaultedTextly "null([1,2,3])") (Right "#false")))
+          "@prim:array_null([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_null([1,2,3])") (Right "#false")))
   describe
-    "sum"
+    "@prim:array_sum"
     (do it
-          "sum([1,2,3])"
-          (shouldReturn (stepDefaultedTextly "sum([1,2,3])") (Right "#ok(6)"))
+          "@prim:array_sum([1,2,3])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_sum([1,2,3])") (Right "#ok(6)"))
         it
-          "sum(filter(x:x>5,[1,2,3]))"
+          "@prim:array_sum(@prim:array_filter(x:x>5,[1,2,3]))"
           (shouldReturn
-             (stepDefaultedTextly "sum(filter(x:x>5,[1,2,3]))")
+             (stepDefaultedTextly "@prim:array_sum(@prim:array_filter(x:x>5,[1,2,3]))")
              (Right "#sum_empty"))
         it
-          "sum([])"
-          (shouldReturn (stepDefaultedTextly "sum([])") (Right "#sum_empty"))
+          "@prim:array_sum([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_sum([])") (Right "#sum_empty"))
         it
-          "sum(map(x:x.p,[{p:1},{p:2}]))"
+          "@prim:array_sum(@prim:array_map(x:x.p,[{p:1},{p:2}]))"
           (shouldReturn
-             (stepDefaultedTextly "sum(map(x:x.p,[{p:1},{p:2}]))")
+             (stepDefaultedTextly "@prim:array_sum(@prim:array_map(x:x.p,[{p:1},{p:2}]))")
              (Right "#ok(3)"))
         it
-          "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+          "@prim:array_sum(@prim:array_map(x:x.p,[{p:1.0},{p:-2.2}]))"
           (shouldReturn
-             (stepDefaultedTextly "sum(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+             (stepDefaultedTextly "@prim:array_sum(@prim:array_map(x:x.p,[{p:1.0},{p:-2.2}]))")
              (Right "#ok(-1.2)")))
   describe
-    "average"
+    "@prim:array_average"
     (do it
-          "average([24 , 55 , 17 , 87 , 100])"
+          "@prim:array_average([24 , 55 , 17 , 87 , 100])"
           (shouldReturn
-             (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100])")
+             (stepDefaultedTextly "@prim:array_average([24 , 55 , 17 , 87 , 100])")
              (Right "#ok(56)"))
         it
-          "average([24 , 55 , 17 , 87 , 100.0])"
+          "@prim:array_average([24 , 55 , 17 , 87 , 100.0])"
           (shouldReturn
-             (stepDefaultedTextly "average([24 , 55 , 17 , 87 , 100.0])")
+             (stepDefaultedTextly "@prim:array_average([24 , 55 , 17 , 87 , 100.0])")
              (Right "#ok(56.6)"))
         it
-          "average(filter(x:x>5,[1,2,3]))"
+          "@prim:array_average(@prim:array_filter(x:x>5,[1,2,3]))"
           (shouldReturn
-             (stepDefaultedTextly "average(filter(x:x>5,[1,2,3]))")
+             (stepDefaultedTextly "@prim:array_average(@prim:array_filter(x:x>5,[1,2,3]))")
              (Right "#average_empty"))
         it
-          "average([])"
-          (shouldReturn (stepDefaultedTextly "average([])") (Right "#average_empty"))
+          "@prim:array_average([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_average([])") (Right "#average_empty"))
         it
-          "average(map(x:x.p,[{p:1},{p:2}]))"
+          "@prim:array_average(@prim:array_map(x:x.p,[{p:1},{p:2}]))"
           (shouldReturn
-             (stepDefaultedTextly "average(map(x:x.p,[{p:1},{p:2.0}]))")
+             (stepDefaultedTextly "@prim:array_average(@prim:array_map(x:x.p,[{p:1},{p:2.0}]))")
              (Right "#ok(1.5)"))
         it
-          "average(map(x:x.p,[{p:1.0},{p:-2.2}]))"
+          "@prim:array_average(@prim:array_map(x:x.p,[{p:1.0},{p:-2.2}]))"
           (shouldReturn
-             (stepDefaultedTextly "average(map(x:x.p,[{p:1.0},{p:-2.2}]))")
+             (stepDefaultedTextly "@prim:array_average(@prim:array_map(x:x.p,[{p:1.0},{p:-2.2}]))")
              (Right "#ok(-0.6)")))
   describe
-    "distinct"
+    "@prim:array_distinct"
     (do it
-          "distinct([])"
-          (shouldReturn (stepDefaultedTextly "distinct([])") (Right "[]"))
+          "@prim:array_distinct([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_distinct([])") (Right "[]"))
         it
-          "distinct([1,2,1,3,3,3,1])"
+          "@prim:array_distinct([1,2,1,3,3,3,1])"
           (shouldReturn
-             (stepDefaultedTextly "distinct([1,2,1,3,3,3,1])")
+             (stepDefaultedTextly "@prim:array_distinct([1,2,1,3,3,3,1])")
              (Right "[1, 2, 3]")))
   describe
-    "sort"
+    "@prim:array_sort"
     (do it
-          "sort([])"
-          (shouldReturn (stepDefaultedTextly "sort([])") (Right "[]"))
+          "@prim:array_sort([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_sort([])") (Right "[]"))
         it
-          "sort([5,3,8,2,4,2,9,1])"
+          "@prim:array_sort([5,3,8,2,4,2,9,1])"
           (shouldReturn
-             (stepDefaultedTextly "sort([5,3,8,2,4,2,9,1])")
+             (stepDefaultedTextly "@prim:array_sort([5,3,8,2,4,2,9,1])")
              (Right "[1, 2, 2, 3, 4, 5, 8, 9]")))
   describe
-    "maximum"
+    "@prim:array_maximum"
     (do it
-          "maximum([])"
-          (shouldReturn (stepDefaultedTextly "maximum([])") (Right "#maximum_empty"))
+          "@prim:array_maximum([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_maximum([])") (Right "#maximum_empty"))
         it
-          "maximum([2,3,1,5])"
+          "@prim:array_maximum([2,3,1,5])"
           (shouldReturn
-             (stepDefaultedTextly "maximum([2,3,1,5])")
+             (stepDefaultedTextly "@prim:array_maximum([2,3,1,5])")
              (Right "#ok(5)")))
   describe
-    "minimum"
+    "@prim:array_minimum"
     (do it
-          "minimum([])"
-          (shouldReturn (stepDefaultedTextly "minimum([])") (Right "#minimum_empty"))
+          "@prim:array_minimum([])"
+          (shouldReturn (stepDefaultedTextly "@prim:array_minimum([])") (Right "#minimum_empty"))
         it
-          "minimum([2,3,1,5])"
+          "@prim:array_minimum([2,3,1,5])"
           (shouldReturn
-             (stepDefaultedTextly "minimum([2,3,1,5])")
+             (stepDefaultedTextly "@prim:array_minimum([2,3,1,5])")
              (Right "#ok(1)")))
 
 if' :: SpecWith ()
@@ -576,17 +576,17 @@ _early =
              (stepDefaultedTextly "#ok(3)? + 1 + #ok(4)?")
              (Right "#ok(8)"))
         it
-          "find(x:x>5,[5,2,63,1,3])? + 3"
+          "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3"
           (shouldReturn
-             (stepDefaultedTextly "find(x:x>5,[5,2,63,1,3])? + 3")
+             (stepDefaultedTextly "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3")
              (Right "#ok(66)"))
         it
-          "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?"
+          "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?"
           (shouldReturn
-             (stepDefaultedTextly "find(x:x>5,[5,2,63,1,3])? + 3 + #oops?")
+             (stepDefaultedTextly "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?")
              (Right "#oops"))
         it
-          "case (x: find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }"
+          "case (x: @prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "case (x: find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }")
+             (stepDefaultedTextly "case (x: @prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }")
              (Right "1")))

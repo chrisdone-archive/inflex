@@ -30,6 +30,7 @@ data RenameError
                         (Map Text (GlobalRef Renamed))
                         (Variable Parsed)
   | NotInScope ParsedGlobal
+  | NotInScopeLocal Text
   deriving (Show, Eq)
 
 newtype Renamer a = Renamer

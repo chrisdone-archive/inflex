@@ -157,7 +157,7 @@ instance Display (GlobalRef Resolved) where
                                          LessEqualTo -> "="
                NumericBinOpGlobal op -> display op
                InstanceGlobal r -> display r
-               FunctionGlobal function -> display function
+               FunctionGlobal function -> "@prim:" <> display function
 
 instance Display (Apply Resolved) where
   display apply@Apply {function, argument} =
@@ -304,7 +304,7 @@ instance Display (GlobalRef Renamed) where
                                          Equal -> "="
                                          NotEqual -> "/="
                NumericBinOpGlobal op -> display op
-               FunctionGlobal function -> display function
+               FunctionGlobal function -> "@prim:" <> display function
 
 instance Display InstanceName where
   display =
@@ -518,6 +518,7 @@ instance Display ParsedGlobal where
                ParsedTextName name -> display name
                ParsedHash (Hash hash) -> "#" <> display (sha512AsHexText hash)
                ParsedUuid (Uuid uuid) -> display uuid
+               ParsedPrim fun -> "@prim:" <> display fun
 
 instance Display (GlobalRef Parsed) where
   display =
@@ -536,28 +537,28 @@ instance Display (GlobalRef Parsed) where
           Equal -> "="
           NotEqual -> "/="
       NumericBinOpGlobal op -> display op
-      FunctionGlobal function -> display function
+      FunctionGlobal function -> "@prim:" <> display function
 
 instance Display Function where
   display =
     \case
-      MapFunction -> "map"
+      MapFunction -> "array_map"
       FromOkFunction -> "from_ok"
       VegaFunction -> "vega"
-      FilterFunction -> "filter"
-      DistinctFunction -> "distinct"
-      SortFunction -> "sort"
-      AndFunction -> "and"
-      OrFunction -> "or"
-      SumFunction -> "sum"
-      MinimumFunction -> "minimum"
-      MaximumFunction -> "maximum"
-      AverageFunction -> "average"
-      LengthFunction -> "length"
-      FindFunction -> "find"
-      AllFunction -> "all"
-      AnyFunction -> "any"
-      NullFunction -> "null"
+      FilterFunction -> "array_filter"
+      DistinctFunction -> "array_distinct"
+      SortFunction -> "array_sort"
+      AndFunction -> "array_and"
+      OrFunction -> "array_or"
+      SumFunction -> "array_sum"
+      MinimumFunction -> "array_minimum"
+      MaximumFunction -> "array_maximum"
+      AverageFunction -> "array_average"
+      LengthFunction -> "array_length"
+      FindFunction -> "array_find"
+      AllFunction -> "array_all"
+      AnyFunction -> "array_any"
+      NullFunction -> "array_null"
 
 instance Display NumericBinOp where
   display =

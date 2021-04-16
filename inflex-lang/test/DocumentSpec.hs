@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
 
@@ -59,7 +60,7 @@ errors = do
                   [ Named
                       { uuid = Uuid u1
                       , name = "x"
-                      , thing = "x"
+                      , thing = "@uuid:" <> u1
                       , order = 0
                       , code = "x"
                       }
@@ -76,13 +77,14 @@ errors = do
   it
     "x = y"
     (do u1 <- nextRandom'
+        u2 <- nextRandom'
         shouldReturn
           (do loaded <-
                 loadDocument'
                   [ Named
                       { uuid = Uuid u1
                       , name = "x"
-                      , thing = "y"
+                      , thing = "@uuid:" <> u2
                       , code = "y"
                       , order = 0
                       }
@@ -94,7 +96,7 @@ errors = do
               , thing =
                   Left
                     (LoadGenerateError
-                       (FillErrors (MissingGlobal emptyFillerEnv "y" :| [])))
+                       (FillErrors (MissingGlobalUuid emptyFillerEnv (Uuid u2) :| [])))
               , code = "y"
               , order = 0
               }
@@ -1869,14 +1871,14 @@ regression = do
 mapfunc :: SpecWith ()
 mapfunc =
   eval_it
-    "map(x:x*2,[3])"
-    [("x", "(map(x:x*2))([3])")]
+    "@prim:array_map(x:x*2,[3])"
+    [("x", "(@prim:array_map(x:x*2))([3])")]
     (\[u1] ->
        [ Named
            { uuid = Uuid u1
            , name = "x"
            , order = 0
-           , code = "(map(x:x*2))([3])"
+           , code = "(@prim:array_map(x:x*2))([3])"
            , thing =
                Right
                  (ArrayExpression
@@ -1916,9 +1918,11 @@ mapfunc =
 
 table_map_defaulting :: SpecWith ()
 table_map_defaulting =
-  eval_it
+  eval_it_with_uuids
     "t = [{x:3,y:2.0}]; k = map(r:r.x*r.y,t)"
-    [("t", "[{x:3,y:2.0}]"), ("k", "map(r:r.x*r.y,t)")]
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("t", "[{x:3,y:2.0}]"))
+    , (Nothing, ("k", "@prim:array_map(r:r.x*r.y, @uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
+    ]
     (\[u1, u2] ->
        [ Named
            { uuid = Uuid u1
@@ -1985,8 +1989,7 @@ table_map_defaulting =
                                                 LiteralExpression
                                                   (NumberLiteral
                                                      (Number
-                                                        { location =
-                                                            BuiltIn
+                                                        { location = BuiltIn
                                                         , number =
                                                             DecimalNumber
                                                               (Decimal
@@ -2174,7 +2177,7 @@ table_map_defaulting =
            { uuid = Uuid u2
            , name = "k"
            , order = 1
-           , code = "map(r:r.x*r.y,t)"
+           , code = "@prim:array_map(r:r.x*r.y, @uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
            , thing =
                Right
                  (ArrayExpression
@@ -2318,31 +2321,46 @@ eval_it ::
      String -> [(Text, Text)]
   -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
   -> SpecWith ()
-eval_it desc xs result = eval_it_with desc xs result (pure ())
+eval_it desc xs result = eval_it_with desc (map (Nothing, ) xs) result (maybe nextRandom' pure) (pure ())
+
+eval_it_with_uuids ::
+     String
+  -> [(Maybe Text, (Text, Text))]
+  -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
+  -> SpecWith ()
+eval_it_with_uuids desc xs result =
+  eval_it_with
+    desc
+    xs
+    result
+    (maybe nextRandom' pure)
+    (pure ())
 
 eval_it_pending ::
      String -> [(Text, Text)]
   -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
   -> String
   -> SpecWith ()
-eval_it_pending desc xs result t = eval_it_with desc xs result (pendingWith t)
+eval_it_pending desc xs result t = eval_it_with desc (map (Nothing, ) xs) result (maybe nextRandom' pure) (pendingWith t)
 
 eval_it_with ::
-     String -> [(Text, Text)]
+     String
+  -> [(Maybe Text, (Text, Text))]
   -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
+  -> (Maybe Text -> IO Text)
   -> IO ()
   -> SpecWith ()
-eval_it_with desc xs result io =
+eval_it_with desc xs result next io =
   it
     (desc <> ": " <>
      intercalate
        "; "
-       (map (\(name, val) -> T.unpack name <> " = " <> T.unpack val) xs))
+       (map (\(_, (name, val)) -> T.unpack name <> " = " <> T.unpack val) xs))
     (do io
         xs' <-
           mapM
-            (\x -> do
-               u <- nextRandom'
+            (\(u0, x) -> do
+               u <- next u0
                pure (u, x))
             xs
         shouldReturn

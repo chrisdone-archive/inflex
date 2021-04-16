@@ -63,7 +63,7 @@ spec_table_nums =
                 , typ =
                     ApplyType
                       (TypeApplication
-                         { function =
+                        { function =
                              ConstantType
                                (TypeConstant
                                   {location = DefaultedCursor, name = DecimalTypeName})
@@ -86,7 +86,7 @@ spec_table_nums =
           (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
               mempty
               ""
-              ("map(r:r.y+r.x,[{x:3,y:2.0}])")))
+              ("@prim:array_map(r:r.y+r.x,[{x:3,y:2.0}])")))
           (Right
              (Scheme
                 { location = ExpressionCursor

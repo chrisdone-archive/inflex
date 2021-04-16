@@ -9,7 +9,7 @@ import Inflex.Derived.TH
 import Inflex.Types
 
 nullFunction :: Expression Resolved
-nullFunction = $(compile "list: length(list) = (0::Integer)")
+nullFunction = $(compile "list: @prim:array_length(list) = (0::Integer)")
 
 from_okFunction :: Expression Resolved
 from_okFunction = $(compile "def: v: case v { #ok(a): a, o: def }")

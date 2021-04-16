@@ -25,7 +25,6 @@ import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import           Data.Text (Text)
@@ -73,27 +72,12 @@ renameText fp text = do
 --------------------------------------------------------------------------------
 -- Wired-in
 
-wiredInGlobals :: Map Text (GlobalRef Renamed)
+wiredInGlobals :: M.Map Text (GlobalRef s)
 wiredInGlobals =
   M.fromList
     [ ("fromInteger", FromIntegerGlobal)
     , ("fromDecimal", FromDecimalGlobal)
-    , ("map", FunctionGlobal MapFunction)
-    , ("filter", FunctionGlobal FilterFunction)
-    , ("size", FunctionGlobal LengthFunction)
-    , ("length", FunctionGlobal LengthFunction)
-    , ("null", FunctionGlobal NullFunction)
-    , ("vega", FunctionGlobal VegaFunction)
-    , ("sum", FunctionGlobal SumFunction)
-    , ("average", FunctionGlobal AverageFunction)
-    , ("distinct", FunctionGlobal DistinctFunction)
-    , ("minimum", FunctionGlobal MinimumFunction)
-    , ("maximum", FunctionGlobal MaximumFunction)
-    , ("sort", FunctionGlobal SortFunction)
-    , ("find", FunctionGlobal FindFunction)
-    , ("any", FunctionGlobal AnyFunction)
-    , ("all", FunctionGlobal AllFunction)
-    , ("from_ok", FunctionGlobal FromOkFunction)
+
     ]
 
 --------------------------------------------------------------------------------
@@ -457,26 +441,28 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
   case find
          (any (\Param {name = name'} -> name' == name) . bindingParam . snd)
          (zip [0 ..] scope) of
-    Nothing -> do
-      final <- finalizeCursor cursor ExpressionCursor location
-      case M.lookup name globals of
-        Nothing -> do
-          modify (over _2 (Set.insert name))
-          pure
-            (GlobalExpression
-               (Global
-                  { location = final
-                  , name = UnresolvedGlobalText name
-                  , scheme = RenamedScheme
-                  }))
-        Just globalRef -> do
-          pure
-            (GlobalExpression
-               (Global
-                  { location = final
-                  , name = ResolvedGlobalRef name globalRef
-                  , scheme = RenamedScheme
-                  }))
+    Nothing
+      | False -> Renamer (refute (pure (NotInScopeLocal name)))
+      | True -> do
+        final <- finalizeCursor cursor ExpressionCursor location
+        case M.lookup name globals of
+          Nothing -> do
+            modify (over _2 (Set.insert name))
+            pure
+              (GlobalExpression
+                 (Global
+                    { location = final
+                    , name = UnresolvedGlobalText name
+                    , scheme = RenamedScheme
+                    }))
+          Just globalRef -> do
+            pure
+              (GlobalExpression
+                 (Global
+                    { location = final
+                    , name = ResolvedGlobalRef name globalRef
+                    , scheme = RenamedScheme
+                    }))
     Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
@@ -489,7 +475,8 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
                    (\Param {name = name'} -> name' == name)
                    (toList params) of
               Nothing ->
-                Renamer (refute (pure (BUG_MissingVariable scope globals variable)))
+                Renamer
+                  (refute (pure (BUG_MissingVariable scope globals variable)))
               Just subIndex ->
                 pure
                   (DeBrujinIndexOfLet
