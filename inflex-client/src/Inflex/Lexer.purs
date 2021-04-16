@@ -6,15 +6,14 @@ module Inflex.Lexer
   , Location
   ) where
 
-import Data.Array as Array
-import Data.Either (Either(..), either)
+
+import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.UUID
+import Data.UUID (UUID(..))
 import Effect (Effect)
-import Effect.Exception
-import Prelude
-
+import Effect.Exception (Error, try)
+import Prelude (class Show, bind, map, pure)
 
 --------------------------------------------------------------------------------
 -- Types

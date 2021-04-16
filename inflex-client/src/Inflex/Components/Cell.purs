@@ -14,7 +14,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.UUID
+import Data.UUID (UUID)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
@@ -26,7 +26,7 @@ import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema as Shared
-import Prelude
+import Prelude (class Ord, class Show, Unit, bind, discard, identity, map, mempty, pure, show, unit, (<<<), (<>))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 

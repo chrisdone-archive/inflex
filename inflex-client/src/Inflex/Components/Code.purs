@@ -9,23 +9,23 @@ module Inflex.Components.Code
   ) where
 
 import Data.Array as Array
-import Data.Either
+import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Data.UUID
+import Data.UUID (UUID(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console
+import Effect.Class.Console (error)
+import Effect(Effect)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
-import Inflex.Lexer
+import Inflex.Lexer (Token(..), lexString)
 import Inflex.Schema as Shared
-import Prelude
-import Prelude (Unit, bind, discard, map, pure, unit, void, when, ($), (&&), (-), (<<<), (<>), (==))
+import Prelude (Unit, bind, discard, map, pure, unit, ($), (-), (<<<), (<>))
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -184,6 +184,7 @@ render (State state) =
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
 
+makeSetMarks :: forall t55. Map UUID Shared.OutputCell -> String -> Effect (Array (CM.Query t55))
 makeSetMarks cells code = do
           result <- lexString (code)
           case result of
