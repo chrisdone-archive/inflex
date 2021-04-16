@@ -189,7 +189,7 @@ render (State state) =
             Left _ -> do error ("Lexing failed! " <> state.code)
                          pure []
             Right tokens -> do
-              log(show tokens)
+              -- log (show tokens)
               pure (Array.mapMaybe
                 (\token ->
                    case token of
