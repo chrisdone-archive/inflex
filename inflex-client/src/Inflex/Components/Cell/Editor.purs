@@ -14,14 +14,14 @@ import Data.Array as Array
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
-import Data.Maybe
+import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Data.UUID
+import Data.UUID (UUID)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
