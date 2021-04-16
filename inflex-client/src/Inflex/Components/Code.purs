@@ -180,15 +180,23 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
-       , namesInScope: []
-          -- map(\(Tuple uuid v) ->
-          --                   { text: "@uuid:" <> uuid, -- what will be inserted
-          --                     key: uuid, -- what will be raised later to PS
-          --                     displayText: v, -- we can put whatever in here, and even a render function
-          --                     -- <https://codemirror.net/doc/manual.html#addons>
-          --                     matchText: v -- string that will match this identifier
-          --                   } )
-          --            (M.toUnfoldable (state.namesInScope))
+       , namesInScope:
+          map (\(Tuple _key (Shared.OutputCell{uuid: UUID uuid, name})) ->
+                 { text: "@uuid:" <> uuid, -- what will be inserted
+                   key: uuid, -- what will be raised later to PS
+                   displayText: name, -- we can put whatever in here, and even a render function
+                   -- <https://codemirror.net/doc/manual.html#addons>
+                   matchText: name -- string that will match this identifier
+                 })
+              (M.toUnfoldable (state.cells)) <>
+          map (\prim ->
+                 { text: "@prim:" <> prim.name, -- what will be inserted
+                   key: prim.name, -- what will be raised later to PS
+                   displayText: prim.display, -- we can put whatever in here, and even a render function
+                   -- <https://codemirror.net/doc/manual.html#addons>
+                   matchText: prim.display -- string that will match this identifier
+                 })
+              (meta.prims)
        }
        , initializers: initializers})
     (case _ of
