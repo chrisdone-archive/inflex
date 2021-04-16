@@ -172,11 +172,11 @@ render (State state) =
        , highlightSelectionMatches: true
        , namesInScope: []
           -- map(\(Tuple uuid v) ->
-          --                   { text: "@uuid:" <> uuid,
-          --                     key: uuid,
+          --                   { text: "@uuid:" <> uuid, -- what will be inserted
+          --                     key: uuid, -- what will be raised later to PS
           --                     displayText: v, -- we can put whatever in here, and even a render function
           --                     -- <https://codemirror.net/doc/manual.html#addons>
-          --                     matchText: v
+          --                     matchText: v -- string that will match this identifier
           --                   } )
           --            (M.toUnfoldable (state.namesInScope))
        }
