@@ -28,6 +28,16 @@ import Prelude
 import Prelude (Unit, bind, discard, map, pure, unit, void, when, ($), (&&), (-), (<<<), (<>), (==))
 
 --------------------------------------------------------------------------------
+-- Foreign
+
+foreign import meta :: {
+  prims :: Array { name :: String, display :: String }
+ }
+
+prims :: Map String String
+prims = M.fromFoldable (map (\prim -> Tuple (prim.name) (prim.display)) (meta.prims))
+
+--------------------------------------------------------------------------------
 -- Interface
 
 data Input = Input
@@ -194,7 +204,20 @@ render (State state) =
                 (\token ->
                    case token of
                      MiscToken -> Nothing
-                     PrimToken _ _ -> Nothing -- TODO:
+                     PrimToken key location ->
+                       case M.lookup key prims of
+                          Nothing -> Nothing
+                          Just display ->
+                            Just (CM.MarkText
+                                  { line: location . start . line - 1
+                                  , ch: location . start . column - 1
+                                  }
+                                  { line: location . end . line - 1
+                                  , ch: location . end . column - 1
+                                  }
+                                  {
+                                    replaceText: display
+                                  })
                      UuidToken uuid location ->
                         case M.lookup uuid (state.cells) of
                           Nothing -> Nothing
