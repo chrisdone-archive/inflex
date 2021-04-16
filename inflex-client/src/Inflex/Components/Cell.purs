@@ -14,6 +14,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Data.UUID
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
@@ -34,7 +35,7 @@ import Web.HTML.Event.DragEvent as DE
 
 data Input = Input {
   cell :: Shared.OutputCell,
-  namesInScope :: Map String String
+  cells :: Map UUID Shared.OutputCell
   }
 
 data Query a
@@ -47,7 +48,7 @@ data Output
 
 data State = State
   { cell :: Cell
-  , namesInScope:: Map String String
+  , cells:: Map UUID Shared.OutputCell
   }
 
 data Command
@@ -82,8 +83,8 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\(Input {cell, namesInScope}) ->
-           State {cell: outputCellToCell cell, namesInScope})
+        (\(Input {cell, cells}) ->
+           State {cell: outputCellToCell cell, cells})
     , render: \state -> timed "Cell.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -185,10 +186,10 @@ eval =
   case _ of
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
-    SetCellFromInput (Input {cell: c, namesInScope}) -> do
+    SetCellFromInput (Input {cell: c, cells}) -> do
       let cell@(Cell {hash, name}) = outputCellToCell c
       H.modify_
-        (\(State s) -> State (s {cell = cell, namesInScope = namesInScope}))
+        (\(State s) -> State (s {cell = cell, cells = cells}))
     DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------
@@ -200,7 +201,7 @@ render :: forall keys q m. MonadAff m =>
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
 render (State { cell: Cell {name, code, result, hash}
-              , namesInScope
+              , cells
               }) =
   HH.div
     [HP.class_ (HH.ClassName "cell-wrapper")]
@@ -237,7 +238,7 @@ render (State { cell: Cell {name, code, result, hash}
                 (Editor.EditorAndCode
                    { editor: either Editor.ErrorE identity result
                    , code: code
-                   , namesInScope
+                   , cells
                    , path: identity
                    })
                 (\output ->

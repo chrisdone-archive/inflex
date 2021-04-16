@@ -5,7 +5,6 @@ module Inflex.Components.Doc
   ) where
 
 import Control.Monad.State (class MonadState)
-import Data.Array (filter)
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
@@ -13,7 +12,7 @@ import Data.Maybe (Maybe(..), isNothing)
 import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
-import Data.Tuple
+import Data.Tuple (Tuple(..))
 import Data.UUID (UUID, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -192,7 +191,13 @@ render state =
                  Cell.component
                  (Cell.Input
                     { cell
-                    , namesInScope: M.delete name namesInScope
+                    , cells:
+                        M.delete
+                          uuid
+                          (M.fromFoldable
+                             (map
+                                (\cell'@(OutputCell {uuid: uuid'}) -> Tuple uuid' cell')
+                                (state . cells)))
                     })
                  (\update0 ->
                     pure

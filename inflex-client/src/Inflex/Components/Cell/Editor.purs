@@ -21,6 +21,7 @@ import Data.Set as Set
 import Data.String (joinWith, trim)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
+import Data.UUID
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
@@ -60,7 +61,7 @@ data State = State
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe CellError
   , lastInput :: Maybe EditorAndCode
-  , namesInScope :: Map String String
+  , cells :: Map UUID Shared.OutputCell
   }
 
 data Command
@@ -120,7 +121,7 @@ data EditorAndCode = EditorAndCode
   { editor :: Editor
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
-  , namesInScope :: Map String String
+  , cells :: Map UUID Shared.OutputCell
   }
 instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
@@ -166,7 +167,7 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\input@(EditorAndCode {editor, code, path, namesInScope}) ->
+        (\input@(EditorAndCode {editor, code, path, cells}) ->
            State
              { display: DisplayEditor
              , editor
@@ -174,7 +175,7 @@ component =
              , path
              , cellError: Nothing
              , lastInput: Just input
-             , namesInScope
+             , cells
              })
     , render
     , eval:
@@ -251,7 +252,7 @@ eval' =
            (if trim code == ""
               then "_"
               else code))
-    SetEditorInput input@(EditorAndCode {editor, code, path, namesInScope}) -> do
+    SetEditorInput input@(EditorAndCode {editor, code, path, cells}) -> do
       State state <- H.get
       case state . display of
         DisplayCode | pure input == state.lastInput -> pure unit -- Ignore if we're editing and input is the same.
@@ -264,7 +265,7 @@ eval' =
                , display: DisplayEditor
                , cellError: Nothing
                , lastInput: Just input
-               , namesInScope
+               , cells
                })
       -- do undefined
       --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})
@@ -300,13 +301,13 @@ foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
 -- Render main component
 
 render :: forall a. MonadAff a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-render (State {display, code, editor, path, cellError, namesInScope}) =
+render (State {display, code, editor, path, cellError, cells}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
       if trim code == ""
         then wrapper (renderControl)
-        else wrapper (renderEditor path namesInScope editor)
+        else wrapper (renderEditor path cells editor)
   where
     renderControl =
       [ HH.slot
@@ -318,7 +319,7 @@ render (State {display, code, editor, path, cellError, namesInScope}) =
                  if code == "_"
                    then ""
                    else code
-             , namesInScope
+             , cells
              })
           (case _ of
              Code.TextOutput text -> Just (FinishEditing text))
@@ -363,10 +364,10 @@ render (State {display, code, editor, path, cellError, namesInScope}) =
 renderEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> Editor
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor path namesInScope editor =
+renderEditor path cells editor =
   case editor of
     MiscE _originalSource t ->
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]]
@@ -375,11 +376,11 @@ renderEditor path namesInScope editor =
     VegaE _originalSource t ->
       [renderVegaEditor path t]
     VariantE _originalSource tag arg ->
-      [renderVariantEditor path namesInScope tag arg]
+      [renderVariantEditor path cells tag arg]
     ErrorE msg -> [renderError msg]
-    ArrayE _originalSource editors -> [renderArrayEditor path namesInScope editors]
-    RecordE _originalSource fields -> [renderRecordEditor path namesInScope fields]
-    TableE _originalSource columns rows -> renderTableEditor path namesInScope columns rows
+    ArrayE _originalSource editors -> [renderArrayEditor path cells editors]
+    RecordE _originalSource fields -> [renderRecordEditor path cells fields]
+    TableE _originalSource columns rows -> renderTableEditor path cells columns rows
 
 --------------------------------------------------------------------------------
 -- Variant display
@@ -387,11 +388,11 @@ renderEditor path namesInScope editor =
 renderVariantEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> String
   -> Maybe Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderVariantEditor path namesInScope tag marg =
+renderVariantEditor path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")] [HH.text ("#" <> tag)]] <>
@@ -406,7 +407,7 @@ renderVariantEditor path namesInScope tag marg =
                { editor: arg
                , code: editorCode arg
                , path: path <<< Shared.DataVariantOf tag
-               , namesInScope
+               , cells
                })
             (\output ->
                case output of
@@ -480,17 +481,17 @@ renderTextEditor path text =
 renderTableEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> Array String
   -> Array Row
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor path namesInScope columns rows =
+renderTableEditor path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow columns path namesInScope) rows <>
+          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow columns path cells) rows <>
            addNewRow)
       ]
   ]
@@ -561,11 +562,11 @@ tableRow ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> Int
   -> Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow columns path namesInScope rowIndex HoleRow =
+tableRow columns path cells rowIndex HoleRow =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
@@ -581,7 +582,7 @@ tableRow columns path namesInScope rowIndex HoleRow =
                     (EditorAndCode
                        { editor: editor'
                        , code: editorCode editor'
-                       , namesInScope
+                       , cells
                        , path:
                            path <<<
                            Shared.DataElemOf rowIndex <<<
@@ -615,7 +616,7 @@ tableRow columns path namesInScope rowIndex HoleRow =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
 
-tableRow columns path namesInScope rowIndex (Row {fields}) =
+tableRow columns path cells rowIndex (Row {fields}) =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
@@ -632,7 +633,7 @@ tableRow columns path namesInScope rowIndex (Row {fields}) =
                           (EditorAndCode
                              { editor: editor'
                              , code: editorCode editor'
-                             , namesInScope
+                             , cells
                              , path:
                                  path <<<
                                  Shared.DataElemOf rowIndex <<< Shared.DataFieldOf key
@@ -833,10 +834,10 @@ generateColumnName columns = iterate 1
 renderArrayEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> Array Editor
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderArrayEditor path namesInScope editors =
+renderArrayEditor path cells editors =
   HH.table
     [HP.class_ (HH.ClassName "array")]
     [HH.tbody [HP.class_ (HH.ClassName "array-body")] (body <> addNewRow)]
@@ -869,7 +870,7 @@ renderArrayEditor path namesInScope editors =
                             { editor: editor'
                             , code: editorCode editor'
                             , path: childPath
-                            , namesInScope
+                            , cells
                             })
                          (\output ->
                             case output of
@@ -921,10 +922,10 @@ renderArrayEditor path namesInScope editors =
 renderRecordEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map String String
+  -> Map UUID Shared.OutputCell
   -> Array Field
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderRecordEditor path namesInScope fields =
+renderRecordEditor path cells fields =
   HH.table
     [HP.class_ (HH.ClassName "record")]
     ((if false
@@ -1008,7 +1009,7 @@ renderRecordEditor path namesInScope fields =
                     component
                     (EditorAndCode
                        { editor: editor'
-                       , namesInScope
+                       , cells
                        , code: editorCode editor'
                        , path: path <<< Shared.DataFieldOf key
                        })
