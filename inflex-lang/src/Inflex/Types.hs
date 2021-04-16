@@ -211,6 +211,13 @@ data ParsedGlobal
   | ParsedTextName Text
   | ParsedUuid Uuid
   | ParsedPrim Function
+  -- The ParsedFromInteger/ParsedFromDecimal cases below are hacks to
+  -- avoid doing more work. I'd prefer something cleaner,
+  -- perhaps. Although I'm not sure what. Perhaps dropping or
+  -- collapsing the whole ParsedGlobal type? GlobalRef already has
+  -- many of these constructors.
+  | ParsedFromInteger
+  | ParsedFromDecimal
 
 data IncompleteGlobalRef
   = ExactGlobalRef (GlobalRef Renamed)

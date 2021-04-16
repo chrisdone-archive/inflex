@@ -99,10 +99,10 @@ spec = do
           "(2 :: Decimal 3)"
           (shouldReturn (stepDefaultedTextly "(2 :: Decimal 3)") (Right "2.000"))
         it
-          "fromInteger (6 :: Integer) + 3.10 + fromDecimal (3.1 :: Decimal 1)"
+          "@prim:from_integer (6 :: Integer) + 3.10 + @prim:from_decimal (3.1 :: Decimal 1)"
           (shouldReturn
              (stepDefaultedTextly
-                "fromInteger (6 :: Integer) + 3.10 + fromDecimal (3.1 :: Decimal 1)")
+                "@prim:from_integer (6 :: Integer) + 3.10 + @prim:from_decimal (3.1 :: Decimal 1)")
              (Right "12.20")))
   describe
     "Sanity checks"
@@ -281,12 +281,12 @@ functions2 = do
           "@prim:array_all(r:r=2, _)"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,_)")
-             (Right "@prim:array_all(:($0 = fromInteger(2)), _)"))
+             (Right "@prim:array_all(:($0 = @prim:from_integer(2)), _)"))
         it
           "@prim:array_all(r:r=2,[2,2,_])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,_])")
-             (Right "@prim:array_all(:($0 = fromInteger(2)), [2, 2, _])"))
+             (Right "@prim:array_all(:($0 = @prim:from_integer(2)), [2, 2, _])"))
         it
           "@prim:array_all(r:r=2,[2,2,2])"
           (shouldReturn

@@ -139,22 +139,18 @@ spec = do
                    , unresolvedGlobals = Set.fromList ["missing"]
                    , unresolvedUuids = mempty
                    })))
+        -- This test confirms that fromInteger is no longer in the global namespace. It used to be.
         it
           "fromInteger"
           (shouldBe
              (renameText "" "fromInteger")
              (Right
                 (IsRenamed
-                   { unresolvedGlobals = mempty
-                   , unresolvedUuids = mempty
-                   , thing =
+                   { thing =
                        GlobalExpression
                          (Global
                             { location = ExpressionCursor
-                            , name =
-                                ResolvedGlobalRef
-                                  "fromInteger"
-                                  FromIntegerGlobal
+                            , name = UnresolvedGlobalText "fromInteger"
                             , scheme = RenamedScheme
                             })
                    , mappings =
@@ -167,23 +163,21 @@ spec = do
                                    SourcePos {line = 1, column = 12, name = ""}
                                })
                          ]
+                   , unresolvedGlobals = Set.fromList ["fromInteger"]
+                   , unresolvedUuids = Set.fromList []
                    })))
+        -- This test confirms that fromDecimal is no longer in the global namespace. It used to be.
         it
           "fromDecimal"
           (shouldBe
              (renameText "" "fromDecimal")
              (Right
                 (IsRenamed
-                   { unresolvedGlobals = mempty
-                   , unresolvedUuids = mempty
-                   , thing =
+                   { thing =
                        GlobalExpression
                          (Global
                             { location = ExpressionCursor
-                            , name =
-                                ResolvedGlobalRef
-                                  "fromDecimal"
-                                  FromDecimalGlobal
+                            , name = UnresolvedGlobalText "fromDecimal"
                             , scheme = RenamedScheme
                             })
                    , mappings =
@@ -196,6 +190,8 @@ spec = do
                                    SourcePos {line = 1, column = 12, name = ""}
                                })
                          ]
+                   , unresolvedGlobals = Set.fromList ["fromDecimal"]
+                   , unresolvedUuids = Set.fromList []
                    }))))
   it
     "Lambda"
@@ -254,7 +250,8 @@ spec = do
                          , end = SourcePos {line = 1, column = 2, name = ""}
                          })
                    ]
-             , unresolvedUuids = mempty, unresolvedGlobals = mempty
+             , unresolvedUuids = mempty
+             , unresolvedGlobals = mempty
              })))
   it
     "Apply: debrujin 0 and 0"
@@ -426,7 +423,8 @@ spec = do
                             , end = SourcePos {line = 1, column = 26, name = ""}
                             })
                       ]
-                , unresolvedUuids = mempty, unresolvedGlobals = mempty
+                , unresolvedUuids = mempty
+                , unresolvedGlobals = mempty
                 })))
   it
     "Apply: debrujin 0 and 1"
@@ -598,5 +596,6 @@ spec = do
                             , end = SourcePos {line = 1, column = 26, name = ""}
                             })
                       ]
-                , unresolvedUuids = mempty, unresolvedGlobals = mempty
+                , unresolvedUuids = mempty
+                , unresolvedGlobals = mempty
                 })))

@@ -145,7 +145,7 @@ instance Display (Global Resolved) where
 instance Display (GlobalRef Resolved) where
   display = \case
                HashGlobal (Hash hash) -> "#" <> displayShow hash
-               FromIntegerGlobal -> "fromInteger"
+               FromIntegerGlobal -> "@prim:from_integer"
                FromDecimalGlobal -> "fromDecimal"
                EqualGlobal equality -> case equality of
                                          Equal -> "="
@@ -293,7 +293,7 @@ instance Display (Global Renamed) where
 instance Display (GlobalRef Renamed) where
   display = \case
                HashGlobal (Hash hash) -> "#" <> displayShow hash
-               FromIntegerGlobal -> "fromInteger"
+               FromIntegerGlobal -> "@prim:from_integer"
                FromDecimalGlobal -> "fromDecimal"
                CompareGlobal compareity -> case compareity of
                                          LessThan -> "<"
@@ -519,13 +519,15 @@ instance Display ParsedGlobal where
                ParsedHash (Hash hash) -> "#" <> display (sha512AsHexText hash)
                ParsedUuid (Uuid uuid) -> display uuid
                ParsedPrim fun -> "@prim:" <> display fun
+               ParsedFromInteger -> "@prim:from_integer"
+               ParsedFromDecimal -> "@prim:from_decimal"
 
 instance Display (GlobalRef Parsed) where
   display =
     \case
       HashGlobal (Hash hash) -> "#" <> displayShow hash
-      FromIntegerGlobal -> "fromInteger"
-      FromDecimalGlobal -> "fromDecimal"
+      FromIntegerGlobal -> "@prim:from_integer"
+      FromDecimalGlobal -> "@prim:from_decimal"
       CompareGlobal compareity ->
         case compareity of
           LessThan -> "<"

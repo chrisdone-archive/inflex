@@ -56,7 +56,7 @@ renameText fp text = do
                 (runRenamer
                    (renameExpression
                       (Env
-                         {globals = wiredInGlobals, cursor = id, scope = mempty})
+                         {globals = mempty, cursor = id, scope = mempty})
                       expression)))
              mempty
       in fmap
@@ -68,17 +68,6 @@ renameText fp text = do
                 , unresolvedUuids
                 })
            result)
-
---------------------------------------------------------------------------------
--- Wired-in
-
-wiredInGlobals :: M.Map Text (GlobalRef s)
-wiredInGlobals =
-  M.fromList
-    [ ("fromInteger", FromIntegerGlobal)
-    , ("fromDecimal", FromDecimalGlobal)
-
-    ]
 
 --------------------------------------------------------------------------------
 -- Renamers
@@ -393,6 +382,20 @@ renameGlobal Env {cursor} Global {..} = do
           { location = final
           , scheme = RenamedScheme
           , name = ExactGlobalRef (FunctionGlobal fun)
+          }
+    ParsedFromDecimal ->
+      pure
+        Global
+          { location = final
+          , scheme = RenamedScheme
+          , name = ExactGlobalRef FromDecimalGlobal
+          }
+    ParsedFromInteger ->
+      pure
+        Global
+          { location = final
+          , scheme = RenamedScheme
+          , name = ExactGlobalRef FromIntegerGlobal
           }
     _ -> Renamer (refute (pure (NotInScope name)))
 

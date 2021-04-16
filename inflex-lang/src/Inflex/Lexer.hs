@@ -148,13 +148,18 @@ tokenLexer =
     ref =
       located
         (do void (Mega.char '@')
-            uuidRef Mega.<|> primRef Mega.<|>  sha512Ref)
+            uuidRef Mega.<|> primRef Mega.<|> sha512Ref)
       where
         primRef = do
           void (Mega.string "prim:")
-          txt <- Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
+          txt <-
+            Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['_'])
           case M.lookup txt prims of
-            Nothing -> fail ("Invalid primitive: " <> T.unpack txt)
+            Nothing ->
+              case txt of
+                "from_integer" -> pure (GlobalToken ParsedFromInteger)
+                "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
+                _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
           void (Mega.string "uuid:")
@@ -162,7 +167,8 @@ tokenLexer =
             Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['-'])
           case UUID.fromText txt of
             Nothing -> fail "Invalid UUID."
-            Just uuid' -> pure (GlobalToken (ParsedUuid (Uuid (UUID.toText uuid'))))
+            Just uuid' ->
+              pure (GlobalToken (ParsedUuid (Uuid (UUID.toText uuid'))))
         sha512Ref = do
           void (Mega.string "sha512:")
           txt <- Mega.takeWhile1P Nothing isAlphaNum
