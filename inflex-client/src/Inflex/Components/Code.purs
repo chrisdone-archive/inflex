@@ -132,26 +132,8 @@ eval =
           case mvalue of
             Just value -> do
               State state <- H.get
-              pure unit
-              -- traverse_
-              --   (\token ->
-              --    case M.lookup uuid (state.namesInScope) of
-              --      Nothing -> pure unit
-              --      Just displayText ->
-              --        when(token.tag == "uuid" && token.text == uuid) $
-              --        void $ H.query(SProxy :: SProxy "codemirror") unit
-              --          (CM.MarkText
-              --             { line: token . location . start . line - 1
-              --             , ch: token . location . start . column - 1
-              --             }
-              --             { line: token . location . end . line - 1
-              --             , ch: token . location . end . column - 1
-              --             }
-              --             {
-              --               replaceText: displayText
-              --             }
-              --          ))
-              --   (lexer value)
+              setMarks <- H.liftEffect $ makeSetMarks (state.cells) (state.code)
+              traverse_ (H.query (SProxy :: SProxy "codemirror") unit) setMarks
             Nothing -> pure unit
         _ -> pure unit
 
@@ -198,13 +180,14 @@ render (State state) =
                  })
               (meta.prims)
        }
-       , initializers: initializers})
+       , initializers: makeSetMarks (state.cells) (state.code) })
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
-  where initializers = do
-          result <- lexString (state.code)
+
+makeSetMarks cells code = do
+          result <- lexString (code)
           case result of
-            Left _ -> do error ("Lexing failed! " <> state.code)
+            Left _ -> do error ("Lexing failed! " <> code)
                          pure []
             Right tokens -> do
               -- log (show tokens)
@@ -227,7 +210,7 @@ render (State state) =
                                     replaceText: display
                                   })
                      UuidToken uuid location ->
-                        case M.lookup uuid (state.cells) of
+                        case M.lookup uuid (cells) of
                           Nothing -> Nothing
                           Just (Shared.OutputCell{name}) ->
                             Just (CM.MarkText
