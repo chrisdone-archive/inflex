@@ -108,14 +108,7 @@ globalFill :: FillerEnv e -> Global Renamed -> Filler e (Global Filled)
 globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
   case name of
     UnresolvedGlobalText textName ->
-      case M.lookup textName namesTohash of
-        Nothing -> Filler (Failure (pure (MissingGlobal env textName)))
-        Just result -> do
-          case result of
-            Left e -> Filler (Failure (pure (OtherCellError textName e)))
-            Right globalRef ->
-              pure
-                Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
+      Filler (Failure (pure (MissingGlobal env textName)))
     UnresolvedUuid uuid ->
       case M.lookup uuid uuidsToHash of
         Nothing -> Filler (Failure (pure (MissingGlobalUuid env uuid)))
