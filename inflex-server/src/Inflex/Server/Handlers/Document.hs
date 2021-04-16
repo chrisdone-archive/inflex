@@ -111,8 +111,28 @@ documentMeta Meta {..} = do
                      , "loggedin" .= True
                      , "readonly" .= readonly
                      , "sandbox" .= (source == Sandbox)
+                     , "prims" .= prims
                      ]
                    ]))))
+
+prims :: [Value]
+prims =
+  [ object ["name" .= "array_map", "display" .= "map"]
+  , object ["name" .= "array_filter", "display" .= "filter"]
+  , object ["name" .= "array_length", "display" .= "length"]
+  , object ["name" .= "array_null", "display" .= "null"]
+  , object ["name" .= "vega", "display" .= "vega"]
+  , object ["name" .= "array_sum", "display" .= "sum"]
+  , object ["name" .= "array_average", "display" .= "average"]
+  , object ["name" .= "array_distinct", "display" .= "distinct"]
+  , object ["name" .= "array_minimum", "display" .= "minimum"]
+  , object ["name" .= "array_maximum", "display" .= "maximum"]
+  , object ["name" .= "array_sort", "display" .= "sort"]
+  , object ["name" .= "array_find", "display" .= "find"]
+  , object ["name" .= "array_any", "display" .= "any"]
+  , object ["name" .= "array_all", "display" .= "all"]
+  , object ["name" .= "from_ok", "display" .= "from_ok"]
+  ]
 
 documentScripts :: Lucid App ()
 documentScripts = do
