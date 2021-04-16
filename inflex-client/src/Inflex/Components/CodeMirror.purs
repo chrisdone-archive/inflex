@@ -71,7 +71,7 @@ data Command
 
 data Config = Config
   { internalConfig :: InternalConfig
-  , initializers :: Array (Query Unit)
+  , initializers :: Effect (Array (Query Unit))
   }
 
 type InternalConfig =
@@ -199,9 +199,10 @@ eval Initializer = do
         (State
            { codeMirror: Just cm
            , config:
-               Config {internalConfig, initializers: []}
+               Config {internalConfig, initializers: pure []}
            })
-      traverse_ query initializers
+      initializers' <- H.liftEffect initializers
+      traverse_ query initializers'
       void
         (H.subscribe
            (H.effectEventSource

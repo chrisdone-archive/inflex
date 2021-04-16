@@ -3,6 +3,7 @@
 module Inflex.Lexer
   ( lexString
   , Token(..)
+  , Location
   ) where
 
 import Data.Array as Array
@@ -18,7 +19,12 @@ import Prelude
 --------------------------------------------------------------------------------
 -- Types
 
-data Token = UuidToken UUID | PrimToken String | MiscToken
+type Location = {
+   start :: { line :: Int, column :: Int },
+   end :: { line :: Int, column :: Int }
+ }
+
+data Token = UuidToken UUID Location | PrimToken String Location | MiscToken
 derive instance genericToken :: Generic Token _
 instance showToken :: Show Token where show x = genericShow x
 
@@ -28,24 +34,21 @@ instance showToken :: Show Token where show x = genericShow x
 lexString :: String -> Effect (Either Error (Array Token))
 lexString i =
   try
-    (do toks <- lexer i
+    (do toks <- lexerWrapped i
         pure
           (map
              (\tagged ->
                 case tagged . tag of
-                  "uuid" -> UuidToken (UUID (tagged . text))
-                  "prim" -> PrimToken (tagged . text)
+                  "uuid" -> UuidToken (UUID (tagged . text)) (tagged.location)
+                  "prim" -> PrimToken (tagged . text) (tagged.location)
                   _ -> MiscToken)
              toks))
 
 --------------------------------------------------------------------------------
 -- Foreign
 
-foreign import lexer :: String -> Effect (Array {
+foreign import lexerWrapped :: String -> Effect (Array {
     tag :: String,
     text :: String,
-    location :: {
-      start :: { line :: Int, column :: Int },
-      end :: { line :: Int, column :: Int }
-    }
+    location :: Location
   })

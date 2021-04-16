@@ -9,18 +9,22 @@ module Inflex.Components.Code
   ) where
 
 import Data.Array as Array
+import Data.Either
 import Data.Foldable (traverse_)
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
+import Data.UUID
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
-import Inflex.Lexer (lexer)
+import Inflex.Lexer
+import Inflex.Schema as Shared
+import Prelude
 import Prelude (Unit, bind, discard, map, pure, unit, void, when, ($), (&&), (-), (<<<), (<>), (==))
 
 --------------------------------------------------------------------------------
@@ -28,13 +32,13 @@ import Prelude (Unit, bind, discard, map, pure, unit, void, when, ($), (&&), (-)
 
 data Input = Input
   { code :: String
-  , namesInScope :: Map String String -- uuid to title
+  , cells :: Map UUID Shared.OutputCell
   }
 
 data Output =
   TextOutput String
 
-data Query a = SetNamesInScope (Map String String)
+data Query a = SetCells (Map UUID Shared.OutputCell)
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -45,7 +49,7 @@ data Command
 
 data State = State
   { code :: String
-  , namesInScope :: Map String String
+  , cells :: Map UUID Shared.OutputCell
   }
 
 type Slots (i :: Type -> Type) =
@@ -62,7 +66,7 @@ component =
         (\(Input input) ->
            State
              { code: input . code
-             , namesInScope: input . namesInScope
+             , cells: input . cells
              })
     , render
     , eval:
@@ -83,8 +87,8 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
-    SetNamesInScope namesInScope -> do
-      H.modify_ (\(State s) -> State (s {namesInScope = namesInScope}))
+    SetCells cells -> do
+      H.modify_ (\(State s) -> State (s {cells = cells}))
       pure Nothing
 
 --------------------------------------------------------------------------------
@@ -118,25 +122,26 @@ eval =
           case mvalue of
             Just value -> do
               State state <- H.get
-              traverse_
-                (\token ->
-                 case M.lookup uuid (state.namesInScope) of
-                   Nothing -> pure unit
-                   Just displayText ->
-                     when(token.tag == "uuid" && token.text == uuid) $
-                     void $ H.query(SProxy :: SProxy "codemirror") unit
-                       (CM.MarkText
-                          { line: token . location . start . line - 1
-                          , ch: token . location . start . column - 1
-                          }
-                          { line: token . location . end . line - 1
-                          , ch: token . location . end . column - 1
-                          }
-                          {
-                            replaceText: displayText
-                          }
-                       ))
-                (lexer value)
+              pure unit
+              -- traverse_
+              --   (\token ->
+              --    case M.lookup uuid (state.namesInScope) of
+              --      Nothing -> pure unit
+              --      Just displayText ->
+              --        when(token.tag == "uuid" && token.text == uuid) $
+              --        void $ H.query(SProxy :: SProxy "codemirror") unit
+              --          (CM.MarkText
+              --             { line: token . location . start . line - 1
+              --             , ch: token . location . start . column - 1
+              --             }
+              --             { line: token . location . end . line - 1
+              --             , ch: token . location . end . column - 1
+              --             }
+              --             {
+              --               replaceText: displayText
+              --             }
+              --          ))
+              --   (lexer value)
             Nothing -> pure unit
         _ -> pure unit
 
@@ -165,35 +170,43 @@ render (State state) =
        , autofocus: true
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
-       , namesInScope: map(\(Tuple uuid v) ->
-                            { text: "@uuid:" <> uuid,
-                              key: uuid,
-                              displayText: v, -- we can put whatever in here, and even a render function
-                              -- <https://codemirror.net/doc/manual.html#addons>
-                              matchText: v
-                            } )
-                     (M.toUnfoldable (state.namesInScope))
+       , namesInScope: []
+          -- map(\(Tuple uuid v) ->
+          --                   { text: "@uuid:" <> uuid,
+          --                     key: uuid,
+          --                     displayText: v, -- we can put whatever in here, and even a render function
+          --                     -- <https://codemirror.net/doc/manual.html#addons>
+          --                     matchText: v
+          --                   } )
+          --            (M.toUnfoldable (state.namesInScope))
        }
        , initializers: initializers})
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
-  where initializers =
-          Array.mapMaybe
-            (\token ->
-               if (token.tag == "uuid") then
-                 case M.lookup (token.text) (state.namesInScope) of
-                   Nothing -> Nothing
-                   Just text ->
-                     Just (CM.MarkText
-                           { line: token . location . start . line - 1
-                           , ch: token . location . start . column - 1
-                           }
-                           { line: token . location . end . line - 1
-                           , ch: token . location . end . column - 1
-                           }
-                           {
-                             replaceText: text
-                           })
-               else
-                 Nothing)
-            (lexer (state.code))
+  where initializers = do
+          result <- lexString (state.code)
+          case result of
+            Left _ -> do error ("Lexing failed! " <> state.code)
+                         pure []
+            Right tokens -> do
+              log(show tokens)
+              pure (Array.mapMaybe
+                (\token ->
+                   case token of
+                     MiscToken -> Nothing
+                     PrimToken _ _ -> Nothing -- TODO:
+                     UuidToken uuid location ->
+                        case M.lookup uuid (state.cells) of
+                          Nothing -> Nothing
+                          Just (Shared.OutputCell{name}) ->
+                            Just (CM.MarkText
+                                  { line: location . start . line - 1
+                                  , ch: location . start . column - 1
+                                  }
+                                  { line: location . end . line - 1
+                                  , ch: location . end . column - 1
+                                  }
+                                  {
+                                    replaceText: name
+                                  }))
+                tokens)
