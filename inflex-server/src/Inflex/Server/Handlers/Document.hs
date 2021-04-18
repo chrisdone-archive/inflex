@@ -121,7 +121,7 @@ prims =
   , object ["name" .= "array_filter", "display" .= "filter"]
   , object ["name" .= "array_length", "display" .= "length"]
   , object ["name" .= "array_null", "display" .= "null"]
-  , object ["name" .= "vega", "display" .= "vega"]
+  , object ["name" .= "vega_raw", "display" .= "vega"]
   , object ["name" .= "array_sum", "display" .= "sum"]
   , object ["name" .= "array_average", "display" .= "average"]
   , object ["name" .= "array_distinct", "display" .= "distinct"]
