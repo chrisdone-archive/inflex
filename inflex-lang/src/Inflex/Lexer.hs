@@ -49,9 +49,9 @@ module Inflex.Lexer
   , _GlobalToken
   ) where
 
+import           Control.Monad
 import           Data.Bifunctor
 import           Data.Char
-import           Data.Functor
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq)
@@ -163,12 +163,8 @@ tokenLexer =
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
           void (Mega.string "uuid:")
-          txt <-
-            Mega.takeWhile1P Nothing ((||) <$> isAlphaNum <*> flip elem ['-'])
-          case UUID.fromText txt of
-            Nothing -> fail "Invalid UUID."
-            Just uuid' ->
-              pure (GlobalToken (ParsedUuid (Uuid (UUID.toText uuid'))))
+          txt <- uuidLexer
+          pure (GlobalToken (ParsedUuid txt))
         sha512Ref = do
           void (Mega.string "sha512:")
           txt <- Mega.takeWhile1P Nothing isAlphaNum
@@ -242,6 +238,25 @@ tokenLexer =
            , CommaToken <$ Mega.try (Mega.char ',')
            , PeriodToken <$ Mega.try (Mega.char '.')
            ])
+
+-- UUID consists of: 8-4-4-4-12 hexadecimal
+uuidLexer :: Lexer Uuid
+uuidLexer = do
+  p1 <- Mega.takeP (Just "UUID component") 8
+  dash_
+  p2 <- Mega.takeP (Just "UUID component") 4
+  dash_
+  p3 <- Mega.takeP (Just "UUID component") 4
+  dash_
+  p4 <- Mega.takeP (Just "UUID component") 4
+  dash_
+  p5 <- Mega.takeP (Just "UUID component") 12
+  let txt = T.concat [p1, "-", p2, "-", p3, "-", p4, "-", p5]
+  case UUID.fromText txt of
+    Nothing -> fail ("Invalid UUID: " <> T.unpack txt)
+    Just uuid' -> pure (Uuid (UUID.toText uuid'))
+  where
+    dash_ = Mega.token (\char -> guard (char == '-')) mempty
 
 -- | Retain location information for a token.
 located :: Mega.MonadParsec e s m => m Token -> m (Located Token)
