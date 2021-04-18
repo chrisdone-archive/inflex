@@ -509,7 +509,7 @@ instance Display IncompleteGlobalRef where
   display =
     \case
       UnresolvedGlobalText text -> display text
-      UnresolvedUuid (Uuid uuid) -> display uuid
+      UnresolvedUuid (Uuid uuid) -> "@uuid:" <> display uuid
       ExactGlobalRef ref -> display ref
       ResolvedGlobalRef text _ -> display text
 
@@ -517,7 +517,7 @@ instance Display ParsedGlobal where
   display = \case
                ParsedTextName name -> display name
                ParsedHash (Hash hash) -> "#" <> display (sha512AsHexText hash)
-               ParsedUuid (Uuid uuid) -> display uuid
+               ParsedUuid (Uuid uuid) -> "@uuid:" <> display uuid
                ParsedPrim fun -> "@prim:" <> display fun
                ParsedFromInteger -> "@prim:from_integer"
                ParsedFromDecimal -> "@prim:from_decimal"
