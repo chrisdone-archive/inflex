@@ -2,55 +2,21 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
 
+import           Control.DeepSeq
 import           Control.Monad
 import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Gauge.Main
 import           Inflex.Generator
 import           Inflex.Instances ()
+import           Inflex.NormalFormCheck as NF
 import           Inflex.Parser
 import           Inflex.Resolver
 import           Inflex.Solver
 import qualified RIO
 import           RIO (newSomeRef, RIO)
-
-{-
-
-with optimisations with type signature
-
-[0Kbenchmarked parseText/medium array
-time                 7.629 ms   (7.499 ms .. 7.744 ms)
-                     0.997 R²   (0.995 R² .. 0.999 R²)
-mean                 7.458 ms   (7.395 ms .. 7.542 ms)
-std dev              208.3 μs   (171.9 μs .. 277.0 μs)
-
-[0Kbenchmarked generateText/medium array
-time                 17.24 ms   (15.96 ms .. 18.39 ms)
-                     0.977 R²   (0.964 R² .. 0.988 R²)
-mean                 14.53 ms   (14.08 ms .. 15.18 ms)
-std dev              1.386 ms   (1.051 ms .. 1.752 ms)
-variance introduced by outliers: 44% (moderately inflated)
-
-[0Kbenchmarked solveText/array[1000]
-time                 21.31 ms   (20.49 ms .. 22.03 ms)
-                     0.995 R²   (0.991 R² .. 0.997 R²)
-mean                 22.93 ms   (22.41 ms .. 23.57 ms)
-std dev              1.351 ms   (992.5 μs .. 1.704 ms)
-variance introduced by outliers: 24% (moderately inflated)
-
-benchmarking solveText/array[1000] no sig ... took 9.449 s, total 56 iterations
-[0Kbenchmarked solveText/array[1000] no sig
-time                 161.5 ms   (148.9 ms .. 175.5 ms)
-                     0.993 R²   (0.988 R² .. 0.998 R²)
-mean                 173.9 ms   (168.9 ms .. 177.8 ms)
-std dev              7.729 ms   (5.320 ms .. 11.07 ms)
-
-Benchmark inflex-lang-time: FINISH
-Success! Waiting for next file change.
-Type help for available commands. Press enter to force a rebuild.
-
--}
 
 main :: IO ()
 main = do
@@ -61,6 +27,16 @@ main = do
     True
     (defaultMain
        [ bgroup
+           "encodeUtf8"
+           [ env
+             (pure (T.replicate i sampleUnicode))
+             (\t ->
+                bench
+                  ("T.encodeUtf8: " ++ show (i * T.length sampleUnicode))
+                  (whnf T.encodeUtf8 t))
+           | i <- [1, 10, 100]
+           ]
+       , bgroup
            "parseText"
            [ bench "array[1000]" (nf parseTextUpToErrorSuccess array1000)
            , bench "array[2000]" (nf parseTextUpToErrorSuccess array2000)
@@ -82,19 +58,41 @@ main = do
                     RIO.runRIO
                       (SolveReader {glogfunc = mempty, counter = ref, binds})
                       (solveTextUpToErrorSuccess array)))
-           | (n, array) <- [(1000 :: Int, array1000),(1000 :: Int, array4000)]
+           | (n, array) <- [(1000 :: Int, array1000), (1000 :: Int, array4000)]
            ]
-       ,  bgroup
-            "resolveText"
-            [ bench
-              ("array[" <> show n <> "] SIG")
-              (nfIO
-                 (do RIO.runRIO
-                       ResolveReader
-                       (resolveTextUpToErrorSuccess array)))
-            | (n, array) <- [(1000 :: Int, array1000),(1000 :: Int, array4000)]
-            ]
+       , bgroup
+           "normalFormCheck"
+           [ env
+               (case parseText "" array1000 of
+                  Left {} -> error "parse failed"
+                  Right ast -> pure $! (EqNF ast))
+               (bench "array[1000]" . nf NF.expressionGenerate . unNF)
+           , env
+               (case parseText "" array2000 of
+                  Left {} -> error "parse failed"
+                  Right ast -> pure $! (EqNF ast))
+               (bench "array[2000]" . nf NF.expressionGenerate . unNF)
+           , env
+               (case parseText "" array4000 of
+                  Left {} -> error "parse failed"
+                  Right ast -> pure $! (EqNF ast))
+               (bench "array[4000]" . nf NF.expressionGenerate . unNF)
+           ]
+       , bgroup
+           "resolveText"
+           [ bench
+             ("array[" <> show n <> "] SIG")
+             (nfIO
+                (do RIO.runRIO ResolveReader (resolveTextUpToErrorSuccess array)))
+           | (n, array) <- [(1000 :: Int, array1000), (4000 :: Int, array4000)]
+           ]
        ])
+
+newtype EqNF a = EqNF { unNF :: a }
+instance Eq a => NFData (EqNF a) where
+  rnf (EqNF a) =
+    let !_ = a == a
+     in ()
 
 parseTextUpToErrorSuccess :: Text -> Either () ()
 parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
@@ -111,3 +109,6 @@ resolveTextUpToErrorSuccess =
 
 generateTextUpToErrorSuccess :: Text -> Either () ()
 generateTextUpToErrorSuccess = bimap (const ()) (const ())  . generateText mempty ""
+
+sampleUnicode :: Text
+sampleUnicode = "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ ¡ ¢ £ ¤ ¥ ¦ § ¨ © ª « ¬ ® ¯ ° ± ² ³ ´ µ ¶ · ¸ ¹ º » ¼ ½ ¾ ¿ À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö × Ø Ù Ú Û Ü Ý Þ ß à á â ã ä å æ ç è é ê ë ì í î ï ð ñ ò ó ô õ ö ÷ ø ù ú û ü ý þ ÿ Ā ā Ă ă Ą ą Ć ć Ĉ ĉ Ċ ċ Č č Ď ď Đ đ Ē ē Ĕ ĕ Ė ė Ę ę Ě ě Ĝ ĝ Ğ ğ Ġ ġ Ģ ģ Ĥ ĥ Ħ ħ Ĩ ĩ Ī ī Ĭ ĭ Į į İ ı Ĳ ĳ Ĵ ĵ Ķ ķ ĸ Ĺ ĺ Ļ ļ Ľ ľ Ŀ ŀ Ł ł Ń ń Ņ ņ Ň ň ŉ Ŋ ŋ Ō ō Ŏ ŏ Ő ő Œ œ Ŕ ŕ Ŗ ŗ Ř ř Ś ś Ŝ ŝ Ş ş Š š Ţ ţ Ť ť Ŧ ŧ Ũ ũ Ū ū Ŭ ŭ Ů ů Ű ű Ų ų Ŵ ŵ Ŷ ŷ Ÿ Ź ź Ż ż Ž ž ſ ƀ Ɓ Ƃ ƃ Ƅ ƅ Ɔ Ƈ ƈ Ɖ Ɗ Ƌ ƌ ƍ Ǝ Ə Ɛ Ƒ ƒ Ɠ Ɣ ƕ Ɩ Ɨ Ƙ ƙ ƚ ƛ Ɯ Ɲ ƞ Ɵ Ơ ơ Ƣ ƣ Ƥ ƥ Ʀ Ƨ ƨ Ʃ ƪ ƫ Ƭ ƭ Ʈ Ư ư Ʊ Ʋ Ƴ ƴ Ƶ ƶ Ʒ Ƹ ƹ ƺ ƻ Ƽ ƽ ƾ ƿ ǀ ǁ ǂ ǃ Ǆ ǅ ǆ Ǉ ǈ ǉ Ǌ ǋ ǌ Ǎ ǎ Ǐ ǐ Ǒ ǒ Ǔ ǔ Ǖ ǖ Ǘ ǘ Ǚ ǚ Ǜ ǜ ǝ Ǟ ǟ Ǡ ǡ Ǣ ǣ Ǥ ǥ Ǧ ǧ Ǩ ǩ Ǫ ǫ Ǭ ǭ Ǯ ǯ ǰ Ǳ ǲ ǳ Ǵ ǵ Ǻ ǻ Ǽ ǽ Ǿ ǿ Ȁ ȁ Ȃ ȃ ɐ ɑ ɒ ɓ ɔ ɕ ɖ ɗ ɘ ə ɚ ɛ ɜ ɝ ɞ ɟ ɠ ɡ ɢ ɣ ɤ ɥ ɦ ɧ ɨ ɩ ɪ ɫ ɬ ɭ ɮ ɯ ɰ ɱ ɲ ɳ ɴ ɵ ɶ ɷ ɸ ɹ ɺ ɻ ɼ ɽ ɾ ɿ ʀ ʁ ʂ ʃ ʄ ʅ ʆ ʇ ʈ ʉ ʊ ʋ ʌ ʍ ʎ ʏ ʐ ʑ ʒ ʓ ʔ ʕ ʖ ʗ ʘ ʙ ʚ ʛ ʜ ʝ ʞ ʟ ʠ ʡ ʢ ʣ ʤ ʥ ʦ ʧ ʨ"

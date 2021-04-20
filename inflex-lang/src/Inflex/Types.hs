@@ -333,7 +333,7 @@ data Field s = Field
 
 newtype FieldName = FieldName
   { unFieldName :: Text
-  } deriving (Eq, Ord, Generic, Show, Lift, IsString, NFData)
+  } deriving (Eq, Ord, Generic, Show, Lift, IsString, NFData, Hashable)
 
 newtype TagName = TagName
   { unTagName :: Text
