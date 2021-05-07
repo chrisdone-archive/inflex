@@ -4,11 +4,13 @@
 
 import           Control.DeepSeq
 import           Control.Monad
+import           Criterion.Main
 import           Data.Bifunctor
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import           Criterion.Main
 import           Inflex.Generator
 import           Inflex.Instances ()
 import           Inflex.Lexer
@@ -28,6 +30,12 @@ main = do
         T.concat ["[", T.intercalate "," (replicate 2000 "1234"), "]"]
       !array4000 =
         T.concat ["[", T.intercalate "," (replicate 4000 "1234"), "]"]
+      !array1000' =
+        S.concat ["[", S.intercalate "," (replicate 1000 "1234"), "]"]
+      !array2000' =
+        S.concat ["[", S.intercalate "," (replicate 2000 "1234"), "]"]
+      !array4000' =
+        S.concat ["[", S.intercalate "," (replicate 4000 "1234"), "]"]
   when
     True
     (defaultMain
@@ -59,12 +67,33 @@ main = do
                , bench "array[2000]" (nf parseTextUpToErrorSuccess array2000)
                , bench "array[4000]" (nf parseTextUpToErrorSuccess array4000)
                ]
-           ,  bgroup
-                "Parser2"
-                [ bench "array[1000]" (nf parseTextUpToErrorSuccess2 array1000)
-                , bench "array[2000]" (nf parseTextUpToErrorSuccess2 array2000)
-                , bench "array[4000]" (nf parseTextUpToErrorSuccess2 array4000)
-                ]
+           , bgroup
+               "Parser2"
+               [ bgroup
+                   "Text"
+                   [ bench
+                       "array[1000]"
+                       (nf parseTextUpToErrorSuccess2 array1000)
+                   , bench
+                       "array[2000]"
+                       (nf parseTextUpToErrorSuccess2 array2000)
+                   , bench
+                       "array[4000]"
+                       (nf parseTextUpToErrorSuccess2 array4000)
+                   ]
+               , bgroup
+                   "BS"
+                   [ bench
+                       "array[1000]"
+                       (nf parseTextUpToErrorSuccess2' array1000')
+                   , bench
+                       "array[2000]"
+                       (nf parseTextUpToErrorSuccess2' array2000')
+                   , bench
+                       "array[4000]"
+                       (nf parseTextUpToErrorSuccess2' array4000')
+                   ]
+               ]
            ]
        , bgroup
            "generateText"
@@ -126,6 +155,9 @@ parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
 
 parseTextUpToErrorSuccess2 :: Text -> Either () ()
 parseTextUpToErrorSuccess2 = first (const ()) . second (const ()) . Parser2.parseText ""
+
+parseTextUpToErrorSuccess2' :: ByteString -> Either () ()
+parseTextUpToErrorSuccess2' = first (const ()) . second (const ()) . Parser2.parseBytes
 
 solveTextUpToErrorSuccess :: Text -> RIO SolveReader (Either () ())
 solveTextUpToErrorSuccess = fmap (bimap (const ()) (const ())) . solveText mempty ""
