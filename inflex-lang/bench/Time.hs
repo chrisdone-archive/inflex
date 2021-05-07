@@ -11,6 +11,7 @@ import qualified Data.Text.Encoding as T
 import           Gauge.Main
 import           Inflex.Generator
 import           Inflex.Instances ()
+import           Inflex.Lexer
 import           Inflex.NormalFormCheck as NF
 import           Inflex.Parser
 import           Inflex.Resolver
@@ -35,6 +36,12 @@ main = do
                   ("T.encodeUtf8: " ++ show (i * T.length sampleUnicode))
                   (whnf T.encodeUtf8 t))
            | i <- [1, 10, 100]
+           ]
+       , bgroup
+           "lexText"
+           [ bench "array[1000]" (nf lexTextUpToErrorSuccess array1000)
+           , bench "array[2000]" (nf lexTextUpToErrorSuccess array2000)
+           , bench "array[4000]" (nf lexTextUpToErrorSuccess array4000)
            ]
        , bgroup
            "parseText"
@@ -93,6 +100,9 @@ instance Eq a => NFData (EqNF a) where
   rnf (EqNF a) =
     let !_ = a == a
      in ()
+
+lexTextUpToErrorSuccess :: Text -> Either () ()
+lexTextUpToErrorSuccess = first (const ()) . second (const ()) . lexText ""
 
 parseTextUpToErrorSuccess :: Text -> Either () ()
 parseTextUpToErrorSuccess = first (const ()) . second (const ()) . parseText ""
