@@ -22,6 +22,7 @@ import Data.Text (Text)
 import Data.UUID (UUID)
 import Data.Vector (Vector)
 import Data.Void
+import FlatParse.Basic as FlatParse
 import GHC.Generics
 import Inflex.Types.SHA512
 import Language.Haskell.TH.Lift
@@ -605,6 +606,7 @@ data Function
 -- Stages
 
 data Parsed
+data Parsed2
 data Renamed
 data Filled
 data Desugared
@@ -619,6 +621,7 @@ data Resolved
 
 type family StagedLocation s where
   StagedLocation Parsed = SourceLocation
+  StagedLocation Parsed2 = FlatParse.Pos
   StagedLocation Renamed = Cursor
   StagedLocation Filled = Cursor
   StagedLocation Desugared = Cursor
@@ -630,6 +633,7 @@ type family StagedLocation s where
 
 type family StagedTyVarLocation s where
   StagedTyVarLocation Parsed = SourceLocation
+  StagedTyVarLocation Parsed2 = SourceLocation
   StagedTyVarLocation Renamed = Cursor
   StagedTyVarLocation Filled = Cursor
   StagedTyVarLocation Desugared = Cursor
@@ -641,6 +645,7 @@ type family StagedTyVarLocation s where
 
 type family StagedPrefix s where
   StagedPrefix Parsed = TypeVariablePrefix
+  StagedPrefix Parsed2 = TypeVariablePrefix
   StagedPrefix Renamed = TypeVariablePrefix
   StagedPrefix Filled = TypeVariablePrefix
   StagedPrefix Desugared = TypeVariablePrefix
@@ -652,6 +657,7 @@ type family StagedPrefix s where
 
 type family StagedType s where
   StagedType Parsed = Maybe (Type Parsed)
+  StagedType Parsed2 = ()
   StagedType Renamed = Maybe (Type Renamed)
   StagedType Filled = Maybe (Type Renamed)
   StagedType Desugared = Maybe (Type Renamed)
@@ -663,6 +669,7 @@ type family StagedType s where
 
 type family StagedParamName s where
   StagedParamName Parsed = Text
+  StagedParamName Parsed2 = Text
   StagedParamName Renamed = ()
   StagedParamName Filled = ()
   StagedParamName Desugared = ()
@@ -673,6 +680,7 @@ type family StagedParamName s where
 
 type family StagedVariableName s where
   StagedVariableName Parsed = Text
+  StagedVariableName Parsed2 = Text
   StagedVariableName Renamed = DeBrujinIndex
   StagedVariableName Filled = DeBrujinIndex
   StagedVariableName Desugared = DeBrujinIndex
@@ -683,6 +691,7 @@ type family StagedVariableName s where
 
 type family StagedGlobalName s where
   StagedGlobalName Parsed = ParsedGlobal
+  StagedGlobalName Parsed2 = ParsedGlobal
   StagedGlobalName Renamed = IncompleteGlobalRef
   StagedGlobalName Filled = GlobalRef Renamed
   StagedGlobalName Desugared = GlobalRef Renamed
@@ -693,6 +702,7 @@ type family StagedGlobalName s where
 
 type family StagedOp s where
   StagedOp Parsed = Global Parsed
+  StagedOp Parsed2 = Global Parsed
   StagedOp Renamed = Global Renamed
   StagedOp Filled = Global Filled
   StagedOp Desugared = Global Desugared

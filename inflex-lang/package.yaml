@@ -67,5 +67,5 @@ benchmarks:
     - -O2
     - -threaded
     dependencies:
-    - gauge
+    - criterion
     - inflex-lang
