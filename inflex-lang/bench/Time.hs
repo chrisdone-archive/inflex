@@ -21,9 +21,9 @@ import           RIO (newSomeRef, RIO)
 
 main :: IO ()
 main = do
-  let !array1000 = T.concat ["[", T.intercalate "," (replicate 1000 "1"), "]"]
-      !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1"), "]"]
-      !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1"), "]"]
+  let !array1000 = T.concat ["[", T.intercalate "," (replicate 1000 "1234"), "]"]
+      !array2000 = T.concat ["[", T.intercalate "," (replicate 2000 "1234"), "]"]
+      !array4000 = T.concat ["[", T.intercalate "," (replicate 4000 "1234"), "]"]
   when
     True
     (defaultMain
@@ -39,9 +39,13 @@ main = do
            ]
        , bgroup
            "lexText"
-           [ bench "array[1000]" (nf lexTextUpToErrorSuccess array1000)
-           , bench "array[2000]" (nf lexTextUpToErrorSuccess array2000)
-           , bench "array[4000]" (nf lexTextUpToErrorSuccess array4000)
+           [ bgroup
+             (show (size :: Int))
+             [ bench "whnf" (whnf lexTextUpToErrorSuccess arr)
+             , bench "nf" (nf lexTextUpToErrorSuccess arr)
+             ]
+           | (size, arr) <-
+               [(1000, array1000), (2000, array2000), (4000, array4000)]
            ]
        , bgroup
            "parseText"
