@@ -48,3 +48,5 @@ extra-deps:
     - rio-orphans
 - github: inflex-io/early
   commit: 736c0f02b75d0251bfb5fa9cfc5554c5dda139ca
+- github: chrisdone/flatparse
+  commit: 21caeaf38a1ae1aef9d4397815c71ea214e49db8

@@ -197,6 +197,17 @@ packages:
       sha256: 76b5060166a4879f104d9b6630c45961437b52bb8f470e78619b47e50c49eb6b
   original:
     url: https://github.com/inflex-io/early/archive/736c0f02b75d0251bfb5fa9cfc5554c5dda139ca.tar.gz
+- completed:
+    size: 32481
+    url: https://github.com/chrisdone/flatparse/archive/21caeaf38a1ae1aef9d4397815c71ea214e49db8.tar.gz
+    name: flatparse
+    version: 0.2.0.1
+    sha256: 2dfb7e787b60eb062f432eb8ba7fe61ae0845783bbbbe39f94c8bb9bddf10594
+    pantry-tree:
+      size: 1132
+      sha256: bf5da41bada14686d66e7547dcabe3affe5ea5dc2b38f2a6d340fca87ea12f2b
+  original:
+    url: https://github.com/chrisdone/flatparse/archive/21caeaf38a1ae1aef9d4397815c71ea214e49db8.tar.gz
 snapshots:
 - completed:
     size: 524154

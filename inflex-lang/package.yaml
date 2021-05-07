@@ -40,6 +40,7 @@ dependencies:
 - vector
 - deepseq
 - th-lift
+- flatparse
 
 ghc-options: -Wall
 
