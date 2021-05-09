@@ -7,7 +7,6 @@
 module Inflex.Parser2 where
 
 import           Data.ByteString (ByteString)
-import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
@@ -15,14 +14,20 @@ import qualified FlatParse.Basic as F
 import           Inflex.Instances ()
 import           Inflex.Types
 
+--------------------------------------------------------------------------------
+-- Types
+
 data ParseError = Failed deriving Show
+
+--------------------------------------------------------------------------------
+-- Top-level parsers
 
 parseText :: FilePath -> Text -> Either ParseError (Expression Parsed2)
 parseText _fp txt = parseBytes (T.encodeUtf8 txt)
 
 parseBytes :: ByteString -> Either ParseError (Expression Parsed2)
 parseBytes bs =
-  case F.runParser src bs of
+  case F.runParser sourceParser bs of
     F.OK a _bs -> Right a
     F.Fail -> Left Failed
     F.Err e -> Left e
@@ -30,64 +35,59 @@ parseBytes bs =
 --------------------------------------------------------------------------------
 -- Basic array parser
 
-ws :: F.Parser ParseError ()
-ws =
-  F.many_
-    $(F.switch
-        [|case _ of
-            " " -> pure ()
-            "\n" -> pure ()|])
+sourceParser :: F.Parser ParseError (Expression Parsed2)
+sourceParser = whitespace *> expressionParser <* F.eof
 
-open :: F.Parser ParseError ()
-open = do $(F.char '[') >> ws
+expressionParser :: F.Parser ParseError (Expression Parsed2)
+expressionParser = arrayParser
 
-close :: F.Parser ParseError ()
-close = $(F.char ']') >> ws
+arrayParser :: F.Parser ParseError (Expression Parsed2)
+arrayParser = F.branch openBracket elements numberParser
+  where
+    elements = do
+      loc <- F.getPos
+      es <-
+        F.many
+          (do e <- expressionParser
+              F.optional_ comma
+              pure e)
+      closeBracket
+      pure
+        (ArrayExpression
+           Array {typ = (), location = loc, expressions = V.fromList es})
 
-num :: F.Parser ParseError (Expression Parsed2)
-num = do
+numberParser :: F.Parser ParseError (Expression Parsed2)
+numberParser = do
   pos <- F.getPos
-  i <- int
+  i <- integerParser
   pure
     (LiteralExpression
        (NumberLiteral
           Number
             { location = pos
-            , number = IntegerNumber (fromIntegral i)
+            , number = IntegerNumber i
             , typ = ()
             }))
 
-sexp :: F.Parser ParseError (Expression Parsed2)
-sexp =
-  F.branch
-    open
-    (do loc <- F.getPos
-        es <-
-          F.many
-            (do e <- sexp
-                F.optional_ $(F.char ',')
-                pure e)
-        close
-        pure
-          (ArrayExpression Array {typ = (), location = loc, expressions = V.fromList es}))
-    num
+--------------------------------------------------------------------------------
+-- General tokens
 
-src :: F.Parser ParseError (Expression Parsed2)
-src = do
-  s <- sexp
-  F.eof
-  pure s
+integerParser :: F.Parser ParseError Integer
+integerParser = F.integer <* whitespace
 
-int :: F.Parser ParseError Int
-int = do
-  _ <- F.lookahead digit
-  i <- snd <$>
-   (F.chainr
-      (\n (!place, !acc) -> (place * 10, acc + place * n))
-      digit
-      (pure (1,0)))
-  ws
-  pure i
+comma :: F.Parser ParseError ()
+comma = $(F.char ',') *> whitespace
 
-digit :: F.Parser ParseError Int
-digit = (\c -> ord c - ord '0') <$> F.satisfyASCII F.isDigit
+openBracket :: F.Parser ParseError ()
+openBracket = $(F.char '[') *> whitespace
+
+closeBracket :: F.Parser ParseError ()
+closeBracket = $(F.char ']') *> whitespace
+
+whitespace :: F.Parser ParseError ()
+whitespace =
+  F.many_
+    $(F.switch
+        [|case _ of
+            " " -> pure ()
+            "\n" -> pure ()|])
