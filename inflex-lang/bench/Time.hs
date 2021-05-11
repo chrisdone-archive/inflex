@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings #-}
@@ -36,6 +37,16 @@ main = do
         S.concat ["[", S.intercalate "," (replicate 2000 "1234"), "]"]
       !array4000' =
         S.concat ["[", S.intercalate "," (replicate 4000 "1234"), "]"]
+      !record =
+        "{" <>
+        S.intercalate "," (replicate 20 "aaaaaaaaaaaaaaaaaa: 12345678910") <>
+        "}"
+      !array1000Structs =
+        S.concat ["[", S.intercalate "," (replicate 1000 record), "]"]
+      !array2000Structs =
+        S.concat ["[", S.intercalate "," (replicate 2000 record), "]"]
+      !array4000Structs =
+        S.concat ["[", S.intercalate "," (replicate 4000 record), "]"]
   when
     True
     (defaultMain
@@ -92,6 +103,15 @@ main = do
                    , bench
                        "array[4000]"
                        (nf parseTextUpToErrorSuccess2' array4000')
+                   ]
+               , bgroup
+                   "Records"
+                   [ bench (show i) (nf parseTextUpToErrorSuccess2' arr)
+                   | (i::Int, arr) <-
+                       [ (1000, array1000Structs)
+                       , (2000, array2000Structs)
+                       , (4000, array4000Structs)
+                       ]
                    ]
                ]
            ]

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TemplateHaskell, DuplicateRecordFields #-}
@@ -7,6 +8,7 @@
 module Inflex.Parser2 where
 
 import           Data.ByteString (ByteString)
+import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
@@ -42,7 +44,7 @@ expressionParser :: F.Parser ParseError (Expression Parsed2)
 expressionParser = arrayParser
 
 arrayParser :: F.Parser ParseError (Expression Parsed2)
-arrayParser = F.branch openBracket elements numberParser
+arrayParser = F.branch openBracket elements recordParser
   where
     elements = do
       loc <- F.getPos
@@ -55,6 +57,23 @@ arrayParser = F.branch openBracket elements numberParser
       pure
         (ArrayExpression
            Array {typ = (), location = loc, expressions = V.fromList es})
+
+recordParser :: F.Parser ParseError (Expression Parsed2)
+recordParser = F.branch openCurly elements numberParser
+  where
+    elements = do
+      location <- F.getPos
+      fields <-
+        F.many
+          (do name <- keyParser
+              colon
+              expression <- expressionParser
+              F.optional_ comma
+              pure FieldE {name, expression, location})
+      closeCurly
+      pure
+        (RecordExpression
+           Record {typ = (), location, fields = fields})
 
 numberParser :: F.Parser ParseError (Expression Parsed2)
 numberParser = do
@@ -72,19 +91,36 @@ numberParser = do
 --------------------------------------------------------------------------------
 -- General tokens
 
-integerParser :: F.Parser ParseError Integer
+-- > Note: it's more efficient to use spanOf and spanned instead.
+keyParser :: F.Parser e FieldName
+keyParser =
+  fmap
+    (FieldName . T.decodeUtf8)
+    (F.byteStringOf
+       (F.some_ (F.satisfy (\char -> isAlphaNum char || char == '_'))))
+
+integerParser :: F.Parser e Integer
 integerParser = F.integer <* whitespace
 
-comma :: F.Parser ParseError ()
+comma :: F.Parser e ()
 comma = $(F.char ',') *> whitespace
 
-openBracket :: F.Parser ParseError ()
+colon :: F.Parser e ()
+colon = $(F.char ':') *> whitespace
+
+openBracket :: F.Parser e ()
 openBracket = $(F.char '[') *> whitespace
 
-closeBracket :: F.Parser ParseError ()
+closeBracket :: F.Parser e ()
 closeBracket = $(F.char ']') *> whitespace
 
-whitespace :: F.Parser ParseError ()
+openCurly :: F.Parser e ()
+openCurly = $(F.char '{') *> whitespace
+
+closeCurly :: F.Parser e ()
+closeCurly = $(F.char '}') *> whitespace
+
+whitespace :: F.Parser e ()
 whitespace =
   F.many_
     $(F.switch
