@@ -9,6 +9,7 @@ import           Criterion.Main
 import           Data.Bifunctor
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
+import           Data.ByteUnits
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -37,16 +38,6 @@ main = do
         S.concat ["[", S.intercalate "," (replicate 2000 "1234"), "]"]
       !array4000' =
         S.concat ["[", S.intercalate "," (replicate 4000 "1234"), "]"]
-      !record =
-        "{" <>
-        S.intercalate "," (replicate 10 "aaaaaaaaaaaaaaaaaa: 12345678910") <>
-        "}"
-      !array1000Structs =
-        S.concat ["[", S.intercalate "," (replicate 1000 record), "]"]
-      !array2000Structs =
-        S.concat ["[", S.intercalate "," (replicate 2000 record), "]"]
-      !array10000Structs =
-        S.concat ["[", S.intercalate "," (replicate 10000 record), "]"]
   when
     True
     (defaultMain
@@ -106,12 +97,37 @@ main = do
                    ]
                , bgroup
                    "Records"
-                   [ bench (show i) (nf parseTextUpToErrorSuccess2' arr)
-                   | (i::Int, arr) <-
-                       [ (1000, array1000Structs)
-                       , (2000, array2000Structs)
-                       , (10000, array10000Structs)
+                   [ env
+                     (pure array)
+                     (\arr ->
+                        bench
+                          (show rows ++
+                           " rows, " ++
+                           show cols ++
+                           " columns, " ++
+                           getShortHand
+                             (getAppropriateUnits
+                                (ByteValue (fromIntegral (S.length array)) Bytes)))
+                          (nf parseTextUpToErrorSuccess2' arr))
+                   | (cols :: Int, rows :: Int) <-
+                       [ (10, 1000)
+                       , (10, 2000)
+                       , (10, 10000)
+                       , (5, 10000)
+                       , (5, 20000)
                        ]
+                   , let !record =
+                           "{" <>
+                           S.intercalate
+                             ","
+                             (replicate cols "aaaaaaaaaaaaaaaaaa: 12345678910") <>
+                           "}"
+                   , let !array =
+                           S.concat
+                             [ "["
+                             , S.intercalate "," (replicate rows record)
+                             , "]"
+                             ]
                    ]
                ]
            ]
