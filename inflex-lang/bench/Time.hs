@@ -39,14 +39,14 @@ main = do
         S.concat ["[", S.intercalate "," (replicate 4000 "1234"), "]"]
       !record =
         "{" <>
-        S.intercalate "," (replicate 20 "aaaaaaaaaaaaaaaaaa: 12345678910") <>
+        S.intercalate "," (replicate 10 "aaaaaaaaaaaaaaaaaa: 12345678910") <>
         "}"
       !array1000Structs =
         S.concat ["[", S.intercalate "," (replicate 1000 record), "]"]
       !array2000Structs =
         S.concat ["[", S.intercalate "," (replicate 2000 record), "]"]
-      !array4000Structs =
-        S.concat ["[", S.intercalate "," (replicate 4000 record), "]"]
+      !array10000Structs =
+        S.concat ["[", S.intercalate "," (replicate 10000 record), "]"]
   when
     True
     (defaultMain
@@ -110,7 +110,7 @@ main = do
                    | (i::Int, arr) <-
                        [ (1000, array1000Structs)
                        , (2000, array2000Structs)
-                       , (4000, array4000Structs)
+                       , (10000, array10000Structs)
                        ]
                    ]
                ]
