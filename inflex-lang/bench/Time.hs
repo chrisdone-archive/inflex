@@ -47,7 +47,7 @@ main = do
              (pure (T.replicate i sampleUnicode))
              (\t ->
                 bench
-                  ("T.encodeUtf8: " ++ show (i * T.length sampleUnicode))
+                  ("T.encodeUtf8: " ++ show (i * T.length sampleUnicode) ++ " chars")
                   (whnf T.encodeUtf8 t))
            | i <- [1, 10, 100]
            ]
