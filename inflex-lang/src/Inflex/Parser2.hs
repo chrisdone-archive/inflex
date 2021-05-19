@@ -21,15 +21,17 @@ import           Inflex.Types
 
 data ParseError = Failed deriving Show
 
+newtype Env = Env {original :: ByteString}
+
 --------------------------------------------------------------------------------
 -- Top-level parsers
 
-parseText :: FilePath -> Text -> Either ParseError (Expression Parsed2)
+parseText :: FilePath -> Text -> Either ParseError (Expression Parsed)
 parseText _fp txt = parseBytes (T.encodeUtf8 txt)
 
-parseBytes :: ByteString -> Either ParseError (Expression Parsed2)
+parseBytes :: ByteString -> Either ParseError (Expression Parsed)
 parseBytes bs =
-  case F.runParser sourceParser bs of
+  case F.runParser (sourceParser (Env bs)) bs of
     F.OK a _bs -> Right a
     F.Fail -> Left Failed
     F.Err e -> Left e
@@ -37,55 +39,73 @@ parseBytes bs =
 --------------------------------------------------------------------------------
 -- Basic array parser
 
-sourceParser :: F.Parser ParseError (Expression Parsed2)
-sourceParser = whitespace *> expressionParser <* F.eof
+sourceParser :: Env -> F.Parser ParseError (Expression Parsed)
+sourceParser env = whitespace *> expressionParser env <* F.eof
 
-expressionParser :: F.Parser ParseError (Expression Parsed2)
+expressionParser :: Env ->  F.Parser ParseError (Expression Parsed)
 expressionParser = arrayParser
 
-arrayParser :: F.Parser ParseError (Expression Parsed2)
-arrayParser = F.branch openBracket elements recordParser
+arrayParser :: Env ->  F.Parser ParseError (Expression Parsed)
+arrayParser env = F.branch openBracket elements (recordParser env)
   where
     elements = do
-      loc <- F.getPos
+      start <- getSourcePosPrev env
       es <-
         F.many
-          (do e <- expressionParser
+          (do e <- expressionParser env
               F.optional_ comma
               pure e)
       closeBracket
+      end <- getSourcePos env
       pure
         (ArrayExpression
-           Array {typ = (), location = loc, expressions = V.fromList es})
+           Array
+             { typ = Nothing
+             , location = SourceLocation {start = start, end = end}
+             , expressions = V.fromList es
+             })
 
-recordParser :: F.Parser ParseError (Expression Parsed2)
-recordParser = F.branch openCurly elements numberParser
+recordParser :: Env -> F.Parser ParseError (Expression Parsed)
+recordParser env = F.branch openCurly elements (numberParser env)
   where
     elements = do
-      location <- F.getPos
+      start <- getSourcePos env
       fields <-
         F.many
-          (do name <- keyParser
+          (do start' <- getSourcePos env
+              name <- keyParser
               colon
-              expression <- expressionParser
+              expression <- expressionParser env
+              end' <- getSourcePos env
               F.optional_ comma
-              pure FieldE {name, expression, location})
+              pure
+                FieldE
+                  { name
+                  , expression
+                  , location = SourceLocation {start = start', end = end'}
+                  })
+      end <- getSourcePos env
       closeCurly
       pure
         (RecordExpression
-           Record {typ = (), location, fields = fields})
+           Record
+             { typ = Nothing
+             , location = SourceLocation {start = start, end = end}
+             , fields = fields
+             })
 
-numberParser :: F.Parser ParseError (Expression Parsed2)
-numberParser = do
-  pos <- F.getPos
+numberParser :: Env -> F.Parser ParseError (Expression Parsed)
+numberParser env = do
+  start <- getSourcePos env
   i <- integerParser
+  end <- getSourcePos env
   pure
     (LiteralExpression
        (NumberLiteral
           Number
-            { location = pos
+            { location = SourceLocation {start = start, end = end}
             , number = IntegerNumber i
-            , typ = ()
+            , typ = Nothing
             }))
 
 --------------------------------------------------------------------------------
@@ -127,3 +147,24 @@ whitespace =
         [|case _ of
             " " -> pure ()
             "\n" -> pure ()|])
+
+--------------------------------------------------------------------------------
+-- Location getting
+
+getSourcePos :: Env -> F.Parser e SourcePos
+getSourcePos Env{original} = do
+  pos <- F.getPos
+  let ~(line, column) =
+        case F.posLineCols original [pos] of
+          [(line', col)] -> (line'+1, col+1)
+          _ -> (0, 0)
+   in pure SourcePos {name = "", line, column}
+
+getSourcePosPrev :: Env -> F.Parser e SourcePos
+getSourcePosPrev Env{original} = do
+  pos <- F.getPos
+  let ~(line, column) =
+        case F.posLineCols original [pos] of
+          [(line', col)] -> (line'+1, col)
+          _ -> (0, 0)
+   in pure SourcePos {name = "", line, column}
