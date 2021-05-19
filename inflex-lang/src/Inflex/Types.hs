@@ -471,15 +471,15 @@ data ClassName
 
 -- | Source location of something originating in source code.
 data SourceLocation = SourceLocation
-  { start :: !SourcePos
-  , end :: !SourcePos
+  { start :: SourcePos -- ^ Deliberately lazy.
+  , end :: SourcePos -- ^ Deliberately lazy.
   } deriving (Show, Lift, Eq, Ord)
 
 -- | Position in source code.
 data SourcePos = SourcePos
-  { line :: !Int
-  , column :: !Int
-  , name :: !FilePath
+  { line :: Int -- ^ Deliberately lazy.
+  , column :: Int -- ^ Deliberately lazy.
+  , name :: FilePath -- ^ Deliberately lazy.
   } deriving (Show, Lift, Eq, Ord, Generic)
 
 --------------------------------------------------------------------------------
