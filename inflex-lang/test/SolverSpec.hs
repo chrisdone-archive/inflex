@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
@@ -33,7 +34,11 @@ solveText' :: (e ~ ()) =>
 solveText' hash fp text = do
   counter <- RIO.newSomeRef 0
   binds <- RIO.newSomeRef mempty
-  RIO.runRIO SolveReader {glogfunc = mempty, counter, binds} (solveText hash fp text)
+  fmap
+    (fmap (\IsSolved {..} -> IsSolved {mappings = mempty, ..}))
+    (RIO.runRIO
+       SolveReader {glogfunc = mempty, counter, binds}
+       (solveText hash fp text))
 
 unifyConstraints' ::
      Seq EqualityConstraint
@@ -572,22 +577,7 @@ coarseGrained = do
                                         })
                                }))
                    , mappings =
-                       M.fromList
-                         [ ( ExpressionCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 5, name = ""}
-                               })
-                         , ( SignatureCursor TypeCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 7, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 14, name = ""}
-                               })
-                         ]
+                       mempty
                    })))
         it
           "(x:x)123"
@@ -708,50 +698,7 @@ coarseGrained = do
                                      })
                             })
                    , mappings =
-                       M.fromList
-                         [ ( ExpressionCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 7, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 10, name = ""}
-                               })
-                         , ( ApplyFuncCursor ExpressionCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 5, name = ""}
-                               })
-                         , ( ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 4, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 5, name = ""}
-                               })
-                         , ( ApplyFuncCursor LambdaParamCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 3, name = ""}
-                               })
-                         , ( ApplyArgCursor ExpressionCursor
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 7, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 10, name = ""}
-                               })
-                         , ( ApplyArgCursor (SignatureCursor TypeCursor)
-                           , SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 12, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 19, name = ""}
-                               })
-                         ]
+                       mempty
                    }))))
   erroneous
 

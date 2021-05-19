@@ -104,15 +104,15 @@ errors = do
   it
     "y = 1; x = y y"
     (do u1 <- nextRandom'
-        u2 <- nextRandom'
+        u2 <- pure "85cbcc37-0c41-4871-a66a-31390a3ef391"
         shouldReturn
           (do loaded <-
                 loadDocument'
                   [ Named
                       { uuid = Uuid u1
                       , name = "x"
-                      , thing = "y(y)"
-                      , code = "y(y)"
+                      , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
+                      , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
                       , order = 0
                       }
                   , Named
@@ -128,7 +128,7 @@ errors = do
               { uuid = Uuid u1
               , name = "x"
               , order = 0
-              , code = "y(y)"
+              , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
               , thing =
                   Left
                     (LoadResolveError
@@ -331,23 +331,23 @@ success = do
   it
     "x = y + 2; z = 2; y = z * 3.1"
     (do u1 <- nextRandom'
-        u2 <- nextRandom'
-        u3 <- nextRandom'
+        u2 <- pure "85cbcc37-0c41-4871-a66a-31390a3ef391"
+        u3 <- pure "12cbcc37-0c41-4871-a66a-31390a3ef666"
         shouldReturn
           (do loaded <-
                 loadDocument'
                   [ Named
                       { uuid = Uuid u1
                       , name = "x"
-                      , thing = "y + 2"
-                      , code = "y + 2"
+                      , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391 + 2"
+                      , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391 + 2"
                       , order = 0
                       }
                   , Named
                       { uuid = Uuid u2
                       , name = "y"
-                      , thing = "z * 3.1"
-                      , code = "z * 3.1"
+                      , thing = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
+                      , code = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
                       , order = 1
                       }
                   , Named
@@ -363,7 +363,7 @@ success = do
               { uuid = Uuid u1
               , name = "x"
               , order = 0
-              , code = "y + 2"
+              , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391 + 2"
               , thing =
                   Right
                     (LiteralExpression
@@ -385,7 +385,7 @@ success = do
               { uuid = Uuid u2
               , name = "y"
               , order = 1
-              , code = "z * 3.1"
+              , code = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
               , thing =
                   Right
                     (LiteralExpression
@@ -426,7 +426,7 @@ success = do
           ])
   it
     "double = x: x * 2; a = double(1); b = double(2.2)"
-    (do u1 <- nextRandom'
+    (do u1 <- pure "85cbcc37-0c41-4871-a66a-31390a3ef391"
         u2 <- nextRandom'
         u3 <- nextRandom'
         shouldReturn
@@ -442,15 +442,15 @@ success = do
                   , Named
                       { uuid = Uuid u2
                       , name = "a"
-                      , thing = "double(1)"
-                      , code = "double(1)"
+                      , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(1)"
+                      , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(1)"
                       , order = 1
                       }
                   , Named
                       { uuid = Uuid u3
                       , name = "b"
-                      , thing = "double(2.2)"
-                      , code = "double(2.2)"
+                      , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
+                      , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
                       , order = 2
                       }
                   ]
@@ -912,7 +912,7 @@ success = do
               { uuid = Uuid u2
               , name = "a"
               , order = 1
-              , code = "double(1)"
+              , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(1)"
               , thing =
                   Right
                     (LiteralExpression
@@ -933,7 +933,7 @@ success = do
               { uuid = Uuid u3
               , name = "b"
               , order = 2
-              , code = "double(2.2)"
+              , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
               , thing =
                   Right
                     (LiteralExpression
@@ -1043,9 +1043,9 @@ records = do
                        }))
            }
        ])
-  eval_it
+  eval_it_with_uuids
     "Arith referencing a unary record is fine"
-    [("x", "{a:666}"), ("y", "x.a * 2")]
+    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "{a:666}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a * 2"))]
     (\[u1, u2] ->
        [ Named
            { uuid = Uuid u1
@@ -1119,7 +1119,7 @@ records = do
            { uuid = Uuid u2
            , name = "y"
            , order = 1
-           , code = "x.a * 2"
+           , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a * 2"
            , thing =
                Right
                  (LiteralExpression
@@ -1139,9 +1139,9 @@ records = do
                           })))
            }
        ])
-  eval_it
+  eval_it_with_uuids
     "Referencing a single field from a 2-ary record is fine (without type sig)"
-    [("x", "{a:1, b:8}"), ("y", "x.a")]
+    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391",("x", "{a:1, b:8}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))]
     (\[u1, u2] ->
        [ Named
            { uuid = Uuid u1
@@ -1260,7 +1260,7 @@ records = do
            { uuid = Uuid u2
            , name = "y"
            , order = 1
-           , code = "x.a"
+           , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"
            , thing =
                Right
                  (LiteralExpression
@@ -1285,9 +1285,9 @@ records = do
        ])
   -- This example demonstrates that if the `b' field has a type
   -- annotation, then there is no class inference issue.
-  eval_it
+  eval_it_with_uuids
     "Referencing a single field from a 2-ary record is fine (with type sig)"
-    [("x", "{a:1, b:8 :: Integer}"), ("y", "x.a")]
+    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391",("x", "{a:1, b:8 :: Integer}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))]
     (\[u1, u2] ->
        [ Named
            { uuid = Uuid u1
@@ -1409,7 +1409,7 @@ records = do
            { uuid = Uuid u2
            , name = "y"
            , order = 1
-           , code = "x.a"
+           , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"
            , thing =
                Right
                  (LiteralExpression
@@ -1432,9 +1432,11 @@ records = do
                           })))
            }
        ])
-  eval_it
+  eval_it_with_uuids
     "Defaulting for a verbatim copy of a record is also fine:"
-    [("x", "{a:1, b:8}"), ("y", "x")]
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "{a:1, b:8}"))
+    , (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391"))
+    ]
     (\[u1, u2] ->
        let record =
              RecordExpression
@@ -1549,7 +1551,7 @@ records = do
                { uuid = Uuid u2
                , name = "y"
                , order = 1
-               , code = "x"
+               , code = "@uuid:" <> u1
                , thing = Right record
                }
            ])

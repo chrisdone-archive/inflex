@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,7 +13,6 @@ module GenerateSpec where
 import           Data.Bifunctor
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Inflex.Generator
@@ -26,7 +26,10 @@ generateText' :: (e~ ()) =>
   -> FilePath
   -> Text
   -> Either (RenameGenerateError e) (HasConstraints (Expression Generated))
-generateText' = generateText
+generateText' hash fp text =
+  fmap
+    (\HasConstraints {..} -> HasConstraints {mappings = mempty, ..})
+    (generateText hash fp text)
 
 spec :: Spec
 spec = do
@@ -53,7 +56,7 @@ spec = do
                                      , name = IntegerTypeName
                                      })
                             }))
-                , mappings = M.fromList []
+                , mappings = mempty
                 }))
         shouldBe
           (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "123.0 :: Decimal 1"))
@@ -87,7 +90,7 @@ spec = do
                                      , kind = TypeKind
                                      })
                             }))
-                , mappings = M.fromList []
+                , mappings = mempty
                 }))
         shouldBe
           (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "0.00 ::Decimal 2"))
@@ -121,7 +124,7 @@ spec = do
                                      , kind = TypeKind
                                      })
                             }))
-                , mappings = M.fromList []
+                , mappings = mempty
                 })))
   it
     "Lambda"
@@ -196,7 +199,7 @@ spec = do
                                , kind = TypeKind
                                })
                       })
-             , mappings = M.fromList []
+             , mappings = mempty
              })))
   it
     "Apply"
@@ -435,7 +438,7 @@ spec = do
                                   , kind = TypeKind
                                   })
                          })
-                , mappings = M.fromList []
+                , mappings = mempty
                 })))
 
 globals :: SpecWith ()
@@ -448,12 +451,12 @@ globals =
              "fromInteger"
              (shouldBe
                 (generateText' mempty "" "@prim:from_integer")
-                (Right (HasConstraints {equalities = mempty, thing = GlobalExpression (Global {location = ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 19, name = ""}})]})))
+                (Right (HasConstraints {equalities = mempty, thing = GlobalExpression (Global {location = ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), mappings = mempty})))
            it
              "fromDecimal"
              (shouldBe
                 (generateText' mempty "" "@prim:from_decimal")
-                (Right (HasConstraints {equalities = mempty, thing = GlobalExpression (Global {location = ExpressionCursor, name = FromDecimalGlobal, scheme = GeneratedScheme (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = FromDecimalClassName, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = NatPrefix, index = 1, kind = NatKind}) :| [VariableType (TypeVariable {location = ExpressionCursor, prefix = DecimalPrefix, index = 0, kind = TypeKind})], location = ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = DecimalTypeName}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = NatPrefix, index = 1, kind = NatKind}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = DecimalPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 19, name = ""}})]})))))
+                (Right (HasConstraints {equalities = mempty, thing = GlobalExpression (Global {location = ExpressionCursor, name = FromDecimalGlobal, scheme = GeneratedScheme (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = FromDecimalClassName, typ = VariableType (TypeVariable {location = ExpressionCursor, prefix = NatPrefix, index = 1, kind = NatKind}) :| [VariableType (TypeVariable {location = ExpressionCursor, prefix = DecimalPrefix, index = 0, kind = TypeKind})], location = ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = DecimalTypeName}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = NatPrefix, index = 1, kind = NatKind}), location = BuiltIn, kind = TypeKind}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ExpressionCursor, prefix = DecimalPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), mappings = mempty})))))
 
 signatures :: SpecWith ()
 signatures =
@@ -463,7 +466,7 @@ signatures =
        "fromInteger (123 :: Integer) :: Decimal 2"
        (shouldBe
           (generateText' mempty "" "@prim:from_integer(123 :: Integer) :: Decimal 2")
-          (Right (HasConstraints {equalities = Seq.fromList [EqualityConstraint {type1 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), type2 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), location = ExpressionCursor}], thing = ApplyExpression (Apply {location = ExpressionCursor, function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ApplyFuncCursor ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ApplyFuncCursor ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), mappings = M.fromList [(ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 20, name = ""}, end = SourcePos {line = 1, column = 23, name = ""}}),(ApplyFuncCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 19, name = ""}}),(ApplyArgCursor ExpressionCursor,SourceLocation {start = SourcePos {line = 1, column = 20, name = ""}, end = SourcePos {line = 1, column = 23, name = ""}}),(ApplyArgCursor (SignatureCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 27, name = ""}, end = SourcePos {line = 1, column = 34, name = ""}}),(SignatureCursor TypeCursor,SourceLocation {start = SourcePos {line = 1, column = 39, name = ""}, end = SourcePos {line = 1, column = 48, name = ""}}),(SignatureCursor (TypeApplyCursor TypeCursor),SourceLocation {start = SourcePos {line = 1, column = 47, name = ""}, end = SourcePos {line = 1, column = 48, name = ""}})]}))))
+          (Right (HasConstraints {equalities = Seq.fromList [EqualityConstraint {type1 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), type2 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), location = ExpressionCursor}], thing = ApplyExpression (Apply {location = ExpressionCursor, function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ApplyFuncCursor ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ApplyFuncCursor ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), mappings = mempty}))))
 
 variants :: SpecWith ()
 variants =
@@ -514,12 +517,5 @@ variants =
                          , argument = Nothing
                          })
                 , mappings =
-                    M.fromList
-                      [ ( ExpressionCursor
-                        , SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 2, name = ""}
-                            , end = SourcePos {line = 1, column = 6, name = ""}
-                            })
-                      ]
+                    mempty
                 }))))
