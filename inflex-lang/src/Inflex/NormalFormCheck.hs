@@ -37,9 +37,11 @@ import           Control.Monad
 import           Control.Monad.State.Strict
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as OM
+import           Data.Text (Text)
 import           GHC.Generics
 import           GHC.Natural
 import           Inflex.Generator
+import           Inflex.Parser
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Generator
@@ -61,6 +63,18 @@ data T
   | DecimalT !Natural
   | TextT
   deriving (Show, Eq, Generic)
+
+--------------------------------------------------------------------------------
+-- REPL testing
+
+_replText :: Text -> IO ()
+_replText t =
+  case parseText "repl" t of
+    Left e -> error (show e)
+    Right e ->
+      case resolveParsed e of
+        Left e' -> error (show e')
+        Right a -> print a
 
 --------------------------------------------------------------------------------
 -- Top-level interface
