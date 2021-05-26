@@ -51,6 +51,7 @@ data NormalFormCheckProblem
   = NotNormalForm
   | TypeMismatch !T !T
   | RecordFieldsMismatch [FieldName] [FieldName]
+  | NoTypeSig
   deriving (Show, Eq, Generic)
 
 data T
@@ -64,10 +65,18 @@ data T
 --------------------------------------------------------------------------------
 -- Top-level interface
 
-resolveParsed :: Expression Parsed -> Either NormalFormCheckProblem (Expression Resolved)
-resolveParsed expression = do
-  t <- expressionGenerate expression
-  apply expression (toTypeMono t)
+-- | This function only works when an expression has an explicit type
+-- signature, which has only monomorphic types. Also ensures that the
+-- type sig matches the inferred type.
+resolveParsed ::
+     Expression Parsed -> Either NormalFormCheckProblem (Expression Resolved)
+resolveParsed expression =
+  case expressionType expression >>= toT of
+    Nothing -> Left NoTypeSig
+    Just sigT -> do
+      inferredT <- expressionGenerate expression
+      finalT <- unifyT sigT inferredT
+      apply expression (toTypeMono finalT)
 
 --------------------------------------------------------------------------------
 -- Generation
@@ -217,3 +226,12 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
          {expressions = expressions', location = BuiltIn, typ = ArrayType typ})
 apply RecordExpression {} _ = error "TODO"
 apply _ _ = Left NotNormalForm
+
+--------------------------------------------------------------------------------
+-- Get NF type from general type
+
+toT :: Type Parsed -> Maybe T
+toT = \case
+         ConstantType TypeConstant{name=IntegerTypeName} -> pure IntegerT
+         -- TODO: DecimalT
+         _ -> Nothing
