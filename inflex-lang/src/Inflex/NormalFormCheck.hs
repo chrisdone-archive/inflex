@@ -18,8 +18,8 @@
 -- change, e.g. if globals are normal form), no lambdas, no
 -- variables. Just atomics and lists, basically.
 --
--- Because we need proper Cursor info, this stage happens after the
--- renamer.
+-- Because we need proper Cursor info, we do cursor generation here
+-- rather than using the renamer.
 
 module Inflex.NormalFormCheck where
 
