@@ -152,19 +152,22 @@ unifyT x y = Left (TypeMismatch x y)
 --------------------------------------------------------------------------------
 -- Conversion to Real(tm) types
 
-toTypeMono :: T -> Type Polymorphic
+toTypeMono :: T -> Type Generalised
 toTypeMono =
   flip evalState (GenerateState {counter = 0, equalityConstraints = mempty}) .
   go
   where
-    go :: T -> State GenerateState (Type Polymorphic)
+    go :: T -> State GenerateState (Type Generalised)
     go =
       \case
         IntegerT -> pure integerT
         DecimalT n -> pure (decimalT n)
         TextT -> pure textT
         ArrayT (Just t) -> fmap ArrayType (go t)
-        ArrayT Nothing -> fmap ArrayType (generateVariableType () () TypeKind)
+        ArrayT Nothing ->
+          fmap
+            ArrayType
+            (generateVariableType BuiltIn ArrayElementPrefix TypeKind)
         RecordT fs -> do
           fs' <-
             traverse
