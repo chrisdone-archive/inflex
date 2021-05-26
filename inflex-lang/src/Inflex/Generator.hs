@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,6 +18,7 @@ module Inflex.Generator
   , RenameGenerateError(..)
   , HasConstraints(..)
   , hasConstraintsMappingsL
+  , generateVariableType
   ) where
 
 import           Control.Monad.Reader
@@ -619,20 +621,22 @@ numericBinOpClassName = \case
 -- Type system helpers
 
 generateTypeVariable ::
-     StagedLocation Generated
-  -> TypeVariablePrefix
+     (MonadState GenerateState m)
+  => StagedTyVarLocation s
+  -> StagedPrefix s
   -> Kind
-  -> Generate e (TypeVariable Generated)
+  -> m (TypeVariable s)
 generateTypeVariable location prefix kind = do
   index <- gets (view generateStateCounterL)
   modify' (over generateStateCounterL succ)
   pure (TypeVariable {prefix, index, location, kind})
 
 generateVariableType ::
-     StagedLocation Generated
-  -> TypeVariablePrefix
+     MonadState GenerateState m
+  => StagedTyVarLocation s
+  -> StagedPrefix s
   -> Kind
-  -> Generate e (Type Generated)
+  -> m (Type s)
 generateVariableType location prefix kind =
   fmap VariableType (generateTypeVariable location prefix kind)
 

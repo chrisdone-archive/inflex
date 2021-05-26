@@ -23,13 +23,16 @@
 
 module Inflex.NormalFormCheck where
 
-import           Control.DeepSeq
 import           Control.Monad
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
+import           Control.Monad.State.Strict
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as OM
 import           GHC.Generics
 import           GHC.Natural
+import           Inflex.Generator
+import           Inflex.Type
 import           Inflex.Types
+import           Inflex.Types.Generator
 
 --------------------------------------------------------------------------------
 -- Types
@@ -39,16 +42,15 @@ data NormalFormCheckProblem
   | TypeMismatch !T !T
   | RecordFieldsMismatch [FieldName] [FieldName]
   deriving (Show, Eq, Generic)
-instance NFData NormalFormCheckProblem
 
 data T
   = ArrayT !(Maybe T)
-  | RecordT !(HashMap FieldName T)
+  | RecordT !(InsOrdHashMap FieldName T)
   | IntegerT
   | DecimalT !Natural
   | TextT
   deriving (Show, Eq, Generic)
-instance NFData T
+
 
 -- We perform in two stages.
 --
@@ -83,10 +85,10 @@ expressionGenerate =
     BoundaryExpression {} -> Left NotNormalForm
 
 recordGenerate ::
-     Record Parsed -> Either NormalFormCheckProblem (HashMap FieldName T)
+     Record Parsed -> Either NormalFormCheckProblem (InsOrdHashMap FieldName T)
 recordGenerate Record {fields} =
   fmap
-    HM.fromList
+    OM.fromList
     (traverse
        (\FieldE {name, expression} -> do
           t <- expressionGenerate expression
@@ -127,18 +129,18 @@ unifyT (ArrayT x) (ArrayT Nothing) = pure (ArrayT x)
 unifyT (ArrayT (Just x)) (ArrayT (Just y)) = fmap (ArrayT . pure) (unifyT x y)
 -- Records:
 unifyT (RecordT x) (RecordT y) =
-  if HM.keys x == HM.keys y
+  if OM.keys x == OM.keys y
     then do
       !m <-
         fmap
-          HM.fromList
+          OM.fromList
           (traverse
              (\((k1, v1), v2) -> do
                 t <- unifyT v1 v2
                 pure (k1, t))
-             (zip (HM.toList x) (HM.elems y)))
+             (zip (OM.toList x) (OM.elems y)))
       pure (RecordT m)
-    else Left (RecordFieldsMismatch (HM.keys x) (HM.keys y))
+    else Left (RecordFieldsMismatch (OM.keys x) (OM.keys y))
 -- Promotion of integer to decimal:
 unifyT IntegerT (DecimalT n) = pure (DecimalT n)
 unifyT (DecimalT n) IntegerT = pure (DecimalT n)
@@ -146,6 +148,35 @@ unifyT (DecimalT n) IntegerT = pure (DecimalT n)
 unifyT (DecimalT x) (DecimalT y) = pure (DecimalT n)
   where !n = max x y
 unifyT x y = Left (TypeMismatch x y)
+
+--------------------------------------------------------------------------------
+-- Conversion to Real(tm) types
+
+toTypeMono :: T -> Type Polymorphic
+toTypeMono =
+  flip evalState (GenerateState {counter = 0, equalityConstraints = mempty}) .
+  go
+  where
+    go :: T -> State GenerateState (Type Polymorphic)
+    go =
+      \case
+        IntegerT -> pure integerT
+        DecimalT n -> pure (decimalT n)
+        TextT -> pure textT
+        ArrayT (Just t) -> fmap ArrayType (go t)
+        ArrayT Nothing -> fmap ArrayType (generateVariableType () () TypeKind)
+        RecordT fs -> do
+          fs' <-
+            traverse
+              (\(name, typ) -> do
+                 typ' <- go typ
+                 pure Field {location = BuiltIn, name, typ = typ'})
+              (OM.toList fs)
+          pure
+            (RecordType
+               (RowType
+                  TypeRow
+                    {location = BuiltIn, typeVariable = Nothing, fields = fs'}))
 
 --------------------------------------------------------------------------------
 -- Application
