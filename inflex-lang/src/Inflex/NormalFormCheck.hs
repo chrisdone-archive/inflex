@@ -20,8 +20,18 @@
 --
 -- Because we need proper Cursor info, we do cursor generation here
 -- rather than using the renamer.
+--
+-- We perform in two stages.
+--
+-- 1. Generate a type (elaboration) for the expression.
+-- 2. Apply the type to the expression.
+--
+-- We have to do two steps because we don't know the full type until
+-- the end (due to numbers).
 
-module Inflex.NormalFormCheck where
+module Inflex.NormalFormCheck
+  ( resolveParsed
+  ) where
 
 import           Control.Monad
 import           Control.Monad.State.Strict
@@ -51,14 +61,13 @@ data T
   | TextT
   deriving (Show, Eq, Generic)
 
+--------------------------------------------------------------------------------
+-- Top-level interface
 
--- We perform in two stages.
---
--- 1. Generate a type (elaboration) for the expression.
--- 2. Apply the type to the expression.
---
--- We have to do two steps because we don't know the full type until
--- the end (due to numbers).
+resolveParsed :: Expression Parsed -> Either NormalFormCheckProblem (Expression Resolved)
+resolveParsed expression = do
+  t <- expressionGenerate expression
+  apply expression (toTypeMono t)
 
 --------------------------------------------------------------------------------
 -- Generation
@@ -184,5 +193,27 @@ toTypeMono =
 --------------------------------------------------------------------------------
 -- Application
 
-applyType :: Expression Parsed -> Type Polymorphic -> Expression Resolved
-applyType = undefined
+--
+-- Consideration: let's handle polymorphism LATER. Make monomorphic
+-- types work first with a type sig. Then worry about generalization
+-- later.
+--
+
+apply ::
+     Expression Parsed
+  -> Type Generalised
+  -> Either NormalFormCheckProblem (Expression Resolved)
+apply (LiteralExpression literal) typ =
+  pure
+    (LiteralExpression
+       (case literal of
+          NumberLiteral number -> NumberLiteral number {typ, location = BuiltIn}
+          TextLiteral text -> TextLiteral text {typ, location = BuiltIn}))
+apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
+  expressions' <- traverse (flip apply typ) expressions
+  pure
+    (ArrayExpression
+       array
+         {expressions = expressions', location = BuiltIn, typ = ArrayType typ})
+apply RecordExpression {} _ = error "TODO"
+apply _ _ = Left NotNormalForm
