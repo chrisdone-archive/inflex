@@ -78,7 +78,7 @@ expressionGenerate =
     LiteralExpression literal -> pure $! (literalGenerator literal)
     ArrayExpression array -> arrayGenerate array
     RecordExpression record -> fmap RecordT (recordGenerate record)
-    VariantExpression {} -> undefined
+    VariantExpression {} -> Left NotNormalForm -- TODO:
     -- The rest of these are not normal form. We only consider the above cases.
     LambdaExpression {} -> Left NotNormalForm
     ApplyExpression {} -> Left NotNormalForm
