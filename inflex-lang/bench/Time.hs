@@ -38,6 +38,10 @@ main = do
         S.concat ["[", S.intercalate "," (replicate 2000 "1234"), "]"]
       !array4000' =
         S.concat ["[", S.intercalate "," (replicate 4000 "1234"), "]"]
+      !array1000Sig =
+        T.concat ["[", T.intercalate "," (replicate 1000 "1234"), "]::[Integer]"]
+      !array4000Sig =
+        T.concat ["[", T.intercalate "," (replicate 4000 "1234"), "]::[Integer]"]
   when
     True
     (defaultMain
@@ -47,7 +51,8 @@ main = do
              (pure (T.replicate i sampleUnicode))
              (\t ->
                 bench
-                  ("T.encodeUtf8: " ++ show (i * T.length sampleUnicode) ++ " chars")
+                  ("T.encodeUtf8: " ++
+                   show (i * T.length sampleUnicode) ++ " chars")
                   (whnf T.encodeUtf8 t))
            | i <- [1, 10, 100]
            ]
@@ -149,7 +154,7 @@ main = do
                       (solveTextUpToErrorSuccess array)))
            | (n, array) <- [(1000 :: Int, array1000), (1000 :: Int, array4000)]
            ]
-       , bgroup
+       {-bgroup
            "normalFormCheck"
            [ env
                (case parseText "" array1000 of
@@ -166,14 +171,28 @@ main = do
                   Left {} -> error "parse failed"
                   Right ast -> pure $! (EqNF ast))
                (bench "array[4000]" . nf NF.expressionGenerate . unNF)
-           ]
+           ]-}
        , bgroup
-           "resolveText"
-           [ bench
-             ("array[" <> show n <> "] SIG")
-             (nfIO
-                (do RIO.runRIO ResolveReader (resolveTextUpToErrorSuccess array)))
-           | (n, array) <- [(1000 :: Int, array1000), (4000 :: Int, array4000)]
+           "resolve"
+           [ bgroup
+               "resolveText"
+               [ bench
+                 ("array[" <> show n <> "] SIG")
+                 (nfIO
+                    (do RIO.runRIO
+                          ResolveReader
+                          (resolveTextUpToErrorSuccess array)))
+               | (n, array) <-
+                   [(1000 :: Int, array1000Sig), (4000 :: Int, array4000Sig)]
+               ]
+           , bgroup
+               "resolveParsed"
+               [ bench
+                 ("array[" <> show n <> "] SIG")
+                 (nf parseAndResolve array)
+               | (n, array) <-
+                   [(1000 :: Int, array1000Sig), (4000 :: Int, array4000Sig)]
+               ]
            ]
        ])
 
@@ -182,6 +201,15 @@ instance Eq a => NFData (EqNF a) where
   rnf (EqNF a) =
     let !_ = a == a
      in ()
+
+parseAndResolve :: Text -> Either () ()
+parseAndResolve t =
+  case parseText "repl" t of
+    Left e -> error (show e)
+    Right e ->
+      case resolveParsed e of
+        Left e' -> error (show e')
+        Right !_ -> Right ()
 
 lexTextUpToErrorSuccess :: Text -> Either () ()
 lexTextUpToErrorSuccess = first (const ()) . second (const ()) . lexText ""
