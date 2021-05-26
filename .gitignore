@@ -12,3 +12,4 @@ inflex-shared/*.cabal
 inflex-client/src/Inflex/Shared.purs
 inflex-server/src/Inflex/Shared.hs
 fly/inflex-server
+dist-newstyle
