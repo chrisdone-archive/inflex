@@ -231,7 +231,11 @@ apply _ _ = Left NotNormalForm
 -- Get NF type from general type
 
 toT :: Type Parsed -> Maybe T
-toT = \case
-         ConstantType TypeConstant{name=IntegerTypeName} -> pure IntegerT
-         -- TODO: DecimalT
-         _ -> Nothing
+toT =
+  \case
+    ConstantType TypeConstant {name = IntegerTypeName} -> pure IntegerT
+    ArrayType t -> do
+      a <- toT t
+      pure (ArrayT (pure a))
+    -- TODO: DecimalT
+    _ -> Nothing
