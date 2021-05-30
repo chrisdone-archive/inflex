@@ -89,12 +89,7 @@ resolveParsed expression =
     Nothing -> Left NoTypeSig
     Just sigT -> do
       inferredT <- expressionGenerate expression
-      -- TODO: Change this to a one-way-unify!
-      --
-      -- [123.666777] :: [Integer]
-      --
-      -- Must not pass!
-      finalT <- unifyT sigT inferredT
+      finalT <- oneWayUnifyT sigT inferredT
       apply expression (toTypeMono finalT)
 
 --------------------------------------------------------------------------------
@@ -185,6 +180,38 @@ unifyT (DecimalT n) IntegerT = pure (DecimalT n)
 unifyT (DecimalT x) (DecimalT y) = pure (DecimalT n)
   where !n = max x y
 unifyT x y = Left (TypeMismatch x y)
+
+--------------------------------------------------------------------------------
+-- One-way unification
+
+-- Left side is rigid.
+oneWayUnifyT :: T -> T -> Either NormalFormCheckProblem T
+oneWayUnifyT TextT TextT = pure TextT
+oneWayUnifyT IntegerT IntegerT = pure IntegerT
+-- Arrays might be empty, and therefore without a type. Just take
+-- whatever side has something.
+oneWayUnifyT (ArrayT Nothing) (ArrayT y) = pure (ArrayT y)
+oneWayUnifyT (ArrayT x) (ArrayT Nothing) = pure (ArrayT x)
+oneWayUnifyT (ArrayT (Just x)) (ArrayT (Just y)) = fmap (ArrayT . pure) (oneWayUnifyT x y)
+-- Records:
+oneWayUnifyT (RecordT x) (RecordT y) =
+  if OM.keys x == OM.keys y
+    then do
+      !m <-
+        fmap
+          OM.fromList
+          (traverse
+             (\((k1, v1), v2) -> do
+                t <- oneWayUnifyT v1 v2
+                pure (k1, t))
+             (zip (OM.toList x) (OM.elems y)))
+      pure (RecordT m)
+    else Left (RecordFieldsMismatch (OM.keys x) (OM.keys y))
+-- Promotion of integer to decimal:
+oneWayUnifyT (DecimalT n) IntegerT = pure (DecimalT n)
+-- Promotion of smaller decimal to larger decimal:
+oneWayUnifyT (DecimalT x) (DecimalT y) | x >= y = pure (DecimalT x)
+oneWayUnifyT x y = Left (TypeMismatch x y)
 
 --------------------------------------------------------------------------------
 -- Conversion to Real(tm) types
