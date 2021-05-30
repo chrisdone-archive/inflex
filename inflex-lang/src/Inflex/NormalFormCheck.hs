@@ -271,7 +271,7 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
     (ArrayExpression
        array
          {expressions = expressions', location = BuiltIn, typ = ArrayType typ})
-apply RecordExpression {} _ = error "TODO"
+apply RecordExpression {} _ = error "TODO: apply: RecordExpression"
 apply _ _ = Left NotNormalForm
 
 coerceNumber :: Number s -> Type Generalised -> Number Resolved
