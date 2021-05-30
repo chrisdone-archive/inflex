@@ -40,6 +40,7 @@ import qualified Data.HashMap.Strict.InsOrd as OM
 import           Data.Text (Text)
 import           GHC.Generics
 import           GHC.Natural
+import           Inflex.Decimal
 import           Inflex.Generator
 import           Inflex.Parser2
 import           Inflex.Type
@@ -262,7 +263,7 @@ apply (LiteralExpression literal) typ =
   pure
     (LiteralExpression
        (case literal of
-          NumberLiteral number -> NumberLiteral number {typ, location = BuiltIn}
+          NumberLiteral number -> NumberLiteral (coerceNumber number typ)
           TextLiteral text -> TextLiteral text {typ, location = BuiltIn}))
 apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
   expressions' <- traverse (flip apply typ) expressions
@@ -273,6 +274,26 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
 apply RecordExpression {} _ = error "TODO"
 apply _ _ = Left NotNormalForm
 
+coerceNumber :: Number s -> Type Generalised -> Number Resolved
+coerceNumber number@Number {number = someNumber} typ =
+  number
+    { typ
+    , location = BuiltIn
+    , number =
+        case someNumber of
+          IntegerNumber i
+            | ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                        , argument = ConstantType (TypeConstant {name = NatTypeName nat})
+                                        } <- typ ->
+              DecimalNumber (decimalFromInteger i nat)
+          DecimalNumber d@Decimal {places}
+            | ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                        , argument = ConstantType (TypeConstant {name = NatTypeName nat})
+                                        } <- typ
+            , nat /= places -> DecimalNumber (expandDecimalPrecision nat d)
+          _ -> someNumber
+    }
+
 --------------------------------------------------------------------------------
 -- Get NF type from general type
 
@@ -280,6 +301,9 @@ toT :: Type Parsed -> Maybe T
 toT =
   \case
     ConstantType TypeConstant {name = IntegerTypeName} -> pure IntegerT
+    ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                              , argument = ConstantType (TypeConstant {name = NatTypeName nat})
+                              } -> pure (DecimalT nat)
     ArrayType t -> do
       a <- toT t
       pure (ArrayT (pure a))

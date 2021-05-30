@@ -409,7 +409,7 @@ stepApply Apply {..} = do
           | LiteralExpression (NumberLiteral (Number { number = DecimalNumber decimal
                                                      , typ = typ'
                                                      })) <- argument' -> do
-            decimal' <- fromDecimalStep fromDecimalInstance decimal?
+            decimal' <- (pure (fromDecimalStep fromDecimalInstance decimal))?
             pure
               (Ok
                  (LiteralExpression
@@ -1195,21 +1195,19 @@ betaReduce body0 arg = go 0 body0
 --------------------------------------------------------------------------------
 -- FromDecimal instance stepping
 
-fromDecimalStep :: FromDecimalInstance -> Decimal -> Step (Result Decimal)
+fromDecimalStep :: FromDecimalInstance -> Decimal -> Result Decimal
 fromDecimalStep fromDecimalInstance decimal =
   if thisSubsetPlaces == subsetPlaces
     then if thisSubsetPlaces == supersetPlaces
-           then pure (Ok decimal)
+           then Ok decimal
            else if thisSubsetPlaces < supersetPlaces
-                  then pure (Ok (expandDecimalPrecision supersetPlaces decimal))
-                  else pure
-                         (Errored
-                            (CannotShrinkADecimalFromTo
-                               thisSubsetPlaces
-                               supersetPlaces))
-    else pure
-           (Errored
-              (MismatchingPrecisionsInFromDecimal thisSubsetPlaces subsetPlaces))
+                  then Ok (expandDecimalPrecision supersetPlaces decimal)
+                  else Errored
+                         (CannotShrinkADecimalFromTo
+                            thisSubsetPlaces
+                            supersetPlaces)
+    else Errored
+           (MismatchingPrecisionsInFromDecimal thisSubsetPlaces subsetPlaces)
   where
     Decimal {places = thisSubsetPlaces} = decimal
     FromDecimalInstance {supersetPlaces, subsetPlaces} = fromDecimalInstance
