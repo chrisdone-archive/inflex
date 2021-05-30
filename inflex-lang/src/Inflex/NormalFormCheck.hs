@@ -301,6 +301,8 @@ increasePrecisionNumber number@Number {number = someNumber} typ =
 --------------------------------------------------------------------------------
 -- Get NF type from general type
 
+-- TODO: record types.
+-- TODO: variants.
 toT :: Type Parsed -> Maybe T
 toT =
   \case
