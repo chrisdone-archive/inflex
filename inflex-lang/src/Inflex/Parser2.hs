@@ -9,6 +9,7 @@ module Inflex.Parser2 where
 
 import           Data.ByteString (ByteString)
 import           Data.Char
+import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
@@ -120,7 +121,12 @@ keyParser =
        (F.some_ (F.satisfy (\char -> isAlphaNum char || char == '_'))))
 
 integerParser :: F.Parser e Integer
-integerParser = F.integer <* whitespace
+integerParser = do
+  sign <- F.optional $(F.char '-')
+  i <- F.integer <* whitespace
+  pure $! (if isJust sign
+              then -i
+              else i)
 
 comma :: F.Parser e ()
 comma = $(F.char ',') *> whitespace
