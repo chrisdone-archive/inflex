@@ -41,7 +41,7 @@ import           Data.Text (Text)
 import           GHC.Generics
 import           GHC.Natural
 import           Inflex.Generator
-import           Inflex.Parser
+import           Inflex.Parser2
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Generator
