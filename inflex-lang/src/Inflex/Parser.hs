@@ -17,6 +17,7 @@ module Inflex.Parser
   , parseType
   , numberExpressionParser
   , LexParseError(..)
+  , optionalSignatureParser
   ) where
 
 import           Control.Applicative ((<|>))

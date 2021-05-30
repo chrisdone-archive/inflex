@@ -4,8 +4,6 @@
 {-# LANGUAGE TemplateHaskell, DuplicateRecordFields #-}
 
 -- | A very fast parser based on FlatParse.
---
--- TODO: Implement type signature parsing.
 
 module Inflex.Parser2 where
 
@@ -18,6 +16,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import qualified FlatParse.Basic as F
 import           Inflex.Instances ()
+import qualified Inflex.Parser as Parser
 import           Inflex.Types
 
 --------------------------------------------------------------------------------
@@ -36,7 +35,18 @@ parseText _fp txt = parseBytes (T.encodeUtf8 txt)
 parseBytes :: ByteString -> Either ParseError (Expression Parsed)
 parseBytes bs =
   case F.runParser (sourceParser (Env bs)) bs of
-    F.OK a _bs -> Right a
+    F.OK a remaining ->
+      case Parser.parseTextWith
+             Parser.optionalSignatureParser
+             -- Didn't feel like re-implementing this parser.
+             (T.decodeUtf8 remaining) of
+        Left {} -> Left Failed
+        Right msig ->
+          pure
+            (case a of
+               ArrayExpression array -> ArrayExpression array {typ = msig}
+               -- Above: We optionally support type signatures for arrays.
+               _ -> a)
     F.Fail -> Left Failed
     F.Err e -> Left e
 
@@ -44,7 +54,7 @@ parseBytes bs =
 -- Basic array parser
 
 sourceParser :: Env -> F.Parser ParseError (Expression Parsed)
-sourceParser env = whitespace *> expressionParser env <* F.eof
+sourceParser env = whitespace *> expressionParser env
 
 expressionParser :: Env ->  F.Parser ParseError (Expression Parsed)
 expressionParser = arrayParser
