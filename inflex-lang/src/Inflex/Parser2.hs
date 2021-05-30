@@ -8,7 +8,8 @@
 module Inflex.Parser2 where
 
 import           Data.ByteString (ByteString)
-import           Data.Char
+import           Data.Char (isAlphaNum)
+import           Data.Coerce
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
@@ -98,14 +99,42 @@ recordParser env = F.branch openCurly elements (numberParser env)
 numberParser :: Env -> F.Parser ParseError (Expression Parsed)
 numberParser env = do
   start <- getSourcePos env
-  i <- integerParser
+  !number <-
+    do sign <- F.optional $(F.char '-')
+       (do i0 <- F.integer
+           i <-
+             F.optioned
+               $(F.char '.')
+               (\() -> do
+                  F.spanned
+                    F.integer
+                    (\j (F.Span start' end') -> do
+                       let len =
+                             fromIntegral (coerce start' - coerce end' :: Int)
+                       pure
+                         (DecimalNumber
+                            (Decimal
+                               { places = len
+                               , integer =
+                                   let i = (i0 * (10 ^ len)) + j
+                                    in if isJust sign
+                                         then -i
+                                         else i
+                               }))))
+               (pure
+                  (IntegerNumber
+                     (if isJust sign
+                        then -i0
+                        else i0)))
+           whitespace
+           pure i)
   end <- getSourcePos env
   pure
     (LiteralExpression
        (NumberLiteral
           Number
             { location = SourceLocation {start = start, end = end}
-            , number = IntegerNumber i
+            , number
             , typ = Nothing
             }))
 
@@ -119,14 +148,6 @@ keyParser =
     (FieldName . T.decodeUtf8)
     (F.byteStringOf
        (F.some_ (F.satisfy (\char -> isAlphaNum char || char == '_'))))
-
-integerParser :: F.Parser e Integer
-integerParser = do
-  sign <- F.optional $(F.char '-')
-  i <- F.integer <* whitespace
-  pure $! (if isJust sign
-              then -i
-              else i)
 
 comma :: F.Parser e ()
 comma = $(F.char ',') *> whitespace
