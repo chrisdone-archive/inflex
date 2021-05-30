@@ -204,7 +204,7 @@ instance Eq a => NFData (EqNF a) where
 
 parseAndResolve :: Text -> Either () ()
 parseAndResolve t =
-  case parseText "repl" t of
+  case Parser2.parseText "repl" t of
     Left e -> error (show e)
     Right e ->
       case resolveParsed e of
