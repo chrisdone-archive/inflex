@@ -263,7 +263,7 @@ apply (LiteralExpression literal) typ =
   pure
     (LiteralExpression
        (case literal of
-          NumberLiteral number -> NumberLiteral (coerceNumber number typ)
+          NumberLiteral number -> NumberLiteral (increasePrecisionNumber number typ)
           TextLiteral text -> TextLiteral text {typ, location = BuiltIn}))
 apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
   expressions' <- traverse (flip apply typ) expressions
@@ -274,8 +274,8 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
 apply RecordExpression {} _ = error "TODO: apply: RecordExpression"
 apply _ _ = Left NotNormalForm
 
-coerceNumber :: Number s -> Type Generalised -> Number Resolved
-coerceNumber number@Number {number = someNumber} typ =
+increasePrecisionNumber :: Number s -> Type Generalised -> Number Resolved
+increasePrecisionNumber number@Number {number = someNumber} typ =
   number
     { typ
     , location = BuiltIn
