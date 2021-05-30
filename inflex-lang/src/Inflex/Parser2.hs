@@ -4,6 +4,8 @@
 {-# LANGUAGE TemplateHaskell, DuplicateRecordFields #-}
 
 -- | A very fast parser based on FlatParse.
+--
+-- TODO: Implement type signature parsing.
 
 module Inflex.Parser2 where
 
