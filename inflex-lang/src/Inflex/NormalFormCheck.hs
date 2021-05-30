@@ -89,6 +89,11 @@ resolveParsed expression =
     Nothing -> Left NoTypeSig
     Just sigT -> do
       inferredT <- expressionGenerate expression
+      -- TODO: Change this to a one-way-unify!
+      --
+      -- [123.666777] :: [Integer]
+      --
+      -- Must not pass!
       finalT <- unifyT sigT inferredT
       apply expression (toTypeMono finalT)
 
