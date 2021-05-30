@@ -55,6 +55,7 @@ data NormalFormCheckProblem
   | TypeMismatch !T !T
   | RecordFieldsMismatch [FieldName] [FieldName]
   | NoTypeSig
+  | CouldntInternType
   deriving (Show, Eq, Generic)
 
 data T
@@ -86,12 +87,15 @@ _replText t =
 resolveParsed ::
      Expression Parsed -> Either NormalFormCheckProblem (Expression Resolved)
 resolveParsed expression =
-  case expressionType expression >>= toT of
+  case expressionType expression of
     Nothing -> Left NoTypeSig
-    Just sigT -> do
-      inferredT <- expressionGenerate expression
-      finalT <- oneWayUnifyT sigT inferredT
-      apply expression (toTypeMono finalT)
+    Just typ ->
+      case toT typ of
+        Nothing -> Left CouldntInternType
+        Just sigT -> do
+          inferredT <- expressionGenerate expression
+          finalT <- oneWayUnifyT sigT inferredT
+          apply expression (toTypeMono finalT)
 
 --------------------------------------------------------------------------------
 -- Generation
