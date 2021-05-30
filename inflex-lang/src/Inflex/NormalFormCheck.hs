@@ -307,5 +307,4 @@ toT =
     ArrayType t -> do
       a <- toT t
       pure (ArrayT (pure a))
-    -- TODO: DecimalT
     _ -> Nothing
