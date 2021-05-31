@@ -14,6 +14,16 @@ spec = do
   describe
     "Succeeding"
     (do it
+          "check wider signature is fine"
+          (shouldBe
+             (fmap resolveParsedT (parseText "" "[1.23, 1.23] :: [Decimal 3]"))
+             (Right (Right (ArrayT (Just (DecimalT 3))))))
+        it
+          "check varying precisions is fine"
+          (shouldBe
+             (fmap resolveParsedT (parseText "" "[1.23, 1.2] :: [Decimal 2]"))
+             (Right (Right (ArrayT (Just (DecimalT 2))))))
+        it
           "[\"foo\",\"bar\"] :: [Text]"
           (shouldBe
              (fmap resolveParsedT (parseText "" "[\"foo\",\"bar\"] :: [Text]"))
@@ -106,6 +116,11 @@ spec = do
   describe
     "Erroring"
     (do it
+          "[1.23, 1.203] :: [Decimal 2]"
+          (shouldBe
+             (fmap resolveParsedT (parseText "" "[1.23, 1.203] :: [Decimal 2]"))
+             (Right (Left (TypeMismatch (DecimalT 2) (DecimalT 3)))))
+        it
           "[1.1] :: [Integer]"
           (do pending
               shouldBe
