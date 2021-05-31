@@ -126,8 +126,24 @@ spec = do
                          (VariantT
                             (OM.fromList
                                [ (TagName {unTagName = "ok"}, DecimalT 2)
-                               , ( TagName {unTagName = "none"}
-                                 , RecordT mempty)
+                               , (TagName {unTagName = "none"}, RecordT mempty)
+                               ])))))))
+        it
+          "variants and records combined"
+          (shouldBe
+             (fmap
+                resolveParsedT
+                (parseText "" "[{x:#ok(1)},{x:#ok(4)}] :: [{x:<ok:Integer|_>}]"))
+             (Right
+                (Right
+                   (ArrayT
+                      (Just
+                         (RecordT
+                            (OM.fromList
+                               [ ( FieldName {unFieldName = "x"}
+                                 , VariantT
+                                     (OM.fromList
+                                        [(TagName {unTagName = "ok"}, IntegerT)]))
                                ])))))))
         it
           "signature for list of records"
@@ -166,6 +182,15 @@ spec = do
                 resolveParsedT
                 (parseText "" "[#ok(1.1)] :: [<ok:Integer|_>]"))
              (Right (Left (TypeMismatch IntegerT (DecimalT 1)))))
+        it
+          "differing labels of same name"
+          (shouldBe
+             (fmap
+                resolveParsedT
+                (parseText
+                   ""
+                   "[{x:#ok(1)},{x:#ok(\"wibble\")}] :: [{x:<ok:Integer|_>}]"))
+             (Right (Left (TypeMismatch IntegerT TextT))))
         it
           "[1,\"woo\",3]"
           (shouldBe
