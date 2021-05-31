@@ -50,7 +50,7 @@ spec = do
              (Right (Right (ArrayT (Just (ArrayT (Just IntegerT)))))))
         it
           "[#ok(1)] :: [<ok:Integer|_>]"
-          (do pending
+          (do pendingWith "needs interning for variants"
               shouldBe
                 (fmap
                    resolveParsedT
@@ -112,7 +112,28 @@ spec = do
                                , (FieldName {unFieldName = "q"}, DecimalT 1)
                                , (FieldName {unFieldName = "x"}, DecimalT 2)
                                , (FieldName {unFieldName = "y"}, TextT)
-                               ]))))))))
+                               ])))))))
+        it
+          "signature for list of records"
+          (do pendingWith "needs interning for records"
+              shouldBe
+                (fmap
+                   resolveParsedT
+                   (parseText
+                      ""
+                      "[{x:1,y:\"a\",z:[],q:1.2},{q:1.2,z:[],x:1.00,y:\"a\"}] :: [{x:Integer}]"))
+                (Right
+                   (Right
+                      (ArrayT
+                         (Just
+                            (RecordT
+                               (OM.fromList
+                                  [ ( FieldName {unFieldName = "z"}
+                                    , ArrayT Nothing)
+                                  , (FieldName {unFieldName = "q"}, DecimalT 1)
+                                  , (FieldName {unFieldName = "x"}, DecimalT 2)
+                                  , (FieldName {unFieldName = "y"}, TextT)
+                                  ]))))))))
   describe
     "Erroring"
     (do it
@@ -122,13 +143,12 @@ spec = do
              (Right (Left (TypeMismatch (DecimalT 2) (DecimalT 3)))))
         it
           "[1.1] :: [Integer]"
-          (do pending
-              shouldBe
-                (fmap resolveParsedT (parseText "" "[1.1] :: [Integer]"))
-                (Right (Right (ArrayT (Just IntegerT)))))
+          (shouldBe
+             (fmap resolveParsedT (parseText "" "[1.1] :: [Integer]"))
+             (Right (Left (TypeMismatch IntegerT (DecimalT 1)))))
         it
           "[#ok(1.1)] :: [<ok:Integer|_>]"
-          (do pending
+          (do pendingWith "needs interning for variants"
               shouldBe
                 (fmap
                    resolveParsedT
@@ -142,7 +162,7 @@ spec = do
                                (Just IntegerT)))))))
         it
           "[#ok(1.1),#none] :: [<ok:Integer,none:{}|_>]"
-          (do pending
+          (do pendingWith "needs interning for variants"
               shouldBe
                 (fmap
                    resolveParsedT
