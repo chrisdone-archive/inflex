@@ -50,8 +50,7 @@ spec = do
              (Right (Right (ArrayT (Just (ArrayT (Just IntegerT)))))))
         it
           "[#ok(1)] :: [<ok:Integer|_>]"
-          (do pendingWith "needs interning for variants"
-              shouldBe
+          (do shouldBe
                 (fmap
                    resolveParsedT
                    (parseText "" "[#ok(1)] :: [<ok:Integer|_>]"))
@@ -60,8 +59,9 @@ spec = do
                       (ArrayT
                          (pure
                             (VariantT
-                               (TagName {unTagName = "ok"})
-                               (Just IntegerT)))))))
+                               (OM.singleton
+                                  (TagName {unTagName = "ok"})
+                                  IntegerT)))))))
         it
           "{x:1,y:\"a\",z:[],q:1.2}"
           (shouldBe
@@ -114,26 +114,39 @@ spec = do
                                , (FieldName {unFieldName = "y"}, TextT)
                                ])))))))
         it
-          "signature for list of records"
-          (do pendingWith "needs interning for records"
-              shouldBe
-                (fmap
-                   resolveParsedT
-                   (parseText
-                      ""
-                      "[{x:1,y:\"a\",z:[],q:1.2},{q:1.2,z:[],x:1.00,y:\"a\"}] :: [{x:Integer}]"))
+          "variants varying"
+          (shouldBe
+             (fmap
+                resolveParsedT
+                (parseText "" "[#ok(1.1),#none] :: [<ok:Decimal 2,none:{}|_>]"))
+             (Right
                 (Right
-                   (Right
-                      (ArrayT
-                         (Just
-                            (RecordT
-                               (OM.fromList
-                                  [ ( FieldName {unFieldName = "z"}
-                                    , ArrayT Nothing)
-                                  , (FieldName {unFieldName = "q"}, DecimalT 1)
-                                  , (FieldName {unFieldName = "x"}, DecimalT 2)
-                                  , (FieldName {unFieldName = "y"}, TextT)
-                                  ]))))))))
+                   (ArrayT
+                      (Just
+                         (VariantT
+                            (OM.fromList
+                               [ (TagName {unTagName = "ok"}, DecimalT 2)
+                               , ( TagName {unTagName = "none"}
+                                 , RecordT mempty)
+                               ])))))))
+        it
+          "signature for list of records"
+          (shouldBe
+             (fmap
+                resolveParsedT
+                (parseText
+                   ""
+                   "[{x:1,y:\"a\",q:1.2}] :: [{x:Integer,y:Text,q:Decimal 2}]"))
+             (Right
+                (Right
+                   (ArrayT
+                      (Just
+                         (RecordT
+                            (OM.fromList
+                               [ (FieldName {unFieldName = "q"}, DecimalT 2)
+                               , (FieldName {unFieldName = "x"}, IntegerT)
+                               , (FieldName {unFieldName = "y"}, TextT)
+                               ]))))))))
   describe
     "Erroring"
     (do it
@@ -148,32 +161,11 @@ spec = do
              (Right (Left (TypeMismatch IntegerT (DecimalT 1)))))
         it
           "[#ok(1.1)] :: [<ok:Integer|_>]"
-          (do pendingWith "needs interning for variants"
-              shouldBe
-                (fmap
-                   resolveParsedT
-                   (parseText "" "[#ok(1.1)] :: [<ok:Integer|_>]"))
-                (Right
-                   (Right
-                      (ArrayT
-                         (pure
-                            (VariantT
-                               (TagName {unTagName = "ok"})
-                               (Just IntegerT)))))))
-        it
-          "[#ok(1.1),#none] :: [<ok:Integer,none:{}|_>]"
-          (do pendingWith "needs interning for variants"
-              shouldBe
-                (fmap
-                   resolveParsedT
-                   (parseText "" "[#ok(1.1)] :: [<ok:Integer|_>]"))
-                (Right
-                   (Right
-                      (ArrayT
-                         (pure
-                            (VariantT
-                               (TagName {unTagName = "ok"})
-                               (Just IntegerT)))))))
+          (shouldBe
+             (fmap
+                resolveParsedT
+                (parseText "" "[#ok(1.1)] :: [<ok:Integer|_>]"))
+             (Right (Left (TypeMismatch IntegerT (DecimalT 1)))))
         it
           "[1,\"woo\",3]"
           (shouldBe

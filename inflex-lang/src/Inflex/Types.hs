@@ -343,7 +343,7 @@ newtype FieldName = FieldName
 
 newtype TagName = TagName
   { unTagName :: Text
-  } deriving (Eq, Ord, Generic, Show, Lift)
+  } deriving (Eq, Ord, Generic, Show, Lift, Hashable)
 
 data TypeConstant s = TypeConstant
   { location :: !(StagedLocation s)

@@ -20,6 +20,7 @@ module Inflex.Generator
   , HasConstraints(..)
   , hasConstraintsMappingsL
   , generateVariableType
+  , generateTypeVariable
   ) where
 
 import           Control.Monad.Reader

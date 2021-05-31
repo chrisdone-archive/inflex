@@ -42,6 +42,7 @@ import           Control.Monad.State.Strict
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as OM
+import           Data.Maybe
 import           Data.Text (Text)
 import           Data.Traversable
 import           GHC.Generics
@@ -67,7 +68,7 @@ data NormalFormCheckProblem
 data T
   = ArrayT !(Maybe T)
   | RecordT !(InsOrdHashMap FieldName T)
-  | VariantT !TagName !(Maybe T)
+  | VariantT !(InsOrdHashMap TagName T)
   | IntegerT
   | DecimalT !Natural
   | TextT
@@ -157,7 +158,7 @@ variantGenerate ::
      Variant Parsed -> Either NormalFormCheckProblem T
 variantGenerate Variant {tag, argument} = do
   mtyp <- for argument expressionGenerate
-  pure (VariantT tag mtyp)
+  pure (VariantT (OM.singleton tag (fromMaybe nullT mtyp)))
 
 arrayGenerate :: Array Parsed -> Either NormalFormCheckProblem T
 arrayGenerate Array {expressions} =
@@ -179,6 +180,9 @@ someNumberType =
   \case
     IntegerNumber {} -> IntegerT
     DecimalNumber Decimal {places} -> DecimalT places
+
+nullT :: T
+nullT = RecordT mempty
 
 --------------------------------------------------------------------------------
 -- Fast unification
@@ -205,6 +209,15 @@ unifyT (RecordT x) (RecordT y) =
              (zip (HM.toList (OM.toHashMap x)) (HM.elems (OM.toHashMap y))))
       pure (RecordT m)
     else Left (RecordFieldsMismatch (OM.keys x) (OM.keys y))
+-- Variants:
+unifyT (VariantT x) (VariantT y) = do
+  z <-
+    sequence
+      (OM.unionWith
+         (\x' y' -> join (unifyT <$> x' <*> y'))
+         (fmap pure x)
+         (fmap pure y))
+  pure (VariantT z)
 -- Promotion of integer to decimal:
 unifyT IntegerT (DecimalT n) = pure (DecimalT n)
 unifyT (DecimalT n) IntegerT = pure (DecimalT n)
@@ -239,6 +252,15 @@ oneWayUnifyT (RecordT x) (RecordT y) =
              (zip (HM.toList (OM.toHashMap x)) (HM.elems (OM.toHashMap y))))
       pure (RecordT m)
     else Left (RecordFieldsMismatch (OM.keys x) (OM.keys y))
+-- Variants:
+oneWayUnifyT (VariantT x) (VariantT y) = do
+  z <-
+    sequence
+      (OM.unionWith
+         (\x' y' -> join (oneWayUnifyT <$> x' <*> y'))
+         (fmap pure x)
+         (fmap pure y))
+  pure (VariantT z)
 -- Promotion of integer to decimal:
 oneWayUnifyT (DecimalT n) IntegerT = pure (DecimalT n)
 -- Promotion of smaller decimal to larger decimal:
@@ -264,21 +286,24 @@ toTypeMono =
           fmap
             ArrayType
             (generateVariableType BuiltIn ArrayElementPrefix TypeKind)
-        VariantT (TagName name) mtype -> do
-          typ' <-
-            case mtype of
-              Nothing -> pure (nullType BuiltIn)
-              Just ty -> go ty
-          field <-
-            pure Field {location = BuiltIn, name = FieldName name, typ = typ'}
+        VariantT fs -> do
+          fs' <-
+            traverse
+              (\(TagName name, typ) -> do
+                 typ' <- go typ
+                 pure
+                   Field
+                     { location = BuiltIn
+                     , name = FieldName name
+                     , typ = typ'
+                     })
+              (OM.toList fs)
+          var <- generateTypeVariable BuiltIn VariantRowVarPrefix RowKind
           pure
-            (RecordType
+            (VariantType
                (RowType
                   TypeRow
-                    { location = BuiltIn
-                    , typeVariable = Nothing
-                    , fields = pure field
-                    }))
+                    {location = BuiltIn, typeVariable = Just var, fields = fs'}))
         RecordT fs -> do
           fs' <-
             traverse
@@ -356,4 +381,20 @@ toT =
     ArrayType t -> do
       a <- toT t
       pure (ArrayT (pure a))
+    VariantType (RowType (TypeRow {typeVariable = Just (), fields = fs})) -> do
+      fs' <-
+        traverse
+          (\Field{typ, name = FieldName name} -> do
+             t' <- toT typ
+             pure (TagName name, t'))
+          fs
+      pure (VariantT (OM.fromList fs'))
+    RecordType (RowType (TypeRow {typeVariable = Nothing, fields = fs})) -> do
+      fs' <-
+        traverse
+          (\Field{typ, name} -> do
+             t' <- toT typ
+             pure (name, t'))
+          fs
+      pure (RecordT (OM.fromList fs'))
     _ -> Nothing

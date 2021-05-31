@@ -230,7 +230,7 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
           -- Below: Two open records, their fields must unify and we
           -- produce a union row type of both.
           (sd1, Just u1, sd2, Just u2) -> do
-            freshType <- generateTypeVariable location RowUnifyPrefix RowKind
+            freshType <- generateTypeVariable' location RowUnifyPrefix RowKind
             let merged1 =
                   RowType
                     (TypeRow {typeVariable = Just freshType, fields = sd1, ..})
@@ -602,9 +602,9 @@ holeSolve substitutions Hole {..} =
 -- that point.  The indexing is different to the generating stage, but
 -- it doesn't matter, because the rest of the type variable's prefix
 -- will differ.
-generateTypeVariable ::
+generateTypeVariable' ::
      Cursor -> TypeVariablePrefix -> Kind -> Solve (TypeVariable Generated)
-generateTypeVariable location prefix kind = do
+generateTypeVariable' location prefix kind = do
   index <- get
   glog (GeneratedTypeVariable prefix kind index)
   modify' succ
