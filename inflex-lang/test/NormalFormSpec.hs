@@ -14,6 +14,16 @@ spec = do
   describe
     "Succeeding"
     (do it
+          "[\"foo\",\"bar\"] :: [Text]"
+          (shouldBe
+             (fmap resolveParsedT (parseText "" "[\"foo\",\"bar\"] :: [Text]"))
+             (Right (Right (ArrayT (Just TextT)))))
+        it
+          "[\"foo\",\"bar\"]"
+          (shouldBe
+             (fmap expressionGenerate (parseText "" "[\"foo\",\"bar\"]"))
+             (Right (Right (ArrayT (Just TextT)))))
+        it
           "[1,2,3]"
           (shouldBe
              (fmap expressionGenerate (parseText "" "[1,2,3]"))
@@ -39,13 +49,13 @@ spec = do
                    (Right
                       (ArrayT
                          (pure
-                            (VariantT (TagName {unTagName = "ok"}) (Just IntegerT)))))))
+                            (VariantT
+                               (TagName {unTagName = "ok"})
+                               (Just IntegerT)))))))
         it
           "{x:1,y:\"a\",z:[],q:1.2}"
           (shouldBe
-             (fmap
-                expressionGenerate
-                (parseText "" "{x:1,y:\"a\",z:[],q:1.2}"))
+             (fmap expressionGenerate (parseText "" "{x:1,y:\"a\",z:[],q:1.2}"))
              (Right
                 (Right
                    (RecordT
@@ -112,7 +122,9 @@ spec = do
                    (Right
                       (ArrayT
                          (pure
-                            (VariantT (TagName {unTagName = "ok"}) (Just IntegerT)))))))
+                            (VariantT
+                               (TagName {unTagName = "ok"})
+                               (Just IntegerT)))))))
         it
           "[#ok(1.1),#none] :: [<ok:Integer,none:{}|_>]"
           (do pending
@@ -124,7 +136,9 @@ spec = do
                    (Right
                       (ArrayT
                          (pure
-                            (VariantT (TagName {unTagName = "ok"}) (Just IntegerT)))))))
+                            (VariantT
+                               (TagName {unTagName = "ok"})
+                               (Just IntegerT)))))))
         it
           "[1,\"woo\",3]"
           (shouldBe

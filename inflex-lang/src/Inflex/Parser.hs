@@ -75,6 +75,7 @@ data ParseError
   | ExpectedLet
   | ExpectedCurly
   | ExpectedCloseCurly
+  | ExpectedType
   | ExpectedSquare
   | ExpectedCloseSquare
   | ExpectedPeriod
@@ -724,6 +725,7 @@ typeParser = do
           ExpectedIntegerType
           (\case
              AnyWordToken "Integer" -> pure IntegerTypeName
+             AnyWordToken "Text" -> pure TextTypeName
              _ -> Nothing)
       pure
         (ConstantType TypeConstant {location = integerLocation, name = typeName})

@@ -349,6 +349,7 @@ toT :: Type Parsed -> Maybe T
 toT =
   \case
     ConstantType TypeConstant {name = IntegerTypeName} -> pure IntegerT
+    ConstantType TypeConstant {name = TextTypeName} -> pure TextT
     ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
                               , argument = ConstantType (TypeConstant {name = NatTypeName nat})
                               } -> pure (DecimalT nat)
