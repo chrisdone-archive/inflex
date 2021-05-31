@@ -31,6 +31,7 @@
 
 module Inflex.NormalFormCheck
   ( resolveParsed
+  , resolveParsedT
   , expressionGenerate
   , NormalFormCheckProblem(..)
   , T(..)
@@ -42,6 +43,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as OM
 import           Data.Text (Text)
+import           Data.Traversable
 import           GHC.Generics
 import           GHC.Natural
 import           Inflex.Decimal
@@ -65,6 +67,7 @@ data NormalFormCheckProblem
 data T
   = ArrayT !(Maybe T)
   | RecordT !(InsOrdHashMap FieldName T)
+  | VariantT !TagName !(Maybe T)
   | IntegerT
   | DecimalT !Natural
   | TextT
@@ -101,6 +104,20 @@ resolveParsed expression =
           finalT <- oneWayUnifyT sigT inferredT
           apply expression (toTypeMono finalT)
 
+-- | Same as 'resolveParsed', but returns the T.
+resolveParsedT ::
+     Expression Parsed -> Either NormalFormCheckProblem T
+resolveParsedT expression =
+  case expressionType expression of
+    Nothing -> Left NoTypeSig
+    Just typ ->
+      case toT typ of
+        Nothing -> Left CouldntInternType
+        Just sigT -> do
+          inferredT <- expressionGenerate expression
+          finalT <- oneWayUnifyT sigT inferredT
+          pure finalT
+
 --------------------------------------------------------------------------------
 -- Generation
 
@@ -110,7 +127,7 @@ expressionGenerate =
     LiteralExpression literal -> pure $! (literalGenerator literal)
     ArrayExpression array -> arrayGenerate array
     RecordExpression record -> fmap RecordT (recordGenerate record)
-    VariantExpression {} -> Left NotNormalForm -- TODO:
+    VariantExpression variant -> variantGenerate variant
     -- The rest of these are not normal form. We only consider the above cases.
     LambdaExpression {} -> Left NotNormalForm
     ApplyExpression {} -> Left NotNormalForm
@@ -135,6 +152,12 @@ recordGenerate Record {fields} =
           t <- expressionGenerate expression
           pure (name, t))
        fields)
+
+variantGenerate ::
+     Variant Parsed -> Either NormalFormCheckProblem T
+variantGenerate Variant {tag, argument} = do
+  mtyp <- for argument expressionGenerate
+  pure (VariantT tag mtyp)
 
 arrayGenerate :: Array Parsed -> Either NormalFormCheckProblem T
 arrayGenerate Array {expressions} =
@@ -204,7 +227,7 @@ oneWayUnifyT (ArrayT x) (ArrayT Nothing) = pure (ArrayT x)
 oneWayUnifyT (ArrayT (Just x)) (ArrayT (Just y)) = fmap (ArrayT . pure) (oneWayUnifyT x y)
 -- Records:
 oneWayUnifyT (RecordT x) (RecordT y) =
-  if OM.keys x == OM.keys y
+  if HM.keys (OM.toHashMap x) == HM.keys (OM.toHashMap y)
     then do
       !m <-
         fmap
@@ -213,7 +236,7 @@ oneWayUnifyT (RecordT x) (RecordT y) =
              (\((k1, v1), v2) -> do
                 t <- oneWayUnifyT v1 v2
                 pure (k1, t))
-             (zip (OM.toList x) (OM.elems y)))
+             (zip (HM.toList (OM.toHashMap x)) (HM.elems (OM.toHashMap y))))
       pure (RecordT m)
     else Left (RecordFieldsMismatch (OM.keys x) (OM.keys y))
 -- Promotion of integer to decimal:
@@ -241,6 +264,21 @@ toTypeMono =
           fmap
             ArrayType
             (generateVariableType BuiltIn ArrayElementPrefix TypeKind)
+        VariantT (TagName name) mtype -> do
+          typ' <-
+            case mtype of
+              Nothing -> pure (nullType BuiltIn)
+              Just ty -> go ty
+          field <-
+            pure Field {location = BuiltIn, name = FieldName name, typ = typ'}
+          pure
+            (RecordType
+               (RowType
+                  TypeRow
+                    { location = BuiltIn
+                    , typeVariable = Nothing
+                    , fields = pure field
+                    }))
         RecordT fs -> do
           fs' <-
             traverse

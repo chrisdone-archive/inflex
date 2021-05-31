@@ -528,12 +528,7 @@ renameTypeRow env@Env {cursor} TypeRow {..} = do
   final <- finalizeCursor cursor TypeCursor location
   fields' <-
     traverse (renameField (over envCursorL (. RowFieldCursor) env)) fields
-  mtypeVariable <-
-    case typeVariable of
-      Nothing -> pure Nothing
-      Just typeVariable' -> fmap pure (renameTypeVariable env typeVariable')
-  pure
-    TypeRow {location = final, fields = fields', typeVariable = mtypeVariable}
+  pure TypeRow {location = final, fields = fields', typeVariable}
 
 renameField :: Env -> Field Parsed -> Renamer (Field Renamed)
 renameField env@Env{cursor} Field {..} = do

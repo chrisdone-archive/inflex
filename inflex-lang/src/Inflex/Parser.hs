@@ -64,6 +64,7 @@ data ParseError
   | ExpectedVariable
   | ExpectedVariant
   | ExpectedHole
+  | ExpectedBar
   | ExpectedGlobal
   | ExpectedDecimal
   | ExpectedText
@@ -655,7 +656,8 @@ typeParser :: Parser (Type Parsed)
 typeParser = do
   functionType <> decimalType <> integerType <> parensType <> arrayType <>
     freshType <>
-    recordType
+    recordType <>
+    variantType
   where
     freshType = do
       Located {location} <- token ExpectedHole (preview _HoleToken)
@@ -768,6 +770,61 @@ typeParser = do
               TypeRow
                 { location = SourceLocation {start, end}
                 , typeVariable = Nothing
+                , fields = fields
+                }))
+    variantType = do
+      Located {location = SourceLocation {start}} <-
+        token
+          ExpectedCurly
+          (\case
+             OperatorToken "<" -> pure ()
+             _ -> Nothing)
+      fields <-
+        let loop seen = do
+              nameResult <- fmap Just fieldNameParser <> pure Nothing
+              case nameResult of
+                Nothing -> pure []
+                Just (name, nameLocation)
+                  | Set.member name seen ->
+                    Reparsec.failWith (liftError (DuplicateRecordField name))
+                  | otherwise -> do
+                    result <-
+                      fmap
+                        Just
+                        (token ExpectedContinuation (preview _ColonToken)) <>
+                      pure Nothing
+                    (location, typ) <-
+                      case result of
+                        Just (Located {location, thing = ()}) -> do
+                          typ <- typeParser
+                          pure (location, typ)
+                        Nothing -> pure (nameLocation, FreshType nameLocation)
+                    comma <-
+                      fmap
+                        (const True)
+                        (token_ ExpectedComma (preview _CommaToken)) <>
+                      pure False
+                    rest <-
+                      if comma
+                        then loop (Set.insert name seen)
+                        else pure []
+                    let field = Field {name, typ, location}
+                    pure (field : rest)
+         in loop mempty
+      token_ ExpectedBar (preview _BarToken)
+      token_ ExpectedHole (preview _HoleToken) -- Signifies the row type variable. Just () below.
+      Located {location = SourceLocation {end}} <-
+        token
+          ExpectedCloseCurly
+          (\case
+             OperatorToken ">" -> pure ()
+             _ -> Nothing)
+      pure
+        (VariantType
+           (RowType
+              TypeRow
+                { location = SourceLocation {start, end}
+                , typeVariable = Just ()
                 , fields = fields
                 }))
 

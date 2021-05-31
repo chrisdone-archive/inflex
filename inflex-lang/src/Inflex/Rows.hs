@@ -6,7 +6,7 @@ module Inflex.Rows where
 import Inflex.Types
 
 -- | Make a polymorphic row type.
-polymorphicTypeRow :: StagedLocation s -> TypeVariable s -> [Field s] -> TypeRow s
+polymorphicTypeRow :: StagedLocation s -> StagedRowVariable s -> [Field s] -> TypeRow s
 polymorphicTypeRow location var fs = TypeRow {typeVariable = Just var, fields = fs, ..}
 
 -- | Make a monomorphic row type.

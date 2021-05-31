@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -30,6 +31,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as Seq
 import           Data.Text (Text)
+import           Data.Traversable
 import           Data.Validation
 import           Data.Void
 import           Inflex.Filler
@@ -657,13 +659,12 @@ renamedToGenerated =
     VariableType TypeVariable {..} -> pure (VariableType TypeVariable {..})
     RowType TypeRow {..} -> do
       fields' <- traverse fieldToGen fields
+      typeVariable' <-
+        for
+          typeVariable
+          (\() -> generateTypeVariable location RowVarPrefix RowKind)
       pure
-        (RowType
-           TypeRow
-             { fields = fields'
-             , typeVariable = fmap typeVarToGen typeVariable
-             , ..
-             })
+        (RowType TypeRow {fields = fields', typeVariable = typeVariable', ..})
     ConstantType TypeConstant {..} -> pure (ConstantType TypeConstant {..})
     ApplyType TypeApplication {..} -> do
       function' <- renamedToGenerated function
@@ -675,7 +676,6 @@ renamedToGenerated =
     fieldToGen Field {..} = do
       typ' <- renamedToGenerated typ
       pure Field {typ = typ', ..}
-    typeVarToGen TypeVariable {..} = TypeVariable {..}
 
 --------------------------------------------------------------------------------
 -- Convert a polymorphic scheme to a generated scheme

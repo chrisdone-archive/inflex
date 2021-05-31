@@ -47,6 +47,7 @@ module Inflex.Lexer
   , _HoleToken
   , _HashToken
   , _GlobalToken
+  , _BarToken
   ) where
 
 import           Control.Monad
@@ -105,6 +106,7 @@ data Token
   | HashToken
   | QuestionToken
   | GlobalToken !ParsedGlobal
+  | BarToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -212,6 +214,7 @@ tokenLexer =
       located
         (Mega.choice
            [ HoleToken <$ Mega.char '_'
+           , BarToken <$ Mega.char '|'
            , HashToken <$ Mega.char '#'
            , QuestionToken <$ Mega.char '?'
            , OpenSquareToken <$ Mega.char '['

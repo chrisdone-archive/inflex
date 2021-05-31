@@ -180,7 +180,7 @@ maybeType alts location a =
                ])
           }))
 
-okishType :: StagedLocation s -> TypeVariable s -> Type s -> Type s
+okishType :: StagedLocation s -> StagedRowVariable s -> Type s -> Type s
 okishType location variable a =
   VariantType
     (RowType

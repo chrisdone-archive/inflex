@@ -321,9 +321,14 @@ type family StagedFresh s where
 -- | A row type.
 data TypeRow s = TypeRow
   { location :: !(StagedLocation s)
-  , typeVariable :: !(Maybe (TypeVariable s))
+  , typeVariable :: !(Maybe (StagedRowVariable s))
   , fields :: ![Field s]
   }
+
+type family StagedRowVariable s where
+  StagedRowVariable Parsed = ()
+  StagedRowVariable Renamed = ()
+  StagedRowVariable s = TypeVariable s
 
 -- | A field is a name/type pair with additional metadata.
 data Field s = Field
