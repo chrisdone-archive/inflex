@@ -168,6 +168,16 @@ oneway = do
 erroring :: Spec
 erroring = do
   it
+    "couldn't intern type"
+    (shouldBe
+       (fmap resolveParsedT (parseText "" "[1.23, 1.203] :: _"))
+       (Right (Left CouldntInternType)))
+  it
+    "no type sig"
+    (shouldBe
+       (fmap resolveParsedT (parseText "" "[1.23, 1.203]"))
+       (Right (Left NoTypeSig)))
+  it
     "[1.23, 1.203] :: [Decimal 2]"
     (shouldBe
        (fmap resolveParsedT (parseText "" "[1.23, 1.203] :: [Decimal 2]"))
