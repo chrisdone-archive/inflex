@@ -110,36 +110,35 @@ recordParser env = F.branch openCurly elements (numberParser env)
 
 numberParser :: Env -> F.Parser ParseError (Expression Parsed)
 numberParser env = do
+  sign <- F.optional $(F.char '-')
   start <- getSourcePos env
   !number <-
-    do sign <- F.optional $(F.char '-')
-       (do i0 <- F.integer
-           i <-
-             F.optioned
-               $(F.char '.')
-               (\() -> do
-                  F.spanned
-                    F.integer
-                    (\j (F.Span start' end') -> do
-                       let len =
-                             fromIntegral (coerce start' - coerce end' :: Int)
-                       pure
-                         (DecimalNumber
-                            (Decimal
-                               { places = len
-                               , integer =
-                                   let i = (i0 * (10 ^ len)) + j
-                                    in if isJust sign
-                                         then -i
-                                         else i
-                               }))))
-               (pure
-                  (IntegerNumber
-                     (if isJust sign
-                        then -i0
-                        else i0)))
-           whitespace
-           pure i)
+    do i0 <- F.integer
+       i <-
+         F.optioned
+           $(F.char '.')
+           (\() -> do
+              F.spanned
+                F.integer
+                (\j (F.Span start' end') -> do
+                   let len = fromIntegral (coerce start' - coerce end' :: Int)
+                   pure
+                     (DecimalNumber
+                        (Decimal
+                           { places = len
+                           , integer =
+                               let i = (i0 * (10 ^ len)) + j
+                                in if isJust sign
+                                     then -i
+                                     else i
+                           }))))
+           (pure
+              (IntegerNumber
+                 (if isJust sign
+                    then -i0
+                    else i0)))
+       whitespace
+       pure i
   end <- getSourcePos env
   pure
     (LiteralExpression

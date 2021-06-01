@@ -1666,14 +1666,13 @@ parser2 =
             (shouldBe
                (first (const ()) (Parser2.parseText "" string))
                (first (const ()) (parseText "" string)))
-          | string <- ["[1,23,456]", "123","[[1,2],[3,4]]"]
+          | string <- ["[1,23,456]", "123", "[[1,2],[3,4]]"]
           ]
         sequence_
           [ it
             (T.unpack string)
-            (do pendingWith "Implement negative integers"
-                shouldBe
-                  (first (const ()) (Parser2.parseText "" string))
-                  (first (const ()) (parseText "" string)))
-          | string <- ["[-1,-23,-456]", "-123","[[-1,-2],[-3,-4]]"]
+            (shouldBe
+               (first (const ()) (Parser2.parseText "" string))
+               (first (const ()) (parseText "" string)))
+          | string <- ["[-1,-23,-456]", "-123", "[[-1,-2],[-3,-4]]"]
           ])
