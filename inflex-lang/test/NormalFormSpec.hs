@@ -20,6 +20,11 @@ spec = do
 inferred :: Spec
 inferred = do
   it
+    "array a vs array Nothing"
+    (shouldBe
+       (fmap expressionGenerate (parseText "" "[[1],[]]"))
+       (Right (Right (ArrayT (Just (ArrayT (Just IntegerT)))))))
+  it
     "[\"foo\",\"bar\"]"
     (shouldBe
        (fmap expressionGenerate (parseText "" "[\"foo\",\"bar\"]"))
@@ -89,6 +94,11 @@ inferred = do
 
 oneway :: Spec
 oneway = do
+  it
+    "promotion of integer to decimal"
+    (shouldBe
+       (fmap resolveParsedT (parseText "" "[1] :: [Decimal 2]"))
+       (Right (Right (ArrayT (Just (DecimalT 2))))))
   it
     "check wider signature is fine"
     (shouldBe
@@ -213,3 +223,33 @@ erroring = do
           expressionGenerate
           (parseText "" "[{y:1,x:\"a\",q:[],z:1.2},{q:1.2,z:[],x:1,y:\"a\"}]"))
        (Right (Left (TypeMismatch (DecimalT 1) (ArrayT Nothing)))))
+  it
+    "[{y:1,x:\"a\",q:[],z:1.2},{q:1.2,z:[],x:1,y:\"a\"}]"
+    (shouldBe
+       (fmap
+          resolveParsedT
+          (parseText "" "[{y:1,x:\"a\"},{y:1,k:\"a\"}]::[{y:Integer,x:Text}]"))
+       (Right
+          (Left
+             (RecordFieldsMismatch
+                [FieldName {unFieldName = "y"}, FieldName {unFieldName = "x"}]
+                [FieldName {unFieldName = "y"}, FieldName {unFieldName = "k"}]))))
+  it
+    "fields mismatch for unifyT"
+    (shouldBe
+       (fmap
+          expressionGenerate
+          (parseText "" "[{x:1,y:\"a\",z:[],q:1.2},{q:1.2,z:[],x:1,k:\"a\"}]"))
+       (Right
+          (Left
+             (RecordFieldsMismatch
+                [ FieldName {unFieldName = "x"}
+                , FieldName {unFieldName = "y"}
+                , FieldName {unFieldName = "z"}
+                , FieldName {unFieldName = "q"}
+                ]
+                [ FieldName {unFieldName = "q"}
+                , FieldName {unFieldName = "z"}
+                , FieldName {unFieldName = "x"}
+                , FieldName {unFieldName = "k"}
+                ]))))
