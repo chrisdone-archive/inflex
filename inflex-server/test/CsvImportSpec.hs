@@ -115,9 +115,11 @@ spec =
                        ]
                    })))
         it
-          "Missing text is just text"
+          "Missing text is optional"
           (shouldBe
-             (guessCsvSchema (File {id = 0, name = ""}) "text\nfoo\n\nbar")
+             (guessCsvSchema
+                (File {id = 0, name = ""})
+                "text,misc\nfoo,misc\n,misc\nbar,misc")
              (CsvGuessed
                 (CsvImportSpec
                    { file = File {id = 0, name = ""}
@@ -125,11 +127,20 @@ spec =
                    , separator = ","
                    , columns =
                        [ CsvColumn
-                           { name = "text"
+                           { name = "misc"
                            , action =
                                ImportAction
                                  (ImportColumn
                                     { importType = TextType (Required Version1)
+                                    , renameTo = "misc"
+                                    })
+                           }
+                       , CsvColumn
+                           { name = "text"
+                           , action =
+                               ImportAction
+                                 (ImportColumn
+                                    { importType = TextType (Optional Version1)
                                     , renameTo = "text"
                                     })
                            }
@@ -137,41 +148,49 @@ spec =
                    })))
         it
           "Missing ints is optionality"
-          (do pending
-              shouldBe
-                (guessCsvSchema
-                   (File {id = 0, name = ""})
-                   "int\n\
-                    \2\n\
-                    \\n\
-                    \3" )
-                (CsvGuessed
-                   (CsvImportSpec
-                      { file = File {id = 0, name = ""}
-                      , skipRows = 0
-                      , separator = ","
-                      , columns =
-                          [ CsvColumn
-                              { name = "int"
-                              , action =
-                                  ImportAction
-                                    (ImportColumn
-                                       { importType =
-                                           IntegerType (Optional Version1)
-                                       , renameTo = "int"
-                                       })
-                              }
-                          ]
-                      })))
+          (shouldBe
+             (guessCsvSchema
+                (File {id = 0, name = ""})
+                "int,x\n\
+                    \2,1\n\
+                    \,1\n\
+                    \3,1")
+             (CsvGuessed
+                (CsvImportSpec
+                   { file = File {id = 0, name = ""}
+                   , skipRows = 0
+                   , separator = ","
+                   , columns =
+                       [ CsvColumn
+                           { name = "int"
+                           , action =
+                               ImportAction
+                                 (ImportColumn
+                                    { importType =
+                                        IntegerType (Optional Version1)
+                                    , renameTo = "int"
+                                    })
+                           }
+                       , CsvColumn
+                           { name = "x"
+                           , action =
+                               ImportAction
+                                 (ImportColumn
+                                    { importType =
+                                        IntegerType (Required Version1)
+                                    , renameTo = "x"
+                                    })
+                           }
+                       ]
+                   })))
         it
           "Mixed in one column yields text type"
-          (do
-              shouldBe
+          (do shouldBe
                 (guessCsvSchema
                    (File {id = 0, name = ""})
                    "int\n\
                     \2\n\
-                    \a" )
+                    \a")
                 (CsvGuessed
                    (CsvImportSpec
                       { file = File {id = 0, name = ""}
