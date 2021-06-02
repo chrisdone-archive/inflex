@@ -358,6 +358,7 @@ instance FromJSON UpdateSandbox
 
 instance NFData Optionality
 deriving instance Generic Optionality
+deriving instance Eq Optionality
 deriving instance Show Optionality
 instance ToJSON Optionality
 instance FromJSON Optionality
@@ -370,17 +371,20 @@ instance FromJSON FileQuery
 
 instance NFData File
 deriving instance Generic File
+deriving instance Eq File
 deriving instance Show File
 instance ToJSON File
 instance FromJSON File
 
 instance NFData CsvImportFinal
 deriving instance Generic CsvImportFinal
+deriving instance Eq CsvImportFinal
 deriving instance Show CsvImportFinal
 instance ToJSON CsvImportFinal
 instance FromJSON CsvImportFinal
 
 instance NFData CsvGuess
+deriving instance Eq CsvGuess
 deriving instance Generic CsvGuess
 deriving instance Show CsvGuess
 instance ToJSON CsvGuess
@@ -388,48 +392,56 @@ instance FromJSON CsvGuess
 
 instance NFData FilesOutput
 deriving instance Generic FilesOutput
+deriving instance Eq FilesOutput
 deriving instance Show FilesOutput
 instance ToJSON FilesOutput
 instance FromJSON FilesOutput
 
 instance NFData CsvImportSpec
 deriving instance Generic CsvImportSpec
+deriving instance Eq CsvImportSpec
 deriving instance Show CsvImportSpec
 instance ToJSON CsvImportSpec
 instance FromJSON CsvImportSpec
 
 instance NFData CsvCheckStatus
 deriving instance Generic CsvCheckStatus
+deriving instance Eq CsvCheckStatus
 deriving instance Show CsvCheckStatus
 instance ToJSON CsvCheckStatus
 instance FromJSON CsvCheckStatus
 
 instance NFData CsvColumnProblem
 deriving instance Generic CsvColumnProblem
+deriving instance Eq CsvColumnProblem
 deriving instance Show CsvColumnProblem
 instance ToJSON CsvColumnProblem
 instance FromJSON CsvColumnProblem
 
 instance NFData CsvColumn
 deriving instance Generic CsvColumn
+deriving instance Eq CsvColumn
 deriving instance Show CsvColumn
 instance ToJSON CsvColumn
 instance FromJSON CsvColumn
 
 instance NFData ColumnAction
 deriving instance Generic ColumnAction
+deriving instance Eq ColumnAction
 deriving instance Show ColumnAction
 instance ToJSON ColumnAction
 instance FromJSON ColumnAction
 
 instance NFData ImportColumn
 deriving instance Generic ImportColumn
+deriving instance Eq ImportColumn
 deriving instance Show ImportColumn
 instance ToJSON ImportColumn
 instance FromJSON ImportColumn
 
 instance NFData CsvColumnType
 deriving instance Generic CsvColumnType
+deriving instance Eq CsvColumnType
 deriving instance Show CsvColumnType
 instance ToJSON CsvColumnType
 instance FromJSON CsvColumnType
@@ -710,6 +722,7 @@ versionToJSON v = toJSON (versionNumber v)
 
 deriving instance Show Version1
 deriving instance Generic Version1
+deriving instance Eq Version1
 instance NFData Version1
 instance Version Version1 where versionNumber _ = 1; versionRefl = Version1
 instance FromJSON Version1 where parseJSON = parseVersion
@@ -717,6 +730,7 @@ instance ToJSON Version1 where toJSON = versionToJSON
 
 deriving instance Show Version2
 deriving instance Generic Version2
+deriving instance Eq Version2
 instance NFData Version2
 instance Version Version2 where versionNumber _ = 2; versionRefl = Version2
 instance FromJSON Version2 where parseJSON = parseVersion

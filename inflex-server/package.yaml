@@ -114,7 +114,9 @@ library:
     - Inflex.Backend
     - Inflex.Server.App
     - Inflex.Server.Dispatch
+    - Inflex.Server.Csv
     - Inflex.Migrate
+    - Inflex.Schema
     - RIO.Warp
   when:
   - condition: flag(release)
@@ -149,7 +151,9 @@ executables:
 tests:
   inflex-types:
     source-dirs: test
-    main: TypesSpec.hs
+    main: Spec.hs
     dependencies:
-      - purescript
       - hspec
+      - inflex-lang
+      - inflex-server
+      - inflex-shared
