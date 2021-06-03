@@ -1,14 +1,19 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, TemplateHaskell #-}
 -- |
 
 module CsvImportSpec where
 
-import Inflex.Server.Csv
-import Inflex.Schema
-import Test.Hspec
+import qualified Data.ByteString.Lazy as L
+import           Inflex.Schema
+import           Inflex.Server.Csv
+import           Match
+import           System.Directory
+import           Test.Hspec
 
 spec :: Spec
-spec = describe "Schema" schema
+spec = do
+  describe "Schema" schema
+  describe "Local testing on real files" locals
 
 schema :: Spec
 schema = do
@@ -202,3 +207,24 @@ schema = do
                         }
                     ]
                 })))
+
+-- We test on real files, but we don't check the files in. So these
+-- tests are marked pending.
+locals :: Spec
+locals =
+  it
+    "Monzo 5k row export"
+    (untrackedFileShouldSatisfy
+       "/home/chris/Downloads/Monzo Data Export - CSV (Friday, February 26th, 2021).csv"
+       $(match [p|CsvGuessed _|]))
+
+-- | If the file exists, parse it and test that it matches. If it
+-- doesn't exist, mark the test pending and ignore it.
+untrackedFileShouldSatisfy :: HasCallStack => FilePath -> (CsvGuess -> Bool) -> IO ()
+untrackedFileShouldSatisfy fp res = do
+  exists <- doesFileExist fp
+  if exists
+    then do
+      bytes <- L.readFile fp
+      shouldSatisfy (guessCsvSchema (File {id = 0, name = ""}) bytes) res
+    else pendingWith "File doesn't exist, so skipping."
