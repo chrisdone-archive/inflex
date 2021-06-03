@@ -160,6 +160,7 @@ variantGenerate Variant {tag, argument} = do
   mtyp <- for argument expressionGenerate
   pure (VariantT (OM.singleton tag (fromMaybe nullT mtyp)))
 
+-- TODO: Parallelism?
 arrayGenerate :: Array Parsed -> Either NormalFormCheckProblem T
 arrayGenerate Array {expressions} =
   foldM
@@ -336,6 +337,7 @@ apply (LiteralExpression literal) typ =
        (case literal of
           NumberLiteral number -> NumberLiteral (increasePrecisionNumber number typ)
           TextLiteral text -> TextLiteral text {typ, location = BuiltIn}))
+-- TODO: Parallelism?
 apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
   expressions' <- traverse (flip apply typ) expressions
   pure
