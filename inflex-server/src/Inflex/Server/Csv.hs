@@ -41,6 +41,8 @@ data ImportError
   | MissingRequiredField Text
   deriving (Show)
 
+--
+-- TODO: Parallelism?
 importViaSchema ::
      File
   -> CsvImportSpec
@@ -129,6 +131,8 @@ optionalExpression (Just e) =
 -- Schema guessing
 
 -- | Make a pretty good guess at the schema of a CSV file.
+--
+-- TODO: Parallelism?
 guessCsvSchema :: File -> L.ByteString -> CsvGuess
 guessCsvSchema file bytes =
   case Csv.decodeByName bytes of
