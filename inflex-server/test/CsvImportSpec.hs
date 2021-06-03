@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, TemplateHaskell #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, OverloadedLists, TemplateHaskell #-}
 -- |
 
 module CsvImportSpec where
@@ -19,194 +19,164 @@ schema :: Spec
 schema = do
   it
     "Blank"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "")
-       (GuessCassavaFailure "parse error (not enough input) at \"\""))
+       $(match [|GuessCassavaFailure _|]))
   it
     "Ints"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "int\n1\n2")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "int"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = IntegerType (Required Version1)
-                              , renameTo = "int"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = IntegerType (Required _)})
+                          }
+                      ]
+                  })|]))
   it
     "Mixed ints and decimals"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "mixed\n1\n2.02")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "mixed"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = DecimalType 2 (Required Version1)
-                              , renameTo = "mixed"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = DecimalType 2 (Required _)})
+                          }
+                      ]
+                  })|]))
   it
     "Text"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "text\n1a\nabc")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "text"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = TextType (Required Version1)
-                              , renameTo = "text"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Required Version1)})
+                          }
+                      ]
+                  })|]))
   it
-    "Text and ints"
-    (shouldBe
+    "Text and Ints"
+    (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "text,decimal\n1a,1\nabc,2.0")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "decimal"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = DecimalType 1 (Required Version1)
-                              , renameTo = "decimal"
-                              })
-                     }
-                 , CsvColumn
-                     { name = "text"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = TextType (Required Version1)
-                              , renameTo = "text"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { name = "decimal"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   { importType =
+                                       DecimalType 1 (Required Version1)
+                                   })
+                          }
+                      , CsvColumn
+                          { name = "text"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Required Version1)})
+                          }
+                      ]
+                  })|]))
   it
     "Missing text is optional"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema
           (File {id = 0, name = ""})
           "text,misc\nfoo,misc\n,misc\nbar,misc")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "misc"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = TextType (Required Version1)
-                              , renameTo = "misc"
-                              })
-                     }
-                 , CsvColumn
-                     { name = "text"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = TextType (Optional Version1)
-                              , renameTo = "text"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { name = "misc"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Required Version1)})
+                          }
+                      , CsvColumn
+                          { name = "text"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Optional Version1)})
+                          }
+                      ]
+                  })|]))
   it
     "Missing ints is optionality"
-    (shouldBe
+    (shouldSatisfy
        (guessCsvSchema
           (File {id = 0, name = ""})
           "int,x\n\
                         \2,1\n\
                         \,1\n\
                         \3,1")
-       (CsvGuessed
-          (CsvImportSpec
-             { file = File {id = 0, name = ""}
-             , skipRows = 0
-             , separator = ","
-             , columns =
-                 [ CsvColumn
-                     { name = "int"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = IntegerType (Optional Version1)
-                              , renameTo = "int"
-                              })
-                     }
-                 , CsvColumn
-                     { name = "x"
-                     , action =
-                         ImportAction
-                           (ImportColumn
-                              { importType = IntegerType (Required Version1)
-                              , renameTo = "x"
-                              })
-                     }
-                 ]
-             })))
+       $(match
+           [|CsvGuessed
+               (CsvImportSpec
+                  { columns =
+                      [ CsvColumn
+                          { name = "int"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   { importType =
+                                       IntegerType (Optional Version1)
+                                   })
+                          }
+                      , CsvColumn
+                          { name = "x"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   { importType =
+                                       IntegerType (Required Version1)
+                                   })
+                          }
+                      ]
+                  })|]))
   it
     "Mixed in one column yields text type"
-    (do shouldBe
+    (do shouldSatisfy
           (guessCsvSchema
              (File {id = 0, name = ""})
              "int\n\
                         \2\n\
                         \a")
-          (CsvGuessed
-             (CsvImportSpec
-                { file = File {id = 0, name = ""}
-                , skipRows = 0
-                , separator = ","
-                , columns =
-                    [ CsvColumn
-                        { name = "int"
-                        , action =
-                            ImportAction
-                              (ImportColumn
-                                 { importType = TextType (Required Version1)
-                                 , renameTo = "int"
-                                 })
-                        }
-                    ]
-                })))
+          $(match
+              [|CsvGuessed
+                  (CsvImportSpec
+                     { columns =
+                         [ CsvColumn
+                             { action =
+                                 ImportAction
+                                   (ImportColumn
+                                      { importType =
+                                          TextType (Required Version1)
+                                      })
+                             }
+                         ]
+                     })|]))
 
 -- We test on real files, but we don't check the files in. So these
 -- tests are marked pending.
@@ -216,7 +186,7 @@ locals =
     "Monzo 5k row export"
     (untrackedFileShouldSatisfy
        "/home/chris/Downloads/Monzo Data Export - CSV (Friday, February 26th, 2021).csv"
-       $(match [p|CsvGuessed _|]))
+       $(match [|CsvGuessed _|]))
 
 -- | If the file exists, parse it and test that it matches. If it
 -- doesn't exist, mark the test pending and ignore it.
