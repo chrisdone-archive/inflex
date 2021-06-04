@@ -62,7 +62,7 @@ data NormalFormCheckProblem
   | TypeMismatch !T !T
   | RecordFieldsMismatch [FieldName] [FieldName]
   | NoTypeSig
-  | CouldntInternType
+  | CouldntInternType (Type Parsed)
   deriving (Show, Eq, Generic)
 
 data T
@@ -99,7 +99,7 @@ resolveParsed expression =
     Nothing -> Left NoTypeSig
     Just typ ->
       case toT typ of
-        Nothing -> Left CouldntInternType
+        Nothing -> Left (CouldntInternType typ)
         Just sigT -> do
           inferredT <- expressionGenerate expression
           finalT <- oneWayUnifyT sigT inferredT
@@ -113,7 +113,7 @@ resolveParsedT expression =
     Nothing -> Left NoTypeSig
     Just typ ->
       case toT typ of
-        Nothing -> Left CouldntInternType
+        Nothing -> Left (CouldntInternType typ)
         Just sigT -> do
           inferredT <- expressionGenerate expression
           finalT <- oneWayUnifyT sigT inferredT
@@ -381,7 +381,8 @@ toT =
     ArrayType t -> do
       a <- toT t
       pure (ArrayT (pure a))
-    VariantType (RowType (TypeRow {typeVariable = Just (), fields = fs})) -> do
+    -- TODO: Examine whether to preserve the row variable for variants.
+    VariantType (RowType (TypeRow {typeVariable = _, fields = fs})) -> do
       fs' <-
         traverse
           (\Field{typ, name = FieldName name} -> do
@@ -397,4 +398,4 @@ toT =
              pure (name, t'))
           fs
       pure (RecordT (OM.fromList fs'))
-    _ -> Nothing
+    t -> error (show t)

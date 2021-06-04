@@ -16,11 +16,13 @@ import           Data.Char
 import qualified Data.Csv as Csv
 import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as OM
 import qualified Data.List as List
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
 import qualified Data.Text.Lazy.Encoding as LT
@@ -358,8 +360,11 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                  ("Unexpected CSV parse fail; the schema should have \
                  \been validated, so this is a bug." <>
                   show err)
-             Right (_headers, rows0 :: Vector (HashMap Text Text)) ->
-               case importViaSchema file csvImportSpec rows0 of
+             Right (headers, rows0 :: Vector (HashMap Text Text)) ->
+               case importViaSchema
+                      file
+                      csvImportSpec
+                      (fmap (hashMapToOMap (fmap T.decodeUtf8 headers)) rows0) of
                  Left err ->
                    error
                      ("Unexpected CSV parse fail; the schema should have \
@@ -387,7 +392,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
 
 insertImportedCsv ::
      Shared.File
-  -> Vector (HashMap Text (Expression Parsed))
+  -> Vector (InsOrdHashMap Text (Expression Parsed))
   -> Shared.InputDocument1
   -> IO Shared.InputDocument1
 insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
@@ -409,7 +414,7 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
     okChar c = isAlphaNum c || c == '_'
     toArray =
       LT.toStrict . LT.toLazyText . brackets . commas . map toObject . V.toList
-    toObject :: HashMap Text (Expression Parsed) -> LT.Builder
+    toObject :: InsOrdHashMap Text (Expression Parsed) -> LT.Builder
     toObject hash = "{" <> fields hash <> "}"
       where
         fields =
@@ -419,7 +424,7 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
                let asString v =
                      LT.fromLazyText (LT.decodeUtf8 (encode (v :: Text)))
                 in asString key <> ":" <> LT.fromText (RIO.textDisplay val)) .
-          HM.toList
+          OM.toList
     brackets :: LT.Builder -> LT.Builder
     brackets x = "[" <> x <> "]"
     commas :: [LT.Builder] -> LT.Builder

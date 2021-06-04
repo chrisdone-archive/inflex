@@ -148,7 +148,7 @@ instanceNameType =
 
 nullType :: StagedLocation s -> Type s
 nullType location =
-  RowType TypeRow {location, typeVariable = Nothing, fields = []}
+  RecordType (RowType TypeRow {location, typeVariable = Nothing, fields = []})
 
 boolType :: StagedLocation s -> Type s
 boolType location =

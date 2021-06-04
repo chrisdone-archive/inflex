@@ -14,6 +14,7 @@ module Inflex.Server.Csv
   , ImportError(..)
   , importViaSchema
   , rowsToArray
+  , hashMapToOMap
   ) where
 
 import qualified Data.ByteString.Lazy as L
@@ -21,12 +22,14 @@ import qualified Data.Csv as Csv
 import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as OM
+import           Data.Hashable
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Lexer
@@ -50,14 +53,14 @@ data ImportError
 importViaSchema ::
      File
   -> CsvImportSpec
-  -> Vector (HashMap Text Text)
-  -> Either ImportError (Vector (HashMap Text (Expression Parsed)))
+  -> Vector (InsOrdHashMap Text Text)
+  -> Either ImportError (Vector (InsOrdHashMap Text (Expression Parsed)))
 importViaSchema file CsvImportSpec {columns} rows =
   traverse
-    (fmap (HM.mapMaybe Prelude.id) .
-     HM.traverseWithKey
+    (fmap (OM.mapMaybe Prelude.id) .
+     OM.traverseWithKey
        (\key value ->
-          case HM.lookup key columnMap of
+          case OM.lookup key columnMap of
             Nothing -> Left (MissingKey key)
             Just action ->
               case action of
@@ -69,10 +72,10 @@ importViaSchema file CsvImportSpec {columns} rows =
     rows
   where
     columnMap =
-      HM.fromList
+      OM.fromList
         (map (\CsvColumn {name, action} -> (name, action)) (V.toList columns))
 
-rowsToArray :: CsvImportSpec -> Vector (HashMap Text (Expression Parsed)) -> Array Parsed
+rowsToArray :: CsvImportSpec -> Vector (InsOrdHashMap Text (Expression Parsed)) -> Array Parsed
 rowsToArray CsvImportSpec {columns = cols} vs =
   Array
     { expressions =
@@ -86,7 +89,7 @@ rowsToArray CsvImportSpec {columns = cols} vs =
                           case action of
                             IgnoreColumn -> Nothing
                             ImportAction ImportColumn {renameTo} -> do
-                              expression <- HM.lookup name hash
+                              expression <- OM.lookup name hash
                               pure
                                 FieldE
                                   { name = FieldName renameTo
@@ -100,25 +103,26 @@ rowsToArray CsvImportSpec {columns = cols} vs =
           vs
     , typ =
         Just
-          (RecordType
-             (RowType
-                TypeRow
-                  { typeVariable = Nothing
-                  , fields =
-                      mapMaybe
-                        (\CsvColumn {action} ->
-                           case action of
-                             IgnoreColumn -> Nothing
-                             ImportAction ImportColumn {importType, renameTo} ->
-                               pure
-                                 Field
-                                   { location
-                                   , name = FieldName renameTo
-                                   , typ = csvTypeToRealType importType
-                                   })
-                        (toList cols)
-                  , location
-                  }))
+          (ArrayType
+             (RecordType
+                (RowType
+                   TypeRow
+                     { typeVariable = Nothing
+                     , fields =
+                         mapMaybe
+                           (\CsvColumn {action} ->
+                              case action of
+                                IgnoreColumn -> Nothing
+                                ImportAction ImportColumn {importType, renameTo} ->
+                                  pure
+                                    Field
+                                      { location
+                                      , name = FieldName renameTo
+                                      , typ = csvTypeToRealType importType
+                                      })
+                           (toList cols)
+                     , location
+                     })))
     , location
     }
   where
@@ -229,6 +233,16 @@ optionalExpression (Just e) =
 --------------------------------------------------------------------------------
 -- Schema guessing
 
+hashMapToOMap :: (Ord k, Hashable k, Foldable f) => f k -> HashMap k a -> InsOrdHashMap k a
+hashMapToOMap order origin =
+  foldl'
+    (\hm k ->
+       case HM.lookup k origin of
+         Nothing -> hm
+         Just v -> OM.insert k v hm)
+    mempty
+    order
+
 -- | Make a pretty good guess at the schema of a CSV file.
 --
 -- TODO: Parallelism?
@@ -236,11 +250,17 @@ guessCsvSchema :: File -> L.ByteString -> CsvGuess
 guessCsvSchema file bytes =
   case Csv.decodeByName bytes of
     Left err -> GuessCassavaFailure (T.pack err)
-    Right (_headers, rows :: Vector (Map Text Text)) ->
+    Right (headers, rows :: Vector (HashMap Text Text)) ->
       let seenRows = fmap (fmap (pure . see)) rows
-          combinedRows :: Map Text (Seq Seen)
-          combinedRows = M.unionsWith (<>) seenRows
-          typedRows :: Map Text CsvColumnType
+          combinedRows :: InsOrdHashMap Text (Seq Seen)
+          combinedRows =
+            foldl'
+              (OM.unionWith (<>))
+              mempty
+              (fmap (hashMapToOMap (fmap T.decodeUtf8 headers)) seenRows)
+          -- Above: foldl' is correct direction, checked:
+          -- https://hackage.haskell.org/package/containers-0.6.4.1/docs/src/Data.Map.Strict.Internal.html#unionsWith
+          typedRows :: InsOrdHashMap Text CsvColumnType
           typedRows =
             fmap
               (fromMaybe (TextType required) .
@@ -260,7 +280,7 @@ guessCsvSchema file bytes =
                                  ImportAction
                                    ImportColumn {importType, renameTo = name}
                              })
-                        (M.toList typedRows))
+                        (OM.toList typedRows))
                , file
                })
 
