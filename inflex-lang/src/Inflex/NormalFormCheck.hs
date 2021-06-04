@@ -39,9 +39,11 @@ module Inflex.NormalFormCheck
 
 import           Control.Monad
 import           Control.Monad.State.Strict
+import           Data.Coerce
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as OM
+import qualified Data.List as List
 import           Data.Maybe
 import           Data.Text (Text)
 import           Data.Traversable
@@ -344,7 +346,32 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
     (ArrayExpression
        array
          {expressions = expressions', location = BuiltIn, typ = ArrayType typ})
-apply RecordExpression {} _ = error "TODO: apply: RecordExpression"
+-- TODO: Parallelism?
+apply (RecordExpression record@Record {fields}) typ@(RecordType (RowType TypeRow {fields = types})) = do
+  fields' <-
+    traverse
+      (\FieldE {expression, name, ..} -> do
+         case List.find (\Field{name = name'} -> name == name') types of
+           Nothing -> error "TODO: This is a bug."
+           Just Field{typ=typ'} -> do
+             expression' <- apply expression typ'
+             pure FieldE {expression = expression', location = BuiltIn, ..})
+      fields
+  pure
+    (RecordExpression
+       record {fields = fields', typ, location = BuiltIn})
+apply (VariantExpression variant@Variant {argument, tag}) typ@(VariantType (RowType TypeRow {fields = types})) = do
+  argument' <-
+    traverse
+      (\expression -> do
+         case List.find (\Field {name} -> tag == coerce name) types of
+           Nothing -> error "TODO: This is a bug. [variant]"
+           Just Field {typ = typ'} -> do
+             expression' <- apply expression typ'
+             pure expression')
+      argument
+  pure
+    (VariantExpression variant {argument = argument', location = BuiltIn, typ})
 apply _ _ = Left NotNormalForm
 
 increasePrecisionNumber :: Number s -> Type Generalised -> Number Resolved

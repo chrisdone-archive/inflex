@@ -70,24 +70,6 @@ main = do
                          ])
                   where !rows0' = rowsToArray schema rows'
 
-endToEnd :: L.ByteString -> IO (Expression Resolved)
-endToEnd bytes =
-  case Csv.decodeByName bytes of
-    Left err -> Prelude.error ("Bad CSV parse: " ++ err)
-    Right (headers, rows0 :: Vector (HashMap Text Text)) -> do
-      let rows = fmap (hashMapToOMap (fmap T.decodeUtf8 headers)) rows0
-          guessed = guessCsvSchema (File {id = 0, name = ""}) bytes
-      case guessed of
-        GuessCassavaFailure e -> Prelude.error (show e)
-        CsvGuessed schema ->
-          case importViaSchema (File {id = 0, name = ""}) schema rows of
-            Left e -> Prelude.error (show e)
-            Right rows' ->
-              case resolveParsed (ArrayExpression rows0') of
-                Left err -> Prelude.error (show err)
-                Right !resolved -> pure resolved
-              where !rows0' = rowsToArray schema rows'
-
 monzofp :: FilePath
 monzofp =
   "/home/chris/Downloads/Monzo Data Export - CSV (Friday, February 26th, 2021).csv"
