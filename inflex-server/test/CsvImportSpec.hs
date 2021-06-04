@@ -79,6 +79,13 @@ schema = do
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
+                          { name = "text"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Required Version1)})
+                          }
+                      , CsvColumn
                           { name = "decimal"
                           , action =
                               ImportAction
@@ -86,13 +93,6 @@ schema = do
                                    { importType =
                                        DecimalType 1 (Required Version1)
                                    })
-                          }
-                      , CsvColumn
-                          { name = "text"
-                          , action =
-                              ImportAction
-                                (ImportColumn
-                                   {importType = TextType (Required Version1)})
                           }
                       ]
                   })|]))
@@ -107,18 +107,18 @@ schema = do
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
-                          { name = "misc"
-                          , action =
-                              ImportAction
-                                (ImportColumn
-                                   {importType = TextType (Required Version1)})
-                          }
-                      , CsvColumn
                           { name = "text"
                           , action =
                               ImportAction
                                 (ImportColumn
                                    {importType = TextType (Optional Version1)})
+                          }
+                      , CsvColumn
+                          { name = "misc"
+                          , action =
+                              ImportAction
+                                (ImportColumn
+                                   {importType = TextType (Required Version1)})
                           }
                       ]
                   })|]))
