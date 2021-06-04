@@ -157,3 +157,13 @@ tests:
       - inflex-lang
       - inflex-server
       - inflex-shared
+
+benchmarks:
+  inflex-server-bench:
+    source-dirs: bench
+    main: Csv.hs
+    dependencies:
+      - criterion
+      - inflex-lang
+      - inflex-server
+      - inflex-shared

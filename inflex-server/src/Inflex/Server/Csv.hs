@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -11,6 +13,7 @@ module Inflex.Server.Csv
   ( guessCsvSchema
   , ImportError(..)
   , importViaSchema
+  , rowsToArray
   ) where
 
 import qualified Data.ByteString.Lazy as L
@@ -29,6 +32,7 @@ import qualified Data.Vector as V
 import           Inflex.Lexer
 import           Inflex.Parser
 import           Inflex.Schema
+import           Inflex.Type (maybeType)
 import           Inflex.Types
 import           Numeric.Natural
 
@@ -67,6 +71,101 @@ importViaSchema file CsvImportSpec {columns} rows =
     columnMap =
       HM.fromList
         (map (\CsvColumn {name, action} -> (name, action)) (V.toList columns))
+
+rowsToArray :: CsvImportSpec -> Vector (HashMap Text (Expression Parsed)) -> Array Parsed
+rowsToArray CsvImportSpec {columns = cols} vs =
+  Array
+    { expressions =
+        fmap
+          (\hash ->
+             RecordExpression
+               Record
+                 { fields =
+                     mapMaybe
+                       (\CsvColumn {name, action} ->
+                          case action of
+                            IgnoreColumn -> Nothing
+                            ImportAction ImportColumn {renameTo} -> do
+                              expression <- HM.lookup name hash
+                              pure
+                                FieldE
+                                  { name = FieldName renameTo
+                                  , expression
+                                  , location
+                                  })
+                       (toList cols)
+                 , location
+                 , typ = Nothing
+                 })
+          vs
+    , typ =
+        Just
+          (RecordType
+             (RowType
+                TypeRow
+                  { typeVariable = Nothing
+                  , fields =
+                      mapMaybe
+                        (\CsvColumn {action} ->
+                           case action of
+                             IgnoreColumn -> Nothing
+                             ImportAction ImportColumn {importType, renameTo} ->
+                               pure
+                                 Field
+                                   { location
+                                   , name = FieldName renameTo
+                                   , typ = csvTypeToRealType importType
+                                   })
+                        (toList cols)
+                  , location
+                  }))
+    , location
+    }
+  where
+    location =
+      SourceLocation
+        { start = SourcePos {line = 0, column = 0, name = ""}
+        , end = SourcePos {line = 0, column = 0, name = ""}
+        }
+
+csvTypeToRealType :: CsvColumnType -> Type Parsed
+csvTypeToRealType =
+  \case
+    IntegerType optionality ->
+      case optionality of
+        Required {} -> integerT
+        Optional {} -> maybeType ["none"] location integerT
+    TextType optionality ->
+      case optionality of
+        Required {} -> textT
+        Optional {} -> maybeType ["none"] location textT
+    DecimalType n optionality ->
+      case optionality of
+        Required {} -> decimalT (fromIntegral n)
+        Optional {} -> maybeType ["none"] location (decimalT (fromIntegral n))
+  where
+    location =
+      SourceLocation
+        { start = SourcePos {line = 0, column = 0, name = ""}
+        , end = SourcePos {line = 0, column = 0, name = ""}
+        }
+    integerT =
+      ConstantType
+        TypeConstant {location, name = IntegerTypeName}
+
+    textT =
+      ConstantType
+        TypeConstant {location, name = TextTypeName}
+    decimalT nat =
+      ApplyType
+        TypeApplication
+          { function =
+              ConstantType TypeConstant {location, name = DecimalTypeName}
+          , argument =
+              ConstantType TypeConstant {location, name = NatTypeName nat}
+          , location
+          , kind = TypeKind
+          }
 
 parseColumnText ::
      File -> CsvColumnType -> Text -> Text -> Either ImportError (Expression Parsed)
