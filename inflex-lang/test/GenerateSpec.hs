@@ -503,19 +503,20 @@ variants =
                                                  FieldName
                                                    {unFieldName = "true"}
                                              , typ =
-                                                 RowType
-                                                   (TypeRow
-                                                      { location =
-                                                          ExpressionCursor
-                                                      , typeVariable = Nothing
-                                                      , fields = []
-                                                      })
+                                                 RecordType
+                                                   (RowType
+                                                      (TypeRow
+                                                         { location =
+                                                             ExpressionCursor
+                                                         , typeVariable =
+                                                             Nothing
+                                                         , fields = []
+                                                         }))
                                              }
                                          ]
                                      }))
                          , tag = TagName {unTagName = "true"}
                          , argument = Nothing
                          })
-                , mappings =
-                    mempty
+                , mappings = mempty
                 }))))

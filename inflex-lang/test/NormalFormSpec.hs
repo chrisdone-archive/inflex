@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 -- |
 
 module NormalFormSpec where
@@ -7,6 +7,7 @@ import qualified Data.HashMap.Strict.InsOrd as OM
 import           Inflex.NormalFormCheck
 import           Inflex.Parser
 import           Inflex.Types
+import           Match
 import           Test.Hspec
 
 spec :: Spec
@@ -179,9 +180,9 @@ erroring :: Spec
 erroring = do
   it
     "couldn't intern type"
-    (shouldBe
+    (shouldSatisfy
        (fmap resolveParsedT (parseText "" "[1.23, 1.203] :: _"))
-       (Right (Left CouldntInternType)))
+       $(match [|Right (Left (CouldntInternType _))|]))
   it
     "no type sig"
     (shouldBe

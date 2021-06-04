@@ -398,4 +398,4 @@ toT =
              pure (name, t'))
           fs
       pure (RecordT (OM.fromList fs'))
-    t -> error (show t)
+    t -> Nothing
