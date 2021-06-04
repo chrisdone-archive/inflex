@@ -59,7 +59,7 @@ main = do
                         decode
                         (readProcessStdout_
                            (proc
-                              "/home/chris/qjs"
+                              "qjs"
                               ["app.js", "MyRecord", L8.unpack (encode r)])))
                      (pure r)))
            it
@@ -72,7 +72,7 @@ main = do
                         decode
                         (readProcessStdout_
                            (proc
-                              "/home/chris/qjs"
+                              "qjs"
                               ["app.js", "MyRecord2", L8.unpack (encode r)])))
                      (pure r)))
            it
@@ -85,7 +85,7 @@ main = do
                         decode
                         (readProcessStdout_
                            (proc
-                              "/home/chris/qjs"
+                              "qjs"
                               ["app.js", "MyProductType1", L8.unpack (encode r)])))
                      (pure r)))
            it
@@ -98,7 +98,7 @@ main = do
                         decode
                         (readProcessStdout_
                            (proc
-                              "/home/chris/qjs"
+                              "qjs"
                               ["app.js", "MyProductType2", L8.unpack (encode r)])))
                      (pure r)))
            it
@@ -111,7 +111,7 @@ main = do
                         decode
                         (readProcessStdout_
                            (proc
-                              "/home/chris/qjs"
+                              "qjs"
                               ["app.js", "MyProductType3", L8.unpack (encode r)])))
                      (pure r)))))
 
