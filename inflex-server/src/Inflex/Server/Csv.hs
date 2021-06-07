@@ -80,7 +80,7 @@ rowsToArray CsvImportSpec {columns = cols} vs =
   Array
     { expressions =
         fmap
-          (\hash ->
+          (\hash' ->
              RecordExpression
                Record
                  { fields =
@@ -89,7 +89,7 @@ rowsToArray CsvImportSpec {columns = cols} vs =
                           case action of
                             IgnoreColumn -> Nothing
                             ImportAction ImportColumn {renameTo} -> do
-                              expression <- OM.lookup name hash
+                              expression <- OM.lookup name hash'
                               pure
                                 FieldE
                                   { name = FieldName renameTo
@@ -246,18 +246,18 @@ hashMapToOMap order origin =
 -- | Make a pretty good guess at the schema of a CSV file.
 --
 -- TODO: Parallelism?
-guessCsvSchema :: File -> L.ByteString -> CsvGuess
+guessCsvSchema ::
+     File
+  -> L.ByteString
+  -> Either Text (CsvImportSpec, Vector (InsOrdHashMap Text Text))
 guessCsvSchema file bytes =
   case Csv.decodeByName bytes of
-    Left err -> GuessCassavaFailure (T.pack err)
+    Left err -> Left (T.pack err)
     Right (headers, rows :: Vector (HashMap Text Text)) ->
-      let seenRows = fmap (fmap (pure . see)) rows
+      let insOrdRows = fmap (hashMapToOMap (fmap T.decodeUtf8 headers)) rows
+          seenRows = fmap (fmap (pure . see)) insOrdRows
           combinedRows :: InsOrdHashMap Text (Seq Seen)
-          combinedRows =
-            foldl'
-              (OM.unionWith (<>))
-              mempty
-              (fmap (hashMapToOMap (fmap T.decodeUtf8 headers)) seenRows)
+          combinedRows = foldl' (OM.unionWith (<>)) mempty seenRows
           -- Above: foldl' is correct direction, checked:
           -- https://hackage.haskell.org/package/containers-0.6.4.1/docs/src/Data.Map.Strict.Internal.html#unionsWith
           typedRows :: InsOrdHashMap Text CsvColumnType
@@ -266,23 +266,24 @@ guessCsvSchema file bytes =
               (fromMaybe (TextType required) .
                iffyType . foldl' typeAndSeenToType NoneSoFar)
               combinedRows
-       in CsvGuessed
-            (CsvImportSpec
-               { skipRows = 0
-               , separator = ","
-               , columns =
-                   V.fromList
-                     (map
-                        (\(name, importType) ->
-                           CsvColumn
-                             { name
-                             , action =
-                                 ImportAction
-                                   ImportColumn {importType, renameTo = name}
-                             })
-                        (OM.toList typedRows))
-               , file
-               })
+       in Right
+            ( CsvImportSpec
+                { skipRows = 0
+                , separator = ","
+                , columns =
+                    V.fromList
+                      (map
+                         (\(name, importType) ->
+                            CsvColumn
+                              { name
+                              , action =
+                                  ImportAction
+                                    ImportColumn {importType, renameTo = name}
+                              })
+                         (OM.toList typedRows))
+                , file
+                }
+            , insOrdRows)
 
 --------------------------------------------------------------------------------
 -- Synthesis of seen features into a type

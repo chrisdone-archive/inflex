@@ -306,7 +306,9 @@ rpcCsvGuessSchema file@Shared.File {id = fileId} = do
          Nothing -> notFound
          Just (Entity _ File {fileHash}) -> do
            bytes <- readFileFromHash fileHash
-           pure (guessCsvSchema file bytes))
+           pure (case guessCsvSchema file bytes of
+                   Left err -> Shared.GuessCassavaFailure err
+                   Right (schema, _rows) -> Shared.CsvGuessed schema))
 
 rpcCsvCheckSchema :: Shared.CsvImportSpec -> Handler Shared.CsvCheckStatus
 rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
@@ -403,6 +405,7 @@ insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows Shared.Inpu
           pure
             (Shared.InputCell1
                { uuid = Shared.UUID (UUID.toText uuid)
+                 -- TODO: We can include many more chars here.
                , name = T.filter okChar name <> T.pack (show (fileId :: Int))
                , code = RIO.textDisplay (rowsToArray csvImportSpec rows)
                , order = V.length cells + 1

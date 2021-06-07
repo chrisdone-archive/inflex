@@ -3,9 +3,11 @@
 
 module CsvImportSpec where
 
+import           Data.Bifunctor
 import qualified Data.ByteString.Lazy as L
 import           Inflex.Schema
 import           Inflex.Server.Csv
+import           Inflex.Types
 import           Match
 import           System.Directory
 import           Test.Hspec
@@ -14,6 +16,7 @@ spec :: Spec
 spec = do
   describe "Schema" schema
   describe "Local testing on real files" locals
+  describe "Parsed" parsed
 
 schema :: Spec
 schema = do
@@ -21,13 +24,13 @@ schema = do
     "Blank"
     (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "")
-       $(match [|GuessCassavaFailure _|]))
+       $(match [|Left _|]))
   it
     "Ints"
     (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "int\n1\n2")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -37,13 +40,13 @@ schema = do
                                    {importType = IntegerType (Required _)})
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Mixed ints and decimals"
     (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "mixed\n1\n2.02")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -53,13 +56,13 @@ schema = do
                                    {importType = DecimalType 2 (Required _)})
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Text"
     (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "text\n1a\nabc")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -69,13 +72,13 @@ schema = do
                                    {importType = TextType (Required Version1)})
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Text and Ints"
     (shouldSatisfy
        (guessCsvSchema (File {id = 0, name = ""}) "text,decimal\n1a,1\nabc,2.0")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -95,7 +98,7 @@ schema = do
                                    })
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Missing text is optional"
     (shouldSatisfy
@@ -103,7 +106,7 @@ schema = do
           (File {id = 0, name = ""})
           "text,misc\nfoo,misc\n,misc\nbar,misc")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -121,7 +124,7 @@ schema = do
                                    {importType = TextType (Required Version1)})
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Missing ints is optionality"
     (shouldSatisfy
@@ -132,7 +135,7 @@ schema = do
                         \,1\n\
                         \3,1")
        $(match
-           [|CsvGuessed
+           [|Right
                (CsvImportSpec
                   { columns =
                       [ CsvColumn
@@ -154,7 +157,7 @@ schema = do
                                    })
                           }
                       ]
-                  })|]))
+                  }, _)|]))
   it
     "Mixed in one column yields text type"
     (do shouldSatisfy
@@ -164,7 +167,7 @@ schema = do
                         \2\n\
                         \a")
           $(match
-              [|CsvGuessed
+              [|Right
                   (CsvImportSpec
                      { columns =
                          [ CsvColumn
@@ -176,7 +179,7 @@ schema = do
                                       })
                              }
                          ]
-                     })|]))
+                     }, _)|]))
 
 -- We test on real files, but we don't check the files in. So these
 -- tests are marked pending.
@@ -188,6 +191,104 @@ locals =
        "/home/chris/Downloads/Monzo Data Export - CSV (Friday, February 26th, 2021).csv"
        $(match [|CsvGuessed _|]))
 
+parsed :: Spec
+parsed =
+  it
+    "Small sample"
+    (shouldSatisfy
+       (guessAndParseArray "name,age\nDave,123\nMary,456\n")
+       $(match
+           [|Right
+               (Array
+                  { expressions =
+                      [ RecordExpression
+                          (Record
+                             { fields =
+                                 [ FieldE
+                                     { name = FieldName {unFieldName = "name"}
+                                     , expression =
+                                         LiteralExpression
+                                           (TextLiteral
+                                              (LiteralText
+                                                 {text = "Dave", typ = Nothing}))
+                                     }
+                                 , FieldE
+                                     { name = FieldName {unFieldName = "age"}
+                                     , expression =
+                                         LiteralExpression
+                                           (NumberLiteral
+                                              (Number
+                                                 { number = IntegerNumber 123
+                                                 , typ = Nothing
+                                                 }))
+                                     }
+                                 ]
+                             , typ = Nothing
+                             })
+                      , RecordExpression
+                          (Record
+                             { fields =
+                                 [ FieldE
+                                     { name = FieldName {unFieldName = "name"}
+                                     , expression =
+                                         LiteralExpression
+                                           (TextLiteral
+                                              (LiteralText
+                                                 {text = "Mary", typ = Nothing}))
+                                     }
+                                 , FieldE
+                                     { name = FieldName {unFieldName = "age"}
+                                     , expression =
+                                         LiteralExpression
+                                           (NumberLiteral
+                                              (Number
+                                                 { number = IntegerNumber 456
+                                                 , typ = Nothing
+                                                 }))
+                                     }
+                                 ]
+                             , typ = Nothing
+                             })
+                      ]
+                  , typ =
+                      Just
+                        (ArrayType
+                           (RecordType
+                              (RowType
+                                 (TypeRow
+                                    { typeVariable = Nothing
+                                    , fields =
+                                        [ Field
+                                            { name =
+                                                FieldName {unFieldName = "name"}
+                                            , typ =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     {name = TextTypeName})
+                                            }
+                                        , Field
+                                            { name =
+                                                FieldName {unFieldName = "age"}
+                                            , typ =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     {name = IntegerTypeName})
+                                            }
+                                        ]
+                                    }))))
+                  })|]))
+
+--------------------------------------------------------------------------------
+-- Utilities
+
+guessAndParseArray :: L.ByteString -> Either () (Array Parsed)
+guessAndParseArray bs = do
+  (schema', rows) <- first (const ()) (guessCsvSchema file' bs)
+  rows' <- first (const ()) (importViaSchema file' schema' rows)
+  pure (rowsToArray schema' rows')
+  where
+    file' = File {id = 0, name = ""}
+
 -- | If the file exists, parse it and test that it matches. If it
 -- doesn't exist, mark the test pending and ignore it.
 untrackedFileShouldSatisfy :: HasCallStack => FilePath -> (CsvGuess -> Bool) -> IO ()
@@ -196,5 +297,11 @@ untrackedFileShouldSatisfy fp res = do
   if exists
     then do
       bytes <- L.readFile fp
-      shouldSatisfy (guessCsvSchema (File {id = 0, name = ""}) bytes) res
+      shouldSatisfy
+        (case guessCsvSchema file' bytes of
+           Left err -> GuessCassavaFailure err
+           Right (schema', _rows) -> CsvGuessed schema')
+        res
     else pendingWith "File doesn't exist, so skipping."
+  where
+    file' = File {id = 0, name = ""}
