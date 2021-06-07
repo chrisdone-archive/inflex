@@ -11,21 +11,15 @@
 module Inflex.Server.Handlers.Rpc where
 
 import           Criterion.Measurement
-import           Data.Aeson
 import           Data.Char
 import qualified Data.Csv as Csv
 import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
-import qualified Data.HashMap.Strict.InsOrd as OM
-import qualified Data.List as List
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Builder as LT
-import qualified Data.Text.Lazy.Encoding as LT
 import           Data.Time
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
@@ -375,7 +369,11 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                      runDB (getRevisedDocument loginAccountId documentId)
                    document <-
                      liftIO
-                       (insertImportedCsv file rows (revisionContent revision))
+                       (insertImportedCsv
+                          csvImportSpec
+                          file
+                          rows
+                          (revisionContent revision))
                    now <- liftIO getCurrentTime
                    start <- liftIO getTime
                    loaded <- forceTimeout (loadInputDocument document)
@@ -391,11 +389,12 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                    pure loaded)
 
 insertImportedCsv ::
-     Shared.File
+     Shared.CsvImportSpec
+  -> Shared.File
   -> Vector (InsOrdHashMap Text (Expression Parsed))
   -> Shared.InputDocument1
   -> IO Shared.InputDocument1
-insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
+insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
   uuid <- liftIO UUID.nextRandom
   pure
     Shared.InputDocument1
@@ -405,30 +404,13 @@ insertImportedCsv Shared.File {name, id = fileId} rows Shared.InputDocument1 {..
             (Shared.InputCell1
                { uuid = Shared.UUID (UUID.toText uuid)
                , name = T.filter okChar name <> T.pack (show (fileId :: Int))
-               , code = toArray rows
+               , code = RIO.textDisplay (rowsToArray csvImportSpec rows)
                , order = V.length cells + 1
                , version = Shared.versionRefl
                })
       }
   where
     okChar c = isAlphaNum c || c == '_'
-    toArray =
-      LT.toStrict . LT.toLazyText . brackets . commas . map toObject . V.toList
-    toObject :: InsOrdHashMap Text (Expression Parsed) -> LT.Builder
-    toObject hash = "{" <> fields hash <> "}"
-      where
-        fields =
-          commas .
-          map
-            (\(key, val) ->
-               let asString v =
-                     LT.fromLazyText (LT.decodeUtf8 (encode (v :: Text)))
-                in asString key <> ":" <> LT.fromText (RIO.textDisplay val)) .
-          OM.toList
-    brackets :: LT.Builder -> LT.Builder
-    brackets x = "[" <> x <> "]"
-    commas :: [LT.Builder] -> LT.Builder
-    commas = mconcat . List.intersperse ","
 
 --------------------------------------------------------------------------------
 -- Timeouts
