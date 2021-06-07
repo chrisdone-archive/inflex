@@ -6,8 +6,10 @@ module CsvImportSpec where
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy as L
 import           Data.Text (Text)
-import           Inflex.Schema
 import           Inflex.Display ()
+import           Inflex.NormalFormCheck
+import           Inflex.Parser
+import           Inflex.Schema
 import           Inflex.Server.Csv
 import           Inflex.Types
 import           Match
@@ -21,6 +23,7 @@ spec = do
   describe "Local testing on real files" locals
   describe "Parsed" parsed
   describe "Printed" printed
+  describe "End-to-End" endtoend
 
 schema :: Spec
 schema = do
@@ -206,6 +209,181 @@ printed =
                "[{\"name\": \"Dave\", \"age\": 123}, {\"name\": \"Mary\", \"age\": 456}]\
                \ :: [{\"name\":Text, \"age\":Integer}]"|]))
 
+endtoend :: Spec
+endtoend =
+  it
+    "Small sample"
+    (shouldSatisfy
+       (checkPrintedGuessed "name,age\nDave,123\nMary,456\n")
+       $(match
+           [|Right
+               (ArrayExpression
+                  (Array
+                     { expressions =
+                         [ RecordExpression
+                             (Record
+                                { fields =
+                                    [ FieldE
+                                        { name =
+                                            FieldName {unFieldName = "name"}
+                                        , expression =
+                                            LiteralExpression
+                                              (TextLiteral
+                                                 (LiteralText
+                                                    { text = "Dave"
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 TextTypeName
+                                                             })
+                                                    }))
+                                        }
+                                    , FieldE
+                                        { name = FieldName {unFieldName = "age"}
+                                        , expression =
+                                            LiteralExpression
+                                              (NumberLiteral
+                                                 (Number
+                                                    { number = IntegerNumber 123
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    }))
+                                        }
+                                    ]
+                                , typ =
+                                    RecordType
+                                      (RowType
+                                         (TypeRow
+                                            { typeVariable = Nothing
+                                            , fields =
+                                                [ Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "age"}
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    }
+                                                , Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "name"}
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 TextTypeName
+                                                             })
+                                                    }
+                                                ]
+                                            }))
+                                })
+                         , RecordExpression
+                             (Record
+                                { fields =
+                                    [ FieldE
+                                        { name =
+                                            FieldName {unFieldName = "name"}
+                                        , expression =
+                                            LiteralExpression
+                                              (TextLiteral
+                                                 (LiteralText
+                                                    { text = "Mary"
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 TextTypeName
+                                                             })
+                                                    }))
+                                        }
+                                    , FieldE
+                                        { name = FieldName {unFieldName = "age"}
+                                        , expression =
+                                            LiteralExpression
+                                              (NumberLiteral
+                                                 (Number
+                                                    { number = IntegerNumber 456
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { location =
+                                                                 BuiltIn
+                                                             , name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    }))
+                                        }
+                                    ]
+                                , typ =
+                                    RecordType
+                                      (RowType
+                                         (TypeRow
+                                            { typeVariable = Nothing
+                                            , fields =
+                                                [ Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "age"}
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 IntegerTypeName
+                                                             })
+                                                    }
+                                                , Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "name"}
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { name =
+                                                                 TextTypeName
+                                                             })
+                                                    }
+                                                ]
+                                            }))
+                                })
+                         ]
+                     , typ =
+                         ArrayType
+                           (RecordType
+                              (RowType
+                                 (TypeRow
+                                    { typeVariable = Nothing
+                                    , fields =
+                                        [ Field
+                                            { name =
+                                                FieldName {unFieldName = "age"}
+                                            , typ =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     { name = IntegerTypeName
+                                                     })
+                                            }
+                                        , Field
+                                            { name =
+                                                FieldName {unFieldName = "name"}
+                                            , typ =
+                                                ConstantType
+                                                  (TypeConstant
+                                                     { name = TextTypeName
+                                                     })
+                                            }
+                                        ]
+                                    })))
+                     }))|]))
+
 parsed :: Spec
 parsed =
   it
@@ -295,6 +473,16 @@ parsed =
 
 --------------------------------------------------------------------------------
 -- Utilities
+
+checkPrintedGuessed :: L.ByteString -> Either () (Expression Resolved)
+checkPrintedGuessed bs = do
+  arr <- guessAndParseArray bs
+  case parseText "printed" (RIO.textDisplay arr) of
+    Left {} -> Left ()
+    Right ast ->
+      case resolveParsed ast of
+        Left {} -> Left ()
+        Right e -> pure e
 
 printGuessed :: L.ByteString -> Either () Text
 printGuessed bs = do
