@@ -5,10 +5,13 @@ module CsvImportSpec where
 
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy as L
+import           Data.Text (Text)
 import           Inflex.Schema
+import           Inflex.Display ()
 import           Inflex.Server.Csv
 import           Inflex.Types
 import           Match
+import qualified RIO
 import           System.Directory
 import           Test.Hspec
 
@@ -17,6 +20,7 @@ spec = do
   describe "Schema" schema
   describe "Local testing on real files" locals
   describe "Parsed" parsed
+  describe "Printed" printed
 
 schema :: Spec
 schema = do
@@ -191,6 +195,17 @@ locals =
        "/home/chris/Downloads/Monzo Data Export - CSV (Friday, February 26th, 2021).csv"
        $(match [|CsvGuessed _|]))
 
+printed :: Spec
+printed =
+  it
+    "Small sample"
+    (shouldSatisfy
+       (printGuessed "name,age\nDave,123\nMary,456\n")
+       $(match
+           [|Right
+               "[{\"name\": \"Dave\", \"age\": 123}, {\"name\": \"Mary\", \"age\": 456}]\
+               \ :: [{\"name\":Text, \"age\":Integer}]"|]))
+
 parsed :: Spec
 parsed =
   it
@@ -280,6 +295,11 @@ parsed =
 
 --------------------------------------------------------------------------------
 -- Utilities
+
+printGuessed :: L.ByteString -> Either () Text
+printGuessed bs = do
+  arr <- guessAndParseArray bs
+  pure (RIO.textDisplay arr)
 
 guessAndParseArray :: L.ByteString -> Either () (Array Parsed)
 guessAndParseArray bs = do

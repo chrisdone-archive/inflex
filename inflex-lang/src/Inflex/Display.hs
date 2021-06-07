@@ -423,8 +423,10 @@ addColumnsIfNeeded :: Display a => Vector e -> Maybe a -> Utf8Builder -> Utf8Bui
 addColumnsIfNeeded expressions typ inner =
   case typ of
     Just t | V.null expressions -> inner <> " :: " <> display t
+    Just t -> inner <> " :: " <> display t
     _ -> inner
 
+-- TODO: Re-think this display?
 instance Display (Type Parsed) where
   display =
     \case
@@ -439,6 +441,13 @@ instance Display (Type Parsed) where
                    display name <>
                    (case typ of
                       FreshType {} -> ""
+                      ConstantType TypeConstant {name = IntegerTypeName} ->
+                        ":Integer" -- TODO: change to @prim:integer-type)
+                      ConstantType TypeConstant {name = TextTypeName} ->
+                        ":Text" -- TODO: change to @prim:text-type)
+                      ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                                , argument = ConstantType TypeConstant {name = NatTypeName n}
+                                                } -> ":Decimal " <> displayShow n
                       t -> ":" <> display t))
                 fields)) <>
         "}"
