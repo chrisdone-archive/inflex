@@ -118,7 +118,7 @@ stringParser env = F.branch speech rest (holeParser env)
   where
     rest = do
       start' <- getSourcePosPrev env
-      inner <- F.byteStringOf (F.some_ (F.satisfy (\char -> char /= '"')))
+      inner <- F.byteStringOf (F.many_ (F.satisfy (\char -> char /= '"')))
       speech
       end' <- getSourcePos env
       pure
