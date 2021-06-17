@@ -85,7 +85,7 @@ arrayParser env = F.branch openBracket elements (recordParser env)
              })
 
 recordParser :: Env -> F.Parser ParseError (Expression Parsed)
-recordParser env = F.branch openCurly elements (stringParser env)
+recordParser env = F.branch openCurly elements (variantParser env)
   where
     elements = do
       start <- getSourcePosPrev env
@@ -133,7 +133,24 @@ stringParser env = F.branch speech rest (numberParser env)
 
 variantParser :: Env -> F.Parser ParseError (Expression Parsed)
 variantParser env = F.branch hash rest (stringParser env)
-  where rest = undefined
+  where
+    rest = do
+      start' <- getSourcePos env
+      name <- keyParserQuoted F.<|> keyParser
+      end' <- getSourcePos env
+      argument <-
+        F.branch
+          openRound
+          (fmap Just (expressionParser env) <* closeRound)
+          (pure Nothing)
+      pure
+        (VariantExpression
+           Variant
+             { location = SourceLocation {start = start', end = end'}
+             , typ = Nothing
+             , tag = TagName (coerce name)
+             , argument
+             })
 
 numberParser :: Env -> F.Parser ParseError (Expression Parsed)
 numberParser env = do
@@ -211,6 +228,12 @@ openBracket = $(F.char '[') *> whitespace
 
 closeBracket :: F.Parser e ()
 closeBracket = $(F.char ']') *> whitespace
+
+openRound :: F.Parser e ()
+openRound = $(F.char '(') *> whitespace
+
+closeRound :: F.Parser e ()
+closeRound = $(F.char ')') *> whitespace
 
 openCurly :: F.Parser e ()
 openCurly = $(F.char '{') *> whitespace

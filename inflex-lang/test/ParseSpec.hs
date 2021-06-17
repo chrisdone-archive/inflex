@@ -1661,9 +1661,9 @@ parser2 =
   describe
     "Parser2"
     (do itParsersMatch "\"foo\""
-        itParsersMatchPending "#ok(123)"
-        itParsersMatchPending "#none"
-        itParsersMatchPending "[#none,#ok(123)]"
+        itParsersMatch "#ok(123)"
+        itParsersMatch "#none"
+        itParsersMatch "[#none,#ok(123)]"
         itParsersMatch "{\"foo\":123,\"bar\":45}"
         itParsersMatch "{a:1}"
         itParsersMatch "{foo:123,bar:45}"
@@ -1677,7 +1677,7 @@ parser2 =
           | string <- ["[-1,-23,-456]", "-123", "[[-1,-2],[-3,-4]]"]
           ])
   where
-    itParsersMatchPending text' =
+    _itParsersMatchPending text' =
       it
         (T.unpack text')
         (do pending
