@@ -114,7 +114,7 @@ recordParser env = F.branch openCurly elements (variantParser env)
              })
 
 stringParser :: Env -> F.Parser ParseError (Expression Parsed)
-stringParser env = F.branch speech rest (numberParser env)
+stringParser env = F.branch speech rest (holeParser env)
   where
     rest = do
       start' <- getSourcePosPrev env
@@ -130,6 +130,20 @@ stringParser env = F.branch speech rest (numberParser env)
                  , text = T.decodeUtf8 inner
                  , ..
                  })))
+
+holeParser :: Env -> F.Parser ParseError (Expression Parsed)
+holeParser env =
+  F.branch
+    hole
+    (do start' <- getSourcePosPrev env
+        end' <- getSourcePos env
+        pure
+          (HoleExpression
+             Hole
+               { location = SourceLocation {start = start', end = end'}
+               , typ = Nothing
+               }))
+    (numberParser env)
 
 variantParser :: Env -> F.Parser ParseError (Expression Parsed)
 variantParser env = F.branch hash rest (stringParser env)
@@ -216,6 +230,9 @@ comma = $(F.char ',') *> whitespace
 
 hash :: F.Parser e ()
 hash = $(F.char '#')
+
+hole :: F.Parser e ()
+hole = $(F.char '_')
 
 speech :: F.Parser e ()
 speech = $(F.char '"')

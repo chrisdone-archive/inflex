@@ -278,6 +278,7 @@ dependentLoadDocument =
                    (Right
                       LoadedExpression {resolvedExpression, parsedExpression})
                Right (Renamed renamed parsedExpression) -> do
+                 RIO.liftIO (putStrLn "Had to parse and rename!") -- TODO: remove
                  isResolved <- resolveRenamedCell hashedCells nameHashes renamed
                  pure
                    (do resolvedExpression <- isResolved

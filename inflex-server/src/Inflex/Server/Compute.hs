@@ -32,10 +32,11 @@ import           Inflex.Types.Generator
 import qualified RIO
 
 milliseconds :: Int
-milliseconds = 1000
+milliseconds = 10000
 
 loadInputDocument :: Shared.InputDocument1 -> IO (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
+  putStrLn "Loading ..."
   loaded <-
     RIO.runRIO
       DocumentReader
@@ -46,16 +47,19 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
                (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
                   Named {uuid = Uuid uuid, name, thing = code, order, code})
                (toList cells))))?
+  putStrLn "Defaulting ..."
   defaulted <-
     RIO.runRIO
       DefaulterReader
       (RIO.timeout (1000 * milliseconds) (defaultDocument1' loaded))?
+  putStrLn "Evaluating ..."
   topo <-
     (RIO.runRIO
        StepReader
        (RIO.timeout
           (1000 * milliseconds)
           (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
+  putStrLn "Done, returning tree..."
   pure
     (Just
        (Shared.OutputDocument

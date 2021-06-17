@@ -1660,8 +1660,10 @@ parser2 :: Spec
 parser2 =
   describe
     "Parser2"
-    (do itParsersMatch "\"foo\""
+    (do itParsersMatch "_"
+        itParsersMatch "\"foo\""
         itParsersMatch "#ok(123)"
+        itParsersMatch "[1,_]"
         itParsersMatch "#none"
         itParsersMatch "[#none,#ok(123)]"
         itParsersMatch "{\"foo\":123,\"bar\":45}"
