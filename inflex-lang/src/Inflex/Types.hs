@@ -180,7 +180,7 @@ data Cell = Cell
 data Cell1 = Cell1
   { location :: !Cursor
   , defaulted :: !(Expression Resolved)
-  , renamed :: !(Expression Renamed)
+  , parsed :: !(Expression Parsed)
   , scheme :: !(Scheme Polymorphic)
   , defaultedClassConstraints :: !(Seq (Default Polymorphic))
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))

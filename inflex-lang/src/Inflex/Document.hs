@@ -79,7 +79,7 @@ data Context = Context
 
 data LoadedExpression = LoadedExpression
   { resolvedExpression :: IsResolved (Expression Resolved)
-  , renamedExpression :: Expression Renamed
+  , parsedExpression :: Expression Parsed
   }
 
 data EvaledExpression = EvaledExpression
@@ -175,7 +175,7 @@ defaultDocument1 =
               fmap
                 (bimap
                    LoadDefaulterError
-                   (\Cell {..} -> Cell1 {renamed = renamedExpression, ..}))
+                   (\Cell {..} -> Cell1 {parsed = parsedExpression, ..}))
                 (defaultResolvedExpression resolvedExpression)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
@@ -214,28 +214,8 @@ evalDocument1 env =
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
 independentLoadDocument ::
-     [Named Text] -> [Named (Either LoadError (IsRenamed (Expression Renamed)))]
-independentLoadDocument names =
-  parMap
-    rseq
-    (\Named {..} ->
-       Named
-         { thing =
-             if not (T.null (T.strip name)) &&
-                any
-                  (\Named {uuid = uuid', name = name'} ->
-                     uuid' /= uuid && name == name')
-                  names -- TODO: Fix this O(n^2) operation
-               then Left DuplicateName
-               else first RenameLoadError (renameText (T.unpack name) thing)
-         , ..
-         })
-    names
-
--- | Lex, parse, rename -- can all be done per cell in parallel.
-_independentLoadDocument ::
      [Named Text] -> [Named (Either LoadError Independent)]
-_independentLoadDocument names =
+independentLoadDocument names =
   parMap
     rseq
     (\Named {..} ->
@@ -278,13 +258,14 @@ independentLoad name source =
 --
 -- Must be done in order.
 dependentLoadDocument ::
-     Toposorted (Named (Either LoadError (IsRenamed (Expression Renamed))))
+     Toposorted (Named (Either LoadError Independent))
   -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
-dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty emptyFillerEnv)
+dependentLoadDocument =
+  fmap snd . mapAccumM loadCell (Context mempty emptyFillerEnv)
   where
     loadCell ::
          Context
-      -> Named (Either LoadError (IsRenamed (Expression Renamed)))
+      -> Named (Either LoadError Independent)
       -> RIO DocumentReader (Context, Named (Either LoadError LoadedExpression))
     loadCell Context {hashedCells, nameHashes} result = do
       namedMaybeCell <-
@@ -292,9 +273,19 @@ dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty emptyFille
           (\result' ->
              case result' of
                Left e -> pure (Left e)
-               Right c -> resolveRenamedCell hashedCells nameHashes c)
+               Right (FullyResolvedNormalForm resolvedExpression parsedExpression) ->
+                 pure
+                   (Right
+                      LoadedExpression {resolvedExpression, parsedExpression})
+               Right (Renamed renamed parsedExpression) -> do
+                 isResolved <- resolveRenamedCell hashedCells nameHashes renamed
+                 pure
+                   (do resolvedExpression <- isResolved
+                       pure
+                         LoadedExpression {resolvedExpression, parsedExpression}))
           result
-      let nameHashes' = insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
+      let nameHashes' =
+            insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
             where
               Named {name, uuid, thing} = namedMaybeCell
           hashedCells' =
@@ -310,14 +301,14 @@ dependentLoadDocument = fmap snd . mapAccumM loadCell (Context mempty emptyFille
 
 -- | Sort the named cells in the document by reverse dependency order.
 topologicalSortDocument ::
-     [Named (Either LoadError (IsRenamed a))]
-  -> Toposorted (Named (Either LoadError (IsRenamed a)))
+     [Named (Either LoadError Independent)]
+  -> Toposorted (Named (Either LoadError Independent))
 topologicalSortDocument nameds =
   Toposorted . concatMap cycleCheck . stronglyConnCompR . map toNode $ nameds
   where
     toNode named@Named {uuid, thing = result} =
       case result of
-        Right IsRenamed {unresolvedGlobals, unresolvedUuids} ->
+        Right (Renamed IsRenamed {unresolvedGlobals, unresolvedUuids} _) ->
           ( named
           , uuid
           , Set.toList unresolvedUuids <>
@@ -327,6 +318,7 @@ topologicalSortDocument nameds =
                    find (\Named {name = name'} -> nameToLookup == name') nameds
                  pure foundUuid)
               (Set.toList unresolvedGlobals))
+        Right FullyResolvedNormalForm{} -> (named, uuid, mempty)
         Left {} -> (named, uuid, mempty)
     cycleCheck =
       \case
@@ -347,8 +339,8 @@ resolveRenamedCell ::
      Map Hash (Either LoadError LoadedExpression)
   -> FillerEnv LoadError
   -> IsRenamed (Expression Renamed)
-  -> RIO DocumentReader (Either LoadError LoadedExpression)
-resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamedExpression} = do
+  -> RIO DocumentReader (Either LoadError (IsResolved (Expression Resolved)))
+resolveRenamedCell globalTypes globalHashes isRenamed = do
   hasConstraints <-
     pure $
     first LoadGenerateError $
@@ -373,6 +365,4 @@ resolveRenamedCell globalTypes globalHashes isRenamed@IsRenamed {thing = renamed
   isResolved <-
     fmap (first LoadResolveError) $
     RIO.runRIO ResolveReader (resolveGeneralised isGeneralised)?
-  pure
-    (Right
-       (LoadedExpression {resolvedExpression = isResolved, renamedExpression}))
+  pure (Right isResolved)
