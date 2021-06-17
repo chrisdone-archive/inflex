@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BangPatterns #-}
@@ -84,7 +85,7 @@ arrayParser env = F.branch openBracket elements (recordParser env)
              })
 
 recordParser :: Env -> F.Parser ParseError (Expression Parsed)
-recordParser env = F.branch openCurly elements (numberParser env)
+recordParser env = F.branch openCurly elements (stringParser env)
   where
     elements = do
       start <- getSourcePosPrev env
@@ -111,6 +112,28 @@ recordParser env = F.branch openCurly elements (numberParser env)
              , location = SourceLocation {start = start, end = end}
              , fields = fields
              })
+
+stringParser :: Env -> F.Parser ParseError (Expression Parsed)
+stringParser env = F.branch speech rest (numberParser env)
+  where
+    rest = do
+      start' <- getSourcePosPrev env
+      inner <- F.byteStringOf (F.some_ (F.satisfy (\char -> char /= '"')))
+      speech
+      end' <- getSourcePos env
+      pure
+        (LiteralExpression
+           (TextLiteral
+              (LiteralText
+                 { location = SourceLocation {start = start', end = end'}
+                 , typ = Nothing
+                 , text = T.decodeUtf8 inner
+                 , ..
+                 })))
+
+variantParser :: Env -> F.Parser ParseError (Expression Parsed)
+variantParser env = F.branch hash rest (stringParser env)
+  where rest = undefined
 
 numberParser :: Env -> F.Parser ParseError (Expression Parsed)
 numberParser env = do
@@ -166,6 +189,12 @@ keyParser =
 
 comma :: F.Parser e ()
 comma = $(F.char ',') *> whitespace
+
+hash :: F.Parser e ()
+hash = $(F.char '#')
+
+speech :: F.Parser e ()
+speech = $(F.char '"')
 
 colon :: F.Parser e ()
 colon = $(F.char ':') *> whitespace
