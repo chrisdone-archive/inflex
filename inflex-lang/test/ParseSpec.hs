@@ -1660,7 +1660,12 @@ parser2 :: Spec
 parser2 =
   describe
     "Parser2"
-    (do itParsersMatch "{a:1}"
+    (do itParsersMatchPending "\"foo\""
+        itParsersMatchPending "#ok(123)"
+        itParsersMatchPending "#none"
+        itParsersMatchPending "[#none,#ok(123)]"
+        itParsersMatchPending "{\"foo\":123,\"bar\":45}"
+        itParsersMatch "{a:1}"
         itParsersMatch "{foo:123,bar:45}"
         itParsersMatch "[{foo:123.123,bar:45.0},{foo:123.123,bar:45.0}]"
         sequence_
@@ -1672,6 +1677,13 @@ parser2 =
           | string <- ["[-1,-23,-456]", "-123", "[[-1,-2],[-3,-4]]"]
           ])
   where
+    itParsersMatchPending text' =
+      it
+        (T.unpack text')
+        (do pending
+            shouldBe
+              (first (const ()) (Parser2.parseText "" text'))
+              (first (const ()) (parseText "" text')))
     itParsersMatch text' =
       it
         (T.unpack text')
