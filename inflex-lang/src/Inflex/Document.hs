@@ -66,7 +66,6 @@ data LoadError
   | LoadResolveError (GeneraliseResolveError LoadError)
   | LoadDefaulterError DefaulterError
   | LoadStepError (DefaultStepError LoadError)
-  | LoadParserError Parser2.ParseError Parser1.LexParseError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}

@@ -71,10 +71,10 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
                            , result =
                                either
                                  (Shared.ResultError . toCellError)
-                                 (\EvaledExpression {cell = Cell1 {renamed}, ..} ->
+                                 (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
                                     Shared.ResultOk
                                       (Shared.ResultTree
-                                         (case renamed of
+                                         (case parsed of
                                             -- A temporary
                                             -- specialization to
                                             -- display lambdas in a
@@ -89,7 +89,7 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
                                                 code
                                             _ ->
                                               toTree
-                                                (pure renamed)
+                                                (pure parsed)
                                                 resultExpression)))
                                  thing
                            , code
@@ -118,7 +118,7 @@ hashOutputCell cell =
         Shared.Hash (sha256AsHexText (sha256LazyByteString (Aeson.encode cell)))
     }
 
-toTree :: Maybe (Expression Renamed) -> Expression Resolved -> Shared.Tree2
+toTree :: Maybe (Expression Parsed) -> Expression Resolved -> Shared.Tree2
 toTree original =
   \case
     ArrayExpression Array {typ, expressions} -- Recognize a table.
@@ -206,26 +206,26 @@ toTree original =
         originalSource
         (RIO.textDisplay expression)
   where
-    inRecord :: Maybe (Expression Renamed) -> Maybe [FieldE Renamed]
+    inRecord :: Maybe (Expression Parsed) -> Maybe [FieldE Parsed]
     inRecord =
       \case
         Just (RecordExpression Record {fields}) -> pure fields
         _ -> Nothing
-    inArray :: Maybe (Expression Renamed) -> Maybe (Vector (Expression Renamed))
+    inArray :: Maybe (Expression Parsed) -> Maybe (Vector (Expression Parsed))
     inArray =
       \case
         Just (ArrayExpression Array {expressions}) -> pure expressions
         _ -> Nothing
     atIndex ::
          Int
-      -> Maybe (Vector (Expression Renamed))
-      -> Maybe (Expression Renamed)
+      -> Maybe (Vector (Expression Parsed))
+      -> Maybe (Expression Parsed)
     atIndex idx =
       \case
         Just vector
           | Just e <- vector V.!? idx -> pure e
         _ -> Nothing
-    atNth :: Int -> Maybe [FieldE Renamed] -> Maybe (FieldE Renamed)
+    atNth :: Int -> Maybe [FieldE Parsed] -> Maybe (FieldE Parsed)
     atNth idx =
       \case
         Just vector

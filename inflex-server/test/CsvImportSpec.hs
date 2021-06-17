@@ -21,7 +21,7 @@ spec :: Spec
 spec = do
   describe "Schema" schema
   describe "Local testing on real files" locals
-  describe "Parsed" parsed
+  describe "Parsed" parsed'
   describe "Printed" printed
   describe "End-to-End" endtoend
 
@@ -384,8 +384,8 @@ endtoend =
                                     })))
                      }))|]))
 
-parsed :: Spec
-parsed =
+parsed' :: Spec
+parsed' =
   it
     "Small sample"
     (shouldSatisfy
