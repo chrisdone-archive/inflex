@@ -5,7 +5,11 @@
 
 -- | A very fast parser based on FlatParse.
 
-module Inflex.Parser2 where
+module Inflex.Parser2
+  ( parseText
+  , ParseError(..)
+  , Env(..)
+  ) where
 
 import           Data.ByteString (ByteString)
 import           Data.Char (isAlphaNum)
@@ -83,14 +87,14 @@ recordParser :: Env -> F.Parser ParseError (Expression Parsed)
 recordParser env = F.branch openCurly elements (numberParser env)
   where
     elements = do
-      start <- getSourcePos env
+      start <- getSourcePosPrev env
       fields <-
         F.many
-          (do start' <- getSourcePos env
-              name <- keyParser
+          (do name <- keyParser
+              start' <- getSourcePos env
               colon
-              expression <- expressionParser env
               end' <- getSourcePos env
+              expression <- expressionParser env
               F.optional_ comma
               pure
                 FieldE
@@ -98,8 +102,8 @@ recordParser env = F.branch openCurly elements (numberParser env)
                   , expression
                   , location = SourceLocation {start = start', end = end'}
                   })
-      end <- getSourcePos env
       closeCurly
+      end <- getSourcePos env
       pure
         (RecordExpression
            Record
