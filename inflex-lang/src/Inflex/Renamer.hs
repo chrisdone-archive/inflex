@@ -12,6 +12,7 @@
 
 module Inflex.Renamer
   ( renameText
+  , renameParsed
   , IsRenamed(..)
   , RenameError(..)
   , ParseRenameError(..)
@@ -48,26 +49,28 @@ renameText ::
   -> Either ParseRenameError (IsRenamed (Expression Renamed))
 renameText fp text = do
   expression <- first ParserErrored (parseText fp text)
-  first
-    RenamerErrors
-    (let (result, (mappings, unresolvedGlobals, unresolvedUuids)) =
-           runState
-             (runValidateT
-                (runRenamer
-                   (renameExpression
-                      (Env
-                         {globals = mempty, cursor = id, scope = mempty})
-                      expression)))
-             mempty
-      in fmap
-           (\thing ->
-              IsRenamed
-                { thing = addBoundaryImplicitly thing
-                , mappings
-                , unresolvedGlobals
-                , unresolvedUuids
-                })
-           result)
+  first RenamerErrors (renameParsed expression)
+
+renameParsed ::
+     Expression Parsed
+  -> Either (NonEmpty RenameError) (IsRenamed (Expression Renamed))
+renameParsed expression =
+  let (result, (mappings, unresolvedGlobals, unresolvedUuids)) =
+        runState
+          (runValidateT
+             (runRenamer
+                (renameExpression
+                   (Env {globals = mempty, cursor = id, scope = mempty})
+                   expression)))
+          mempty
+   in fmap
+        (\thing ->
+           IsRenamed
+             { thing = addBoundaryImplicitly thing
+             , mappings
+             , unresolvedGlobals
+             , unresolvedUuids
+             }) result
 
 --------------------------------------------------------------------------------
 -- Renamers

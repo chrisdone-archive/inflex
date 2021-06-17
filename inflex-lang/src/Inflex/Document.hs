@@ -41,6 +41,9 @@ import           Inflex.Defaulter
 import           Inflex.Generaliser
 import           Inflex.Generator
 import           Inflex.Hash
+import           Inflex.NormalFormCheck
+import qualified Inflex.Parser as Parser1
+import qualified Inflex.Parser2 as Parser2
 import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
@@ -63,6 +66,7 @@ data LoadError
   | LoadResolveError (GeneraliseResolveError LoadError)
   | LoadDefaulterError DefaulterError
   | LoadStepError (DefaultStepError LoadError)
+  | LoadParserError Parser2.ParseError Parser1.LexParseError
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
@@ -84,6 +88,20 @@ data EvaledExpression = EvaledExpression
   }
 
 data DocumentReader = DocumentReader
+
+-- | This type represents the "independent" (parallel) loading of
+-- source and whether we were able to do a "fast" load for arrays,
+-- records, or the regular slow load use for all code (lambdas, case,
+-- etc.).
+data Independent
+  = FullyResolvedNormalForm (IsResolved (Expression Resolved))
+                            (Expression Parsed)
+    -- ^ It was parsed with the fast parser and normal-form-checked
+    -- all the way to resolved.
+  | Renamed (IsRenamed (Expression Renamed))
+            (Expression Parsed)
+   -- ^ It's not necessarily a normal form checkable expression, so we
+   -- renamed it.
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -213,6 +231,48 @@ independentLoadDocument names =
          , ..
          })
     names
+
+-- | Lex, parse, rename -- can all be done per cell in parallel.
+_independentLoadDocument ::
+     [Named Text] -> [Named (Either LoadError Independent)]
+_independentLoadDocument names =
+  parMap
+    rseq
+    (\Named {..} ->
+       Named
+         { thing =
+             if not (T.null (T.strip name)) &&
+                any
+                  (\Named {uuid = uuid', name = name'} ->
+                     uuid' /= uuid && name == name')
+                  names -- TODO: Fix this O(n^2) operation
+               then Left DuplicateName
+               else independentLoad (T.unpack name) thing
+         , ..
+         })
+    names
+
+-- | Load a cell's source as far as possible which can be done
+-- independently of other cells.
+independentLoad :: String -> Text -> Either LoadError Independent
+independentLoad name source =
+  case Parser2.parseText name source of
+    Left Parser2.Failed ->
+      first
+        RenameLoadError
+        (do expression <- first ParserErrored (Parser1.parseText name source)
+            isRenamed <- first RenamerErrors (renameParsed expression)
+            pure (Renamed isRenamed expression))
+    -- A fast parse was possible. Let's try a fast type check.
+    Right expression ->
+      case resolveParsedResolved expression of
+        Left {} ->
+          first
+            RenameLoadError
+            (do isRenamed <- first RenamerErrors (renameParsed expression)
+                pure (Renamed isRenamed expression))
+        -- We got a successful type check and resolve. Use that.
+        Right isResolved -> pure (FullyResolvedNormalForm isResolved expression)
 
 -- | Fill, generate, solve, generalize, resolve, default, step.
 --

@@ -22,7 +22,7 @@ import           Inflex.Types
 --------------------------------------------------------------------------------
 -- Types
 
-data ParseError = Failed deriving Show
+data ParseError = Failed deriving (Eq, Show)
 
 newtype Env = Env {original :: ByteString}
 

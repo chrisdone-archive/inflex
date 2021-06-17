@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NamedFieldPuns, DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -32,6 +34,7 @@
 module Inflex.NormalFormCheck
   ( resolveParsed
   , resolveParsedT
+  , resolveParsedResolved
   , expressionGenerate
   , NormalFormCheckProblem(..)
   , T(..)
@@ -52,6 +55,7 @@ import           GHC.Natural
 import           Inflex.Decimal
 import           Inflex.Generator
 import           Inflex.Parser2
+import           Inflex.Types.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Generator
@@ -106,6 +110,34 @@ resolveParsed expression =
           inferredT <- expressionGenerate expression
           finalT <- oneWayUnifyT sigT inferredT
           apply expression (toTypeMono finalT)
+
+-- | This function only works when an expression has an explicit type
+-- signature, which has only monomorphic types. Also ensures that the
+-- type sig matches the inferred type.
+resolveParsedResolved ::
+     Expression Parsed
+  -> Either NormalFormCheckProblem (IsResolved (Expression Resolved))
+resolveParsedResolved expression =
+  case expressionType expression of
+    Nothing -> Left NoTypeSig
+    Just typ ->
+      case toT typ of
+        Nothing -> Left (CouldntInternType typ)
+        Just sigT -> do
+          inferredT <- expressionGenerate expression
+          finalT <- oneWayUnifyT sigT inferredT
+          thing <- apply expression (toTypeMono finalT)
+          pure
+            IsResolved
+              { thing
+              , scheme =
+                  Scheme
+                    { location = BuiltIn
+                    , constraints = []
+                    , typ = toTypePoly finalT
+                    }
+              , mappings = mempty
+              }
 
 -- | Same as 'resolveParsed', but returns the T.
 resolveParsedT ::
@@ -302,6 +334,53 @@ toTypeMono =
                      })
               (OM.toList fs)
           var <- generateTypeVariable BuiltIn VariantRowVarPrefix RowKind
+          pure
+            (VariantType
+               (RowType
+                  TypeRow
+                    {location = BuiltIn, typeVariable = Just var, fields = fs'}))
+        RecordT fs -> do
+          fs' <-
+            traverse
+              (\(name, typ) -> do
+                 typ' <- go typ
+                 pure Field {location = BuiltIn, name, typ = typ'})
+              (OM.toList fs)
+          pure
+            (RecordType
+               (RowType
+                  TypeRow
+                    {location = BuiltIn, typeVariable = Nothing, fields = fs'}))
+
+toTypePoly :: T -> Type Polymorphic
+toTypePoly =
+  flip evalState (GenerateState {counter = 0, equalityConstraints = mempty}) .
+  go
+  where
+    go :: T -> State GenerateState (Type Polymorphic)
+    go =
+      \case
+        IntegerT -> pure integerT
+        DecimalT n -> pure (decimalT n)
+        TextT -> pure textT
+        ArrayT (Just t) -> fmap ArrayType (go t)
+        ArrayT Nothing ->
+          fmap
+            ArrayType
+            (generateVariableType () () TypeKind)
+        VariantT fs -> do
+          fs' <-
+            traverse
+              (\(TagName name, typ) -> do
+                 typ' <- go typ
+                 pure
+                   Field
+                     { location = BuiltIn
+                     , name = FieldName name
+                     , typ = typ'
+                     })
+              (OM.toList fs)
+          var <- generateTypeVariable () () RowKind
           pure
             (VariantType
                (RowType
