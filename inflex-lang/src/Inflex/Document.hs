@@ -272,7 +272,8 @@ dependentLoadDocument =
           (\result' ->
              case result' of
                Left e -> pure (Left e)
-               Right (FullyResolvedNormalForm resolvedExpression parsedExpression) ->
+               Right (FullyResolvedNormalForm resolvedExpression parsedExpression) -> do
+                 RIO.liftIO (putStrLn "Fully resolved normal form!") -- TODO: remove
                  pure
                    (Right
                       LoadedExpression {resolvedExpression, parsedExpression})
