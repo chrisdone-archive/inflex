@@ -1660,11 +1660,11 @@ parser2 :: Spec
 parser2 =
   describe
     "Parser2"
-    (do itParsersMatchPending "\"foo\""
+    (do itParsersMatch "\"foo\""
         itParsersMatchPending "#ok(123)"
         itParsersMatchPending "#none"
         itParsersMatchPending "[#none,#ok(123)]"
-        itParsersMatchPending "{\"foo\":123,\"bar\":45}"
+        itParsersMatch "{\"foo\":123,\"bar\":45}"
         itParsersMatch "{a:1}"
         itParsersMatch "{foo:123,bar:45}"
         itParsersMatch "[{foo:123.123,bar:45.0},{foo:123.123,bar:45.0}]"

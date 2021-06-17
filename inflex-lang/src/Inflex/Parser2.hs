@@ -91,7 +91,7 @@ recordParser env = F.branch openCurly elements (stringParser env)
       start <- getSourcePosPrev env
       fields <-
         F.many
-          (do name <- keyParser
+          (do name <- keyParserQuoted F.<|> keyParser
               start' <- getSourcePos env
               colon
               end' <- getSourcePos env
@@ -186,6 +186,13 @@ keyParser =
     (FieldName . T.decodeUtf8)
     (F.byteStringOf
        (F.some_ (F.satisfy (\char -> isAlphaNum char || char == '_'))))
+
+keyParserQuoted :: F.Parser ParseError FieldName
+keyParserQuoted = do
+  speech
+  inner <- F.byteStringOf (F.some_ (F.satisfy (\char -> char /= '"')))
+  speech
+  pure (FieldName (T.decodeUtf8 inner))
 
 comma :: F.Parser e ()
 comma = $(F.char ',') *> whitespace
