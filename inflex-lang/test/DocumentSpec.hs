@@ -2330,7 +2330,6 @@ monzo_list = do
       , ("k", "@prim:array_length(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
     ]
     (\[u1, u2] r -> do
-       pendingWith "Resolver/type checker has a problem..."
        shouldSatisfy
          r
          $(match
@@ -2340,20 +2339,24 @@ monzo_list = do
     (maybe nextRandom' pure)
     (pure ())
   eval_it_match
-    "core issue"
+    "core issue - length funcion had wrong signature"
     [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
-      , ( "t"
-        , "[\"x\"]"))
+      , ("t", "[\"x\",\"y\",\"z\"]"))
     , ( Nothing
       , ("k", "@prim:array_length(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
     ]
     (\[u1, u2] r -> do
-       pendingWith "Resolver/type checker has a problem..."
        shouldSatisfy
          r
          $(match
              [|[ Named {uuid = Uuid u1, thing = Right _}
-               , Named {uuid = Uuid u2, thing = Right _}
+               , Named
+                   { uuid = Uuid u2
+                   , thing =
+                       Right
+                         (LiteralExpression
+                            (NumberLiteral (Number {number = IntegerNumber 3})))
+                   }
                ]|]))
     (maybe nextRandom' pure)
     (pure ())
