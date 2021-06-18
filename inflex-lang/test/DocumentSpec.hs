@@ -29,10 +29,10 @@ import qualified RIO
 import           Test.Hspec
 
 defaultDocument' :: Toposorted (Named (Either LoadError (IsResolved (Expression Resolved)))) -> IO (Toposorted (Named (Either LoadError Cell)))
-defaultDocument' = RIO.runRIO DefaulterReader . defaultDocument
+defaultDocument' = RIO.runRIO DefaulterReader {} . defaultDocument
 
 loadDocument' :: [Named Text] -> IO (Toposorted (Named (Either LoadError (IsResolved (Expression Resolved)))))
-loadDocument' = RIO.runRIO DocumentReader . loadDocument
+loadDocument' = RIO.runRIO DocumentReader {glogfunc = mempty} . loadDocument
 
 evalDocument' ::
      RIO.MonadIO m

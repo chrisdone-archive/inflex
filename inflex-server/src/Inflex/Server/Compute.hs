@@ -46,7 +46,7 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
   putStrLn "Loading ..."
   loaded <-
     RIO.runRIO
-      DocumentReader
+      DocumentReader {glogfunc = mempty}
       (RIO.timeout
          (1000 * milliseconds)
          (loadDocument1

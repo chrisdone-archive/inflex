@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -42,6 +44,7 @@ import           Inflex.Generaliser
 import           Inflex.Generator
 import           Inflex.Hash
 import           Inflex.NormalFormCheck
+import           Inflex.Optics
 import qualified Inflex.Parser as Parser1
 import qualified Inflex.Parser2 as Parser2
 import           Inflex.Renamer
@@ -50,8 +53,11 @@ import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
+import           Optics.Lens
+import           Optics.TH
 import qualified RIO
-import           RIO (RIO)
+import           RIO (HasGLogFunc, GLogFunc, RIO)
+import           RIO (glog, HasGLogFunc(..))
 
 --------------------------------------------------------------------------------
 -- Types
@@ -87,6 +93,18 @@ data EvaledExpression = EvaledExpression
   }
 
 data DocumentReader = DocumentReader
+  { glogfunc :: GLogFunc DocumentMsg
+  }
+
+data DocumentMsg
+  = UsedNormalFormCodePath Text
+  | UsedFullLexParseRenameCodePath Text
+
+$(makeLensesWith (inflexRules ['Inflex.Document.glogfunc, 'counter]) ''DocumentReader)
+
+instance HasGLogFunc DocumentReader where
+  type GMsg DocumentReader = DocumentMsg
+  gLogFuncL = toLensVL documentReaderGlogfuncL
 
 -- | This type represents the "independent" (parallel) loading of
 -- source and whether we were able to do a "fast" load for arrays,
@@ -266,19 +284,19 @@ dependentLoadDocument =
          Context
       -> Named (Either LoadError Independent)
       -> RIO DocumentReader (Context, Named (Either LoadError LoadedExpression))
-    loadCell Context {hashedCells, nameHashes} result = do
+    loadCell Context {hashedCells, nameHashes} result@Named{name} = do
       namedMaybeCell <-
         traverse
           (\result' ->
              case result' of
                Left e -> pure (Left e)
                Right (FullyResolvedNormalForm resolvedExpression parsedExpression) -> do
-                 RIO.liftIO (putStrLn "Fully resolved normal form!") -- TODO: remove
+                 glog (UsedNormalFormCodePath name)
                  pure
                    (Right
                       LoadedExpression {resolvedExpression, parsedExpression})
                Right (Renamed renamed parsedExpression) -> do
-                 RIO.liftIO (putStrLn "Had to parse and rename!") -- TODO: remove
+                 glog (UsedFullLexParseRenameCodePath name)
                  isResolved <- resolveRenamedCell hashedCells nameHashes renamed
                  pure
                    (do resolvedExpression <- isResolved
@@ -288,7 +306,7 @@ dependentLoadDocument =
       let nameHashes' =
             insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
             where
-              Named {name, uuid, thing} = namedMaybeCell
+              Named {uuid, thing} = namedMaybeCell
           hashedCells' =
             case namedMaybeCell of
               Named {thing = Left {}} -> hashedCells
