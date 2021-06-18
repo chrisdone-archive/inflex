@@ -38,6 +38,7 @@ expToPat e0 = do
         TH.ListE es -> TH.ListP (map go es)
         TH.SigE e t -> TH.SigP (go e) t
         TH.UnboundVarE {} -> TH.WildP
+        e@TH.VarE{} -> TH.ViewP (TH.InfixE Nothing (TH.VarE '(==)) (pure e)) (TH.ConP 'True [])
         e ->
           error ("Cannot convert expression to a pattern:\n" ++ show (TH.ppr e))
     unfold e args =
