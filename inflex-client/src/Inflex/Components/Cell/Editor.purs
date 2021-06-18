@@ -499,7 +499,7 @@ renderTableEditor path cells columns rows =
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndexNarrow 0 10 (tableRow columns path cells) rows <>
+          (bodyGuide emptyTable emptyRows <> mapWithIndex {-Narrow 0 10-} (tableRow columns path cells) rows <>
            addNewRow)
       ]
   ]
