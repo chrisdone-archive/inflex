@@ -2320,12 +2320,30 @@ duplicate_empty_names_ok =
           ])
 
 monzo_list :: SpecWith ()
-monzo_list =
+monzo_list = do
   eval_it_match
-    "monzo array"
+    "monzo array, regression test"
     [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
       , ( "t"
         , "[{\"Transaction ID\": \"tx_00009hQgBGyAJ3lH8TL1XO\", \"Date\": \"03/04/2019\", \"Time\": \"11:47:59\", \"Type\": \"Card payment\", \"Name\": #ok(\"Ukiyo Republic Ltd\"), \"Emoji\": #none, \"Category\": #ok(\"Eating out\"), \"Amount\": \"-13.05\", \"Currency\": \"GBP\", \"Local amount\": \"-13.05\", \"Local currency\": \"GBP\", \"Notes and #tags\": #none, \"Address\": #ok(\"20-22 Wenlock Road\"), \"Receipt\": \"\", \"Description\": #ok(\"IZ *UKIYO REPUBLIC LTD London        GBR\"), \"Category split\": \"\", \"Money Out\": #ok(\"-13.05\"), \"Money In\": #none}] :: [{\"Transaction ID\":Text, \"Date\":Text, \"Time\":Text, \"Type\":Text, \"Name\":<\"ok\":Text, \"none\":{}|_>, \"Emoji\":<\"ok\":Text, \"none\":{}|_>, \"Category\":<\"ok\":Text, \"none\":{}|_>, \"Amount\":Text, \"Currency\":Text, \"Local amount\":Text, \"Local currency\":Text, \"Notes and #tags\":<\"ok\":Text, \"none\":{}|_>, \"Address\":<\"ok\":Text, \"none\":{}|_>, \"Receipt\":Text, \"Description\":<\"ok\":Text, \"none\":{}|_>, \"Category split\":Text, \"Money Out\":<\"ok\":Text, \"none\":{}|_>, \"Money In\":<\"ok\":Decimal 2, \"none\":{}|_>}]"))
+    , ( Nothing
+      , ("k", "@prim:array_length(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
+    ]
+    (\[u1, u2] r -> do
+       pendingWith "Resolver/type checker has a problem..."
+       shouldSatisfy
+         r
+         $(match
+             [|[ Named {uuid = Uuid u1, thing = Right _}
+               , Named {uuid = Uuid u2, thing = Right _}
+               ]|]))
+    (maybe nextRandom' pure)
+    (pure ())
+  eval_it_match
+    "core issue"
+    [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
+      , ( "t"
+        , "[\"x\"]"))
     , ( Nothing
       , ("k", "@prim:array_length(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
     ]
