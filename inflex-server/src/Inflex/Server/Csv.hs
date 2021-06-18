@@ -381,8 +381,9 @@ see :: Text -> Seen
 see t =
   if T.null (T.strip t)
     then SeenNothing
-    else case lexTextSingleton t of
+    else case lexTextSingleton (stripNegative t) of
            Right Located {thing = token}
              | NaturalToken {} <- token -> SeenInteger
              | DecimalToken Decimal {places} <- token -> SeenDecimal places
            _ -> SeenText
+  where stripNegative t' = fromMaybe t' (T.stripPrefix "-"  (T.strip t'))

@@ -565,22 +565,42 @@ literalParser = number <> text
 
 numberParser :: Parser (Number Parsed)
 numberParser = do
-  Located {thing = number, location} <- integerParser <> decimalParser
+  Located {thing = number, location} <- integerParser Leave <> decimalParser Leave
   typ <- optionalSignatureParser
   pure (Number {typ, ..})
 
+data Negate = Negate | Leave
+
+applyNegate :: Num a => Negate -> a -> a
+applyNegate Negate = negate
+applyNegate Leave = id
+
+-- For the CSV parser. Takes care of negatives here.
 numberExpressionParser :: Parser (Expression Parsed)
 numberExpressionParser = do
-  Located {thing = number, location} <- integerParser <> decimalParser
+  tweak <-
+    fmap (\Located{thing} -> thing) (token
+       ExpectedOperator
+       (\case
+          OperatorToken "-" -> pure Negate
+          _ -> Nothing)) <>
+    pure Leave
+  Located {thing = number, location} <- integerParser tweak <> decimalParser tweak
   pure (LiteralExpression (NumberLiteral (Number {typ = Nothing, ..})))
 
-integerParser :: Parser (Located SomeNumber)
-integerParser =
-  fmap (fmap (IntegerNumber . fromIntegral)) (token ExpectedInteger (preview _NaturalToken))
+integerParser :: Negate -> Parser (Located SomeNumber)
+integerParser neg =
+  fmap
+    (fmap (IntegerNumber . fromIntegral . applyNegate neg))
+    (token ExpectedInteger (preview _NaturalToken))
 
-decimalParser :: Parser (Located SomeNumber)
-decimalParser =
-  fmap (fmap DecimalNumber) (token ExpectedDecimal (preview _DecimalToken))
+decimalParser :: Negate -> Parser (Located SomeNumber)
+decimalParser neg =
+  fmap
+    (fmap
+       (\Decimal {..} ->
+          DecimalNumber (Decimal {integer = applyNegate neg integer, ..})))
+    (token ExpectedDecimal (preview _DecimalToken))
 
 variableParser :: Parser (Variable Parsed)
 variableParser = do
