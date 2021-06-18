@@ -22,6 +22,7 @@ import qualified Data.Text as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Decimal
+import           Inflex.Instances
 import           Inflex.Location
 import           Inflex.Types
 import           Inflex.Types.SHA512
@@ -437,20 +438,26 @@ instance Display (Type Parsed) where
           (intersperse
              ", "
              (map
-                (\Field {name, typ} ->
-                   display name <>
-                   (case typ of
-                      FreshType {} -> ""
-                      ConstantType TypeConstant {name = IntegerTypeName} ->
-                        ":Integer" -- TODO: change to @prim:integer-type)
-                      ConstantType TypeConstant {name = TextTypeName} ->
-                        ":Text" -- TODO: change to @prim:text-type)
-                      ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
-                                                , argument = ConstantType TypeConstant {name = NatTypeName n}
-                                                } -> ":Decimal " <> displayShow n
-                      t -> ":" <> display t))
+                (\Field {name, typ} -> display name <> ":" <> display typ)
                 fields)) <>
         "}"
+      VariantType (RowType (TypeRow {fields})) ->
+        "<" <>
+        mconcat
+          (intersperse
+             ", "
+             (map
+                (\Field {name, typ} -> display name <> ":" <> display typ)
+                fields)) <>
+        "|_>" -- This is correct; a parsed type can't include variables at the moment.
+      FreshType {} -> "_"
+      ConstantType TypeConstant {name = IntegerTypeName} ->
+        "Integer" -- TODO: change to @prim:integer-type)
+      ConstantType TypeConstant {name = TextTypeName} ->
+        "Text" -- TODO: change to @prim:text-type)
+      ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
+                                , argument = ConstantType TypeConstant {name = NatTypeName n}
+                                } -> "Decimal " <> displayShow n
       _ -> "_"
 
 instance Display (Record Parsed) where
