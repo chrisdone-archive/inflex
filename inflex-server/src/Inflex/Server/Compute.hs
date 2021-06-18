@@ -1,3 +1,4 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE BangPatterns #-}
 {-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,9 +13,12 @@ module Inflex.Server.Compute where
 
 import           Control.Early
 import qualified Data.Aeson as Aeson
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as S8
 import           Data.Foldable
 import           Data.List
 import           Data.Ord
+import           Data.Time
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
@@ -29,10 +33,11 @@ import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
+import           Prelude hiding (putStrLn)
 import qualified RIO
 
 milliseconds :: Int
-milliseconds = 10000
+milliseconds = 20_000
 
 loadInputDocument :: Shared.InputDocument1 -> IO (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
@@ -271,3 +276,13 @@ toCellError =
       \case
         RenamerErrors {} -> Shared.CellRenameErrors
         ParserErrored {} -> Shared.SyntaxError
+
+--------------------------------------------------------------------------------
+-- Threaded IO
+
+-- | This is a thread-safe stdout printer, with timestamp.
+putStrLn :: RIO.MonadIO m => ByteString -> m ()
+putStrLn s =
+  RIO.liftIO
+    (do now' <- getCurrentTime
+        S8.putStrLn (S8.pack (show now') <> ": " <> s))

@@ -38,7 +38,7 @@ import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError(..), FillError(..))
 import Inflex.Schema as Shared
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==))
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==), (-))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -478,6 +478,14 @@ renderTextEditor path text =
 --------------------------------------------------------------------------------
 -- Tables
 
+mapWithIndexNarrow :: forall b a. Int -> Int -> (Int -> a -> b) -> Array a -> Array b
+mapWithIndexNarrow dropping taking' f xs =
+  map
+    (\(Tuple i x) -> f i x)
+    (Array.take
+       taking'
+       (Array.drop dropping (Array.zip (Array.range 0 (Array.length xs - 1)) xs)))
+
 renderTableEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
@@ -491,7 +499,7 @@ renderTableEditor path cells columns rows =
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndex (tableRow columns path cells) rows <>
+          (bodyGuide emptyTable emptyRows <> mapWithIndexNarrow 0 10 (tableRow columns path cells) rows <>
            addNewRow)
       ]
   ]
