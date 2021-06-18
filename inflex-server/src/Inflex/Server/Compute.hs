@@ -13,11 +13,13 @@ module Inflex.Server.Compute where
 
 import           Control.Early
 import qualified Data.Aeson as Aeson
+import           Data.Bifunctor
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S8
 import           Data.Foldable
 import           Data.List
 import           Data.Ord
+import           Data.String
 import           Data.Time
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -65,47 +67,51 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
           (1000 * milliseconds)
           (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
   putStrLn "Done, returning tree..."
+  outputCells <-
+    traverse
+      (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
+         putStrLn
+           ("Cell " <> fromString (show name) <> ": " <>
+            fromString (show (second (const ()) thing)))
+         pure
+           (hashOutputCell
+              (Shared.OutputCell
+                 { uuid = Shared.UUID uuid
+                 , hash = Shared.Hash mempty
+                 , result =
+                     either
+                       (Shared.ResultError . toCellError)
+                       (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
+                          Shared.ResultOk
+                            (Shared.ResultTree
+                               (case parsed
+                                             -- A temporary
+                                             -- specialization to
+                                             -- display lambdas in a
+                                             -- cell as the original
+                                             -- code. But, later,
+                                             -- toTree will render
+                                             -- lambdas structurally.
+                                      of
+                                  LambdaExpression {} ->
+                                    Shared.MiscTree2
+                                      Shared.versionRefl
+                                      (Shared.OriginalSource code)
+                                      code
+                                  _ -> toTree (pure parsed) resultExpression)))
+                       thing
+                 , code
+                 , name
+                 , order
+                 })))
+      (unToposorted topo)
   pure
     (Just
        (Shared.OutputDocument
           (V.fromList
              (sortBy
                 (comparing (\Shared.OutputCell {order} -> order))
-                (fmap
-                   (\Named {uuid = Uuid uuid, name, thing, order, code} ->
-                      hashOutputCell
-                        (Shared.OutputCell
-                           { uuid = Shared.UUID uuid
-                           , hash = Shared.Hash mempty
-                           , result =
-                               either
-                                 (Shared.ResultError . toCellError)
-                                 (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
-                                    Shared.ResultOk
-                                      (Shared.ResultTree
-                                         (case parsed of
-                                            -- A temporary
-                                            -- specialization to
-                                            -- display lambdas in a
-                                            -- cell as the original
-                                            -- code. But, later,
-                                            -- toTree will render
-                                            -- lambdas structurally.
-                                            LambdaExpression {} ->
-                                              Shared.MiscTree2
-                                                Shared.versionRefl
-                                                (Shared.OriginalSource code)
-                                                code
-                                            _ ->
-                                              toTree
-                                                (pure parsed)
-                                                resultExpression)))
-                                 thing
-                           , code
-                           , name
-                           , order
-                           }))
-                   (unToposorted topo))))))
+                outputCells))))
   where
     defaultDocument1' top = do
       !v <- defaultDocument1 top
