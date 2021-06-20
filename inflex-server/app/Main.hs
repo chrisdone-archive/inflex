@@ -171,6 +171,7 @@ makeAppLogFunc registry = do
                 RenameDocument -> Counter.inc renameDocument
                 StripeCreateCustomerFailed {} -> pure ()
                 SubscriptionUpdated {} -> pure ()
+                CellResultOk {} -> pure ()
                 Timed {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
