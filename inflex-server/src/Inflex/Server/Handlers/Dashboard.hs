@@ -146,7 +146,7 @@ getAppDashboardR =
                                                       documentCreated
                                                       now'))))))
                       when
-                        True
+                        False
                         (do h1_ "Files"
                             p_
                               "You can upload CSV files so that they can be used in your documents."
