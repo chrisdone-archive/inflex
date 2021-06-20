@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE BangPatterns #-}
 {-# OPTIONS -F -pgmF=early #-}
@@ -13,14 +15,9 @@ module Inflex.Server.Compute where
 
 import           Control.Early
 import qualified Data.Aeson as Aeson
-import           Data.Bifunctor
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as S8
 import           Data.Foldable
 import           Data.List
 import           Data.Ord
-import           Data.String
-import           Data.Time
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
@@ -30,6 +27,7 @@ import           Inflex.Instances ()
 import           Inflex.Renamer
 import qualified Inflex.Schema as OutputCell (OutputCell(..))
 import qualified Inflex.Schema as Shared
+import           Inflex.Server.App
 import           Inflex.Server.Types.Sha256
 import           Inflex.Stepper
 import           Inflex.Types
@@ -37,42 +35,52 @@ import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Prelude hiding (putStrLn)
 import qualified RIO
+import           RIO (HasGLogFunc(..))
+import           RIO (MonadIO, RIO)
+import           RIO (glog)
 
 milliseconds :: Int
 milliseconds = 20_000
 
-loadInputDocument :: Shared.InputDocument1 -> IO (Maybe Shared.OutputDocument)
+loadInputDocument ::
+     (MonadIO m, HasGLogFunc env, RIO.MonadReader env m, GMsg env ~ ServerMsg)
+  => Shared.InputDocument1
+  -> m (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
-  putStrLn "Loading ..."
   loaded <-
-    RIO.runRIO
-      DocumentReader {glogfunc = mempty}
-      (RIO.timeout
-         (1000 * milliseconds)
-         (loadDocument1
-            (map
-               (\Shared.InputCell1 {uuid = Shared.UUID uuid, name, code, order} ->
-                  Named {uuid = Uuid uuid, name, thing = code, order, code})
-               (toList cells))))?
-  putStrLn "Defaulting ..."
+    timed
+      TimedLoadDocument1
+      (RIO.runRIO
+         DocumentReader {glogfunc = mempty}
+         (RIO.timeout
+            (1000 * milliseconds)
+            (loadDocument1
+               (map
+                  (\Shared.InputCell1 { uuid = Shared.UUID uuid
+                                      , name
+                                      , code
+                                      , order
+                                      } ->
+                     Named {uuid = Uuid uuid, name, thing = code, order, code})
+                  (toList cells)))))?
   defaulted <-
-    RIO.runRIO
-      DefaulterReader
-      (RIO.timeout (1000 * milliseconds) (defaultDocument1' loaded))?
-  putStrLn "Evaluating ..."
+    timed
+      TimedDefaulter
+      (RIO.runRIO
+         DefaulterReader
+         (RIO.timeout (1000 * milliseconds) (defaultDocument1' loaded)))?
   topo <-
-    (RIO.runRIO
-       StepReader
-       (RIO.timeout
-          (1000 * milliseconds)
-          (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
-  putStrLn "Done, returning tree..."
+    timed
+      TimedStepper
+      (RIO.runRIO
+         StepReader
+         (RIO.timeout
+            (1000 * milliseconds)
+            (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
   outputCells <-
     traverse
       (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
-         putStrLn
-           ("Cell " <> fromString (show name) <> ": " <>
-            fromString (show (second (const ()) thing)))
+         glog (CellResultOk name (either (const False) (const True) thing))
          pure
            (hashOutputCell
               (Shared.OutputCell
@@ -282,13 +290,3 @@ toCellError =
       \case
         RenamerErrors {} -> Shared.CellRenameErrors
         ParserErrored {} -> Shared.SyntaxError
-
---------------------------------------------------------------------------------
--- Threaded IO
-
--- | This is a thread-safe stdout printer, with timestamp.
-putStrLn :: RIO.MonadIO m => ByteString -> m ()
-putStrLn s =
-  RIO.liftIO
-    (do now' <- getCurrentTime
-        S8.putStrLn (S8.pack (show now') <> ": " <> s))

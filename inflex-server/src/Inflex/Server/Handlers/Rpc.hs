@@ -89,29 +89,25 @@ applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
               }
           inputDocument =
             inputDocument0 {InputDocument1.cells = cells <> pure newcell}
-      outputDocument <- forceTimeout (loadInputDocument inputDocument)
+      outputDocument <-
+        forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
       pure (Shared.UpdatedDocument outputDocument)
     Shared.CellDelete delete' -> do
-      start <- liftIO getTime
       let inputDocument = applyDelete delete' inputDocument0
-      outputDocument <- forceTimeout (loadInputDocument inputDocument)
-      end <- liftIO getTime
+      outputDocument <-
+        forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
-      glog (CellUpdated (end - start))
       pure (Shared.UpdatedDocument outputDocument)
     Shared.CellRename rename -> do
-      start <- liftIO getTime
       let inputDocument = applyRename rename inputDocument0
-      outputDocument <- forceTimeout (loadInputDocument inputDocument)
-      end <- liftIO getTime
+      outputDocument <-
+        forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
-      glog (CellUpdated (end - start))
       pure (Shared.UpdatedDocument outputDocument)
     Shared.CellUpdate update''@Shared.UpdateCell { uuid
                                                  , update = Shared.UpdatePath {path}
                                                  } -> do
-      start <- liftIO getTime
       case applyUpdateToDocument update'' inputDocument0 of
         Left transformError -> do
           glog UpdateTransformError
@@ -122,12 +118,11 @@ applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
                   , path = path
                   }))
         Right inputDocument -> do
-          outputDocument <- forceTimeout (loadInputDocument inputDocument)
+          outputDocument <-
+            forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
           case cellHadErrorInNestedPlace uuid path outputDocument of
             Nothing -> do
-              end <- liftIO getTime
               setInputDoc inputDocument
-              glog (CellUpdated (end - start))
               pure (Shared.UpdatedDocument outputDocument)
             Just cellError -> do
               glog CellErrorInNestedPlace
@@ -268,7 +263,7 @@ setInputDocument now accountId documentId revisionId inputDocument = do
 
 loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
 loadRevisedDocument RevisedDocument {..} =
-  forceTimeout (loadInputDocument (revisionContent revision))
+  forceTimeout TimedLoadDocument (loadInputDocument (revisionContent revision))
 
 --------------------------------------------------------------------------------
 -- Importing CSV
@@ -376,10 +371,9 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                           file
                           rows
                           (revisionContent revision))
+
+                   loaded <- forceTimeout TimedLoadDocument (loadInputDocument document)
                    now <- liftIO getCurrentTime
-                   start <- liftIO getTime
-                   loaded <- forceTimeout (loadInputDocument document)
-                   end <- liftIO getTime
                    runDB
                      (setInputDocument
                         now
@@ -387,7 +381,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                         documentKey
                         revisionId
                         document)
-                   glog (DocumentRefreshed (end - start))
+
                    pure loaded)
 
 insertImportedCsv ::
@@ -418,11 +412,15 @@ insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows Shared.Inpu
 --------------------------------------------------------------------------------
 -- Timeouts
 
-forceTimeout :: IO (Maybe a) -> Handler a
-forceTimeout m = do
-  v' <- liftIO m
+forceTimeout :: Timed -> Handler (Maybe a) -> Handler a
+forceTimeout timed' m = do
+  start <- fmap realToFrac (liftIO getTime)
+  v' <- m
+  end <- fmap realToFrac (liftIO getTime)
   case v' of
     Nothing -> do
-      glog TimeoutExceeded
+      glog (TimeoutExceeded timed')
       invalidArgs ["timeout: exceeded " <> T.pack (show milliseconds) <> "ms"]
-    Just v'' -> pure v''
+    Just v'' -> do
+      glog (Timed timed' (end - start))
+      pure v''

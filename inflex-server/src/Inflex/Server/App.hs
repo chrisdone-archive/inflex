@@ -29,6 +29,8 @@ module Inflex.Server.App where
 
 import           Control.Monad.Logger as MonadLogger
 import           Control.Monad.Reader
+import           Criterion.Measurement
+import           Data.Fixed
 import           Data.Functor.Contravariant
 import           Data.Pool
 import           Data.Text (Text)
@@ -70,11 +72,9 @@ data AppMsg
   deriving (Show)
 
 data ServerMsg
-  = DocumentLoaded Double
-  | TimeoutExceeded
-  | DocumentRefreshed Double
+  = TimeoutExceeded Timed
+  | Timed Timed (Fixed E3)
   | UpdateTransformError
-  | CellUpdated Double
   | CellErrorInNestedPlace
   | OpenDocument
   | CreateDocument
@@ -82,6 +82,14 @@ data ServerMsg
   | RenameDocument
   | StripeCreateCustomerFailed Text CreateCustomerError
   | SubscriptionUpdated Text Text (Maybe Bool)
+  | CellResultOk Text Bool
+  deriving (Show)
+
+data Timed
+  = TimedLoadDocument
+  | TimedLoadDocument1
+  | TimedDefaulter
+  | TimedStepper
   deriving (Show)
 
 -- | A generic log output.
@@ -91,6 +99,17 @@ data DatabaseLog =
               MonadLogger.LogLevel
               MonadLogger.LogStr
   deriving (Show)
+
+--------------------------------------------------------------------------------
+-- Log helpers
+
+timed :: (MonadIO m, HasGLogFunc env, RIO.MonadReader env m, GMsg env ~ ServerMsg) => Timed -> m b -> m b
+timed timed' m = do
+  start <- fmap realToFrac (liftIO getTime)
+  v' <- m
+  end <- fmap realToFrac (liftIO getTime)
+  glog (Timed timed' (end - start))
+  pure v'
 
 --------------------------------------------------------------------------------
 -- TH-based derivings

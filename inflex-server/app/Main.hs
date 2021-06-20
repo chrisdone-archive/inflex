@@ -33,7 +33,7 @@ import           System.Environment
 import qualified System.Metrics.Prometheus.Concurrent.Registry as Prometheus.Registry
 import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
 import qualified System.Metrics.Prometheus.Metric.Counter as Counter
-import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram
+-- import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram
 import           Yesod hiding (Html)
 
 --------------------------------------------------------------------------------
@@ -106,41 +106,42 @@ withDBPool config cont = do
 
 makeAppLogFunc :: Prometheus.Registry.Registry -> IO (GLogFunc AppMsg)
 makeAppLogFunc registry = do
-  let bucketsSeconds = [ms / 1000 | ms <- [5,10,20,30,40,50,60,70,80,90]]
-  documentLoaded <-
-    Prometheus.Registry.registerCounter "inflex_DocumentLoaded" mempty registry
-  documentLoadedMS <-
-    Prometheus.Registry.registerHistogram
-      "inflex_DocumentLoadedMS"
-      mempty
-      bucketsSeconds
-      registry
+  {-let bucketsSeconds =
+        [ms / 1000 | ms <- [5, 10, 20, 30, 40, 50, 60, 70, 80, 90]]-}
+  -- documentLoaded <-
+  --   Prometheus.Registry.registerCounter "inflex_DocumentLoaded" mempty registry
+  -- documentLoadedMS <-
+  --   Prometheus.Registry.registerHistogram
+  --     "inflex_DocumentLoadedMS"
+  --     mempty
+  --     bucketsSeconds
+  --     registry
   timeoutExceeded <-
     Prometheus.Registry.registerCounter "inflex_TimeoutExceeded" mempty registry
-  documentRefreshed <-
-    Prometheus.Registry.registerCounter
-      "inflex_DocumentRefreshed"
-      mempty
-      registry
-  documentRefreshedMS <-
-    Prometheus.Registry.registerHistogram
-      "inflex_DocumentRefreshedMS"
-      mempty
-      bucketsSeconds
-      registry
+  -- documentRefreshed <-
+  --   Prometheus.Registry.registerCounter
+  --     "inflex_DocumentRefreshed"
+  --     mempty
+  --     registry
+  -- documentRefreshedMS <-
+  --   Prometheus.Registry.registerHistogram
+  --     "inflex_DocumentRefreshedMS"
+  --     mempty
+  --     bucketsSeconds
+  --     registry
   updateTransformError <-
     Prometheus.Registry.registerCounter
       "inflex_UpdateTransformError"
       mempty
       registry
-  cellUpdated <-
-    Prometheus.Registry.registerCounter "inflex_CellUpdated" mempty registry
-  cellUpdatedMS <-
-    Prometheus.Registry.registerHistogram
-      "inflex_CellUpdatedMS"
-      mempty
-      bucketsSeconds
-      registry
+  -- cellUpdated <-
+  --   Prometheus.Registry.registerCounter "inflex_CellUpdated" mempty registry
+  -- cellUpdatedMS <-
+  --   Prometheus.Registry.registerHistogram
+  --     "inflex_CellUpdatedMS"
+  --     mempty
+  --     bucketsSeconds
+  --     registry
   cellErrorInNestedPlace <-
     Prometheus.Registry.registerCounter
       "inflex_CellErrorInNestedPlace"
@@ -161,24 +162,16 @@ makeAppLogFunc registry = do
             ServerMsg msg -> do
               prettyWrite msg
               case msg of
-                DocumentLoaded ms -> do
-                  Histogram.observe ms documentLoadedMS
-                  Counter.inc documentLoaded
-                TimeoutExceeded -> Counter.inc timeoutExceeded
-                DocumentRefreshed ms -> do
-                  Histogram.observe ms documentRefreshedMS
-                  Counter.inc documentRefreshed
+                TimeoutExceeded{} -> Counter.inc timeoutExceeded
                 UpdateTransformError -> Counter.inc updateTransformError
-                CellUpdated ms -> do
-                  Histogram.observe ms cellUpdatedMS
-                  Counter.inc cellUpdated
                 CellErrorInNestedPlace -> Counter.inc cellErrorInNestedPlace
                 OpenDocument -> Counter.inc openDocument
                 CreateDocument -> Counter.inc createDocument
                 DeleteDocument -> Counter.inc deleteDocument
                 RenameDocument -> Counter.inc renameDocument
-                StripeCreateCustomerFailed{} -> pure ()
+                StripeCreateCustomerFailed {} -> pure ()
                 SubscriptionUpdated {} -> pure ()
+                Timed {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))
