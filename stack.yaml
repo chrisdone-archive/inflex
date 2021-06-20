@@ -1,5 +1,5 @@
 resolver: lts-14.20
-
+allow-newer: true
 ghc-options:
   purescript: '-j4 -O2'
   psc-package: '-j4 -O2'
