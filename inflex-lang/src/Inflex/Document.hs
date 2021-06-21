@@ -268,6 +268,7 @@ independentLoad name source =
         Left {} ->
           first
             RenameLoadError
+            -- No problem, we'll rename the fast-parsed AST instead.
             (do isRenamed <- first RenamerErrors (renameParsed expression)
                 pure (Renamed isRenamed expression))
         -- We got a successful type check and resolve. Use that.
