@@ -85,37 +85,36 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
     RIO.pooledMapConcurrently
       (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
-         pure
-           (hashOutputCell
-              (Shared.OutputCell
-                 { uuid = Shared.UUID uuid
-                 , hash = Shared.Hash mempty
-                 , result =
-                     either
-                       (Shared.ResultError . toCellError)
-                       (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
-                          Shared.ResultOk
-                            (Shared.ResultTree
-                               (case parsed
-                                             -- A temporary
-                                             -- specialization to
-                                             -- display lambdas in a
-                                             -- cell as the original
-                                             -- code. But, later,
-                                             -- toTree will render
-                                             -- lambdas structurally.
-                                      of
-                                  LambdaExpression {} ->
-                                    Shared.MiscTree2
-                                      Shared.versionRefl
-                                      (Shared.OriginalSource code)
-                                      code
-                                  _ -> toTree (pure parsed) resultExpression)))
-                       thing
-                 , code
-                 , name
-                 , order
-                 })))
+         hashOutputCell
+           (Shared.OutputCell
+              { uuid = Shared.UUID uuid
+              , hash = Shared.Hash mempty
+              , result =
+                  either
+                    (Shared.ResultError . toCellError)
+                    (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
+                       Shared.ResultOk
+                         (Shared.ResultTree
+                            (case parsed
+                                          -- A temporary
+                                          -- specialization to
+                                          -- display lambdas in a
+                                          -- cell as the original
+                                          -- code. But, later,
+                                          -- toTree will render
+                                          -- lambdas structurally.
+                                   of
+                               LambdaExpression {} ->
+                                 Shared.MiscTree2
+                                   Shared.versionRefl
+                                   (Shared.OriginalSource code)
+                                   code
+                               _ -> toTree (pure parsed) resultExpression)))
+                    thing
+              , code
+              , name
+              , order
+              }))
       (unToposorted topo)
   pure
     (Just
@@ -138,12 +137,23 @@ evalDocument1' env cells = do
   !v <- evalDocument1 env cells
   pure v
 
-hashOutputCell :: Shared.OutputCell -> Shared.OutputCell
-hashOutputCell cell =
-  cell
-    { OutputCell.hash =
-        Shared.Hash (sha256AsHexText (sha256LazyByteString (Aeson.encode cell)))
-    }
+-- | Hash the output cell, strictly, timing it. This fully forces the
+-- output tree, so it gives us a good indication of how long it takes
+-- to force the tree and encode it to JSON.
+hashOutputCell ::
+     ( RIO.MonadIO m
+     , HasGLogFunc env
+     , RIO.MonadReader env m
+     , GMsg env ~ ServerMsg
+     )
+  => Shared.OutputCell
+  -> m Shared.OutputCell
+hashOutputCell cell@Shared.OutputCell{name} =
+  timed
+    (TimedHashOutputCell name)
+    (do let !hashText =
+              sha256AsHexText (sha256LazyByteString (Aeson.encode cell))
+        pure cell {OutputCell.hash = Shared.Hash hashText})
 
 toTree :: Maybe (Expression Parsed) -> Expression Resolved -> Shared.Tree2
 toTree original =

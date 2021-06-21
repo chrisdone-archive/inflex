@@ -92,6 +92,7 @@ data Timed
   | TimedLoadDocument1
   | TimedDefaulter
   | TimedStepper
+  | TimedHashOutputCell Text
   deriving (Show)
 
 -- | A generic log output.
