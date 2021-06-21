@@ -2,23 +2,23 @@
 
 module Inflex.Rpc where
 
-import Data.Generic.Rep (class Generic)
-import Foreign.Generic (genericDecodeJSON, genericEncodeJSON)
-import Inflex.Json (opts)
-import Prelude (class Show, bind, discard, pure, show, (<>))
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (stringify) as J
-import Data.Argonaut.Parser (jsonParser) as J
+import Data.Argonaut.Parser as J
 import Data.Either (Either(..))
-import Halogen as H
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (error)
+import Effect.Class.Console (error, log)
+import Foreign.Generic (genericDecodeJSON, genericEncodeJSON)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
+import Halogen as H
+import Inflex.Json (opts)
 import Inflex.Schema
+import Prelude (class Show, bind, discard, pure, show, (<>))
 
 rpcCsvCheckSchema :: forall m. MonadAff m => CsvImportSpec -> m (Either String CsvCheckStatus)
 rpcCsvCheckSchema = rpcCall "CsvCheckSchema"
@@ -72,11 +72,11 @@ rpcCall endpoint0 input =
             error ("Own JSON was invalid! " <> e)
             pure (Left e)
           Right json -> do
-            -- log (show input)
+            log "Sending POST"
             result <-
               H.liftAff
                 (AX.post
-                   ResponseFormat.json
+                   ResponseFormat.string
                    endpoint
                    (Just (RequestBody.json json)))
             case result of
@@ -86,10 +86,11 @@ rpcCall endpoint0 input =
                    " response failed to decode:" <>
                    AX.printError err)
                 pure (Left (AX.printError err))
-              Right response ->
-                case runExcept
-                       (genericDecodeJSON opts (J.stringify (response . body))) of
+              Right response -> do
+                log "Got result as String, parsing with Foreign.Generic"
+                case runExcept (genericDecodeJSON opts (response . body)) of
                   Right r -> do
+                    log "Decoded."
                     pure (Right r)
                   Left e -> do
                     error ("Failed to decode:" <> show e)
