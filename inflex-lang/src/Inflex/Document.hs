@@ -203,7 +203,7 @@ evalDocument ::
   -> Toposorted (Named (Either LoadError Cell))
   -> RIO StepReader (Toposorted (Named (Either LoadError (Expression Resolved))))
 evalDocument env =
-  traverse
+  RIO.pooledMapConcurrently
     (traverse
        (\result ->
           case result of
@@ -216,7 +216,7 @@ evalDocument1 ::
   -> Toposorted (Named (Either LoadError Cell1))
   -> RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
 evalDocument1 env =
-  traverse
+  RIO.pooledMapConcurrently
     (traverse
        (\result -> do
           case result of
