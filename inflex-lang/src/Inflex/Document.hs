@@ -287,24 +287,22 @@ dependentLoadDocument =
          Context
       -> Named (Either LoadError Independent)
       -> RIO DocumentReader (Context, Named (Either LoadError LoadedExpression))
-    loadCell Context {hashedCells, nameHashes} result@Named{name} = do
+    loadCell Context {hashedCells, nameHashes} result@Named {name} = do
       namedMaybeCell <-
         traverse
-          (\result' ->
-             case result' of
-               Left e -> pure (Left e)
-               Right (FullyResolvedNormalForm resolvedExpression parsedExpression) -> do
-                 glog (UsedNormalFormCodePath name)
-                 pure
-                   (Right
-                      LoadedExpression {resolvedExpression, parsedExpression})
-               Right (Renamed renamed parsedExpression) -> do
-                 glog (UsedFullLexParseRenameCodePath name)
-                 isResolved <- resolveRenamedCell hashedCells nameHashes renamed
-                 pure
-                   (do resolvedExpression <- isResolved
-                       pure
-                         LoadedExpression {resolvedExpression, parsedExpression}))
+          (\case
+             Left e -> pure (Left e)
+             Right (FullyResolvedNormalForm resolvedExpression parsedExpression) -> do
+               glog (UsedNormalFormCodePath name)
+               pure
+                 (Right LoadedExpression {resolvedExpression, parsedExpression})
+             Right (Renamed renamed parsedExpression) -> do
+               glog (UsedFullLexParseRenameCodePath name)
+               isResolved <- resolveRenamedCell hashedCells nameHashes renamed
+               pure
+                 (do resolvedExpression <- isResolved
+                     pure
+                       LoadedExpression {resolvedExpression, parsedExpression}))
           result
       let nameHashes' =
             insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
