@@ -36,15 +36,17 @@ import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Prelude hiding (putStrLn)
 import qualified RIO
-import           RIO (HasGLogFunc(..))
-import           RIO (MonadIO, RIO)
-import           RIO (glog)
+import           RIO (HasGLogFunc(..), RIO, glog)
 
 milliseconds :: Int
 milliseconds = 20_000
 
 loadInputDocument ::
-     (MonadIO m, HasGLogFunc env, RIO.MonadReader env m, GMsg env ~ ServerMsg)
+     ( RIO.MonadUnliftIO m
+     , HasGLogFunc env
+     , RIO.MonadReader env m
+     , GMsg env ~ ServerMsg
+     )
   => Shared.InputDocument1
   -> m (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
@@ -80,7 +82,7 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
             (1000 * milliseconds)
             (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
   outputCells <-
-    traverse
+    RIO.pooledMapConcurrently
       (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
          pure
