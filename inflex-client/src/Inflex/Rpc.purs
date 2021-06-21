@@ -2,6 +2,7 @@
 
 module Inflex.Rpc where
 
+import Data.String as String
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -88,6 +89,7 @@ rpcCall endpoint0 input =
                 pure (Left (AX.printError err))
               Right response -> do
                 log "Got result as String, parsing with Foreign.Generic"
+                log ("Length: " <> show (String.length (response.body)))
                 case runExcept (genericDecodeJSON opts (response . body)) of
                   Right r -> do
                     log "Decoded."
