@@ -24,6 +24,7 @@ module Inflex.Document
   , Toposorted(..)
   , LoadError(..)
   , DocumentReader(..)
+  , DocumentMsg(..)
   ) where
 
 import           Control.DeepSeq
@@ -99,6 +100,7 @@ data DocumentReader = DocumentReader
 data DocumentMsg
   = UsedNormalFormCodePath Text
   | UsedFullLexParseRenameCodePath Text
+  deriving (Show)
 
 $(makeLensesWith (inflexRules ['Inflex.Document.glogfunc, 'counter]) ''DocumentReader)
 

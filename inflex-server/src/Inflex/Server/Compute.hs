@@ -16,6 +16,7 @@ module Inflex.Server.Compute where
 import           Control.Early
 import qualified Data.Aeson as Aeson
 import           Data.Foldable
+import           Data.Functor.Contravariant
 import           Data.List
 import           Data.Ord
 import           Data.Vector (Vector)
@@ -47,11 +48,12 @@ loadInputDocument ::
   => Shared.InputDocument1
   -> m (Maybe Shared.OutputDocument)
 loadInputDocument (Shared.InputDocument1 {cells}) = do
+  logfunc <- RIO.view gLogFuncL
   loaded <-
     timed
       TimedLoadDocument1
       (RIO.runRIO
-         DocumentReader {glogfunc = mempty}
+         DocumentReader {glogfunc = contramap LoadDocumentMsg logfunc}
          (RIO.timeout
             (1000 * milliseconds)
             (loadDocument1

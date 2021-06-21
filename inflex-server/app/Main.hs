@@ -173,6 +173,7 @@ makeAppLogFunc registry = do
                 SubscriptionUpdated {} -> pure ()
                 CellResultOk {} -> pure ()
                 Timed {} -> pure ()
+                LoadDocumentMsg {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))

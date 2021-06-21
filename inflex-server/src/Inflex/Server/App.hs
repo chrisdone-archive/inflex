@@ -39,6 +39,7 @@ import           Database.Persist.Quasi
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
+import           Inflex.Document (DocumentMsg)
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
@@ -83,6 +84,7 @@ data ServerMsg
   | StripeCreateCustomerFailed Text CreateCustomerError
   | SubscriptionUpdated Text Text (Maybe Bool)
   | CellResultOk Text Bool
+  | LoadDocumentMsg DocumentMsg
   deriving (Show)
 
 data Timed
