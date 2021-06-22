@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables, TemplateHaskell, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, OverloadedLists #-}
 -- |
 
 module StepSpec where
@@ -10,17 +10,23 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Display ()
 import           Inflex.Stepper
+import           Inflex.Types
+import qualified Match as Match
 import qualified RIO
 import           RIO (textDisplay)
 import           Test.Hspec
 import           Test.QuickCheck
 
 stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
-stepTextly text = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text))
+stepTextly text' = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text'))
 
 stepDefaultedTextly :: Text -> IO (Either (DefaultStepError ()) Text)
-stepDefaultedTextly text =
-  RIO.runRIO StepReader (fmap (fmap textDisplay) (stepTextDefaulted mempty mempty "" text))
+stepDefaultedTextly text' =
+  RIO.runRIO StepReader (fmap (fmap textDisplay) (stepTextDefaulted mempty mempty "" text'))
+
+stepDefaulted' :: Text -> IO (Either (DefaultStepError ()) (Expression Resolved))
+stepDefaulted' text' =
+  RIO.runRIO StepReader (stepTextDefaulted mempty mempty "" text')
 
 spec :: SpecWith ()
 spec = do
@@ -144,6 +150,7 @@ spec = do
     "@prim:from_ok(0,#oops) + 1"
     (shouldReturn (stepDefaultedTextly "@prim:from_ok(0,#oops) + 1") (Right "1"))
   {-early-}
+  regression
 
 equality :: SpecWith ()
 equality =
@@ -590,3 +597,84 @@ _early =
           (shouldReturn
              (stepDefaultedTextly "case (x: @prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }")
              (Right "1")))
+
+regression :: SpecWith ()
+regression =
+  describe
+    "Regression tests"
+    (do it
+          "filter of filter yields correct type"
+          (do pendingWith "Need to fix either stepper or solver or type of filter."
+              result <-
+                stepDefaulted'
+                  "@prim:array_filter(x:x.Amount<10000,@prim:array_filter(x:x.Amount>1000,[{Amount:9999,x:\"\"}]))"
+              shouldSatisfy
+                result
+                $(Match.match
+                    [|Right
+                        (ArrayExpression
+                           (Array
+                              { expressions =
+                                  [ RecordExpression
+                                      (Record
+                                         { fields =
+                                             [ FieldE
+                                                 { name =
+                                                     FieldName
+                                                       {unFieldName = "Amount"}
+                                                 }
+                                             , FieldE
+                                                 { name =
+                                                     FieldName
+                                                       {unFieldName = "x"}
+                                                 }
+                                             ]
+                                         , typ =
+                                             RecordType
+                                               (RowType
+                                                  (TypeRow
+                                                     { typeVariable = Nothing
+                                                     , fields =
+                                                         [ Field
+                                                             { name =
+                                                                 FieldName
+                                                                   { unFieldName =
+                                                                       "Amount"
+                                                                   }
+                                                             }
+                                                         , Field
+                                                             { name =
+                                                                 FieldName
+                                                                   { unFieldName =
+                                                                       "x"
+                                                                   }
+                                                             }
+                                                         ]
+                                                     }))
+                                         })
+                                  ]
+                              , typ =
+                                  ArrayType
+                                    (RecordType
+                                       (RowType
+                                          (TypeRow
+                                             { typeVariable =
+                                                 Nothing
+                                             , fields =
+                                                 [ Field
+                                                     { name =
+                                                         FieldName
+                                                           { unFieldName =
+                                                               "Amount"
+                                                           }
+                                                     }
+                                                 , Field
+                                                     { name =
+                                                         FieldName
+                                                           { unFieldName =
+                                                               "x"
+                                                           }
+                                                     }
+                                                 ]
+                                             })))
+                              }))|])))
