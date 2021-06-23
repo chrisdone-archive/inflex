@@ -869,7 +869,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
         _ -> error "Invalid argument to function."
     FilterFunction ->
       case argument' of
-        ArrayExpression Array {expressions} -> do
+        ArrayExpression Array {expressions, typ} -> do
           expressions' <-
             traverseE
               (\arrayItem -> do
@@ -897,7 +897,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
             (Ok
                (ArrayExpression
                   Array
-                    { typ = originalArrayType
+                    { typ
                     , location = applyLocation
                     , expressions = (V.mapMaybe id expressions')
                     }))

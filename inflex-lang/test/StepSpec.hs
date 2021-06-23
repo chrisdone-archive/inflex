@@ -604,8 +604,8 @@ regression =
     "Regression tests"
     (do it
           "filter of filter yields correct type"
-          (do pendingWith "Need to fix either stepper or solver or type of filter."
-              result <-
+          -- In this example the `x' field was being lost in the return type.
+          (do result <-
                 stepDefaulted'
                   "@prim:array_filter(x:x.Amount<10000,@prim:array_filter(x:x.Amount>1000,[{Amount:9999,x:\"\"}]))"
               shouldSatisfy
@@ -658,8 +658,7 @@ regression =
                                     (RecordType
                                        (RowType
                                           (TypeRow
-                                             { typeVariable =
-                                                 Nothing
+                                             { typeVariable = Nothing
                                              , fields =
                                                  [ Field
                                                      { name =
@@ -671,9 +670,7 @@ regression =
                                                  , Field
                                                      { name =
                                                          FieldName
-                                                           { unFieldName =
-                                                               "x"
-                                                           }
+                                                           {unFieldName = "x"}
                                                      }
                                                  ]
                                              })))
