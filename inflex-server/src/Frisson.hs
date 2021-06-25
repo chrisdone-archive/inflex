@@ -43,6 +43,7 @@ data Product = Product
 
 data Newtype = Newtype
   { name :: ConsName
+  , mfield :: Maybe FieldName
   , slot :: Type
   } deriving (Show)
 
@@ -94,14 +95,28 @@ resolveInfo _ = error "Must be a data type."
 
 resolveDec :: TH.Dec -> Rep
 resolveDec (TH.NewtypeD _ctx _name _tys _mkind (TH.NormalC name [bangType]) _deriv) =
-  NewtypeRep Newtype {name = ConsName name, slot = resolveType (snd bangType)}
+  NewtypeRep
+    Newtype
+      { name = ConsName name
+      , slot = resolveType (snd bangType)
+      , mfield = Nothing
+      }
+resolveDec (TH.NewtypeD _ctx _name _tys _mkind (TH.RecC name [(field,_bang,typ)]) _deriv) =
+  NewtypeRep
+    Newtype
+      { name = ConsName name
+      , slot = resolveType typ
+      , mfield = pure (FieldName field)
+      }
 resolveDec (TH.DataD _ctx _name _tys _mkind cons _deriv) =
   case cons of
     [] -> error "No constructors."
     [TH.NormalC name bangTypes] ->
       case NE.nonEmpty bangTypes of
         Just ((_, typ) :| []) ->
-          NewtypeRep Newtype {name = (ConsName name), slot = resolveType typ}
+          NewtypeRep
+            Newtype
+              {name = (ConsName name), slot = resolveType typ, mfield = Nothing}
         Just types ->
           ProductRep
             Product
@@ -109,6 +124,10 @@ resolveDec (TH.DataD _ctx _name _tys _mkind cons _deriv) =
         Nothing -> SingletonRep (ConsName name)
     [TH.RecC name bangTypes] ->
       case NE.nonEmpty bangTypes of
+        Just ((fname, _bang, typ) :| []) ->
+          NewtypeRep
+            Newtype
+              {name = (ConsName name), slot = resolveType typ, mfield = pure (FieldName fname)}
         Just types ->
           RecordRep
             Record
@@ -205,8 +224,10 @@ data ForeignImport = ForeignImport
   } deriving (Show)
 
 data Suffix
-  = AccessorSuffix TH.Name
+  = FieldSuffix FieldName
   | SlotSuffix Int
+  | IdFieldSuffix FieldName
+  | IdSuffix
   | ViewSuffix
   | UnviewSuffix
   deriving (Show)
@@ -226,7 +247,19 @@ foreignsFromNameRep name =
       mconcat [viewUnview name, foreignForFields name fields]
     ProductRep Product {slots} ->
       mconcat [viewUnview name, foreignForSlots name slots]
-    _ -> mempty
+    NewtypeRep Newtype {mfield, slot} ->
+      mconcat
+        [ viewUnview name
+        , pure (foreignForNewtype name mfield slot)
+        ]
+
+foreignForNewtype :: TypeName -> Maybe FieldName -> Type -> ForeignImport
+foreignForNewtype typeName mfield fieldType =
+  ForeignImport
+    { name = typeName
+    , suffix = maybe IdSuffix IdFieldSuffix mfield
+    , signature = ViewToThing typeName fieldType
+    }
 
 -- | Generate the view/unview foreign imports.
 --
@@ -270,9 +303,8 @@ foreignForFields name fields =
   Seq.fromList
     [ ForeignImport
       { name = name
-      , suffix = AccessorSuffix suffix
+      , suffix = FieldSuffix fieldName
       , signature = ViewToThing name fieldType
       }
     | Field {name = fieldName, typ = fieldType} <- toList fields
-    , let FieldName suffix = fieldName
     ]
