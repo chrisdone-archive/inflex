@@ -81,7 +81,9 @@ newtype TypeName =
 derive :: TH.Name -> TH.Q [TH.Dec]
 derive n = do
   i <- TH.reify n
-  generateToJSONInstance n (resolveInfo i)
+  let rep = resolveInfo i
+  TH.reportWarning (show (foreignsFromNameRep (TypeName n) rep))
+  generateToJSONInstance n rep
 
 --------------------------------------------------------------------------------
 -- Resolving Haskell types to Rep
@@ -196,29 +198,25 @@ generateToJSONMethod =
 --------------------------------------------------------------------------------
 -- Generate PureScript-side
 
--- TODO: Materialize:    caseJson, etc.
--- TODO: Dematerialize: fromArray, Foreign.Object.fromFoldable, etc.
-
--- TODO: View-based accessors
-
 data ForeignImport = ForeignImport
   { name :: TypeName
   , suffix :: Suffix
   , signature :: Signature
-  }
+  } deriving (Show)
 
 data Suffix
   = AccessorSuffix TH.Name
+  | SlotSuffix Int
   | ViewSuffix
   | UnviewSuffix
+  deriving (Show)
 
 data Signature
-  = ViewToThing TypeName ViewOrType
-  | ThingToView TypeName ViewOrType
+  = ViewToThing TypeName Type
+  | ThingToView TypeName Type
   | JsonView TypeName
   | JsonUnview TypeName
-
-data ViewOrType = ViewOf TypeName | TypeOf Type
+  deriving (Show)
 
 foreignsFromNameRep :: TypeName -> Rep -> Seq ForeignImport
 foreignsFromNameRep name =
@@ -226,6 +224,9 @@ foreignsFromNameRep name =
     SingletonRep {} -> mempty
     RecordRep Record {fields} ->
       mconcat [viewUnview name, foreignForFields name fields]
+    ProductRep Product {slots} ->
+      mconcat [viewUnview name, foreignForSlots name slots]
+    _ -> mempty
 
 -- | Generate the view/unview foreign imports.
 --
@@ -243,6 +244,22 @@ viewUnview name =
         {name = name, suffix = UnviewSuffix, signature = JsonUnview name}
     ]
 
+-- | Generate product slot accessors:
+--
+-- foreign import docSlot1 :: View Doc -> Array (View Cell)
+-- foreign import cellSlot2 :: View Cell -> String
+--
+foreignForSlots :: Foldable t => TypeName -> t Type -> Seq ForeignImport
+foreignForSlots name slots =
+  Seq.fromList
+    [ ForeignImport
+      { name = name
+      , suffix = SlotSuffix i
+      , signature = ViewToThing name fieldType
+      }
+    | (i, fieldType) <- zip [1..] (toList slots)
+    ]
+
 -- | Generate record field accessors:
 --
 -- foreign import docCells :: View Doc -> Array (View Cell)
@@ -254,33 +271,8 @@ foreignForFields name fields =
     [ ForeignImport
       { name = name
       , suffix = AccessorSuffix suffix
-      , signature = ViewToThing name (viewOrType fieldType)
+      , signature = ViewToThing name fieldType
       }
     | Field {name = fieldName, typ = fieldType} <- toList fields
     , let FieldName suffix = fieldName
     ]
-
--- | This expresses neatly the logic that native JS types, or arrays
--- thereof, are returned directly, whereas a Haskell-based type is
--- always @View T@.
-viewOrType :: Type -> ViewOrType
-viewOrType =
-  \case
-    ConType typeName -> ViewOf typeName
-    IntType -> TypeOf IntType
-    TextType -> TypeOf TextType
-    ArrayType t -> TypeOf t
-
-{-
-
-Remaining:
-
--- Materialisation:
-foreign import docMaterialise :: View Doc -> Doc
-foreign import cellMaterialise :: View Cell -> Cell
-
--- Dematerialize:
-foreign import docDematerialise :: Doc -> View Doc
-foreign import cellDematerialise :: Cell -> View Cell
-
--}
