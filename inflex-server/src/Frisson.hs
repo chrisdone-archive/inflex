@@ -203,9 +203,14 @@ generateToJSONMethod =
 
 data ForeignImport = ForeignImport
   { name :: TypeName
-  , suffix :: TH.Name
+  , suffix :: Suffix
   , signature :: Signature
   }
+
+data Suffix
+  = AccessorSuffix TH.Name
+  | ViewSuffix
+  | UnviewSuffix
 
 data Signature
   = ViewToThing TypeName ViewOrType
@@ -219,17 +224,45 @@ foreignsFromNameRep :: TypeName -> Rep -> Seq ForeignImport
 foreignsFromNameRep name =
   \case
     SingletonRep {} -> mempty
-    RecordRep Record {fields} -> foreignForFields name fields
+    RecordRep Record {fields} ->
+      mconcat [viewUnview name, foreignForFields name fields]
 
+-- | Generate the view/unview foreign imports.
+--
+-- View/unview. O(1) operation; no-op:
+--
+-- foreign import docView :: Json -> View Doc
+-- foreign import docUnview :: View Doc -> Json
+--
+viewUnview :: TypeName -> Seq ForeignImport
+viewUnview name =
+  Seq.fromList
+    [ ForeignImport
+        {name = name, suffix = ViewSuffix, signature = JsonView name}
+    , ForeignImport
+        {name = name, suffix = UnviewSuffix, signature = JsonUnview name}
+    ]
+
+-- | Generate record field accessors:
+--
+-- foreign import docCells :: View Doc -> Array (View Cell)
+-- foreign import cellUUID :: View Cell -> String
+--
 foreignForFields :: Foldable t => TypeName -> t Field -> Seq ForeignImport
 foreignForFields name fields =
   Seq.fromList
     [ ForeignImport
-      {name = name, suffix, signature = ViewToThing name (viewOrType fieldType)}
+      { name = name
+      , suffix = AccessorSuffix suffix
+      , signature = ViewToThing name (viewOrType fieldType)
+      }
     | Field {name = fieldName, typ = fieldType} <- toList fields
     , let FieldName suffix = fieldName
     ]
 
+-- | This expresses neatly the logic that native JS types, or arrays
+-- thereof, are returned directly, whereas a Haskell-based type is
+-- always @View T@.
 viewOrType :: Type -> ViewOrType
 viewOrType =
   \case
@@ -240,9 +273,7 @@ viewOrType =
 
 {-
 
--- Accessors:
-foreign import docCells :: View Doc -> Array (View Cell) -- does not allocate
-foreign import cellUUID :: View Cell -> String
+Remaining:
 
 -- Materialisation:
 foreign import docMaterialise :: View Doc -> Doc
@@ -251,9 +282,5 @@ foreign import cellMaterialise :: View Cell -> Cell
 -- Dematerialize:
 foreign import docDematerialise :: Doc -> View Doc
 foreign import cellDematerialise :: Cell -> View Cell
-
--- View/unview. O(1) operation; no-op
-foreign import docView :: Json -> View Doc -- assumes well-structured JSON
-foreign import docUnview :: View Doc -> Json
 
 -}
