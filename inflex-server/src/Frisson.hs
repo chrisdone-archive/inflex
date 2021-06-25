@@ -254,6 +254,9 @@ foreignsFromNameRep name =
         ]
     _ -> mempty
 
+-- | Generate foreign impor for a newtype. In any case, it's identity,
+-- a no-op, but depending on whether there's a field, will generate a
+-- different name for the foreign import.
 foreignForNewtype :: TypeName -> Maybe FieldName -> Type -> ForeignImport
 foreignForNewtype typeName mfield fieldType =
   ForeignImport
