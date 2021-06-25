@@ -13,6 +13,8 @@ import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Language.Haskell.TH as TH
@@ -198,6 +200,43 @@ generateToJSONMethod =
 -- TODO: Dematerialize: fromArray, Foreign.Object.fromFoldable, etc.
 
 -- TODO: View-based accessors
+
+data ForeignImport = ForeignImport
+  { name :: TypeName
+  , suffix :: TH.Name
+  , signature :: Signature
+  }
+
+data Signature
+  = ViewToThing TypeName ViewOrType
+  | ThingToView TypeName ViewOrType
+  | JsonView TypeName
+  | JsonUnview TypeName
+
+data ViewOrType = ViewOf TypeName | TypeOf Type
+
+foreignsFromNameRep :: TypeName -> Rep -> Seq ForeignImport
+foreignsFromNameRep name =
+  \case
+    SingletonRep {} -> mempty
+    RecordRep Record {fields} -> foreignForFields name fields
+
+foreignForFields :: Foldable t => TypeName -> t Field -> Seq ForeignImport
+foreignForFields name fields =
+  Seq.fromList
+    [ ForeignImport
+      {name = name, suffix, signature = ViewToThing name (viewOrType fieldType)}
+    | Field {name = fieldName, typ = fieldType} <- toList fields
+    , let FieldName suffix = fieldName
+    ]
+
+viewOrType :: Type -> ViewOrType
+viewOrType =
+  \case
+    ConType typeName -> ViewOf typeName
+    IntType -> TypeOf IntType
+    TextType -> TypeOf TextType
+    ArrayType t -> TypeOf t
 
 {-
 
