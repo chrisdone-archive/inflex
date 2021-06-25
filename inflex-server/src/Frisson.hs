@@ -224,12 +224,12 @@ data ForeignImport = ForeignImport
   } deriving (Show)
 
 data Suffix
-  = FieldSuffix FieldName
-  | SlotSuffix Int
-  | IdFieldSuffix FieldName
-  | IdSuffix
-  | ViewSuffix
-  | UnviewSuffix
+  = FieldSuffix FieldName Int -- ^ Access the field at index i.
+  | SlotSuffix Int -- ^ Access the slot at index i.
+  | IdFieldSuffix FieldName -- ^ The action is a no-op; identity.
+  | IdSuffix -- ^ The action is a no-op; identity.
+  | ViewSuffix -- ^ Simply a type-changing op from Json to View T.
+  | UnviewSuffix -- ^ Reverse of ViewSuffix.
   deriving (Show)
 
 data Signature
@@ -252,6 +252,7 @@ foreignsFromNameRep name =
         [ viewUnview name
         , pure (foreignForNewtype name mfield slot)
         ]
+    _ -> mempty
 
 foreignForNewtype :: TypeName -> Maybe FieldName -> Type -> ForeignImport
 foreignForNewtype typeName mfield fieldType =
@@ -290,7 +291,7 @@ foreignForSlots name slots =
       , suffix = SlotSuffix i
       , signature = ViewToThing name fieldType
       }
-    | (i, fieldType) <- zip [1..] (toList slots)
+    | (i, fieldType) <- zip [0..] (toList slots)
     ]
 
 -- | Generate record field accessors:
@@ -303,8 +304,8 @@ foreignForFields name fields =
   Seq.fromList
     [ ForeignImport
       { name = name
-      , suffix = FieldSuffix fieldName
+      , suffix = FieldSuffix fieldName i
       , signature = ViewToThing name fieldType
       }
-    | Field {name = fieldName, typ = fieldType} <- toList fields
+    | (i, Field {name = fieldName, typ = fieldType}) <- zip [0..] (toList fields)
     ]
