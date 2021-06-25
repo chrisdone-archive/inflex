@@ -239,6 +239,8 @@ data Signature
   | JsonUnview TypeName
   deriving (Show)
 
+-- | Produce a foreign import which can be used to generate both a
+-- "foreign import .." statement, and also the related JavaScript.
 foreignsFromNameRep :: TypeName -> Rep -> Seq ForeignImport
 foreignsFromNameRep name =
   \case
