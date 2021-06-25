@@ -230,6 +230,7 @@ data Suffix
   | IdSuffix -- ^ The action is a no-op; identity.
   | ViewSuffix -- ^ Simply a type-changing op from Json to View T.
   | UnviewSuffix -- ^ Reverse of ViewSuffix.
+  | CaseSuffix -- ^ Case on sum types.
   deriving (Show)
 
 data Signature
