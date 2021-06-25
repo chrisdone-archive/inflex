@@ -238,6 +238,7 @@ data Signature
   | ThingToView TypeName Type
   | JsonView TypeName
   | JsonUnview TypeName
+  | CaseSig TypeName (NonEmpty (ConsName, [Type]))
   deriving (Show)
 
 -- | Produce a foreign import which can be used to generate both a
@@ -337,5 +338,6 @@ foreignForFields name fields =
 --
 -- Constructors without any slots are just @"Foo": r@.
 --
-foreignForSum :: ForeignImport
-foreignForSum = undefined
+foreignForSum :: TypeName -> NonEmpty (ConsName, [Type]) -> ForeignImport
+foreignForSum name conses =
+  ForeignImport {name, suffix = CaseSuffix, signature = CaseSig name conses}
