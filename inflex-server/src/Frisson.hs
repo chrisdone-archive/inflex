@@ -252,11 +252,20 @@ foreignsFromNameRep name =
     ProductRep Product {slots} ->
       mconcat [viewUnview name, foreignForSlots name slots]
     NewtypeRep Newtype {mfield, slot} ->
+      mconcat [viewUnview name, pure (foreignForNewtype name mfield slot)]
+    SumRep conses ->
       mconcat
         [ viewUnview name
-        , pure (foreignForNewtype name mfield slot)
+        , pure
+            (foreignForSum
+               name
+               (fmap (\(Cons {name = name', slots}) -> (name', slots)) conses))
         ]
-    _ -> mempty
+    EnumRep conses ->
+      mconcat
+        [ viewUnview name
+        , pure (foreignForSum name (fmap (\name' -> (name', [])) conses))
+        ]
 
 -- | Generate foreign impor for a newtype. In any case, it's identity,
 -- a no-op, but depending on whether there's a field, will generate a
