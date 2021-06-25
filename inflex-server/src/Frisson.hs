@@ -314,3 +314,27 @@ foreignForFields name fields =
       }
     | (i, Field {name = fieldName, typ = fieldType}) <- zip [0..] (toList fields)
     ]
+
+-- | Generate foreign import for a sum type:
+--
+-- Example:
+--
+-- data CsvColumnType
+--   = IntegerType Optionality
+--   | DecimalType Int Optionality
+--   | TextType Optionality
+--
+-- foreign import caseCsvColumnType
+--   :: forall r.
+--      View CsvColumnType
+--      -> {
+--            "IntegerType": View Optionality -> r,
+--            "DecimalType": Int -> View Optionality -> r,
+--            "TextType": View Optionality -> r
+--         }
+--      -> r
+--
+-- Constructors without any slots are just @"Foo": r@.
+--
+foreignForSum :: ForeignImport
+foreignForSum = undefined
