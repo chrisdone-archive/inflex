@@ -227,6 +227,7 @@ standardNames =
   M.fromFoldable
   [ Tuple "map" "map"
   , Tuple "filter" "filter"
+  , Tuple "concat" "concat"
   , Tuple "sum" "sum"
   , Tuple "average" "average"
   , Tuple "vega" "vega"
