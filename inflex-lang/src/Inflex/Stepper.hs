@@ -379,8 +379,8 @@ stepApply Apply {..} = do
                                              }
           } ->
       stepMinimum (ApplyExpression apply') (list, listApplyType) compareOp
-    Apply {argument=ArrayExpression list, typ = ArrayType listApplyType, function = GlobalExpression Global {name=FunctionGlobal ConcatFunction}} ->
-      stepConcat (ApplyExpression apply') list listApplyType
+    Apply {argument=ArrayExpression list, typ = returnedType, function = GlobalExpression Global {name=FunctionGlobal ConcatFunction}} ->
+      stepConcat (ApplyExpression apply') list returnedType
     Apply { argument = ArrayExpression list
           , typ = listApplyType
           , function = ApplyExpression Apply { argument = fromIntegerOp
@@ -462,7 +462,7 @@ stepConcat ::
   -> Array Resolved
   -> Type Generalised
   -> Step (Result (Expression Resolved))
-stepConcat easis (array@Array {expressions}) typ = do
+stepConcat easis (array@Array {expressions}) returnedType = do
   result <-
     traverseE
       (\e -> do
@@ -477,8 +477,11 @@ stepConcat easis (array@Array {expressions}) typ = do
       pure
         (Ok
            (ArrayExpression
-              (array {Array.typ = typ, expressions = V.concat (V.toList xs)})))
-    Returned e -> pure (Ok (variantSigged okTagName typ (pure e)))
+              (array
+                 { Array.typ = returnedType
+                 , expressions = V.concat (V.toList xs)
+                 })))
+    Returned e -> pure (Ok (variantSigged okTagName returnedType (pure e)))
     FoundHole {} -> pure (Ok easis)
     Errored e -> pure (Errored e)
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables, TemplateHaskell, DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings, OverloadedLists #-}
@@ -681,6 +683,82 @@ regression =
                                                      { name =
                                                          FieldName
                                                            {unFieldName = "x"}
+                                                     }
+                                                 ]
+                                             })))
+                              }))|]))
+        it
+          "concat of map yields correct type"
+          (do result <-
+                stepDefaulted'
+                  "@prim:array_concat( @prim:array_map(xs:@prim:array_map(x:{x:x.a},xs),[[{a:1},{a:2}],[{a:3},{a:4}]]) )"
+              shouldSatisfy
+                result
+                $(Match.match
+                    [|Right
+                        (ArrayExpression
+                           (Array
+                              { expressions =
+                                  [ RecordExpression
+                                      (Record
+                                         { fields =
+                                             [ FieldE
+                                                 { name =
+                                                     FieldName
+                                                       {unFieldName = "x"}
+                                                 }
+                                             ]
+                                         , typ =
+                                             RecordType
+                                               (RowType
+                                                  (TypeRow
+                                                     { typeVariable = Nothing
+                                                     , fields =
+                                                         [ Field
+                                                             { name =
+                                                                 FieldName
+                                                                   { unFieldName =
+                                                                       "x"
+                                                                   }
+                                                             , typ =
+                                                                 PolyType
+                                                                   (TypeVariable
+                                                                      { location =
+                                                                          ()
+                                                                      , prefix =
+                                                                          ()
+                                                                      , index =
+                                                                          0
+                                                                      , kind =
+                                                                          TypeKind
+                                                                      })
+                                                             }
+                                                         ]
+                                                     }))
+                                         })
+                                  , RecordExpression _
+                                  , RecordExpression _
+                                  , RecordExpression _
+                                  ]
+                              , typ =
+                                  ArrayType
+                                    (RecordType
+                                       (RowType
+                                          (TypeRow
+                                             { typeVariable = Nothing
+                                             , fields =
+                                                 [ Field
+                                                     { name =
+                                                         FieldName
+                                                           {unFieldName = "x"}
+                                                     , typ =
+                                                         PolyType
+                                                           (TypeVariable
+                                                              { location = ()
+                                                              , prefix = ()
+                                                              , index = 0
+                                                              , kind = TypeKind
+                                                              })
                                                      }
                                                  ]
                                              })))
