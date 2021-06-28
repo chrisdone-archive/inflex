@@ -602,6 +602,7 @@ data Function
   | AllFunction
   | AnyFunction
   | FromOkFunction
+  | ConcatFunction
   -- TODO:
   | AndFunction
   | OrFunction

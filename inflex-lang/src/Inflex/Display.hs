@@ -566,6 +566,7 @@ instance Display Function where
       FilterFunction -> "array_filter"
       DistinctFunction -> "array_distinct"
       SortFunction -> "array_sort"
+      ConcatFunction -> "array_concat"
       AndFunction -> "array_and"
       OrFunction -> "array_or"
       SumFunction -> "array_sum"

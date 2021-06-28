@@ -277,6 +277,7 @@ functionScheme location =
         (ArrayType a .-> maybeType ["average_empty"] location a)
     DistinctFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
+    ConcatFunction -> poly [] (ArrayType (ArrayType a) .-> ArrayType a)
     AndFunction -> mono (ArrayType boolT .-> boolT)
     OrFunction -> mono (ArrayType boolT .-> integerT)
     MinimumFunction ->

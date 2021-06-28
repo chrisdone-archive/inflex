@@ -43,6 +43,7 @@ import           Inflex.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types as Apply (Apply(..))
+import           Inflex.Types as Array (Array(..))
 import           Inflex.Variants
 import           Numeric.Natural
 import qualified RIO
@@ -74,6 +75,7 @@ data StepError
   | InvalidReifyValue (Expression Resolved)
   | ShouldGetBool
   | Didn'tExpectFoundHoleHere
+  | NeededArrayForConcat
   deriving (Show, Eq)
 
 data Result e
@@ -377,6 +379,8 @@ stepApply Apply {..} = do
                                              }
           } ->
       stepMinimum (ApplyExpression apply') (list, listApplyType) compareOp
+    Apply {argument=ArrayExpression list, typ = ArrayType listApplyType, function = GlobalExpression Global {name=FunctionGlobal ConcatFunction}} ->
+      stepConcat (ApplyExpression apply') list listApplyType
     Apply { argument = ArrayExpression list
           , typ = listApplyType
           , function = ApplyExpression Apply { argument = fromIntegerOp
@@ -452,6 +456,31 @@ stepApply Apply {..} = do
 
 --------------------------------------------------------------------------------
 -- Function stepper
+
+stepConcat ::
+     Expression Resolved
+  -> Array Resolved
+  -> Type Generalised
+  -> Step (Result (Expression Resolved))
+stepConcat easis (array@Array {expressions}) typ = do
+  result <-
+    traverseE
+      (\e -> do
+         e' <- stepExpression e?
+         case e' of
+           HoleExpression {} -> pure (FoundHole e')
+           ArrayExpression Array {expressions = es} -> pure (Ok es)
+           _ -> pure (Errored NeededArrayForConcat))
+      expressions
+  case result of
+    Ok xs ->
+      pure
+        (Ok
+           (ArrayExpression
+              (array {Array.typ = typ, expressions = V.concat (V.toList xs)})))
+    Returned e -> pure (Ok (variantSigged okTagName typ (pure e)))
+    FoundHole {} -> pure (Ok easis)
+    Errored e -> pure (Errored e)
 
 stepFind ::
      Expression Resolved

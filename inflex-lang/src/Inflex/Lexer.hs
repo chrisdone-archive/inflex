@@ -301,6 +301,7 @@ prims =
     , ("array_minimum", MinimumFunction)
     , ("array_maximum", MaximumFunction)
     , ("array_sort", SortFunction)
+    , ("array_concat", ConcatFunction)
     , ("array_find", FindFunction)
     , ("array_any", AnyFunction)
     , ("array_all", AllFunction)

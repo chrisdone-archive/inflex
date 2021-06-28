@@ -235,6 +235,7 @@ instance Printer Function where
     FilterFunction -> "filter"
     DistinctFunction -> "distinct"
     SortFunction -> "sort"
+    ConcatFunction -> "concat"
     AndFunction -> "and"
     OrFunction -> "or"
     SumFunction -> "sum"
