@@ -128,6 +128,7 @@ prims =
   , object ["name" .= "array_minimum", "display" .= "minimum"]
   , object ["name" .= "array_maximum", "display" .= "maximum"]
   , object ["name" .= "array_sort", "display" .= "sort"]
+  , object ["name" .= "array_concat", "display" .= "concat"]
   , object ["name" .= "array_find", "display" .= "find"]
   , object ["name" .= "array_any", "display" .= "any"]
   , object ["name" .= "array_all", "display" .= "all"]
