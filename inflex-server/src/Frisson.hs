@@ -94,7 +94,9 @@ derive n = do
   let rep = resolveInfo i
   TH.reportWarning
     (let foreigns = toList (foreignsFromNameRep (TypeName n) rep)
-      in unlines (map (L8.unpack . SB.toLazyByteString . psForForeignImport) foreigns))
+      in "Imports:\n" <>
+         unlines
+           (map (L8.unpack . SB.toLazyByteString . psForForeignImport) foreigns))
   generateToJSONInstance n rep
 
 --------------------------------------------------------------------------------
