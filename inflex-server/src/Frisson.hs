@@ -96,7 +96,13 @@ derive n = do
     (let foreigns = toList (foreignsFromNameRep (TypeName n) rep)
       in "Imports:\n" <>
          unlines
-           (map (L8.unpack . SB.toLazyByteString . psForForeignImport) foreigns))
+           (map
+              (\fi ->
+                 unlines
+                   [ L8.unpack $ SB.toLazyByteString $ psForForeignImport fi
+                   , L8.unpack $ SB.toLazyByteString $ jsForForeignImport fi
+                   ])
+              foreigns))
   generateToJSONInstance n rep
 
 --------------------------------------------------------------------------------
@@ -246,7 +252,6 @@ data Suffix
 
 data Signature
   = ViewToThing TypeName Type
-  | ThingToView TypeName Type
   | JsonView TypeName
   | JsonUnview TypeName
   | CaseSig TypeName (NonEmpty (ConsName, [Type]))
@@ -375,15 +380,13 @@ psForForeignImport :: ForeignImport -> SB.Builder
 psForForeignImport ForeignImport {name, suffix, signature} =
   mconcat ["foreign import ", psForName name suffix, " :: ", psSignature signature]
 
-psSignature:: Signature -> SB.Builder
+psSignature :: Signature -> SB.Builder
 psSignature =
   \case
     JsonView typeName -> psJson .->. psViewOf (psPascalForTypeName typeName)
     JsonUnview typeName -> psViewOf (psPascalForTypeName typeName) .->. psJson
     ViewToThing typeName typ ->
       psViewOf (psPascalForTypeName typeName) .->. psType typ
-    ThingToView typeName typ ->
-      psType typ .->. psViewOf (psPascalForTypeName typeName)
     CaseSig typeName conses ->
       mconcat
         [ "forall r. "
@@ -454,3 +457,47 @@ psPascalForFieldName (FieldName name) =
             else char)
        [0 :: Int ..]
        (TH.nameBase name))
+
+--------------------------------------------------------------------------------
+-- Generate JavaScript foreign code
+
+jsForForeignImport :: ForeignImport -> SB.Builder
+jsForForeignImport ForeignImport {name, suffix, signature} =
+  mconcat ["exports." <> psForName name suffix, " = ", jsBody signature suffix]
+
+jsBody :: Signature -> Suffix -> SB.Builder
+jsBody signature =
+  \case
+    IdSuffix -> identity
+    IdFieldSuffix {} -> identity
+    SlotSuffix i -> jsSlot i
+    FieldSuffix _fieldName i -> jsSlot i
+    ViewSuffix -> identity
+    UnviewSuffix -> identity
+    CaseSuffix
+      | CaseSig _name conses <- signature ->
+        mconcat
+          [ "function(k) {\n"
+          , "return function(a) {\n"
+          , "switch (a[0]) {\n"
+          , jsConses conses
+          , "default: throw Exception('BUG: case accessor failed');\n"
+          , "}\n"
+          , "}\n"
+          , "}\n"
+          ]
+      | otherwise -> error "Bug."
+  where
+    identity = "function(x){return x}"
+
+jsSlot :: Int -> SB.Builder
+jsSlot i = "function(a){return a[" <> fromString (show i) <> "]}"
+
+jsConses :: NonEmpty (ConsName, [Type]) -> SB.Builder
+jsConses =
+  mconcat . List.intersperse "break;\n" . zipWith toCase [0 :: Int ..] . toList
+  where
+    toCase i (consName, slots) =
+      mconcat ["case ", fromString (show i), "return k[", fun, "](...)"]
+      where
+        fun = "k[" <> psPascalForConsName consName <> "]"
