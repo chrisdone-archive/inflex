@@ -1,20 +1,29 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
--- |
+-- | Fast JSON encoding/decoding from Haskell to PureScript (one way
+-- for now).
 
-module Frisson where
+module Frisson
+  ( derive
+  ) where
 
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Builder as SB
+import qualified Data.ByteString.Lazy.Char8 as L8
+import           Data.Char
 import           Data.Foldable
+import qualified Data.List as List
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           Data.String
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Language.Haskell.TH as TH
@@ -83,7 +92,9 @@ derive :: TH.Name -> TH.Q [TH.Dec]
 derive n = do
   i <- TH.reify n
   let rep = resolveInfo i
-  TH.reportWarning (show (foreignsFromNameRep (TypeName n) rep))
+  TH.reportWarning
+    (let foreigns = toList (foreignsFromNameRep (TypeName n) rep)
+      in unlines (map (L8.unpack . SB.toLazyByteString . psForForeignImport) foreigns))
   generateToJSONInstance n rep
 
 --------------------------------------------------------------------------------
@@ -350,3 +361,96 @@ foreignForFields name fields =
 foreignForSum :: TypeName -> NonEmpty (ConsName, [Type]) -> ForeignImport
 foreignForSum name conses =
   ForeignImport {name, suffix = CaseSuffix, signature = CaseSig name conses}
+
+--------------------------------------------------------------------------------
+-- Generate PureScript foreign decls
+
+psJson :: SB.Builder
+psJson = "Json"
+
+psViewOf :: SB.Builder -> SB.Builder
+psViewOf x = "(View " <> x <> ")"
+
+psForForeignImport :: ForeignImport -> SB.Builder
+psForForeignImport ForeignImport {name, suffix, signature} =
+  mconcat ["foreign import ", psForName name suffix, " :: ", psSignature signature]
+
+psSignature:: Signature -> SB.Builder
+psSignature =
+  \case
+    JsonView typeName -> psJson .->. psViewOf (psPascalForTypeName typeName)
+    JsonUnview typeName -> psViewOf (psPascalForTypeName typeName) .->. psJson
+    ViewToThing typeName typ ->
+      psViewOf (psPascalForTypeName typeName) .->. psType typ
+    ThingToView typeName typ ->
+      psType typ .->. psViewOf (psPascalForTypeName typeName)
+    CaseSig typeName conses ->
+      mconcat
+        [ "forall r. "
+        , psConses .->. psViewOf (psPascalForTypeName typeName) .->. "r"
+        ]
+      where psConses =
+              psRecord
+                (map
+                   (\(consName, slots) ->
+                      ( psPascalForConsName consName
+                      , foldr (.->.) "r" (map psType slots)))
+                   (toList conses))
+  where
+    (.->.) x y = x <> " -> " <> y
+
+psRecord :: [(SB.Builder, SB.Builder)] -> SB.Builder
+psRecord keys =
+  "{" <>
+  mconcat
+    (List.intersperse
+       ", "
+       (map (\(k, v) -> "\"" <> k <> "\"" <> ": " <> v) keys)) <>
+  "}"
+
+psType :: Type -> SB.Builder
+psType =
+  \case
+    ConType typeName -> psViewOf (psPascalForTypeName typeName)
+    IntType -> "Int"
+    TextType -> "String"
+    ArrayType t -> "(Array " <> psType t <> ")"
+
+psForName :: TypeName -> Suffix -> SB.Builder
+psForName typeName =
+  \case
+     IdSuffix -> "un" <> psPascalForTypeName typeName
+     SlotSuffix index -> psCamelForTypeName typeName <> fromString (show index)
+     IdFieldSuffix fieldName -> psCamelForTypeName typeName <> psPascalForFieldName fieldName
+     FieldSuffix fieldName _index -> psCamelForTypeName typeName <> psPascalForFieldName fieldName
+     ViewSuffix -> "view" <> psPascalForTypeName typeName
+     UnviewSuffix -> "unview" <> psPascalForTypeName typeName
+     CaseSuffix -> "case" <> psPascalForTypeName typeName
+
+psCamelForTypeName :: TypeName -> SB.Builder
+psCamelForTypeName (TypeName name) =
+  fromString
+    (zipWith
+       (\i char ->
+          if i == 0
+            then toLower char
+            else char)
+       [0 :: Int ..]
+       (TH.nameBase name))
+
+psPascalForTypeName :: TypeName -> SB.Builder
+psPascalForTypeName (TypeName name) = fromString (TH.nameBase name)
+
+psPascalForConsName :: ConsName -> SB.Builder
+psPascalForConsName (ConsName name) = fromString (TH.nameBase name)
+
+psPascalForFieldName :: FieldName -> SB.Builder
+psPascalForFieldName (FieldName name) =
+  fromString
+    (zipWith
+       (\i char ->
+          if i == 0
+            then toUpper char
+            else char)
+       [0 :: Int ..]
+       (TH.nameBase name))
