@@ -494,10 +494,33 @@ jsSlot :: Int -> SB.Builder
 jsSlot i = "function(a){return a[" <> fromString (show i) <> "]}"
 
 jsConses :: NonEmpty (ConsName, [Type]) -> SB.Builder
-jsConses =
-  mconcat . List.intersperse "break;\n" . zipWith toCase [0 :: Int ..] . toList
+jsConses = mconcat . zipWith toCase [0 :: Int ..] . toList
   where
     toCase i (consName, slots) =
-      mconcat ["case ", fromString (show i), "return k[", fun, "](...)"]
+      mconcat
+        [ "case "
+        , fromString (show i)
+        , ": return k["
+        , "\"" <> psPascalForConsName consName <> "\""
+        , "]"
+        , params
+        , ";\n"
+        ]
       where
-        fun = "k[" <> psPascalForConsName consName <> "]"
+        params =
+          if null slots
+            then mempty
+            else inner
+          where
+            inner =
+              mconcat
+                (zipWith
+                   (\j ->
+                      const
+                        ("(a[" <>
+                         fromString
+                           (show -- Skip j+1
+                              (j + 1)) <>
+                         "])"))
+                   [0 :: Int ..]
+                   slots)
