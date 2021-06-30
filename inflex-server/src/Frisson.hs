@@ -403,12 +403,12 @@ psSignature =
 
 psRecord :: [(SB.Builder, SB.Builder)] -> SB.Builder
 psRecord keys =
-  "{" <>
+  "{\n  " <>
   mconcat
     (List.intersperse
-       ", "
+       ",\n  "
        (map (\(k, v) -> "\"" <> k <> "\"" <> ": " <> v) keys)) <>
-  "}"
+  "\n  }"
 
 psType :: Type -> SB.Builder
 psType =
