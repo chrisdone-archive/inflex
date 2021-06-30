@@ -10,12 +10,12 @@
 -- for now).
 
 module Frisson
-  ( derive
+  ( deriveAll
   ) where
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Builder as SB
-import qualified Data.ByteString.Lazy.Char8 as L8
+import qualified Data.ByteString.Lazy as L
 import           Data.Char
 import           Data.Foldable
 import qualified Data.List as List
@@ -25,6 +25,7 @@ import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import           Data.String
 import           Data.Text (Text)
+import           Data.Traversable
 import           Data.Vector (Vector)
 import qualified Language.Haskell.TH as TH
 
@@ -88,22 +89,36 @@ newtype TypeName =
 --------------------------------------------------------------------------------
 -- Top-level entry point
 
-derive :: TH.Name -> TH.Q [TH.Dec]
-derive n = do
-  i <- TH.reify n
-  let rep = resolveInfo i
-  TH.reportWarning
-    (let foreigns = toList (foreignsFromNameRep (TypeName n) rep)
-      in "Imports:\n" <>
-         unlines
-           (map
-              (\fi ->
-                 unlines
-                   [ L8.unpack $ SB.toLazyByteString $ psForForeignImport fi
-                   , L8.unpack $ SB.toLazyByteString $ jsForForeignImport fi
-                   ])
-              foreigns))
-  generateToJSONInstance n rep
+deriveAll :: FilePath -> FilePath -> SB.Builder -> [TH.Name] -> TH.Q [TH.Dec]
+deriveAll purescriptPath javascriptPath preamble names = do
+  foreigns <-
+    for
+      names
+      (\n -> do
+         i <- TH.reify n
+         let rep = resolveInfo i
+         decs <- generateToJSONInstance n rep
+         pure (decs, foreignsFromNameRep (TypeName n) rep))
+  TH.runIO
+    (do L.writeFile
+          purescriptPath
+          (SB.toLazyByteString
+             (preamble <> views <>
+              mconcat
+                (fmap psForForeignImport (toList (mconcat (map snd foreigns))))))
+        L.writeFile
+          javascriptPath
+          (SB.toLazyByteString
+             (jsviews <>
+              mconcat
+                (fmap jsForForeignImport (toList (mconcat (map snd foreigns)))))))
+  pure (mconcat (map fst foreigns))
+  where
+    views =
+      "foreign import data View :: Type -> Type\n\
+       \\n\
+       \foreign import unsafeView :: forall a. Json -> View a\n\n"
+    jsviews = "exports.unsafeView = function(x){return x}\n\n"
 
 --------------------------------------------------------------------------------
 -- Resolving Haskell types to Rep
@@ -378,7 +393,13 @@ psViewOf x = "(View " <> x <> ")"
 
 psForForeignImport :: ForeignImport -> SB.Builder
 psForForeignImport ForeignImport {name, suffix, signature} =
-  mconcat ["foreign import ", psForName name suffix, " :: ", psSignature signature]
+  mconcat
+    [ "foreign import "
+    , psForName name suffix
+    , " :: "
+    , psSignature signature
+    , "\n\n"
+    ]
 
 psSignature :: Signature -> SB.Builder
 psSignature =
@@ -408,7 +429,7 @@ psRecord keys =
   mconcat
     (List.intersperse
        ",\n  "
-       (map (\(k, v) -> "\"" <> k <> "\"" <> ": " <> v) keys)) <>
+       (map (\(k, v) -> "\"" <> k <> "\"" <> " :: " <> v) keys)) <>
   "\n  }"
 
 psType :: Type -> SB.Builder
@@ -463,7 +484,12 @@ psPascalForFieldName (FieldName name) =
 
 jsForForeignImport :: ForeignImport -> SB.Builder
 jsForForeignImport ForeignImport {name, suffix, signature} =
-  mconcat ["exports." <> psForName name suffix, " = ", jsBody signature suffix]
+  mconcat
+    [ "exports." <> psForName name suffix
+    , " = "
+    , jsBody signature suffix
+    , ";\n\n"
+    ]
 
 jsBody :: Signature -> Suffix -> SB.Builder
 jsBody signature =

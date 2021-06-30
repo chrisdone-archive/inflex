@@ -22,6 +22,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
+import Inflex.Frisson
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell(..), OutputDocument(..), versionRefl)
 import Inflex.Schema as Shared
@@ -340,10 +341,11 @@ eval =
             Right outputDocument -> setOutputDocument outputDocument
     ImportCsvStart -> do
       result <- rpcGetFiles (Shared.FileQuery {search: ""})
-      case result of
+      pure unit
+      {-case result of
         Left err -> error err
         Right (Shared.FilesOutput {files}) ->
-          H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})
+          H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})-}
     ChooseCsvFile file ->
       case documentId of
         Nothing -> error "Sandbox doesn't support CSV import!"
@@ -352,7 +354,8 @@ eval =
           case result of
             Left err -> error ("rpcCsvGuessSchema:" <> err)
             Right csvGuess ->
-              case csvGuess of
+              pure unit
+              {-case csvGuess of
                 Shared.GuessCassavaFailure err -> error err
                 Shared.CsvGuessed csvImportSpec -> do
                   result2 <-
@@ -363,7 +366,7 @@ eval =
                                       -- schema, with the option to tweak the types of fields before importing.
                   case result2 of
                     Left err -> error ("CsvImport:" <> err)
-                    Right outputDocument -> setOutputDocument outputDocument
+                    Right outputDocument -> setOutputDocument outputDocument-}
 
 --------------------------------------------------------------------------------
 -- API calls
@@ -383,7 +386,8 @@ update update' =
              { document: Shared.InputDocument1 {cells: map toInputCell (state.cells)}
              , update: update'
              })
-      case result of
+      pure Nothing
+      {-case result of
         Left err -> do
           error err -- TODO:Display this to the user properly.
           pure Nothing
@@ -393,7 +397,7 @@ update update' =
               setOutputDocument outputDocument
               pure Nothing
             Shared.NestedError cellError -> do
-              pure (Just cellError)
+              pure (Just cellError)-}
     Just docId -> do
       result <-
         rpcUpdateDocument
@@ -406,22 +410,23 @@ update update' =
           error err -- TODO:Display this to the user properly.
           pure Nothing
         Right uresult ->
-          case uresult of
+          pure Nothing
+          {-case uresult of
             Shared.UpdatedDocument outputDocument -> do
               setOutputDocument outputDocument
               pure Nothing
             Shared.NestedError cellError -> do
-              pure (Just cellError)
+              pure (Just cellError)-}
 
 --------------------------------------------------------------------------------
 -- Internal state helpers
 
 setOutputDocument ::
      forall t11. MonadState State t11
-  => OutputDocument
+  => View OutputDocument
   -> t11 Unit
-setOutputDocument (OutputDocument {cells}) =
-  H.modify_ (\s -> s {cells = cells, modal = NoModal})
+setOutputDocument _ {-(OutputDocument {cells})-} =
+  H.modify_ (\s -> s {cells = s.cells {-cells-}, modal = NoModal})
 
 toInputCell :: OutputCell -> InputCell1
 toInputCell (OutputCell {uuid, name, code, order}) =

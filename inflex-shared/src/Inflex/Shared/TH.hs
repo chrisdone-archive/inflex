@@ -62,9 +62,9 @@ generateSchema = do
 pursCall :: (Text, Sig) -> Text
 pursCall (name0, Sig {input, output}) =
   T.unlines
-    [ name <> " :: forall m. MonadAff m => " <> input <> " -> m (Either String " <>
+    [ name <> " :: forall m. MonadAff m => " <> input <> " -> m (Either String (View " <>
       output <>
-      ")"
+      "))"
     , name <> " = rpcCall \"" <> name0 <> "\""
     ]
   where

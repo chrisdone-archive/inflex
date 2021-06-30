@@ -438,58 +438,13 @@ $(derivePersistFieldJSON "InputCell1")
 --------------------------------------------------------------------------------
 -- Frisson
 
-$(Frisson.derive ''UUID)
-$(Frisson.derive ''Version1)
-$(Frisson.derive ''Version2)
-$(Frisson.derive ''RefreshDocument)
-$(Frisson.derive ''UpdateDocument)
-$(Frisson.derive ''UpdateSandbox)
-$(Frisson.derive ''UpdateResult)
-$(Frisson.derive ''NestedCellError)
-$(Frisson.derive ''Update)
-$(Frisson.derive ''NewCell)
-$(Frisson.derive ''DeleteCell)
-$(Frisson.derive ''RenameCell)
-$(Frisson.derive ''UpdateCell)
-$(Frisson.derive ''UpdatePath)
-$(Frisson.derive ''PathUpdate)
-$(Frisson.derive ''Code)
-$(Frisson.derive ''Removal)
-$(Frisson.derive ''NewField)
-$(Frisson.derive ''RenameField)
-$(Frisson.derive ''DeleteField)
-$(Frisson.derive ''DataPath)
-$(Frisson.derive ''OutputDocument)
-$(Frisson.derive ''InputDocument1)
-$(Frisson.derive ''OutputCell)
-$(Frisson.derive ''InputCell1)
-$(Frisson.derive ''Result)
-$(Frisson.derive ''Tree2)
-$(Frisson.derive ''VariantArgument)
-$(Frisson.derive ''MaybeRow)
-$(Frisson.derive ''Row)
-$(Frisson.derive ''Field2)
-$(Frisson.derive ''OriginalSource)
-$(Frisson.derive ''CellError)
-$(Frisson.derive ''FillError)
-$(Frisson.derive ''FileQuery)
-$(Frisson.derive ''FilesOutput)
-$(Frisson.derive ''File)
-$(Frisson.derive ''CsvCheckStatus)
-$(Frisson.derive ''CsvImportFinal)
-$(Frisson.derive ''CsvColumnProblem)
-$(Frisson.derive ''CsvGuess)
-$(Frisson.derive ''CsvImportSpec)
-$(Frisson.derive ''CsvColumn)
-$(Frisson.derive ''ColumnAction)
-$(Frisson.derive ''ImportColumn)
-$(Frisson.derive ''CsvColumnType)
-$(Frisson.derive ''Optionality)
-$(Frisson.derive ''InputDocument)
-$(Frisson.derive ''InputCell)
-$(Frisson.derive ''Tree1)
-$(Frisson.derive ''Field1)
-
-$(Frisson.derive ''DocumentId)
-$(Frisson.derive ''ResultTree)
-$(Frisson.derive ''Hash)
+$(Frisson.deriveAll
+  "../inflex-client/src/Inflex/Frisson.purs"
+  "../inflex-client/src/Inflex/Frisson.js"
+  "module Inflex.Frisson where\n\
+   \\n\
+   \import Inflex.Schema\n\
+   \import Data.UUID (UUID)\n\
+   \import Data.Argonaut.Core (Json)\n\
+   \"
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''OutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash])
