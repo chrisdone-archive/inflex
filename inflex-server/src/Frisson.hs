@@ -182,8 +182,6 @@ resolveType =
 --------------------------------------------------------------------------------
 -- Generate Haskell-side
 
--- TODO: Generate FromJSON/ToJSON instances using a Rep
-
 generateToJSONInstance :: TH.Name -> Rep -> TH.Q [TH.Dec]
 generateToJSONInstance name rep = do
   func <- generateToJSONMethod rep
