@@ -192,7 +192,7 @@ toTree original =
                                          })
                                     (V.fromList fieldEs)
                               }
-                      _ -> Shared.HoleRow)
+                      _ -> Shared.HoleRow Shared.HoleTree)
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2

@@ -1,8 +1,7 @@
 -- | Recursive editing of parts of a result.
 
 module Inflex.Components.Cell.Editor
-  ( Editor(..)
-  , EditorAndCode(..)
+  ( EditorAndCode(..)
   , Output(..)
   , Field(..)
   , Row(..)
@@ -11,6 +10,7 @@ module Inflex.Components.Cell.Editor
 
 import Data.Array (mapWithIndex)
 import Data.Array as Array
+import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
@@ -24,7 +24,6 @@ import Data.Tuple (Tuple(..))
 import Data.UUID (UUID)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Core as Core
@@ -36,7 +35,8 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
-import Inflex.Schema (CellError(..), FillError(..))
+import Inflex.Frisson
+import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==), (-))
 import Web.DOM.Element (Element)
@@ -56,12 +56,12 @@ data Output
 
 data State = State
   { display :: Display
-  , editor :: Editor
+  , editor :: Either (View Shared.CellError) (View Shared.Tree2)
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
-  , cellError :: Maybe CellError
+  , cellError :: Maybe (View CellError)
   , lastInput :: Maybe EditorAndCode
-  , cells :: Map UUID Shared.OutputCell
+  , cells :: Map UUID (View Shared.OutputCell)
   }
 
 data Command
@@ -78,7 +78,7 @@ data Command
   | TriggerUpdatePath Shared.UpdatePath
 
 data Query a =
-  NestedCellError Shared.NestedCellError
+  NestedCellError (View Shared.NestedCellError)
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -86,42 +86,18 @@ instance showCommand :: Show Command where show x = genericShow x
 --------------------------------------------------------------------------------
 -- Internal types
 
-data Editor
-  = MiscE Shared.OriginalSource String
-  | TextE Shared.OriginalSource String
-  | VegaE Shared.OriginalSource String
-  | ErrorE CellError
-  | ArrayE Shared.OriginalSource (Array Editor)
-  | VariantE Shared.OriginalSource String (Maybe Editor)
-  | RecordE Shared.OriginalSource (Array Field)
-  | TableE Shared.OriginalSource
-           (Array String)
-           (Array Row)
-
-editorOriginalSource :: Editor -> Shared.OriginalSource
-editorOriginalSource =
-  case _ of
-    MiscE o _ -> o
-    TextE o _ -> o
-    VegaE o _ -> o
-    ErrorE _ -> Shared.NoOriginalSource
-    ArrayE o _ -> o
-    RecordE o _ -> o
-    TableE o _ _ -> o
-    VariantE o _ _ -> o
-
-derive instance genericEditor :: Generic Editor _
-instance showEditor :: Show Editor where show x = genericShow x
+-- editorOriginalSource :: View Shared.Tree2 -> Shared.OriginalSource
+-- editorOriginalSource = Shared.NoOriginalSource -- TODO:
 
 data Display
   = DisplayEditor
   | DisplayCode
 
 data EditorAndCode = EditorAndCode
-  { editor :: Editor
+  { editor :: Either (View Shared.CellError) (View Shared.Tree2)
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
-  , cells :: Map UUID Shared.OutputCell
+  , cells :: Map UUID (View Shared.OutputCell)
   }
 instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
@@ -143,11 +119,11 @@ type Slots i =
   )
 
 data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
-         | HoleRow
+         | HoleRow (View Shared.Tree2)
 derive instance genericRow :: Generic Row _
 instance showRow :: Show Row where show x = genericShow x
 
-newtype Field = Field { key :: String , value :: Editor}
+newtype Field = Field { key :: String , value :: View Shared.Tree2}
 derive instance genericField :: Generic Field _
 instance showField :: Show Field where show x = genericShow x
 
@@ -196,22 +172,26 @@ query ::
   -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
   case _ of
-    NestedCellError cellError@(Shared.NestedCellError { path: errorPath
-                                                       , error
-                                                       }) -> do
+    -- @(Shared.NestedCellError { path: errorPath
+    --                           , error
+    --                           })
+
+    NestedCellError cellError -> do
       State {path} <- H.get
       let path' = path Shared.DataHere
-      if path' == errorPath
+      if path' == materializePath (nestedCellErrorPath cellError)
         then do
-          log ("[Editor] Received error at my path!: " <> show error)
           H.modify_
             (\(State st) ->
-               State (st {display = DisplayCode, cellError = Just error}))
+               State (st {display = DisplayCode, cellError = Just (nestedCellErrorError cellError)}))
         else do
           _ <-
             H.queryAll (SProxy :: SProxy "editor") (NestedCellError cellError)
           pure unit
       pure Nothing
+
+materializePath :: View Shared.DataPath -> Shared.DataPath
+materializePath v = materializePath v -- FIXME: TODO:
 
 --------------------------------------------------------------------------------
 -- Eval
@@ -307,7 +287,9 @@ render (State {display, code, editor, path, cellError, cells}) =
     DisplayEditor ->
       if trim code == ""
         then wrapper (renderControl)
-        else wrapper (renderEditor path cells editor)
+        else wrapper (case editor of
+                        Left msg -> [renderError msg]
+                        Right e -> renderEditor path cells e)
   where
     renderControl =
       [ HH.slot
@@ -328,18 +310,19 @@ render (State {display, code, editor, path, cellError, cells}) =
       case display of
         DisplayCode -> HH.div [] inner
         DisplayEditor ->
-          case editor of
-            MiscE _ _ ->
-              HH.div
-                [ HP.class_
-                    (HH.ClassName "editor-boundary-wrap clickable-to-edit")
-                , HP.title "Click to edit"
-                , HE.onClick
-                    (\e ->
-                       pure (PreventDefault (Event' (toEvent e)) StartEditor))
-                ]
-                inner
-            _ ->
+          -- TODO: Re-enable below, dispatch on misc
+          -- case editor of
+          --   MiscE _ _ ->
+          --     HH.div
+          --       [ HP.class_
+          --           (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+          --       , HP.title "Click to edit"
+          --       , HE.onClick
+          --           (\e ->
+          --              pure (PreventDefault (Event' (toEvent e)) StartEditor))
+          --       ]
+          --       inner
+          --   _ ->
               HH.div
                 [HP.class_ (HH.ClassName "editor-boundary-wrap")]
                 ([ HH.div
@@ -364,23 +347,27 @@ render (State {display, code, editor, path, cellError, cells}) =
 renderEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
-  -> Editor
+  -> Map UUID (View Shared.OutputCell)
+  -> View Shared.Tree2
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor path cells editor =
-  case editor of
-    MiscE _originalSource t ->
-      [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]]
-    TextE _originalSource t ->
-      [renderTextEditor path t]
-    VegaE _originalSource t ->
-      [renderVegaEditor path t]
-    VariantE _originalSource tag arg ->
-      [renderVariantEditor path cells tag arg]
-    ErrorE msg -> [renderError msg]
-    ArrayE _originalSource editors -> [renderArrayEditor path cells editors]
-    RecordE _originalSource fields -> [renderRecordEditor path cells fields]
-    TableE _originalSource columns rows -> renderTableEditor path cells columns rows
+renderEditor path cells =
+  caseTree2 {
+    "MiscTree2":       \v _originalSource t ->
+      [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]],
+    "TextTree2":       \v _originalSource t ->
+      [renderTextEditor path t],
+    "VegaTree2":       \v _originalSource t ->
+      [renderVegaEditor path t],
+    "VariantTree2":    \v _originalSource tag arg ->
+      [renderVariantEditor path cells tag arg],
+    "ArrayTree2":      \v _originalSource editors ->
+      [renderArrayEditor path cells editors],
+    "RecordTree2":     \v _originalSource fields ->
+      [renderRecordEditor path cells fields],
+    "TableTreeMaybe2": \v _originalSource columns rows ->
+      renderTableEditor path cells columns rows,
+    "HoleTree": [] -- TODO:
+  }
 
 --------------------------------------------------------------------------------
 -- Variant display
@@ -388,9 +375,9 @@ renderEditor path cells editor =
 renderVariantEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
+  -> Map UUID (View Shared.OutputCell)
   -> String
-  -> Maybe Editor
+  -> View Shared.VariantArgument
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderVariantEditor path cells tag marg =
   HH.div
@@ -404,7 +391,7 @@ renderVariantEditor path cells tag marg =
             ("#" <> show tag <> "/argument")
             component
             (EditorAndCode
-               { editor: arg
+               { editor: Right arg
                , code: editorCode arg
                , path: path <<< Shared.DataVariantOf tag
                , cells
@@ -489,7 +476,7 @@ mapWithIndexNarrow dropping taking' f xs =
 renderTableEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
+  -> Map UUID (View Shared.OutputCell)
   -> Array String
   -> Array Row
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
@@ -570,25 +557,24 @@ tableRow ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
+  -> Map UUID (View Shared.OutputCell)
   -> Int
   -> Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow columns path cells rowIndex HoleRow =
+tableRow columns path cells rowIndex (HoleRow editor') =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
      map
        (\key ->
-          let editor' = MiscE Shared.NoOriginalSource "_"
-           in HH.td
+          HH.td
                 [HP.class_ (HH.ClassName "table-datum-value")]
                 [ HH.slot
                     (SProxy :: SProxy "editor")
                     (show rowIndex <> "/" <> key)
                     component
                     (EditorAndCode
-                       { editor: editor'
+                       { editor: Right editor'
                        , code: editorCode editor'
                        , cells
                        , path:
@@ -639,7 +625,7 @@ tableRow columns path cells rowIndex (Row {fields}) =
                           (show rowIndex <> "/" <> key)
                           component
                           (EditorAndCode
-                             { editor: editor'
+                             { editor: Right editor'
                              , code: editorCode editor'
                              , cells
                              , path:
@@ -842,8 +828,8 @@ generateColumnName columns = iterate 1
 renderArrayEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
-  -> Array Editor
+  -> Map UUID (View Shared.OutputCell)
+  -> Array (View Shared.Tree2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderArrayEditor path cells editors =
   HH.table
@@ -875,7 +861,7 @@ renderArrayEditor path cells editors =
                          (show i)
                          component
                          (EditorAndCode
-                            { editor: editor'
+                            { editor: Right editor'
                             , code: editorCode editor'
                             , path: childPath
                             , cells
@@ -930,8 +916,8 @@ renderArrayEditor path cells editors =
 renderRecordEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID Shared.OutputCell
-  -> Array Field
+  -> Map UUID (View Shared.OutputCell)
+  -> Array (View Shared.Field2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderRecordEditor path cells fields =
   HH.table
@@ -1016,7 +1002,7 @@ renderRecordEditor path cells fields =
                     key
                     component
                     (EditorAndCode
-                       { editor: editor'
+                       { editor: Right editor'
                        , cells
                        , code: editorCode editor'
                        , path: path <<< Shared.DataFieldOf key
@@ -1040,12 +1026,13 @@ renderRecordEditor path cells fields =
 --------------------------------------------------------------------------------
 -- Errors
 
-renderError :: forall t10 t11. CellError -> HH.HTML t11 t10
+renderError :: forall t10 t11. View CellError -> HH.HTML t11 t10
 renderError msg =
   HH.div
     [HP.class_ (HH.ClassName "error-message")]
-    [ HH.text
-        (case msg of
+    [ HH.text "some error here"
+        -- TODO: case
+         {-case msg of
            FillErrors fillErrors -> joinWith ", " (map fromFillError fillErrors)
              where fromFillError =
                      case _ of
@@ -1059,7 +1046,7 @@ renderError msg =
            CellRenameErrors -> "internal bug; please report!" -- TODO:make this automatic.
            CellTypeError -> "types of values don't match up"
            CellStepEror -> "error while evaluating formula"
-           SyntaxError -> "syntax error, did you mistype something?")
+           SyntaxError -> "syntax error, did you mistype something?"-}
     ]
 
 --------------------------------------------------------------------------------
@@ -1068,9 +1055,10 @@ renderError msg =
 -- TODO: delete these functions and move all updates to server-side
 -- path-based updates.
 
-editorCode :: Editor -> String
-editorCode =
-  case _ of
+editorCode :: View Shared.Tree2 -> String
+editorCode _ =
+  "" -- TODO: caseTree2
+  {-case _ of
     MiscE original s -> originalOr original s
     VegaE original s -> originalOr original s
     TextE original s -> (show s) -- TODO: Encoding strings is not easy. Fix this.
@@ -1097,7 +1085,7 @@ editorCode =
                  (case _ of
                     Row {original: o,fields} -> RecordE o fields
                     HoleRow -> MiscE Shared.NoOriginalSource "_")
-                 rows)))
+                 rows)))-}
 
 -- | Add a type signature if the rows are empty.
 -- DONE: Consider whether this is the right place for this. It might cause trouble.

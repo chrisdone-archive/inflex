@@ -8,6 +8,8 @@ module Inflex.Components.Code
   , Command(..)
   ) where
 
+import Inflex.Frisson
+
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -16,10 +18,10 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Data.UUID (UUID(..))
+import Data.UUID (UUID)
+import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (error)
-import Effect(Effect)
 import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
@@ -42,13 +44,13 @@ prims = M.fromFoldable (map (\prim -> Tuple (prim.name) (prim.display)) (meta.pr
 
 data Input = Input
   { code :: String
-  , cells :: Map UUID Shared.OutputCell
+  , cells :: Map UUID (View Shared.OutputCell)
   }
 
 data Output =
   TextOutput String
 
-data Query a = SetCells (Map UUID Shared.OutputCell)
+data Query a = SetCells (Map UUID (View Shared.OutputCell))
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -59,7 +61,7 @@ data Command
 
 data State = State
   { code :: String
-  , cells :: Map UUID Shared.OutputCell
+  , cells :: Map UUID (View  Shared.OutputCell)
   }
 
 type Slots (i :: Type -> Type) =
@@ -163,7 +165,11 @@ render (State state) =
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
        , namesInScope:
-          map (\(Tuple _key (Shared.OutputCell{uuid: UUID uuid, name})) ->
+          map (\(Tuple _key cell) ->
+                 let uuid = unUUID (outputCellUuid cell)
+                     name = outputCellName cell
+                 in
+                -- let  (Shared.OutputCell{uuid: UUID uuid, name})
                  { text: "@uuid:" <> uuid, -- what will be inserted
                    key: uuid, -- what will be raised later to PS
                    displayText: name, -- we can put whatever in here, and even a render function
@@ -184,7 +190,7 @@ render (State state) =
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
 
-makeSetMarks :: forall t55. Map UUID Shared.OutputCell -> String -> Effect (Array (CM.Query t55))
+makeSetMarks :: forall t55. Map UUID (View Shared.OutputCell) -> String -> Effect (Array (CM.Query t55))
 makeSetMarks cells code = do
           result <- lexString (code)
           case result of
@@ -213,7 +219,7 @@ makeSetMarks cells code = do
                      UuidToken uuid location ->
                         case M.lookup uuid (cells) of
                           Nothing -> Nothing
-                          Just (Shared.OutputCell{name}) ->
+                          Just cell ->
                             Just (CM.MarkText
                                   { line: location . start . line - 1
                                   , ch: location . start . column - 1
@@ -222,6 +228,6 @@ makeSetMarks cells code = do
                                   , ch: location . end . column - 1
                                   }
                                   {
-                                    replaceText: name
+                                    replaceText: outputCellName cell
                                   }))
                 tokens)

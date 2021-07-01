@@ -4,9 +4,10 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Effect.Class
-import Inflex.Frisson
-import Prelude
+import Data.UUID (UUID(..), uuidToString)
+import Effect.Class (class MonadEffect)
+import Inflex.Frisson (View, caseUpdateResult, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, show, unit, (<>), (||))
 
 import Control.Monad.State (class MonadState)
 import Data.Array as Array
@@ -18,7 +19,6 @@ import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Data.UUID (UUID, uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (error, log)
@@ -27,8 +27,8 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
-import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell(..), OutputDocument(..), versionRefl)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
+import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
@@ -64,7 +64,7 @@ data Command
   | ChooseCsvFile Shared.File
 
 type State = {
-    cells :: Array OutputCell
+    cells :: Array (View OutputCell)
   , dragUUID :: Maybe UUID
   , modal :: Modal
  }
@@ -188,10 +188,11 @@ render state =
                    else ""))
          ]
          (map
-            (\cell@(OutputCell {uuid, name}) ->
-               HH.slot
+            (\cell ->
+               let uuid = UUID (unUUID (outputCellUuid cell))
+               in HH.slot
                  (SProxy :: SProxy "Cell")
-                 (uuidToString uuid)
+                 (unUUID (outputCellUuid cell))
                  Cell.component
                  (Cell.Input
                     { cell
@@ -200,7 +201,7 @@ render state =
                           uuid
                           (M.fromFoldable
                              (map
-                                (\cell'@(OutputCell {uuid: uuid'}) -> Tuple uuid' cell')
+                                (\cell' -> Tuple (UUID (unUUID (outputCellUuid cell'))) cell')
                                 (state . cells)))
                     })
                  (\update0 ->
@@ -223,7 +224,7 @@ render state =
       standardNames <>
       M.fromFoldable
         (map
-           (\(OutputCell {uuid, name}) -> Tuple (uuidToString uuid) name)
+           (\cell -> Tuple (unUUID (outputCellUuid cell)) (outputCellName cell))
            (state . cells))
 
 standardNames :: Map String String
@@ -378,7 +379,7 @@ update :: forall t60.
   Bind t60 => MonadAff t60 => MonadAff t60 => MonadState
                                                    State
                                                    t60
-                                                  => Shared.Update -> t60 (Maybe Shared.NestedCellError)
+                                                  => Shared.Update -> t60 (Maybe (View Shared.NestedCellError))
 update update' =
   case toMaybe (meta . documentId) of
     Nothing -> do
@@ -413,13 +414,14 @@ update update' =
           error err -- TODO:Display this to the user properly.
           pure Nothing
         Right uresult ->
-          pure Nothing
-          {-case uresult of
-            Shared.UpdatedDocument outputDocument -> do
-              setOutputDocument outputDocument
-              pure Nothing
-            Shared.NestedError cellError -> do
-              pure (Just cellError)-}
+          caseUpdateResult {
+            "UpdatedDocument": \outputDocument -> do setOutputDocument outputDocument
+                                                     pure Nothing
+            ,"NestedError": \cellError -> pure (Just cellError)
+            }
+          uresult
+
+
 
 --------------------------------------------------------------------------------
 -- Internal state helpers
@@ -439,9 +441,15 @@ setOutputDocument doc {-(OutputDocument {cells})-}
           (outputDocumentCells doc)))
   H.modify_ (\s -> s {cells = s . cells, modal = NoModal}) {-cells-}
 
-toInputCell :: OutputCell -> InputCell1
-toInputCell (OutputCell {uuid, name, code, order}) =
-  InputCell1 {uuid, name, code, order, version: versionRefl}
+toInputCell :: View OutputCell -> InputCell1
+toInputCell cell =
+  InputCell1
+    { uuid: UUID (unUUID (outputCellUuid cell))
+    , name: outputCellName cell
+    , code: outputCellCode cell
+    , order: outputCellOrder cell
+    , version: versionRefl
+    }
 
 documentId :: Maybe Int
 documentId = toMaybe (meta . documentId)

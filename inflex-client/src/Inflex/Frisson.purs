@@ -3,7 +3,12 @@ module Inflex.Frisson where
 import Inflex.Schema
 import Data.UUID (UUID)
 import Data.Argonaut.Core (Json)
+import Prelude (class Show)
 foreign import data View :: Type -> Type
+
+foreign import showView :: forall a. View a -> String
+
+instance showViewOf :: Show (View a) where show = showView
 
 foreign import unsafeView :: forall a. Json -> View a
 
@@ -215,12 +220,12 @@ foreign import unviewTree2 :: (View Tree2) -> Json
 foreign import caseTree2 :: forall r. {
   "ArrayTree2" :: (View Version2) -> (View OriginalSource) -> (Array (View Tree2)) -> r,
   "RecordTree2" :: (View Version2) -> (View OriginalSource) -> (Array (View Field2)) -> r,
-  "TableTree2" :: (View Version2) -> (View OriginalSource) -> (Array String) -> (Array (View Row)) -> r,
   "TextTree2" :: (View Version2) -> (View OriginalSource) -> String -> r,
   "VegaTree2" :: (View Version2) -> (View OriginalSource) -> String -> r,
   "VariantTree2" :: (View Version2) -> (View OriginalSource) -> String -> (View VariantArgument) -> r,
   "MiscTree2" :: (View Version2) -> (View OriginalSource) -> String -> r,
-  "TableTreeMaybe2" :: (View Version2) -> (View OriginalSource) -> (Array String) -> (Array (View MaybeRow)) -> r
+  "TableTreeMaybe2" :: (View Version2) -> (View OriginalSource) -> (Array String) -> (Array (View MaybeRow)) -> r,
+  "HoleTree" :: r
   } -> (View Tree2) -> r
 
 foreign import viewVariantArgument :: Json -> (View VariantArgument)
@@ -238,7 +243,7 @@ foreign import unviewMaybeRow :: (View MaybeRow) -> Json
 
 foreign import caseMaybeRow :: forall r. {
   "SomeRow" :: (View Row) -> r,
-  "HoleRow" :: r
+  "HoleRow" :: (View Tree2) -> r
   } -> (View MaybeRow) -> r
 
 foreign import viewRow :: Json -> (View Row)

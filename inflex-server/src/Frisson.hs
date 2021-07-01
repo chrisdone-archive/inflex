@@ -117,8 +117,18 @@ deriveAll purescriptPath javascriptPath preamble names = do
     views =
       "foreign import data View :: Type -> Type\n\
        \\n\
-       \foreign import unsafeView :: forall a. Json -> View a\n\n"
-    jsviews = "exports.unsafeView = function(x){return x}\n\n"
+       \foreign import showView :: forall a. View a -> String\n\
+       \\n\
+       \instance showViewOf :: Show (View a) where show = showView\n\
+       \\n\
+       \foreign import unsafeView :: forall a. Json -> View a\n\
+       \\n\
+       \"
+    jsviews =
+      "exports.unsafeView = function(x){return x}\n\
+       \\n\
+       \exports.showView = function(x){return JSON.stringify(x)}\n\
+       \"
 
 --------------------------------------------------------------------------------
 -- Resolving Haskell types to Rep

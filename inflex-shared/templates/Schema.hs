@@ -446,5 +446,6 @@ $(Frisson.deriveAll
    \import Inflex.Schema\n\
    \import Data.UUID (UUID)\n\
    \import Data.Argonaut.Core (Json)\n\
+   \import Prelude (class Show)\n\
    \"
   [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''OutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash])

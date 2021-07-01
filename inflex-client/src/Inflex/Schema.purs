@@ -192,19 +192,19 @@ newtype ResultTree =
 data Tree2
   = ArrayTree2 Version2 OriginalSource (Vector Tree2)
   | RecordTree2 Version2 OriginalSource (Vector Field2)
-  | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
   | VegaTree2 Version2 OriginalSource Text
   | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
   | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
+  | HoleTree
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument
 
 data MaybeRow
   = SomeRow Row
-  | HoleRow
+  | HoleRow Tree2
 
 data Row = Row
  { source :: OriginalSource

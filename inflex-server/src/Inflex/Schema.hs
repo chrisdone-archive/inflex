@@ -200,19 +200,19 @@ newtype ResultTree =
 data Tree2
   = ArrayTree2 Version2 OriginalSource (Vector Tree2)
   | RecordTree2 Version2 OriginalSource (Vector Field2)
-  | TableTree2 Version2 OriginalSource (Vector Text) (Vector Row)
   | TextTree2 Version2 OriginalSource Text
   | VegaTree2 Version2 OriginalSource Text
   | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
   | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
+  | HoleTree
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument
 
 data MaybeRow
   = SomeRow Row
-  | HoleRow
+  | HoleRow Tree2
 
 data Row = Row
  { source :: OriginalSource
@@ -756,5 +756,6 @@ $(Frisson.deriveAll
    \import Inflex.Schema\n\
    \import Data.UUID (UUID)\n\
    \import Data.Argonaut.Core (Json)\n\
+   \import Prelude (class Show)\n\
    \"
   [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''OutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash])

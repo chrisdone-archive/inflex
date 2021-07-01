@@ -8,6 +8,8 @@ module Inflex.Components.Cell
   , Output(..)
   ) where
 
+import Inflex.Frisson
+
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -34,12 +36,12 @@ import Web.HTML.Event.DragEvent as DE
 -- Component types
 
 data Input = Input {
-  cell :: Shared.OutputCell,
-  cells :: Map UUID Shared.OutputCell
+  cell :: View Shared.OutputCell,
+  cells :: Map UUID (View Shared.OutputCell)
   }
 
 data Query a
-  = NestedCellError Shared.NestedCellError
+  = NestedCellError (View Shared.NestedCellError)
 
 data Output
   = RemoveCell
@@ -48,7 +50,7 @@ data Output
 
 data State = State
   { cell :: Cell
-  , cells:: Map UUID Shared.OutputCell
+  , cells:: Map UUID (View Shared.OutputCell)
   }
 
 data Command
@@ -69,7 +71,7 @@ instance showInput :: Show Input where show x = genericShow x
 data Cell = Cell
   { name :: String
   , code :: String
-  , result :: Either Shared.CellError Editor.Editor
+  , result :: Either (View Shared.CellError) (View Shared.Tree2)
   , hash :: String
   }
 
@@ -95,65 +97,19 @@ component =
             }
     }
 
-outputCellToCell :: Shared.OutputCell -> Cell
-outputCellToCell (Shared.OutputCell {name, code, result, hash: Shared.Hash hash}) =
+outputCellToCell :: View Shared.OutputCell -> Cell
+outputCellToCell cell =
   Cell
-    { name
-    , code
-    , hash
+    { name: outputCellName cell
+    , code: outputCellCode cell
+    , hash: unHash (outputCellHash cell)
     , result:
-        case result of
-          Shared.ResultError e -> Left e
-          Shared.ResultOk (Shared.ResultTree output) -> Right (toEditor output)
+        caseResult
+          { "ResultError": Left
+          , "ResultOk": \resultTree -> Right (unResultTree resultTree)
+          }
+          (outputCellResult cell)
     }
-
-toEditor :: Shared.Tree2 -> Editor.Editor
-toEditor =
-  case _ of
-    Shared.MiscTree2 _ originalSource text ->
-      Editor.MiscE originalSource text
-    Shared.TextTree2 _ originalSource text ->
-      Editor.TextE originalSource text
-    Shared.VegaTree2 _ originalSource vega ->
-      Editor.VegaE originalSource vega
-    Shared.ArrayTree2 _ originalSource trees ->
-      Editor.ArrayE originalSource  (map toEditor trees)
-    Shared.VariantTree2 _ originalSource label margument ->
-      Editor.VariantE
-        originalSource
-        label
-        (case margument of
-         Shared.VariantArgument tree -> Just (toEditor tree)
-         _ -> Nothing)
-    Shared.RecordTree2 _ originalSource fields ->
-      Editor.RecordE originalSource
-        (map (\(Shared.Field2{key,value}) -> Editor.Field ({key,value: toEditor value})) fields)
-    Shared.TableTree2 _ originalSource columns rows ->
-      Editor.TableE
-        originalSource
-        columns
-        (map (\(Shared.Row {source, fields}) ->
-                Editor.Row
-                { original: source
-                , fields:
-                    map (\(Shared.Field2{key,value}) -> Editor.Field {key,value: toEditor value})
-                        fields
-                })
-             rows)
-    Shared.TableTreeMaybe2 _ originalSource columns rows ->
-      Editor.TableE
-        originalSource
-        columns
-        (map (\mrow ->
-                case mrow of
-                  Shared.HoleRow -> Editor.HoleRow
-                  Shared.SomeRow (Shared.Row {source, fields}) -> Editor.Row
-                        { original: source
-                        , fields:
-                            map (\(Shared.Field2{key,value}) -> Editor.Field {key,value: toEditor value})
-                                fields
-                        })
-             rows)
 
 --------------------------------------------------------------------------------
 -- Query
@@ -236,7 +192,7 @@ render (State { cell: Cell {name, code, result, hash}
                 unit
                 Editor.component
                 (Editor.EditorAndCode
-                   { editor: either Editor.ErrorE identity result
+                   { editor: result
                    , code: code
                    , cells
                    , path: identity
