@@ -4,13 +4,7 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Data.UUID (UUID(..), uuidToString)
-import Effect.Class (class MonadEffect)
-import Inflex.Frisson (View, caseUpdateResult, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, show, unit, (<>), (||))
-
 import Control.Monad.State (class MonadState)
-import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
@@ -19,17 +13,21 @@ import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
+import Data.UUID (UUID(..), uuidToString)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (error, log)
+import Effect.Class (class MonadEffect)
+import Effect.Class.Console (error)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
+import Inflex.Frisson (View, caseUpdateResult, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
 import Inflex.Rpc (rpcCsvGuessSchema, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -430,16 +428,8 @@ setOutputDocument ::
      forall t11. (MonadState State t11)
   => MonadEffect t11 =>
        View OutputDocument -> t11 Unit
-setOutputDocument doc {-(OutputDocument {cells})-}
- = do
-  log
-    ("Document:" <> show (Array.length (outputDocumentCells doc)) <>
-     " cell, " <>
-     show
-       (map
-          (\cell -> [outputCellName cell, show (outputCellOrder cell)])
-          (outputDocumentCells doc)))
-  H.modify_ (\s -> s {cells = s . cells, modal = NoModal}) {-cells-}
+setOutputDocument doc = do
+  H.modify_ (\s -> s {cells = outputDocumentCells doc, modal = NoModal})
 
 toInputCell :: View OutputCell -> InputCell1
 toInputCell cell =

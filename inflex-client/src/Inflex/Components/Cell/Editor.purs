@@ -8,6 +8,8 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
+import Inflex.Frisson
+
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -35,7 +37,6 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
-import Inflex.Frisson
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==), (-))
@@ -85,9 +86,6 @@ instance showCommand :: Show Command where show x = genericShow x
 
 --------------------------------------------------------------------------------
 -- Internal types
-
--- editorOriginalSource :: View Shared.Tree2 -> Shared.OriginalSource
--- editorOriginalSource = Shared.NoOriginalSource -- TODO:
 
 data Display
   = DisplayEditor
@@ -191,7 +189,12 @@ query =
       pure Nothing
 
 materializePath :: View Shared.DataPath -> Shared.DataPath
-materializePath v = materializePath v -- FIXME: TODO:
+materializePath = caseDataPath {
+   "DataHere": Shared.DataHere,
+   "DataElemOf": \i d -> Shared.DataElemOf i (materializePath d),
+   "DataFieldOf": \i d -> Shared.DataFieldOf i (materializePath d),
+   "DataVariantOf": \i d -> Shared.DataVariantOf i (materializePath d)
+  }
 
 --------------------------------------------------------------------------------
 -- Eval
@@ -308,34 +311,39 @@ render (State {display, code, editor, path, cellError, cells}) =
       ]
     wrapper inner =
       case display of
-        DisplayCode -> HH.div [] inner
+        DisplayCode -> HH.div [] inner -- Should not be happening.
         DisplayEditor ->
-          -- TODO: Re-enable below, dispatch on misc
-          -- case editor of
-          --   MiscE _ _ ->
-          --     HH.div
-          --       [ HP.class_
-          --           (HH.ClassName "editor-boundary-wrap clickable-to-edit")
-          --       , HP.title "Click to edit"
-          --       , HE.onClick
-          --           (\e ->
-          --              pure (PreventDefault (Event' (toEvent e)) StartEditor))
-          --       ]
-          --       inner
-          --   _ ->
-              HH.div
-                [HP.class_ (HH.ClassName "editor-boundary-wrap")]
-                ([ HH.div
-                     [ HP.class_ (HH.ClassName "ellipsis-button")
-                     , HP.title "Edit this as code"
-                     , HE.onClick
-                         (\e ->
-                            pure
-                              (PreventDefault (Event' (toEvent e)) StartEditor))
-                     ]
-                     []
-                 ] <>
-                 inner)
+          case editor of
+             Left _ -> HH.div [] inner -- Should not be happening.
+             Right e ->
+               caseTree2
+                  ((caseTree2Default
+                   (HH.div
+                     [HP.class_ (HH.ClassName "editor-boundary-wrap")]
+                     ([ HH.div
+                          [ HP.class_ (HH.ClassName "ellipsis-button")
+                          , HP.title "Edit this as code"
+                          , HE.onClick
+                              (\ev ->
+                                 pure
+                                   (PreventDefault (Event' (toEvent ev)) StartEditor))
+                          ]
+                          []
+                      ] <>
+                      inner)))
+                   {
+                    "MiscTree2" = \v _originalSource t ->
+                      HH.div
+                        [ HP.class_
+                            (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                        , HP.title "Click to edit"
+                        , HE.onClick
+                            (\ev ->
+                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                        ]
+                        inner
+                  })
+                  e
     errorDisplay =
       case cellError of
         Nothing -> []
@@ -383,9 +391,12 @@ renderVariantEditor path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")] [HH.text ("#" <> tag)]] <>
-     case marg of
-       Nothing -> []
-       Just arg ->
+    caseVariantArgument
+      {"NoVariantArgument": [],
+       "VariantArgument": \arg ->
+     -- case marg of
+     --   Nothing -> []
+     --   Just arg ->
          [HH.slot
             (SProxy :: SProxy "editor")
             ("#" <> show tag <> "/argument")
@@ -408,7 +419,10 @@ renderVariantEditor path cells tag marg =
                            , update:
                                Shared.CodeUpdate
                                  (Shared.Code {text: rhs})
-                           })))])
+                           })))
+               ]
+      }
+      marg)
 
 --------------------------------------------------------------------------------
 -- Vega display
@@ -478,7 +492,7 @@ renderTableEditor ::
   => (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (View Shared.OutputCell)
   -> Array String
-  -> Array Row
+  -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderTableEditor path cells columns rows =
   [ HH.table
@@ -486,7 +500,11 @@ renderTableEditor path cells columns rows =
       [ tableHeading path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body")]
-          (bodyGuide emptyTable emptyRows <> mapWithIndex {-Narrow 0 10-} (tableRow columns path cells) rows <>
+          (bodyGuide emptyTable emptyRows <>
+           mapWithIndexNarrow 0 10 (\i -> caseMaybeRow {
+             "SomeRow": tableRow columns path cells i
+            ,"HoleRow": tableRowHole columns path cells i
+           }) rows <>
            addNewRow)
       ]
   ]
@@ -553,15 +571,15 @@ originateFromField columns key code =
        columns) <>
   "}"
 
-tableRow ::
+tableRowHole ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (View Shared.OutputCell)
   -> Int
-  -> Row
+  -> View Shared.Tree2
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow columns path cells rowIndex (HoleRow editor') =
+tableRowHole columns path cells rowIndex editor' =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
@@ -610,14 +628,25 @@ tableRow columns path cells rowIndex (HoleRow editor') =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
 
-tableRow columns path cells rowIndex (Row {fields}) =
+tableRow ::
+     forall a. MonadAff a
+  => Array String
+  -> (Shared.DataPath -> Shared.DataPath)
+  -> Map UUID (View Shared.OutputCell)
+  -> Int
+  -> View Shared.Row
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+tableRow columns path cells rowIndex row =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
      Array.mapMaybe
        (\key0 ->
-          case Array.find (\(Field{key}) -> key==key0) fields of
-            Just (Field {key, value: editor'}) ->
+          case Array.find (\field -> field2Key field == key0) (rowFields row) of
+            Just field -- (Field {key, value: editor'})
+               -> let key = field2Key field
+                      editor' = field2Value field
+              in
               Just (HH.td
                       [HP.class_ (HH.ClassName "table-datum-value")]
                       [ HH.slot
@@ -946,7 +975,9 @@ renderRecordEditor path cells fields =
         [] -> [HH.text "(No fields yet)"]
         _ -> []) <>
      map
-       (\(Field {key, value: editor'}) ->
+       (\field ->let key = field2Key field
+                     editor' = field2Value field
+                in
           let childPath = path <<< Shared.DataFieldOf key
           in HH.tr
             [HP.class_ (HH.ClassName "record-field")]
@@ -981,7 +1012,7 @@ renderRecordEditor path cells fields =
                          , title: "Click to edit field name"
                          , validator: validFieldName
                          }))
-                    (TextInput.Input {text: key, notThese: Set.fromFoldable (map (\(Field{key: k}) -> k) fields)})
+                    (TextInput.Input {text: key, notThese: Set.fromFoldable (map field2Key fields)})
                     (\name' ->
                        pure
                          (TriggerUpdatePath
@@ -1099,3 +1130,28 @@ addTableTypeSig columns rows inner =
 originalOr :: Shared.OriginalSource -> String -> String
 originalOr Shared.NoOriginalSource s = s
 originalOr (Shared.OriginalSource s) _ = s
+
+--------------------------------------------------------------------------------
+-- Tree casing
+
+caseTree2Default :: forall t628 t629 t630 t631 t632 t633 t634 t635 t636 t637 t638 t639 t640 t641 t642 t643 t644 t645 t646 t647 t648 t649 t650 t651.
+  t648
+  -> { "ArrayTree2" :: t641 -> t642 -> t643 -> t648
+     , "HoleTree" :: t648
+     , "MiscTree2" :: t628 -> t629 -> t630 -> t648
+     , "RecordTree2" :: t638 -> t639 -> t640 -> t648
+     , "TableTreeMaybe2" :: t644 -> t645 -> t646 -> t647 -> t648
+     , "TextTree2" :: t631 -> t632 -> t633 -> t648
+     , "VariantTree2" :: t634 -> t635 -> t636 -> t637 -> t648
+     , "VegaTree2" :: t649 -> t650 -> t651 -> t648
+     }
+caseTree2Default d = {
+    "MiscTree2":       \v _originalSource t -> d,
+    "TextTree2":       \v _originalSource t -> d,
+    "VariantTree2":    \v _originalSource tag arg -> d,
+    "RecordTree2":     \v _originalSource fields -> d,
+    "ArrayTree2":      \v _originalSource editors -> d,
+    "TableTreeMaybe2":      \v _originalSource editors _ -> d,
+    "VegaTree2":       \v _originalSource t -> d,
+    "HoleTree": d
+  }
