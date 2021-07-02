@@ -61,6 +61,10 @@ RevisionCell
 --
 -- Meanwhile, the same Cell can be used for multiple revisions, but
 -- only for one document.
+--
+-- A user doesn't "edit" a cell; rather they create a new cell (and
+-- therefore a new revision cell, and a new revision) with the same
+-- contents slightly changed.
 Cell
   account AccountId
   document DocumentId
