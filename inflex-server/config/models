@@ -27,6 +27,7 @@ EarlyAccessRequest
 --------------------------------------------------------------------------------
 -- Documents
 
+-- A document has a unique slug and belongs to a single account.
 Document
   account AccountId
   name DocumentSlug
@@ -34,13 +35,52 @@ Document
   updated UTCTime
   deriving Show
 
+-- Documents have many revisions. One can activate a previous revision
+-- (undo) or redo another dated later.
 Revision
   account AccountId
   document DocumentId
   created UTCTime
-  content Shared.InputDocument1
   active Bool
   activated UTCTime
+  deriving Show
+
+-- A revision cell is created exactly after a revision, so we don't
+-- store a creation date.
+--
+-- We associate `order' with this because it's about the document and
+-- not about the cell.
+RevisionCell
+  revision RevisionId
+  cell CellId
+  order Int
+  deriving Show
+
+-- We put the name and creation time here because that's specific to a
+-- cell.
+--
+-- Meanwhile, the same Cell can be used for multiple revisions, but
+-- only for one document.
+Cell
+  account AccountId
+  document DocumentId
+  expression ExpressionId
+  created UTCTime
+  name Text
+  deriving Show
+
+-- An expression is independent from any specific document. It's just
+-- a piece of code with a unique hash. We put the creation date to
+-- have some log of where it came from.
+--
+-- They can be shared by multiple users or the same user across
+-- different documents.
+--
+-- We ought to be able to garbage collect these like `git gc'.
+Expression
+  source Text
+  hash Sha512
+  created UTCTime
   deriving Show
 
 --------------------------------------------------------------------------------
