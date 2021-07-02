@@ -640,48 +640,45 @@ tableRow columns path cells rowIndex row =
   HH.tr
     []
     ([rowNumber rowIndex path] <>
-     Array.mapMaybe
-       (\key0 ->
-          case Array.find (\field -> field2Key field == key0) (rowFields row) of
-            Just field -- (Field {key, value: editor'})
-               -> let key = field2Key field
-                      editor' = field2Value field
-              in
-              Just (HH.td
-                      [HP.class_ (HH.ClassName "table-datum-value")]
-                      [ HH.slot
-                          (SProxy :: SProxy "editor")
-                          (show rowIndex <> "/" <> key)
-                          component
-                          (EditorAndCode
-                             { editor: Right editor'
-                             , code: editorCode editor'
-                             , cells
-                             , path:
-                                 path <<<
-                                 Shared.DataElemOf rowIndex <<< Shared.DataFieldOf key
-                             })
-                          (\output ->
-                             case output of
-                               UpdatePath update -> Just (TriggerUpdatePath update)
-                               NewCode rhs ->
-                                 Just
-                                   (TriggerUpdatePath
-                                      (Shared.UpdatePath
-                                         { path:
-                                             path
-                                               (Shared.DataElemOf
-                                                  rowIndex
-                                                  (Shared.DataFieldOf
-                                                     key
-                                                     Shared.DataHere))
-                                         , update:
-                                             Shared.CodeUpdate
-                                               (Shared.Code {text: rhs})
-                                         })))
-                      ])
-            Nothing -> Nothing)
-       columns <>
+     Array.mapWithIndex
+       (\idx editor' ->
+          case Array.index columns idx of
+            Just key ->
+              HH.td
+                [HP.class_ (HH.ClassName "table-datum-value")]
+                [ HH.slot
+                    (SProxy :: SProxy "editor")
+                    (show rowIndex <> "/" <> key)
+                    component
+                    (EditorAndCode
+                       { editor: Right editor'
+                       , code: editorCode editor'
+                       , cells
+                       , path:
+                           path <<<
+                           Shared.DataElemOf rowIndex <<< Shared.DataFieldOf key
+                       })
+                    (\output ->
+                       case output of
+                         UpdatePath update -> Just (TriggerUpdatePath update)
+                         NewCode rhs ->
+                           Just
+                             (TriggerUpdatePath
+                                (Shared.UpdatePath
+                                   { path:
+                                       path
+                                         (Shared.DataElemOf
+                                            rowIndex
+                                            (Shared.DataFieldOf
+                                               key
+                                               Shared.DataHere))
+                                   , update:
+                                       Shared.CodeUpdate
+                                         (Shared.Code {text: rhs})
+                                   })))
+                ]
+            Nothing -> HH.td [] [HH.text "BUG!"])
+       (rowFields row) <>
      [addColumnBlank])
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []

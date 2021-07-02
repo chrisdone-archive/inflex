@@ -17,7 +17,10 @@ import           Control.Early
 import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.Functor.Contravariant
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import           Data.List
+import           Data.Maybe
 import           Data.Ord
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -171,26 +174,34 @@ toTree original =
                       RecordExpression Record {fields = fieldEs} ->
                         let arrayItem = atIndex rowIndex originalArray
                             originalRecord = inRecord arrayItem
-                         in Shared.SomeRow $ Shared.Row
+                         in Shared.SomeRow $
+                            Shared.Row
                               { source = originalSource' arrayItem
                               , fields =
-                                  V.imap
-                                    (\fieldIndex FieldE { name = FieldName key
-                                                        , expression
-                                                        } ->
-                                       Shared.Field2
-                                         { key
-                                         , version = Shared.versionRefl
-                                         , value =
-                                             toTree
-                                               (fmap
-                                                  (\FieldE {expression = e} -> e)
-                                                  (atNth
-                                                     fieldIndex
-                                                     originalRecord))
-                                               expression
-                                         })
-                                    (V.fromList fieldEs)
+                                  let hash =
+                                        HM.fromList
+                                          (map
+                                             (\(idx, FieldE { name = FieldName key
+                                                            , expression
+                                                            }) ->
+                                                (key, (idx, expression)))
+                                             (zip [0 ..] fieldEs))
+                                   in V.map
+                                        (\Field {name = FieldName key} ->
+                                           maybe
+                                             (error
+                                                "TODO: Serious bug if this occurs. FIXME.")
+                                             (\(fieldIndex, expression) ->
+                                                toTree
+                                                  (fmap
+                                                     (\FieldE {expression = e} ->
+                                                        e)
+                                                     (atNth
+                                                        fieldIndex
+                                                        originalRecord))
+                                                  expression)
+                                             (HM.lookup key hash))
+                                        (V.fromList fields)
                               }
                       _ -> Shared.HoleRow Shared.HoleTree)
                  expressions)
@@ -254,9 +265,7 @@ toTree original =
         Just (ArrayExpression Array {expressions}) -> pure expressions
         _ -> Nothing
     atIndex ::
-         Int
-      -> Maybe (Vector (Expression Parsed))
-      -> Maybe (Expression Parsed)
+         Int -> Maybe (Vector (Expression Parsed)) -> Maybe (Expression Parsed)
     atIndex idx =
       \case
         Just vector

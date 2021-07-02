@@ -10,7 +10,7 @@ module Inflex.Components.Cell
 
 import Inflex.Frisson
 
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
@@ -28,7 +28,7 @@ import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema as Shared
-import Prelude (class Ord, class Show, Unit, bind, discard, identity, map, mempty, pure, show, unit, (<<<), (<>))
+import Prelude (class Ord, class Show, Unit, bind, discard, identity, mempty, pure, show, unit, (<<<), (<>))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 

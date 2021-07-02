@@ -252,7 +252,7 @@ foreign import unviewRow :: (View Row) -> Json
 
 foreign import rowSource :: (View Row) -> (View OriginalSource)
 
-foreign import rowFields :: (View Row) -> (Array (View Field2))
+foreign import rowFields :: (View Row) -> (Array (View Tree2))
 
 foreign import viewField2 :: Json -> (View Field2)
 

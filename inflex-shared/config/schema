@@ -184,7 +184,7 @@ data MaybeRow
 
 data Row = Row
  { source :: OriginalSource
- , fields :: Vector Field2
+ , fields :: Vector Tree2
  }
 
 data Field2 = Field2

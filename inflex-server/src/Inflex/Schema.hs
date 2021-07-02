@@ -216,7 +216,7 @@ data MaybeRow
 
 data Row = Row
  { source :: OriginalSource
- , fields :: Vector Field2
+ , fields :: Vector Tree2
  }
 
 data Field2 = Field2
@@ -469,28 +469,7 @@ instance NFData ResultTree
 deriving instance Generic ResultTree
 deriving instance Show ResultTree
 -- deriving instance ToJSON ResultTree
-instance FromJSON ResultTree where
-  parseJSON j =
-    fmap
-      ResultTree
-      (parseJSON j <|> fmap migrateV2 (parseJSON j) <|>
-       fmap (migrateV2 . migrateV1) (parseJSON j))
-    where
-      migrateV1 :: Text -> Tree1
-      migrateV1 text = MiscTree versionRefl text
-      migrateV2 :: Tree1 -> Tree2
-      migrateV2 =
-        \case
-          ArrayTree _ trees ->
-            ArrayTree2 versionRefl NoOriginalSource (fmap migrateV2 trees)
-          RecordTree _ fields ->
-            RecordTree2
-              versionRefl
-              NoOriginalSource
-              (fmap migrateV2Field fields)
-            where migrateV2Field Field1 {..} =
-                    Field2 {version = versionRefl, value = migrateV2 value, ..}
-          MiscTree _ text -> MiscTree2 versionRefl NoOriginalSource text
+instance FromJSON ResultTree
 
 instance NFData CellError
 deriving instance Generic CellError
