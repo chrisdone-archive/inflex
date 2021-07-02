@@ -2,6 +2,7 @@
 
 module Inflex.Rpc where
 
+import Timed (timed)
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -88,7 +89,7 @@ rpcCall endpoint0 input =
                 if response . status == StatusCode 200
                   then do
                     log "Got json string, decoding ..."
-                    case J.jsonParser (response . body) of
+                    case timed "Rpc.jsonParser" (\_ -> J.jsonParser (response . body)) of
                       Left err -> do
                         error "Failed to parse JSON! This should never happen."
                         pure
