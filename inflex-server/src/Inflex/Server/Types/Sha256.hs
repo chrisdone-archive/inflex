@@ -26,7 +26,6 @@ import           Data.Aeson
 import qualified Data.Attoparsec.Text as Atto.T
 import           Data.ByteArray
 import           Data.ByteString (ByteString)
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Base16 as Hex
 import qualified Data.ByteString.Char8 as S8

@@ -68,22 +68,22 @@ RevisionCell
 Cell
   account AccountId
   document DocumentId
-  expression ExpressionId
+  code CodeId
   created UTCTime
   name Text
   deriving Show
 
--- An expression is independent from any specific document. It's just
--- a piece of code with a unique hash. We put the creation date to
--- have some log of where it came from.
+-- Independent from any specific document. It's just a piece of code
+-- with a unique hash. We put the creation date to have some log of
+-- where it came from.
 --
 -- They can be shared by multiple users or the same user across
 -- different documents.
 --
 -- We ought to be able to garbage collect these like `git gc'.
-Expression
+Code
   source Text
-  hash Sha512
+  hash SHA512
   created UTCTime
   deriving Show
 

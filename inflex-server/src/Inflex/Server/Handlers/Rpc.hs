@@ -67,7 +67,7 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
        now <- liftIO getCurrentTime
        applyUpdate
          update'
-         (revisionContent revision)
+         revisedInputDocument
          (runDB . setInputDocument now loginAccountId documentKey revisionId))
 
 applyUpdate ::
@@ -206,9 +206,10 @@ rpcRedoDocument docId =
 -- Helpers
 
 data RevisedDocument = RevisedDocument
-  { documentKey :: DocumentId
-  , revisionId :: RevisionId
-  , revision :: Revision
+  { documentKey :: !DocumentId
+  , revisionId :: !RevisionId
+  , revision :: !Revision
+  , revisedInputDocument :: !Shared.InputDocument1
   }
 
 getRevisedDocument :: AccountID -> Shared.DocumentId -> YesodDB App RevisedDocument
@@ -229,6 +230,7 @@ getRevisedDocument loginAccountId docId = do
       case mrevision of
         Nothing -> notFound
         Just (Entity revisionId revision) -> do
+          let revisedInputDocument = undefined -- TODO: Make an InputDocument.
           pure RevisedDocument {..}
 
 setInputDocument ::
@@ -240,12 +242,13 @@ setInputDocument ::
   -> YesodDB App ()
 setInputDocument now accountId documentId revisionId inputDocument = do
   update revisionId [RevisionActive =. False]
+  -- TODO: insert revision cells, cells, code
   insert_
     Revision
       { revisionAccount = fromAccountID accountId
       , revisionDocument = documentId
       , revisionCreated = now
-      , revisionContent = inputDocument
+
       , revisionActive = True
       , revisionActivated = now
       }
@@ -263,7 +266,8 @@ setInputDocument now accountId documentId revisionId inputDocument = do
 
 loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
 loadRevisedDocument RevisedDocument {..} =
-  forceTimeout TimedLoadDocument (loadInputDocument (revisionContent revision))
+  undefined -- TODO: Use esqueleto to perform the necessary join
+  {-forceTimeout TimedLoadDocument (loadInputDocument (revisionContent revision))-}
 
 --------------------------------------------------------------------------------
 -- Importing CSV
@@ -370,7 +374,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                           csvImportSpec
                           file
                           rows
-                          (revisionContent revision))
+                          revisedInputDocument)
 
                    loaded <- forceTimeout TimedLoadDocument (loadInputDocument document)
                    now <- liftIO getCurrentTime

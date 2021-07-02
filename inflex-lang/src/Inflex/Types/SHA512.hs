@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveLift #-}
@@ -18,22 +19,23 @@ module Inflex.Types.SHA512
   ) where
 
 import qualified Crypto.Hash as Hash (Digest, SHA512, hash)
-import Data.Aeson
+import           Data.Aeson
 import qualified Data.Attoparsec.Text as Atto.T
-import Data.ByteArray
-import Data.ByteString (ByteString)
+import           Data.ByteArray
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Base16 as Hex
-import Data.ByteString.Lazy (toStrict)
-import Data.String
-import Data.Text (Text)
+import           Data.ByteString.Lazy (toStrict)
+import           Data.String
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import           Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Data.Text.Encoding as T
-import GHC.Generics
-import Language.Haskell.TH
-import Language.Haskell.TH.Instances ()
-import Language.Haskell.TH.Syntax (Lift(..), Q, TExp(..))
+import           Database.Persist.Sql
+import           GHC.Generics
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Instances ()
+import           Language.Haskell.TH.Syntax (Lift(..), Q, TExp(..))
 
 --------------------------------------------------------------------------------
 -- Type
@@ -41,7 +43,7 @@ import Language.Haskell.TH.Syntax (Lift(..), Q, TExp(..))
 -- | A SHA512 key to address blobs.
 newtype SHA512 =
   SHA512 ByteString
-  deriving (Eq, Ord, Lift, Generic)
+  deriving (Eq, Ord, Lift, Generic, PersistFieldSql, PersistField)
 
 --------------------------------------------------------------------------------
 -- Instances

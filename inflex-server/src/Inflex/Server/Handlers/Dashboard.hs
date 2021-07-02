@@ -22,7 +22,6 @@ import           Database.Persist.Sql
 import qualified Formatting
 import qualified Formatting.Time
 import           GA
-import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
@@ -237,7 +236,6 @@ postNewDocumentR =
                    { revisionAccount = fromAccountID loginAccountId
                    , revisionDocument = key
                    , revisionCreated = now'
-                   , revisionContent = Shared.InputDocument1 {cells = mempty}
                    , revisionActive = True
                    , revisionActivated = now'
                    }
