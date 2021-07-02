@@ -17,7 +17,6 @@ import           Control.Early
 import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.Functor.Contravariant
-import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Maybe

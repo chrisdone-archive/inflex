@@ -121,16 +121,16 @@ packages:
     subdir: rio-orphans
     url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
 - completed:
-    size: 10241
-    url: https://github.com/inflex-io/early/archive/736c0f02b75d0251bfb5fa9cfc5554c5dda139ca.tar.gz
+    size: 10278
+    url: https://github.com/inflex-io/early/archive/a642cea8d33bd5475fe56c0d31ff51287692789d.tar.gz
     name: early
     version: 0.0.0
-    sha256: 674ad46e341d92aefacd716a4a165ffa1cba9c50a4bdf9f5d1d096d166fb356d
+    sha256: 475fbcf07e5c11df7c010cbf0099da1c8b6bf5a0e08ca6570dcb69c409f2b4d8
     pantry-tree:
       size: 642
-      sha256: 76b5060166a4879f104d9b6630c45961437b52bb8f470e78619b47e50c49eb6b
+      sha256: 82b3ffde31544c78bafa0ffedcd4285a320342fcd0b56a7d37d7660edc3030db
   original:
-    url: https://github.com/inflex-io/early/archive/736c0f02b75d0251bfb5fa9cfc5554c5dda139ca.tar.gz
+    url: https://github.com/inflex-io/early/archive/a642cea8d33bd5475fe56c0d31ff51287692789d.tar.gz
 - completed:
     hackage: byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
     pantry-tree:
