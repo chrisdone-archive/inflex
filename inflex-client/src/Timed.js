@@ -7,3 +7,16 @@ exports.timed = function(label){
     return v;
   }
 }
+
+exports.perfNow = function(){
+  return performance.now();
+};
+
+exports.logg = function(label){
+  return function(time){
+    return function(){
+      console.log("%s: %oms", label, time);
+      return null;
+    }
+  }
+}

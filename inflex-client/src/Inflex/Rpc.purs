@@ -2,7 +2,7 @@
 
 module Inflex.Rpc where
 
-import Timed (timed)
+import Timed (timed, timedM)
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.ResponseFormat as ResponseFormat
@@ -14,7 +14,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (error, log)
+import Effect.Class.Console (error)
 import Foreign.Generic (genericDecodeJSON, genericEncodeJSON)
 import Foreign.Generic.Class (class GenericDecode, class GenericEncode)
 import Halogen as H
@@ -66,18 +66,21 @@ rpcCall
   -> m (Either String (View output))
 rpcCall endpoint0 input =
   H.liftAff
-    (do case J.jsonParser (genericEncodeJSON opts input) of
+    (do case timed
+               "Rpc.genericEncodeJSON"
+               (\_ -> (J.jsonParser (genericEncodeJSON opts input))) of
           Left e -> do
             error ("Own JSON was invalid! " <> e)
             pure (Left e)
           Right json -> do
-            log "Sending POST"
             result <-
-              H.liftAff
-                (AX.post
-                   ResponseFormat.string
-                   endpoint
-                   (Just (RequestBody.json json)))
+              timedM
+                "rpcCall.post"
+                (H.liftAff
+                   (AX.post
+                      ResponseFormat.string
+                      endpoint
+                      (Just (RequestBody.json json))))
             case result of
               Left err -> do
                 error
@@ -88,15 +91,15 @@ rpcCall endpoint0 input =
               Right response -> do
                 if response . status == StatusCode 200
                   then do
-                    log "Got json string, decoding ..."
-                    case timed "Rpc.jsonParser" (\_ -> J.jsonParser (response . body)) of
+                    case timed
+                           "Rpc.jsonParser"
+                           (\_ -> J.jsonParser (response . body)) of
                       Left err -> do
                         error "Failed to parse JSON! This should never happen."
                         pure
                           (Left
                              "Failed to parse JSON! This should never happen.")
                       Right json -> do
-                        log "Parsed."
                         pure (Right (unsafeView json))
                   else do
                     error "Bad status code"
