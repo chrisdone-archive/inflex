@@ -288,7 +288,7 @@ render (State {display, code, editor, path, cellError, cells}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
-      if trim code == ""
+      if trim code == "FIXME: should be empty string" -- TODO: -- no code is filled in yet
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
