@@ -63,7 +63,7 @@ getCheckoutSessionCompletedR nonceUUID customerId = do
                              , accountCustomerId = customerId
                              , accountSubscribed = True
                              }
-                       copySampleDocuments key
+                       -- copySampleDocuments key
                        updateSession
                          sessionId
                          (Registered
