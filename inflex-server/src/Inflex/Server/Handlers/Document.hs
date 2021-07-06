@@ -54,14 +54,7 @@ getSandboxR =
   htmlWithUrl
     (appTemplate
        NoSessionState
-       (do script_
-             [ async_ ""
-             , defer_ ""
-             , makeAttribute "data-domain" "inflex.io"
-             , src_ "https://plausible.inflex.io/js/index.js"
-             ]
-             ("" :: Text)
-           documentMeta Meta {readonly = False, source = Sandbox}
+       (do documentMeta Meta {readonly = False, source = Sandbox}
            documentScripts))
 
 getAppEditorR :: DocumentSlug -> Handler (Html ())
