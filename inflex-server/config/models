@@ -1,6 +1,8 @@
 --------------------------------------------------------------------------------
 -- Accounts and sessions
 
+--
+-- MUTABLE
 Account
   username Username Maybe
   email Email
@@ -10,6 +12,8 @@ Account
   subscribed Bool
   deriving Show
 
+--
+-- MUTABLE
 Session
   uuid SessionUUID
   state SessionState
@@ -17,6 +21,8 @@ Session
   Unique UniqueUuid uuid
   deriving Show
 
+--
+-- MUTABLE
 EarlyAccessRequest
   created UTCTime
   email Email
@@ -28,6 +34,8 @@ EarlyAccessRequest
 -- Documents
 
 -- A document has a unique slug and belongs to a single account.
+--
+-- MUTABLE
 Document
   account AccountId
   name DocumentSlug
@@ -36,8 +44,10 @@ Document
   revision RevisionId
   deriving Show
 
--- Documents have many revisions. One can activate a previous revision
--- (undo) or redo another dated later.
+-- Documents have many revisions with one active one, specified in the
+-- Document relation.
+--
+-- APPEND-ONLY
 Revision
   account AccountId
   document DocumentId
@@ -49,6 +59,8 @@ Revision
 --
 -- We associate `order' with this because it's about the document and
 -- not about the cell.
+--
+-- APPEND-ONLY
 RevisionCell
   revision RevisionId
   cell CellId
@@ -64,6 +76,8 @@ RevisionCell
 -- A user doesn't "edit" a cell; rather they create a new cell (and
 -- therefore a new revision cell, and a new revision) with the same
 -- contents slightly changed.
+--
+-- APPEND-ONLY
 Cell
   account AccountId
   document DocumentId
@@ -80,6 +94,8 @@ Cell
 -- different documents.
 --
 -- We ought to be able to garbage collect these like `git gc'.
+--
+-- APPEND-ONLY
 Code
   source Text
   hash SHA512
@@ -89,6 +105,8 @@ Code
 --------------------------------------------------------------------------------
 -- Files
 
+--
+-- APPEND-ONLY
 File
   account AccountId
   name Text
