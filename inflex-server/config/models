@@ -33,6 +33,7 @@ Document
   name DocumentSlug
   created UTCTime
   updated UTCTime
+  revision RevisionId
   deriving Show
 
 -- Documents have many revisions. One can activate a previous revision
@@ -41,8 +42,6 @@ Revision
   account AccountId
   document DocumentId
   created UTCTime
-  active Bool
-  activated UTCTime
   deriving Show
 
 -- A revision cell is created exactly after a revision, so we don't
