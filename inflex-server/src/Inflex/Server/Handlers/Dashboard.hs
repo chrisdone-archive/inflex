@@ -250,6 +250,7 @@ postDeleteDocumentR :: DocumentId -> Handler ()
 postDeleteDocumentR documentId =
   withLogin
     (\_ LoginState {loginAccountId=AccountID accountId} -> do
+       -- TODO: Implement cascading of cells, revisions, etc.
        runDB
          (deleteWhere
             [DocumentId ==. documentId, DocumentAccount ==. toSqlKey accountId])
