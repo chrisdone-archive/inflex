@@ -288,7 +288,7 @@ render (State {display, code, editor, path, cellError, cells}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
-      if trim code == "FIXME: should be empty string" -- TODO: -- no code is filled in yet
+      if trim code == "" -- TODO: -- no code is filled in yet
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
@@ -394,9 +394,6 @@ renderVariantEditor path cells tag marg =
     caseVariantArgument
       {"NoVariantArgument": [],
        "VariantArgument": \arg ->
-     -- case marg of
-     --   Nothing -> []
-     --   Just arg ->
          [HH.slot
             (SProxy :: SProxy "editor")
             ("#" <> show tag <> "/argument")
@@ -1079,54 +1076,32 @@ renderError msg =
 
 --------------------------------------------------------------------------------
 -- Code regenerators
---
--- TODO: delete these functions and move all updates to server-side
--- path-based updates.
 
 editorCode :: View Shared.Tree2 -> String
-editorCode _ =
-  "" -- TODO: caseTree2
-  {-case _ of
-    MiscE original s -> originalOr original s
-    VegaE original s -> originalOr original s
-    TextE original s -> (show s) -- TODO: Encoding strings is not easy. Fix this.
-    ArrayE original xs -> ("[" <> joinWith ", " (map editorCode xs) <> "]")
-    VariantE original tag marg -> ("#" <> tag <> arg)
-      where arg = case marg of
-                    Nothing -> ""
-                    Just arg' -> "(" <> editorCode arg' <> ")"
-    RecordE original fs ->
-      ("{" <>
-       joinWith
-         ", "
-         (map (\(Field {key, value}) -> key <> ":" <> editorCode value) fs) <>
-       "}")
-    ErrorE _ -> ""
-    TableE original columns rows ->
-      addTableTypeSig
-        columns
-        rows
-        (editorCode
-           (ArrayE
-              original
-              (map
-                 (case _ of
-                    Row {original: o,fields} -> RecordE o fields
-                    HoleRow -> MiscE Shared.NoOriginalSource "_")
-                 rows)))-}
+editorCode =
+  caseTree2 {
+    "MiscTree2":       \v original t ->
+      originalOr original "",
+    "TextTree2":       \v original t ->
+      originalOr original "",
+    "VegaTree2":       \v original t ->
+      originalOr original "",
+    "VariantTree2":    \v original tag arg ->
+      originalOr original "",
+    "ArrayTree2":      \v original editors ->
+      originalOr original "",
+    "RecordTree2":     \v original fields ->
+      originalOr original "",
+    "TableTreeMaybe2": \v original columns rows ->
+      originalOr original "",
+    "HoleTree": "_"
+  }
 
--- | Add a type signature if the rows are empty.
--- DONE: Consider whether this is the right place for this. It might cause trouble.
--- UPDATE: considered, seems fine.
-addTableTypeSig :: forall a. Array String -> Array a -> String -> String
-addTableTypeSig columns rows inner =
-  case rows of
-    [] -> "([] :: [{" <> joinWith "," columns <> "}])"
-    _ -> inner
-
-originalOr :: Shared.OriginalSource -> String -> String
-originalOr Shared.NoOriginalSource s = s
-originalOr (Shared.OriginalSource s) _ = s
+originalOr :: View Shared.OriginalSource -> String -> String
+originalOr v s = caseOriginalSource  {
+   "NoOriginalSource": s,
+   "OriginalSource": \s' -> s'
+   } v
 
 --------------------------------------------------------------------------------
 -- Tree casing
