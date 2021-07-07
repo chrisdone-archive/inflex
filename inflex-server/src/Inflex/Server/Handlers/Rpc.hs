@@ -162,6 +162,9 @@ transformErrorToCellError =
 --------------------------------------------------------------------------------
 -- Undo/Redo document
 
+-- TODO: fix undo/redo commented out code
+
+
 rpcUndoDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
 rpcUndoDocument docId =
   withLogin
