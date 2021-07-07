@@ -25,6 +25,7 @@ import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
+import qualified Database.Esqueleto as E
 import           Database.Persist.Sql
 import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
 import qualified Inflex.Schema as Shared
@@ -223,16 +224,35 @@ getRevisedDocument loginAccountId docId = do
       []
   case mdoc of
     Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
-      mrevision <-
-        selectFirst
-          [RevisionDocument ==. documentKey, RevisionId ==. revisionId]
-          []
-      case mrevision of
-        Nothing -> notFound
-        Just (Entity _ revision) -> do
-          let revisedInputDocument = undefined
-          -- TODO: Make an InputDocument.
-          pure RevisedDocument {..}
+      revision <- get404 revisionId
+      cells <-
+        fmap
+          (fmap
+             (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
+                Shared.InputCell1
+                  { uuid = cellUuid
+                  , name = cellName
+                  , code = codeSource
+                  , order = revisionCellOrder
+                  , version = Shared.versionRefl
+                  }))
+          (E.select
+             (E.from
+                (\row@(code, cell, revisionCell) -> do
+                   pure ()
+                   -- Join code to cell:
+                   E.where_ (code E.^. CodeId E.==. cell E.^. CellCode)
+                   -- Join cell to revision cell:
+                   E.where_
+                     (cell E.^. CellId E.==. revisionCell E.^. RevisionCellCell)
+                   -- Join revision cell to revision.
+                   E.where_
+                     (revisionCell E.^. RevisionCellRevision E.==.
+                      E.val revisionId)
+                   pure row)))
+      let revisedInputDocument =
+            Shared.InputDocument1 {cells = V.fromList cells}
+      pure RevisedDocument {..}
     _ -> notFound -- Cheeky.
 
 setInputDocument ::
