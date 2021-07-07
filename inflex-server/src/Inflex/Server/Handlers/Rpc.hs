@@ -222,18 +222,18 @@ getRevisedDocument loginAccountId docId = do
       ]
       []
   case mdoc of
-    Nothing -> notFound
-    Just (Entity documentKey _document) -> do
+    Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
       mrevision <-
         selectFirst
-          [RevisionDocument ==. documentKey-- , RevisionActive ==. True
-          ]
+          [RevisionDocument ==. documentKey, RevisionId ==. revisionId]
           []
       case mrevision of
         Nothing -> notFound
-        Just (Entity revisionId revision) -> do
-          let revisedInputDocument = undefined -- TODO: Make an InputDocument.
+        Just (Entity _ revision) -> do
+          let revisedInputDocument = undefined
+          -- TODO: Make an InputDocument.
           pure RevisedDocument {..}
+    _ -> notFound -- Cheeky.
 
 setInputDocument ::
      UTCTime
@@ -291,8 +291,7 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = do
 
 loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
 loadRevisedDocument RevisedDocument {..} =
-  undefined -- TODO: Use esqueleto to perform the necessary join
-  {-forceTimeout TimedLoadDocument (loadInputDocument (revisionContent revision))-}
+  forceTimeout TimedLoadDocument (loadInputDocument revisedInputDocument)
 
 --------------------------------------------------------------------------------
 -- Importing CSV
