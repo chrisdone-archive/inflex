@@ -218,6 +218,7 @@ postNewDocumentR =
        slug <-
          runDB
            (do now' <- liftIO getCurrentTime
+
                key <-
                  insert
                    Document
@@ -226,19 +227,21 @@ postNewDocumentR =
                      , documentCreated = now'
                      , documentUpdated = now'
                      , documentAccount = fromAccountID loginAccountId
+                     , documentRevision = Nothing
                      }
                let slug =
                      DocumentSlug
                        ("document-" <> fromString (show (fromSqlKey key)))
-               update key [DocumentName =. slug] -- TODO: Check uniqueness
-               insert_
+               revisionId <- insert
                  Revision
                    { revisionAccount = fromAccountID loginAccountId
                    , revisionDocument = key
                    , revisionCreated = now'
-                   , revisionActive = True
-                   , revisionActivated = now'
+                   -- , revisionActive = True
+                   -- , revisionActivated = now'
                    }
+               update key [DocumentName =. slug, DocumentRevision =. Just revisionId] -- TODO: Check uniqueness
+
                pure slug)
        glog CreateDocument
        redirect (AppEditorR slug))

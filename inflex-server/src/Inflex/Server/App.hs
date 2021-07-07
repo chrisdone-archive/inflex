@@ -40,6 +40,7 @@ import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
 import           Inflex.Document (DocumentMsg)
+import           Inflex.Schema (UUID)
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.Forge
 import           Inflex.Server.Types

@@ -17,7 +17,7 @@ import           Data.Aeson.Types (Parser)
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Database.Persist.TH
+import           Database.Persist.Sql (PersistFieldSql, PersistField)
 import           GHC.Generics
 import           Prelude hiding (Maybe)
 
@@ -25,7 +25,7 @@ import           Prelude hiding (Maybe)
 -- Types
 
 newtype UUID = UUID Text
- deriving (Eq, Ord, FromJSON, Show, NFData)
+ deriving (Eq, Ord, FromJSON, Show, NFData, PersistFieldSql, PersistField)
 
 newtype Hash = Hash Text
  deriving (Eq, Ord, FromJSON, Show, NFData)
@@ -715,14 +715,6 @@ instance NFData Version2
 instance Version Version2 where versionNumber _ = 2; versionRefl = Version2
 instance FromJSON Version2 where parseJSON = parseVersion
 -- instance ToJSON Version2 where toJSON = versionToJSON
-
-$(derivePersistFieldJSON "InputDocument")
-$(derivePersistFieldJSON "OutputDocument")
-$(derivePersistFieldJSON "InputCell")
-$(derivePersistFieldJSON "OutputCell")
-
-$(derivePersistFieldJSON "InputDocument1")
-$(derivePersistFieldJSON "InputCell1")
 
 --------------------------------------------------------------------------------
 -- Frisson

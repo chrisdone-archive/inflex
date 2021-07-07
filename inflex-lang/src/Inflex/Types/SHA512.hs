@@ -15,6 +15,7 @@ module Inflex.Types.SHA512
   , sha512AsHexBS
   , checkSha512Of
   , valueToSha512
+  , sha512Text
   , SHA512(..)
   ) where
 
@@ -123,3 +124,6 @@ checkSha512Of hash bs = hash == sha512ByteString bs
 
 sha512String :: String -> SHA512
 sha512String str = sha512ByteString $ encodeUtf8 $ T.pack str
+
+sha512Text :: Text -> SHA512
+sha512Text = sha512ByteString . encodeUtf8

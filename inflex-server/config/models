@@ -41,7 +41,7 @@ Document
   name DocumentSlug
   created UTCTime
   updated UTCTime
-  revision RevisionId
+  revision RevisionId Maybe
   deriving Show
 
 -- Documents have many revisions with one active one, specified in the
@@ -84,6 +84,7 @@ Cell
   code CodeId
   created UTCTime
   name Text
+  uuid UUID
   deriving Show
 
 -- Independent from any specific document. It's just a piece of code

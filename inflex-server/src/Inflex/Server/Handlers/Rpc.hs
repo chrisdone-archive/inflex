@@ -35,7 +35,8 @@ import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
-import           Inflex.Types
+import           Inflex.Types hiding (Cell)
+import           Inflex.Types.SHA512
 import qualified RIO
 import           RIO (glog)
 import           Yesod hiding (Html)
@@ -173,8 +174,8 @@ rpcUndoDocument docId =
                    [Desc RevisionId]
                case mrevisionId of
                  Just (Entity revisionId' revision') -> do
-                   update revisionId [RevisionActive =. False]
-                   update revisionId' [RevisionActive =. True]
+                   -- update revisionId [RevisionActive =. False]
+                   -- update revisionId' [RevisionActive =. True]
                    pure
                      RevisedDocument
                        {revisionId = revisionId', revision = revision', ..}
@@ -194,8 +195,8 @@ rpcRedoDocument docId =
                    [Asc RevisionId]
                case mrevisionId of
                  Just (Entity revisionId' revision') -> do
-                   update revisionId [RevisionActive =. False]
-                   update revisionId' [RevisionActive =. True]
+                   -- update revisionId [RevisionActive =. False]
+                   -- update revisionId' [RevisionActive =. True]
                    pure
                      RevisedDocument
                        {revisionId = revisionId', revision = revision', ..}
@@ -225,7 +226,8 @@ getRevisedDocument loginAccountId docId = do
     Just (Entity documentKey _document) -> do
       mrevision <-
         selectFirst
-          [RevisionDocument ==. documentKey, RevisionActive ==. True]
+          [RevisionDocument ==. documentKey-- , RevisionActive ==. True
+          ]
           []
       case mrevision of
         Nothing -> notFound
@@ -240,26 +242,49 @@ setInputDocument ::
   -> RevisionId
   -> Shared.InputDocument1
   -> YesodDB App ()
-setInputDocument now accountId documentId revisionId inputDocument = do
-  update revisionId [RevisionActive =. False]
-  -- TODO: insert revision cells, cells, code
-  insert_
-    Revision
-      { revisionAccount = fromAccountID accountId
-      , revisionDocument = documentId
-      , revisionCreated = now
+setInputDocument now accountId documentId _oldRevisionId inputDocument = do
+  revisionId <-
+    insert
+      Revision
+        { revisionAccount = fromAccountID accountId
+        , revisionDocument = documentId
+        , revisionCreated = now
+        }
+  for_
+    (InputDocument1.cells inputDocument)
+    (\Shared.InputCell1 {uuid, name, code, order} -> do
+       codeId <-
+         insert -- TODO: Avoid re-inserting the same code.
+           Code
+             {codeSource = code, codeHash = sha512Text code, codeCreated = now}
+       cellId <-
+         insert -- TODO: Avoid re-inserting the same cell.
+           Cell
+             { cellAccount = fromAccountID accountId
+             , cellDocument = documentId
+             , cellCode = codeId
+             , cellCreated = now
+             , cellName = name
+             , cellUuid = uuid
+             }
+       insert_
+         RevisionCell
+           { revisionCellRevision = revisionId
+           , revisionCellCell = cellId
+           , revisionCellOrder = order
+           }
+       pure ())
+  update documentId [DocumentRevision =. pure revisionId]
 
-      , revisionActive = True
-      , revisionActivated = now
-      }
-  revisions <- selectKeysList [RevisionDocument ==. documentId] [Asc RevisionId]
-  config <- fmap appConfig getYesod
-  case revisions of
-    [] -> pure ()
-    (earliestRevision:_) ->
-      if length revisions > maxRevisionsPerDoc config
-        then delete earliestRevision
-        else pure ()
+  -- TODO: Garbage collect old revisions.
+  -- revisions <- selectKeysList [RevisionDocument ==. documentId] [Asc RevisionId]
+  -- config <- fmap appConfig getYesod
+  -- case revisions of
+  --   [] -> pure ()
+  --   (earliestRevision:_) ->
+  --     if length revisions > maxRevisionsPerDoc config
+  --       then delete earliestRevision
+  --       else pure ()
 
 --------------------------------------------------------------------------------
 -- Loading
