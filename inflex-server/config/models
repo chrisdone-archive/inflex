@@ -101,6 +101,7 @@ Code
   source Text
   hash SHA512
   created UTCTime
+  UniqueCode hash
   deriving Show
 
 --------------------------------------------------------------------------------

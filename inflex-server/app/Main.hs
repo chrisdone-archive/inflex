@@ -12,9 +12,11 @@ import           Control.Monad.Logger
 import           Criterion.Measurement
 import qualified Data.ByteString.Char8 as S8
 import           Data.Functor.Contravariant
+import qualified Data.List as List
 import           Data.Pool
 import           Data.String
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as T
 import           Data.Time
 import           Data.Yaml
 import           GitInfo (gitHash)
@@ -60,27 +62,38 @@ main = do
     (withDBPool
        config
        (\pool -> do
-          runSqlPool
-            (do when False (printMigration migrateAll) -- Enable when updating the DB.
-                manualMigration (stripeConfig config) migrateAll)
-            pool
-          logFunc <- liftIO (makeAppLogFunc registry)
-          app <-
-            liftIO
-              (toWaiAppPlain
-                 App {appLogFunc = logFunc, appPool = pool, appConfig = config})
-          let runMyWarp thisPort =
-                Warp.runSettings (Warp.setPort thisPort (warpSettings logFunc))
-          liftIO
-            (concurrently_
-               (runMyWarp
-                  9090
-                  (Prometheus.prometheusApp
-                     ["metrics"]
-                     (Prometheus.Registry.sample registry)))
-               (runMyWarp
-                  port
-                  (addServerHeader (gzip def {gzipFiles = GzipCompress} app))))))
+          runSqlPool (manualMigration (stripeConfig config) migrateAll) pool
+          entries <- runSqlPool (showMigration migrateAll) pool
+          if not (List.null entries)
+            then liftIO
+                   (do putStrLn
+                         "Persistent has an inconsistent view of the database."
+                       putStrLn "Persistent's proposed changes:"
+                       mapM_ T.putStrLn entries
+                       exitFailure)
+            else do
+              logFunc <- liftIO (makeAppLogFunc registry)
+              app <-
+                liftIO
+                  (toWaiAppPlain
+                     App
+                       { appLogFunc = logFunc
+                       , appPool = pool
+                       , appConfig = config
+                       })
+              let runMyWarp thisPort =
+                    Warp.runSettings
+                      (Warp.setPort thisPort (warpSettings logFunc))
+              liftIO
+                (concurrently_
+                   (runMyWarp
+                      9090
+                      (Prometheus.prometheusApp
+                         ["metrics"]
+                         (Prometheus.Registry.sample registry)))
+                   (runMyWarp
+                      port
+                      (addServerHeader (gzip def {gzipFiles = GzipCompress} app))))))
   where
     warpSettings parentGLogFunc =
       Warp.setLogger

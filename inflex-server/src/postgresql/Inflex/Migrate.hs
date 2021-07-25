@@ -63,6 +63,11 @@ ALTER TABLE "file" ADD CONSTRAINT "file_account_fkey" FOREIGN KEY("account") REF
 ALTER TABLE "revision" ADD CONSTRAINT "revision_account_fkey" FOREIGN KEY("account") REFERENCES "account"("id");
 ALTER TABLE "revision" ADD CONSTRAINT "revision_document_fkey" FOREIGN KEY("document") REFERENCES "document"("id");
 
+-- added some updates
+
+ALTER TABLE "account" ALTER COLUMN "subscribed" DROP DEFAULT;
+ALTER TABLE "document" ADD CONSTRAINT "document_revision_fkey" FOREIGN KEY("revision") REFERENCES "revision"("id");
+ALTER TABLE "code" ADD CONSTRAINT "unique_code" UNIQUE("hash");
 
 |]
 
