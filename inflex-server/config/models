@@ -85,6 +85,7 @@ Cell
   created UTCTime
   name Text
   uuid UUID
+  UniqueCell document code name uuid
   deriving Show
 
 -- Independent from any specific document. It's just a piece of code

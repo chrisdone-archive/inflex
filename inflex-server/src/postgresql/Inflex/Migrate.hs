@@ -69,6 +69,10 @@ ALTER TABLE "account" ALTER COLUMN "subscribed" DROP DEFAULT;
 ALTER TABLE "document" ADD CONSTRAINT "document_revision_fkey" FOREIGN KEY("revision") REFERENCES "revision"("id");
 ALTER TABLE "code" ADD CONSTRAINT "unique_code" UNIQUE("hash");
 
+-- unique on cells too
+
+ALTER TABLE "cell" ADD CONSTRAINT "unique_cell" UNIQUE("document","code","name","uuid");
+
 |]
 
 --------------------------------------------------------------------------------

@@ -276,12 +276,13 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = do
   for_
     (InputDocument1.cells inputDocument)
     (\Shared.InputCell1 {uuid, name, code, order} -> do
-       codeId <-
-         insert -- TODO: Avoid re-inserting the same code.
+       Entity {entityKey = codeId} <-
+         upsert -- TODO: Avoid re-inserting the same code.
            Code
              {codeSource = code, codeHash = sha512Text code, codeCreated = now}
-       cellId <-
-         insert -- TODO: Avoid re-inserting the same cell.
+           []
+       Entity {entityKey = cellId} <-
+         upsert -- TODO: Avoid re-inserting the same cell.
            Cell
              { cellAccount = fromAccountID accountId
              , cellDocument = documentId
@@ -290,6 +291,7 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = do
              , cellName = name
              , cellUuid = uuid
              }
+           []
        insert_
          RevisionCell
            { revisionCellRevision = revisionId
@@ -298,7 +300,6 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = do
            }
        pure ())
   update documentId [DocumentRevision =. pure revisionId]
-
   -- TODO: Garbage collect old revisions.
   -- revisions <- selectKeysList [RevisionDocument ==. documentId] [Asc RevisionId]
   -- config <- fmap appConfig getYesod
