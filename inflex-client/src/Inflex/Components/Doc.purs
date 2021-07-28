@@ -4,6 +4,9 @@ module Inflex.Components.Doc
   ( component
   ) where
 
+import Inflex.Frisson (View, caseColumnAction, caseCsvColumnType, caseCsvGuess, caseOptionality, caseUpdateResult, csvColumnAction, csvColumnName, csvImportSpecColumns, csvImportSpecFile, csvImportSpecSeparator, csvImportSpecSkipRows, fileId, fileName, filesOutputFiles, importColumnImportType, importColumnRenameTo, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
+
 import Control.Monad.State (class MonadState)
 import Data.Either (Either(..))
 import Data.Map (Map)
@@ -23,8 +26,6 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Frisson
-import Inflex.Rpc (rpcCsvGuessSchema, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
@@ -355,22 +356,63 @@ eval =
           case result of
             Left err -> error ("rpcCsvGuessSchema:" <> err)
             Right csvGuess ->
-              pure unit
-              {-case csvGuess of
-                Shared.GuessCassavaFailure err -> error err
-                Shared.CsvGuessed csvImportSpec -> do
+              caseCsvGuess {
+                "GuessCassavaFailure": \err -> error err,
+                "CsvGuessed": \csvImportSpec -> do
                   result2 <-
                     rpcCsvImport
-                      (Shared.CsvImportFinal {csvImportSpec, documentId: DocumentId docId})
+                      (Shared.CsvImportFinal {csvImportSpec: materializeCsvImportSpec csvImportSpec, documentId: DocumentId docId})
                                       -- For now, we're just going to immediately import the
                                       -- file. But next, we'll provide a UI display of the guessed
                                       -- schema, with the option to tweak the types of fields before importing.
                   case result2 of
                     Left err -> error ("CsvImport:" <> err)
-                    Right outputDocument -> setOutputDocument outputDocument-}
+                    Right outputDocument -> setOutputDocument outputDocument
+              } csvGuess
 
 materializeFile :: View Shared.File -> Shared.File
 materializeFile f = Shared.File { id: fileId f, name: fileName f }
+
+materializeCsvImportSpec :: View Shared.CsvImportSpec -> Shared.CsvImportSpec
+materializeCsvImportSpec f =
+  Shared.CsvImportSpec
+    { skipRows: csvImportSpecSkipRows f
+    , separator: csvImportSpecSeparator f
+    , file: materializeFile (csvImportSpecFile f)
+    , columns: map materializeColumn (csvImportSpecColumns f)
+    }
+
+materializeColumn :: View Shared.CsvColumn -> Shared.CsvColumn
+materializeColumn f =
+  Shared.CsvColumn
+    { name: csvColumnName f
+    , action: materializeAction (csvColumnAction f)
+    }
+
+materializeAction :: View Shared.ColumnAction -> Shared.ColumnAction
+materializeAction = caseColumnAction {
+    "IgnoreColumn": Shared.IgnoreColumn
+    , "ImportAction": \col -> Shared.ImportAction (materializeImportColumn col)
+  }
+
+materializeImportColumn :: View Shared.ImportColumn -> Shared.ImportColumn
+materializeImportColumn f = Shared.ImportColumn {
+ importType: materializeColumnType (importColumnImportType f),
+ renameTo: importColumnRenameTo f
+   }
+
+materializeColumnType :: View Shared.CsvColumnType -> Shared.CsvColumnType
+materializeColumnType = caseCsvColumnType {
+  "DecimalType": \i o -> Shared.DecimalType i (materializeOptionality o),
+  "IntegerType": \o -> Shared.IntegerType  (materializeOptionality o),
+  "TextType": \o -> Shared.TextType  (materializeOptionality o)
+  }
+
+materializeOptionality :: View Shared.Optionality -> Shared.Optionality
+materializeOptionality = caseOptionality {
+    "Optional": \v -> Shared.Optional versionRefl,
+    "Required": \v -> Shared.Required versionRefl
+  }
 
 --------------------------------------------------------------------------------
 -- API calls
