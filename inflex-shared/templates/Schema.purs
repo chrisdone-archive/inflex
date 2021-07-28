@@ -4,6 +4,8 @@ module Inflex.Schema where
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Generic.Rep.Ord (genericCompare)
+import Data.Generic.Rep.Eq (genericEq)
 import Data.UUID (UUID)
 import Foreign (F, Foreign, ForeignError(..), fail)
 import Foreign.Generic (class Decode, class Encode, decode, encode, genericDecode, genericEncode)
@@ -34,6 +36,8 @@ instance encodeOptionality :: Encode Optionality where encode = genericEncode op
 
 derive instance genericHash :: Generic Hash _
 instance showHash :: Show Hash where show = genericShow
+instance eqHash :: Eq Hash where eq = genericEq
+instance ordHash :: Ord Hash where compare = genericCompare
 instance decodeHash :: Decode Hash where decode = genericDecode opts
 instance encodeHash :: Encode Hash where encode = genericEncode opts
 
