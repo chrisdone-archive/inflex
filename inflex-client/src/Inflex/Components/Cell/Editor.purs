@@ -288,7 +288,7 @@ render (State {display, code, editor, path, cellError, cells}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
-      if trim code == "" -- TODO: -- no code is filled in yet
+      if blank code editor
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
@@ -313,12 +313,8 @@ render (State {display, code, editor, path, cellError, cells}) =
       case display of
         DisplayCode -> HH.div [] inner -- Should not be happening.
         DisplayEditor ->
-          case editor of
-             Left _ -> HH.div [] inner -- Should not be happening.
-             Right e ->
-               caseTree2
-                  ((caseTree2Default
-                   (HH.div
+          let boundaryWrap =
+                (HH.div
                      [HP.class_ (HH.ClassName "editor-boundary-wrap")]
                      ([ HH.div
                           [ HP.class_ (HH.ClassName "ellipsis-button")
@@ -330,7 +326,13 @@ render (State {display, code, editor, path, cellError, cells}) =
                           ]
                           []
                       ] <>
-                      inner)))
+                      inner))
+          in case editor of
+             Left _ -> boundaryWrap
+             Right e ->
+               caseTree2
+                  ((caseTree2Default
+                   boundaryWrap)
                    {
                     "MiscTree2" = \v _originalSource t ->
                       HH.div
@@ -348,6 +350,14 @@ render (State {display, code, editor, path, cellError, cells}) =
       case cellError of
         Nothing -> []
         Just error -> [renderError error]
+
+blank :: forall e. String -> Either e (View Shared.Tree2) -> Boolean
+blank code editor =
+  if code == ""
+    then case editor of
+           Left _ -> true
+           _ -> false
+    else false
 
 --------------------------------------------------------------------------------
 -- Render inner editor
