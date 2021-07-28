@@ -388,18 +388,17 @@ update update' =
              { document: Shared.InputDocument1 {cells: map toInputCell (state.cells)}
              , update: update'
              })
-      pure Nothing
-      {-case result of
+      case result of
         Left err -> do
           error err -- TODO:Display this to the user properly.
           pure Nothing
         Right uresult ->
-          case uresult of
-            Shared.UpdatedDocument outputDocument -> do
-              setOutputDocument outputDocument
-              pure Nothing
-            Shared.NestedError cellError -> do
-              pure (Just cellError)-}
+          caseUpdateResult {
+            "UpdatedDocument": \outputDocument -> do setOutputDocument outputDocument
+                                                     pure Nothing
+            ,"NestedError": \cellError -> pure (Just cellError)
+            }
+          uresult
     Just docId -> do
       result <-
         rpcUpdateDocument
