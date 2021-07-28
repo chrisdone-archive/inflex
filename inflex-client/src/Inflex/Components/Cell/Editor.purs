@@ -1065,23 +1065,26 @@ renderError :: forall t10 t11. View CellError -> HH.HTML t11 t10
 renderError msg =
   HH.div
     [HP.class_ (HH.ClassName "error-message")]
-    [ HH.text "some error here"
-        -- TODO: case
-         {-case msg of
-           FillErrors fillErrors -> joinWith ", " (map fromFillError fillErrors)
-             where fromFillError =
-                     case _ of
-                       NoSuchGlobal name -> "missing name “" <> name <> "”"
-                       OtherCellProblem name ->
+    [ HH.text
+         (caseCellError {
+           "FillErrors" : \fillErrors ->
+             let fromFillError =
+                     caseFillError {
+                       "NoSuchGlobal": \name -> "missing name “" <> name <> "”",
+                       "OtherCellProblem": \name ->
                          "other cell “" <> name <> "” has a problem"
-           CyclicCells names ->
+                      }
+             in joinWith ", " (map fromFillError fillErrors),
+
+           "CyclicCells": \ names ->
              "cells refer to eachother in a loop:" <> " " <>
-             joinWith ", " names
-           DuplicateCellName -> "this name is used twice"
-           CellRenameErrors -> "internal bug; please report!" -- TODO:make this automatic.
-           CellTypeError -> "types of values don't match up"
-           CellStepEror -> "error while evaluating formula"
-           SyntaxError -> "syntax error, did you mistype something?"-}
+             joinWith ", " names,
+           "DuplicateCellName":  "this name is used twice",
+           "CellRenameErrors": "internal bug; please report!", -- TODO:make this automatic.
+           "CellTypeError": "types of values don't match up",
+           "CellStepEror": "error while evaluating formula",
+           "SyntaxError": "syntax error, did you mistype something?"
+          } msg)
     ]
 
 --------------------------------------------------------------------------------
