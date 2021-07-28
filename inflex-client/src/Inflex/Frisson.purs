@@ -34,6 +34,8 @@ foreign import updateDocumentDocumentId :: (View UpdateDocument) -> (View Docume
 
 foreign import updateDocumentUpdate :: (View UpdateDocument) -> (View Update)
 
+foreign import updateDocumentSeen :: (View UpdateDocument) -> (Array (View Hash))
+
 foreign import viewUpdateSandbox :: Json -> (View UpdateSandbox)
 
 foreign import unviewUpdateSandbox :: (View UpdateSandbox) -> Json

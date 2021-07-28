@@ -297,13 +297,15 @@ eval =
               error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
             Right outputDocument -> setOutputDocument outputDocument
     NewCell code -> do
-      result <- update (Shared.CellNew (Shared.NewCell {code}))
+      {seen} <- H.get
+      result <- update seen (Shared.CellNew (Shared.NewCell {code}))
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
     UpdatePath uuid update' -> do
+      {seen} <- H.get
       result <-
-        update
+        update seen
           (Shared.CellUpdate
              (Shared.UpdateCell {uuid, update: update'}))
       case result of
@@ -316,13 +318,15 @@ eval =
               (Cell.NestedCellError cellError)
           pure unit
     DeleteCell uuid -> do
-      result <- update (Shared.CellDelete (Shared.DeleteCell {uuid}))
+      {seen} <- H.get
+      result <- update seen (Shared.CellDelete (Shared.DeleteCell {uuid}))
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
     RenameCell uuid name' -> do
+      {seen} <- H.get
       result <-
-        update
+        update seen
           (Shared.CellRename
              (Shared.RenameCell {uuid, newname: name'}))
       case result of
@@ -423,8 +427,8 @@ update :: forall t60.
   Bind t60 => MonadAff t60 => MonadAff t60 => MonadState
                                                    State
                                                    t60
-                                                  => Shared.Update -> t60 (Maybe (View Shared.NestedCellError))
-update update' =
+                                                  => Set Shared.Hash -> Shared.Update -> t60 (Maybe (View Shared.NestedCellError))
+update seen update' =
   case toMaybe (meta . documentId) of
     Nothing -> do
       state <- H.get
@@ -451,6 +455,7 @@ update update' =
           (Shared.UpdateDocument
              { documentId: DocumentId docId
              , update: update'
+             , seen: Set.toUnfoldable seen
              })
       case result of
         Left err -> do
@@ -479,6 +484,9 @@ setOutputDocument doc = do
        s
          { cells = outputDocumentCells doc
          , modal = NoModal
+         -- Here: We store the cells we've seen. It's important that
+         -- this is the only place where it's updated, as it serves as
+         -- a cache.
          , seen =
              Set.fromFoldable
                (map

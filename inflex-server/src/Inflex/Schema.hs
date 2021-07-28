@@ -75,6 +75,7 @@ data RefreshDocument = RefreshDocument
 data UpdateDocument = UpdateDocument
   { documentId :: DocumentId
   , update :: Update
+  , seen :: Vector Hash
   }
 
 data UpdateSandbox = UpdateSandbox

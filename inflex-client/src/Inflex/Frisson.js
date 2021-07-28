@@ -23,6 +23,8 @@ exports.updateDocumentDocumentId = function(a){return a[0]};
 
 exports.updateDocumentUpdate = function(a){return a[1]};
 
+exports.updateDocumentSeen = function(a){return a[2]};
+
 exports.viewUpdateSandbox = function(x){return x};
 
 exports.unviewUpdateSandbox = function(x){return x};
