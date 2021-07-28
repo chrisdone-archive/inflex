@@ -4,36 +4,35 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import           Data.Set (Set)
-import           Data.Set as Set
-import           Inflex.Frisson (View, caseColumnAction, caseCsvColumnType, caseCsvGuess, caseOptionality, caseUpdateResult, csvColumnAction, csvColumnName, csvImportSpecColumns, csvImportSpecFile, csvImportSpecSeparator, csvImportSpecSkipRows, fileId, fileName, filesOutputFiles, importColumnImportType, importColumnRenameTo, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
-import           Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
-
-import           Control.Monad.State (class MonadState)
-import           Data.Either (Either(..))
-import           Data.Map (Map)
-import           Data.Map as M
-import           Data.Maybe (Maybe(..), isNothing)
-import           Data.MediaType (MediaType(..))
-import           Data.Nullable (Nullable, toMaybe)
-import           Data.Symbol (SProxy(..))
-import           Data.Tuple (Tuple(..))
-import           Data.UUID (UUID(..), uuidToString)
-import           Effect.Aff (Aff)
-import           Effect.Aff.Class (class MonadAff)
-import           Effect.Class (class MonadEffect)
-import           Effect.Class.Console (error)
-import           Halogen as H
-import           Halogen.HTML as HH
-import           Halogen.HTML.Events as HE
-import           Halogen.HTML.Properties as HP
-import           Inflex.Components.Cell as Cell
-import           Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
-import           Inflex.Schema as Shared
-import           Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
-import           Timed (timed)
-import           Web.HTML.Event.DragEvent as DE
-import           Web.UIEvent.MouseEvent as ME
+import Control.Monad.State (class MonadState)
+import Data.Either (Either(..))
+import Data.Map (Map)
+import Data.Map as M
+import Data.Maybe (Maybe(..), isNothing)
+import Data.MediaType (MediaType(..))
+import Data.Nullable (Nullable, toMaybe)
+import Data.Set (Set)
+import Data.Set as Set
+import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
+import Data.UUID (UUID(..), uuidToString)
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
+import Effect.Class.Console (error)
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HP
+import Inflex.Components.Cell as Cell
+import Inflex.Frisson (View, caseColumnAction, caseCsvColumnType, caseCsvGuess, caseOptionality, caseUpdateResult, csvColumnAction, csvColumnName, csvImportSpecColumns, csvImportSpecFile, csvImportSpecSeparator, csvImportSpecSkipRows, fileId, fileName, filesOutputFiles, importColumnImportType, importColumnRenameTo, outputCellCode, outputCellHash, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unHash, unUUID)
+import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
+import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
+import Inflex.Schema as Shared
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
+import Timed (timed)
+import Web.HTML.Event.DragEvent as DE
+import Web.UIEvent.MouseEvent as ME
 
 --------------------------------------------------------------------------------
 -- Foreign
@@ -475,7 +474,17 @@ setOutputDocument ::
   => MonadEffect t11 =>
        View OutputDocument -> t11 Unit
 setOutputDocument doc = do
-  H.modify_ (\s -> s {cells = outputDocumentCells doc, modal = NoModal})
+  H.modify_
+    (\s ->
+       s
+         { cells = outputDocumentCells doc
+         , modal = NoModal
+         , seen =
+             Set.fromFoldable
+               (map
+                  (\outputCell -> Shared.Hash (unHash (outputCellHash outputCell)))
+                  (outputDocumentCells doc))
+         })
 
 toInputCell :: View OutputCell -> InputCell1
 toInputCell cell =
