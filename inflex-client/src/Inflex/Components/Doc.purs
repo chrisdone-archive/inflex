@@ -23,7 +23,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Frisson (View, caseUpdateResult, outputCellCode, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unUUID)
+import Inflex.Frisson
 import Inflex.Rpc (rpcCsvGuessSchema, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
@@ -59,7 +59,7 @@ data Command
   | Undo
   | Redo
   | ImportCsvStart
-  | ChooseCsvFile Shared.File
+  | ChooseCsvFile (View Shared.File)
 
 type State = {
     cells :: Array (View OutputCell)
@@ -71,7 +71,7 @@ data Modal
   = NoModal
   | ImportCsvModal CsvWizard
 
-data CsvWizard = CsvChooseFile (Array Shared.File)
+data CsvWizard = CsvChooseFile (Array (View Shared.File))
 
 type Input = Unit
 
@@ -255,12 +255,12 @@ renderCsvWizard wizard =
         , HH.ul
             [HP.class_ (HH.ClassName "csv-files")]
             (map
-               (\file@(Shared.File {name}) ->
+               (\file ->
                   HH.li
                     [ HP.class_ (HH.ClassName "csv-file")
                     , HE.onClick (\_ -> pure (ChooseCsvFile file))
                     ]
-                    [HH.text name])
+                    [HH.text (fileName file)])
                files)
         ]
 
@@ -343,16 +343,15 @@ eval =
             Right outputDocument -> setOutputDocument outputDocument
     ImportCsvStart -> do
       result <- rpcGetFiles (Shared.FileQuery {search: ""})
-      pure unit
-      {-case result of
+      case result of
         Left err -> error err
-        Right (Shared.FilesOutput {files}) ->
-          H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile files)})-}
+        Right files ->
+          H.modify_ (\s -> s {modal = ImportCsvModal (CsvChooseFile (filesOutputFiles files))})
     ChooseCsvFile file ->
       case documentId of
         Nothing -> error "Sandbox doesn't support CSV import!"
         Just docId -> do
-          result <- rpcCsvGuessSchema file
+          result <- rpcCsvGuessSchema (materializeFile file)
           case result of
             Left err -> error ("rpcCsvGuessSchema:" <> err)
             Right csvGuess ->
@@ -369,6 +368,9 @@ eval =
                   case result2 of
                     Left err -> error ("CsvImport:" <> err)
                     Right outputDocument -> setOutputDocument outputDocument-}
+
+materializeFile :: View Shared.File -> Shared.File
+materializeFile f = Shared.File { id: fileId f, name: fileName f }
 
 --------------------------------------------------------------------------------
 -- API calls
