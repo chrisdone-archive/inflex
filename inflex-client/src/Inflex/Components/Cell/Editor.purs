@@ -63,6 +63,7 @@ data State = State
   , cellError :: Maybe (View CellError)
   , lastInput :: Maybe EditorAndCode
   , cells :: Map UUID (OutputCell)
+  , dirty :: Boolean
   }
 
 data Command
@@ -80,7 +81,7 @@ data Command
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)
- | ResetDisplay
+ | ResetDisplayIfDirty
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -151,6 +152,7 @@ component =
              , cellError: Nothing
              , lastInput: Just input
              , cells
+             , dirty: false
              })
     , render
     , eval:
@@ -171,8 +173,13 @@ query ::
   -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
   case _ of
-    ResetDisplay -> do
-      H.modify_ (\(State st) -> State (st {display = DisplayEditor}))
+    ResetDisplayIfDirty -> do
+      H.modify_
+        (\(State st) ->
+           State
+             (if st . dirty
+                then st {display = DisplayEditor}
+                else st))
       pure Nothing
     NestedCellError cellError -> do
       State {path} <- H.get
@@ -181,7 +188,11 @@ query =
         then do
           H.modify_
             (\(State st) ->
-               State (st {display = DisplayCode, cellError = Just (nestedCellErrorError cellError)}))
+               State
+                 (st
+                    { display = DisplayCode
+                    , cellError = Just (nestedCellErrorError cellError)
+                    }))
         else do
           _ <-
             H.queryAll (SProxy :: SProxy "editor") (NestedCellError cellError)
@@ -229,7 +240,7 @@ eval' =
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
       -- log ("[FinishEditing] Got code:  "<> code)
-      H.modify_ (\(State s) -> State (s {lastInput = Nothing, display = DisplayCode, code = code}))
+      H.modify_ (\(State s) -> State (s {lastInput = Nothing, display = DisplayCode, code = code, dirty = true}))
       H.raise
         (NewCode
            (if trim code == ""
@@ -249,6 +260,7 @@ eval' =
                , cellError: Nothing
                , lastInput: Just input
                , cells
+               , dirty: false
                })
       -- do undefined
       --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})

@@ -166,11 +166,12 @@ eval =
       let newCell@(Cell {name}) = outputCellToCell c
       if newCell /= oldCell
         then do
-          log ("Cell.eval: " <> name <> ": The cell has changed, updating.")
+          log
+            ("Cell.eval: Updating: " <> name)
           H.modify_ (\(State s) -> State (s {cell = newCell, cells = cells}))
-        else do
-          _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
-          log ("Cell.eval" <> name <> ": No change to cell, skipping.")
+        else pure unit
+      _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplayIfDirty
+      pure unit
     DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------
