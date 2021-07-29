@@ -5,7 +5,7 @@
 Build the PureScript tooling:
 
 ```
-$ stack build happy purescript psc-package
+$ stack build happy purescript psc-package purescript-bundle-fast
 ```
 
 Build your PureScript project:

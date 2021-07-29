@@ -141,6 +141,7 @@ eval =
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, cells}) -> do
+      log "Setting cell from input"
       let cell@(Cell {name}) = outputCellToCell c
       H.modify_
         (\(State s) -> State (s {cell = cell, cells = cells}))
