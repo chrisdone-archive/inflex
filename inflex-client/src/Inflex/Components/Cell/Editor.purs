@@ -78,8 +78,9 @@ data Command
   | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
 
-data Query a =
-  NestedCellError (View Shared.NestedCellError)
+data Query a
+ = NestedCellError (View Shared.NestedCellError)
+ | ResetDisplay
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -170,10 +171,9 @@ query ::
   -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
   case _ of
-    -- @(Shared.NestedCellError { path: errorPath
-    --                           , error
-    --                           })
-
+    ResetDisplay -> do
+      H.modify_ (\(State st) -> State (st {display = DisplayEditor}))
+      pure Nothing
     NestedCellError cellError -> do
       State {path} <- H.get
       let path' = path Shared.DataHere

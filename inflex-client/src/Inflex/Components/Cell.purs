@@ -145,10 +145,11 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 --   log (show cmd)
 --   eval cmd
 
-eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
+-- eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
 eval =
   case _ of
-    TriggerUpdatePath update -> H.raise (UpdatePath update)
+    TriggerUpdatePath update -> do
+      H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, cells}) -> do
       log "Received input cell. Checking for changes..."
@@ -160,6 +161,7 @@ eval =
           H.modify_
               (\(State s) -> State (s {cell = newCell, cells = cells}))
          else do
+           _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
            log (name <> ": No change to cell, skipping.")
     DeleteCell -> H.raise RemoveCell
 
