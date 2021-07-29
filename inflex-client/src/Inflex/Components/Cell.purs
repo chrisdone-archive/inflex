@@ -28,7 +28,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Frisson (View, caseResult, unResultTree)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
-import Prelude (class Ord, class Show, Unit, bind, discard, identity, mempty, pure, show, unit, (<<<), (<>))
+import Prelude
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 
@@ -71,11 +71,19 @@ instance showInput :: Show Input where show x = genericShow x
 data Cell = Cell
   { name :: String
   , code :: String
+  , codeHash :: Shared.Hash
   , result :: Either (View Shared.CellError) (View Shared.Tree2)
+  , resultHash :: Shared.Hash
   }
 
 derive instance genericCell :: Generic Cell _
 instance showCell :: Show Cell where show x = genericShow x
+
+instance eqCell :: Eq Cell where
+  eq (Cell c1) (Cell c2) =
+    c1.name == c2.name &&
+    c1.codeHash == c2.codeHash &&
+    c1.resultHash == c2.resultHash
 
 --------------------------------------------------------------------------------
 -- Component
@@ -101,6 +109,8 @@ outputCellToCell (OutputCell cell) =
   Cell
     { name: cell.name
     , code: cell.code
+    , codeHash: cell.codeHash
+    , resultHash: cell.resultHash
     , result:
         caseResult
           { "ResultError": Left
@@ -141,10 +151,16 @@ eval =
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, cells}) -> do
-      log "Setting cell from input"
-      let cell@(Cell {name}) = outputCellToCell c
-      H.modify_
-        (\(State s) -> State (s {cell = cell, cells = cells}))
+      log "Received input cell. Checking for changes..."
+      State{cell: oldCell} <- H.get
+      let newCell@(Cell {name}) = outputCellToCell c
+      if newCell /= oldCell
+         then do
+          log (name <> ": The cell has changed, updating.")
+          H.modify_
+              (\(State s) -> State (s {cell = newCell, cells = cells}))
+         else do
+           log (name <> ": No change to cell, skipping.")
     DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------

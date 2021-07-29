@@ -529,16 +529,16 @@ consolidateCell
   -> View CachedOutputCell
   -> Either String OutputCell
 consolidateCell seenTexts seenResults cached = do
-  code <- caseCachedText {
-          "FreshText": \text hash -> pure text
+  {code,codeHash} <- caseCachedText {
+          "FreshText": \text hash -> pure {code: text, codeHash: materializeHash hash}
          , "CachedText": \hash -> case M.lookup (materializeHash hash) seenTexts of
-              Just v -> Right v
+              Just v -> Right {code: v, codeHash: materializeHash hash}
               Nothing -> Left "key not found"
         } (cachedOutputCellCode cached)
-  result <- caseCachedResult {
-          "FreshResult": \result hash -> pure result
+  {result,resultHash} <- caseCachedResult {
+          "FreshResult": \result hash -> pure {result, resultHash: materializeHash hash}
          , "CachedResult": \hash -> case M.lookup (materializeHash hash) seenResults of
-              Just v -> Right v
+              Just v -> Right {result: v, resultHash: materializeHash hash}
               Nothing -> Left "key not found"
         } (cachedOutputCellResult cached)
   pure (OutputCell
@@ -546,7 +546,9 @@ consolidateCell seenTexts seenResults cached = do
     , name: cachedOutputCellName cached
     , order: cachedOutputCellOrder cached
     , code
+    , codeHash
     , result
+    , resultHash
     })
 
 toInputCell :: OutputCell -> InputCell1
