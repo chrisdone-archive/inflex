@@ -17,6 +17,7 @@ import Data.Symbol (SProxy(..))
 import Data.UUID (UUID)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -145,24 +146,31 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 --   log (show cmd)
 --   eval cmd
 
--- eval :: forall q i m. MonadAff m =>  Command -> H.HalogenM State q i Output m Unit
+
+eval :: forall t184 t187 t225 t227 t228.
+  MonadEffect t184 => Ord t227 => Command
+                                  -> H.HalogenM State t187
+                                       ( editor :: H.Slot Editor.Query t228 t227
+                                       | t225
+                                       )
+                                       Output
+                                       t184
+                                       Unit
 eval =
   case _ of
     TriggerUpdatePath update -> do
       H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, cells}) -> do
-      log "Received input cell. Checking for changes..."
-      State{cell: oldCell} <- H.get
+      State {cell: oldCell} <- H.get
       let newCell@(Cell {name}) = outputCellToCell c
       if newCell /= oldCell
-         then do
-          log (name <> ": The cell has changed, updating.")
-          H.modify_
-              (\(State s) -> State (s {cell = newCell, cells = cells}))
-         else do
-           _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
-           log (name <> ": No change to cell, skipping.")
+        then do
+          log ("Cell.eval: " <> name <> ": The cell has changed, updating.")
+          H.modify_ (\(State s) -> State (s {cell = newCell, cells = cells}))
+        else do
+          _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
+          log ("Cell.eval" <> name <> ": No change to cell, skipping.")
     DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------
