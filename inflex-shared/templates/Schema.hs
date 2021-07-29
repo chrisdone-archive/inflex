@@ -245,11 +245,23 @@ deriving instance Show InputCell
 -- instance ToJSON InputCell
 instance FromJSON InputCell
 
-instance NFData OutputCell
-deriving instance Generic OutputCell
-deriving instance Show OutputCell
--- instance ToJSON OutputCell
-instance FromJSON OutputCell
+instance NFData CachedOutputCell
+deriving instance Generic CachedOutputCell
+deriving instance Show CachedOutputCell
+-- instance ToJSON CachedOutputCell
+instance FromJSON CachedOutputCell
+
+instance NFData CachedResult
+deriving instance Generic CachedResult
+deriving instance Show CachedResult
+-- instance ToJSON CachedResult
+instance FromJSON CachedResult
+
+instance NFData CachedText
+deriving instance Generic CachedText
+deriving instance Show CachedText
+-- instance ToJSON CachedText
+instance FromJSON CachedText
 
 instance NFData UpdateDocument
 deriving instance Generic UpdateDocument
@@ -419,4 +431,4 @@ $(Frisson.deriveAll
    \import Data.Argonaut.Core (Json)\n\
    \import Prelude (class Show)\n\
    \"
-  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''OutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash])
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult])

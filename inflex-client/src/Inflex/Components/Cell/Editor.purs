@@ -8,8 +8,8 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
-import Inflex.Frisson
-
+import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseVariantArgument, field2Key, field2Value, nestedCellErrorError, nestedCellErrorPath, rowFields)
+import Inflex.Types (OutputCell)
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -62,7 +62,7 @@ data State = State
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe (View CellError)
   , lastInput :: Maybe EditorAndCode
-  , cells :: Map UUID (View Shared.OutputCell)
+  , cells :: Map UUID (OutputCell)
   }
 
 data Command
@@ -95,7 +95,7 @@ data EditorAndCode = EditorAndCode
   { editor :: Either (View Shared.CellError) (View Shared.Tree2)
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
-  , cells :: Map UUID (View Shared.OutputCell)
+  , cells :: Map UUID (OutputCell)
   }
 instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
@@ -365,7 +365,7 @@ blank code editor =
 renderEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> View Shared.Tree2
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderEditor path cells =
@@ -393,7 +393,7 @@ renderEditor path cells =
 renderVariantEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> String
   -> View Shared.VariantArgument
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -497,7 +497,7 @@ mapWithIndexNarrow dropping taking' f xs =
 renderTableEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
@@ -582,7 +582,7 @@ tableRowHole ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Tree2
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -639,7 +639,7 @@ tableRow ::
      forall a. MonadAff a
   => Array String
   -> (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
@@ -861,7 +861,7 @@ generateColumnName columns = iterate 1
 renderArrayEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> Array (View Shared.Tree2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderArrayEditor path cells editors =
@@ -949,7 +949,7 @@ renderArrayEditor path cells editors =
 renderRecordEditor ::
      forall a. MonadAff a
   => (Shared.DataPath -> Shared.DataPath)
-  -> Map UUID (View Shared.OutputCell)
+  -> Map UUID (OutputCell)
   -> Array (View Shared.Field2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderRecordEditor path cells fields =

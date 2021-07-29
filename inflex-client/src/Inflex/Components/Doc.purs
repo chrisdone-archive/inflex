@@ -5,15 +5,16 @@ module Inflex.Components.Doc
   ) where
 
 import Control.Monad.State (class MonadState)
+import Data.Array (mapMaybe)
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
 import Data.Maybe (Maybe(..), isNothing)
 import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
-import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID(..), uuidToString)
 import Effect.Aff (Aff)
@@ -25,10 +26,11 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell as Cell
-import Inflex.Frisson (View, caseColumnAction, caseCsvColumnType, caseCsvGuess, caseOptionality, caseUpdateResult, csvColumnAction, csvColumnName, csvImportSpecColumns, csvImportSpecFile, csvImportSpecSeparator, csvImportSpecSkipRows, fileId, fileName, filesOutputFiles, importColumnImportType, importColumnRenameTo, outputCellCode, outputCellHash, outputCellName, outputCellOrder, outputCellUuid, outputDocumentCells, unHash, unUUID)
+import Inflex.Frisson
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
-import Inflex.Schema (DocumentId(..), InputCell1(..), OutputCell, OutputDocument, versionRefl)
+import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
+import Inflex.Types (OutputCell(..))
 import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
@@ -64,10 +66,11 @@ data Command
   | ChooseCsvFile (View Shared.File)
 
 type State = {
-    cells :: Array (View OutputCell)
+    cells :: Array OutputCell
   , dragUUID :: Maybe UUID
   , modal :: Modal
-  , seen :: Set Shared.Hash
+  , seenTexts :: Map Shared.Hash String
+  , seenResults :: Map Shared.Hash (View Shared.Result)
  }
 
 data Modal
@@ -86,7 +89,7 @@ type Output = Unit
 component :: forall q. H.Component HH.HTML q Input Output Aff
 component =
   H.mkComponent
-    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seen: mempty}
+    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seenResults: mempty, seenTexts: mempty}
     , render: \state -> timed "Doc.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -189,20 +192,20 @@ render state =
                    else ""))
          ]
          (map
-            (\cell ->
-               let uuid = UUID (unUUID (outputCellUuid cell))
+            (\outputCell@(OutputCell cell) ->
+               let uuid = (cell.uuid)
                in HH.slot
                  (SProxy :: SProxy "Cell")
-                 (unUUID (outputCellUuid cell))
+                 (uuidToString (cell.uuid))
                  Cell.component
                  (Cell.Input
-                    { cell
+                    { cell: outputCell
                     , cells:
                         M.delete
                           uuid
                           (M.fromFoldable
                              (map
-                                (\cell' -> Tuple (UUID (unUUID (outputCellUuid cell'))) cell')
+                                (\cell'@(OutputCell cell'0) -> Tuple ((cell'0.uuid)) cell')
                                 (state . cells)))
                     })
                  (\update0 ->
@@ -225,7 +228,7 @@ render state =
       standardNames <>
       M.fromFoldable
         (map
-           (\cell -> Tuple (unUUID (outputCellUuid cell)) (outputCellName cell))
+           (\(OutputCell cell) -> Tuple (uuidToString (cell.uuid)) (cell.name))
            (state . cells))
 
 standardNames :: Map String String
@@ -297,15 +300,13 @@ eval =
               error ("Error loading document:" <> err) -- TODO:Display this to the user properly.
             Right outputDocument -> setOutputDocument outputDocument
     NewCell code -> do
-      {seen} <- H.get
-      result <- update seen (Shared.CellNew (Shared.NewCell {code}))
+      result <- update (Shared.CellNew (Shared.NewCell {code}))
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
     UpdatePath uuid update' -> do
-      {seen} <- H.get
       result <-
-        update seen
+        update
           (Shared.CellUpdate
              (Shared.UpdateCell {uuid, update: update'}))
       case result of
@@ -318,15 +319,13 @@ eval =
               (Cell.NestedCellError cellError)
           pure unit
     DeleteCell uuid -> do
-      {seen} <- H.get
-      result <- update seen (Shared.CellDelete (Shared.DeleteCell {uuid}))
+      result <- update (Shared.CellDelete (Shared.DeleteCell {uuid}))
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
     RenameCell uuid name' -> do
-      {seen} <- H.get
       result <-
-        update seen
+        update
           (Shared.CellRename
              (Shared.RenameCell {uuid, newname: name'}))
       case result of
@@ -427,8 +426,8 @@ update :: forall t60.
   Bind t60 => MonadAff t60 => MonadAff t60 => MonadState
                                                    State
                                                    t60
-                                                  => Set Shared.Hash -> Shared.Update -> t60 (Maybe (View Shared.NestedCellError))
-update seen update' =
+                                                  => Shared.Update -> t60 (Maybe (View Shared.NestedCellError))
+update update' =
   case toMaybe (meta . documentId) of
     Nothing -> do
       state <- H.get
@@ -450,12 +449,13 @@ update seen update' =
             }
           uresult
     Just docId -> do
+      {seenTexts,seenResults} <- H.get
       result <-
         rpcUpdateDocument
           (Shared.UpdateDocument
              { documentId: DocumentId docId
              , update: update'
-             , seen: Set.toUnfoldable seen
+             , seen: Set.toUnfoldable (M.keys seenResults <> M.keys seenTexts)
              })
       case result of
         Left err -> do
@@ -479,28 +479,83 @@ setOutputDocument ::
   => MonadEffect t11 =>
        View OutputDocument -> t11 Unit
 setOutputDocument doc = do
-  H.modify_
-    (\s ->
-       s
-         { cells = outputDocumentCells doc
-         , modal = NoModal
-         -- Here: We store the cells we've seen. It's important that
-         -- this is the only place where it's updated, as it serves as
-         -- a cache.
-         , seen =
-             Set.fromFoldable
-               (map
-                  (\outputCell -> Shared.Hash (unHash (outputCellHash outputCell)))
-                  (outputDocumentCells doc))
-         })
+  {seenTexts,seenResults} <- H.get
+  let cells0 = traverse (consolidateCell seenTexts seenResults) (outputDocumentCells doc)
+  case cells0 of
+     Left _ -> pure unit
+     Right cells ->
+       H.modify_
+         (\s ->
+            s
+              { cells = cells
+              , modal = NoModal
+              -- Here:We store the cells we've seen. It's important that
+              -- this is the only place where it's updated, as it serves as
+              -- a cache.
+              , seenTexts =
+                  M.fromFoldable -- Collect all hashes seen,
+                                   -- discarding the type of thing the
+                                   -- hash refers to. TODO: Don't do that?
+                    (mapMaybe
+                       (\outputCell ->
+                              caseCachedText {
+                                 "FreshText": \text hash -> pure (Tuple (materializeHash hash) text)
+                                , "CachedText": \hash ->
+                                      map (Tuple (materializeHash hash)) (M.lookup (materializeHash hash) seenTexts)
+                               } (cachedOutputCellCode outputCell)
 
-toInputCell :: View OutputCell -> InputCell1
-toInputCell cell =
+                                       )
+                       (outputDocumentCells doc))
+               , seenResults =
+                  M.fromFoldable
+                     (mapMaybe
+                       (\outputCell ->
+                              caseCachedResult {
+                                 "FreshResult": \result hash -> pure (Tuple (materializeHash hash) result)
+                                , "CachedResult": \hash ->
+                                  map (Tuple (materializeHash hash)) (M.lookup (materializeHash hash) seenResults)
+                               } (cachedOutputCellResult outputCell)
+
+                                       )
+                       (outputDocumentCells doc))
+              })
+
+materializeHash :: View Shared.Hash -> Shared.Hash
+materializeHash x = Shared.Hash (unHash x)
+
+consolidateCell
+  :: Map Shared.Hash String
+  -> Map Shared.Hash (View Shared.Result)
+  -> View CachedOutputCell
+  -> Either String OutputCell
+consolidateCell seenTexts seenResults cached = do
+  code <- caseCachedText {
+          "FreshText": \text hash -> pure text
+         , "CachedText": \hash -> case M.lookup (materializeHash hash) seenTexts of
+              Just v -> Right v
+              Nothing -> Left "key not found"
+        } (cachedOutputCellCode cached)
+  result <- caseCachedResult {
+          "FreshResult": \result hash -> pure result
+         , "CachedResult": \hash -> case M.lookup (materializeHash hash) seenResults of
+              Just v -> Right v
+              Nothing -> Left "key not found"
+        } (cachedOutputCellResult cached)
+  pure (OutputCell
+    { uuid: UUID (unUUID (cachedOutputCellUuid cached))
+    , name: cachedOutputCellName cached
+    , order: cachedOutputCellOrder cached
+    , code
+    , result
+    })
+
+toInputCell :: OutputCell -> InputCell1
+toInputCell (OutputCell cell) =
   InputCell1
-    { uuid: UUID (unUUID (outputCellUuid cell))
-    , name: outputCellName cell
-    , code: outputCellCode cell
-    , order: outputCellOrder cell
+    { uuid: (cell.uuid)
+    , name: cell.name
+    , code: cell.code
+    , order: cell.order
     , version: versionRefl
     }
 

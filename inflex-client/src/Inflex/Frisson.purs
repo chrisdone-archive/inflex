@@ -168,7 +168,7 @@ foreign import viewOutputDocument :: Json -> (View OutputDocument)
 
 foreign import unviewOutputDocument :: (View OutputDocument) -> Json
 
-foreign import outputDocumentCells :: (View OutputDocument) -> (Array (View OutputCell))
+foreign import outputDocumentCells :: (View OutputDocument) -> (Array (View CachedOutputCell))
 
 foreign import viewInputDocument1 :: Json -> (View InputDocument1)
 
@@ -176,21 +176,19 @@ foreign import unviewInputDocument1 :: (View InputDocument1) -> Json
 
 foreign import inputDocument1Cells :: (View InputDocument1) -> (Array (View InputCell1))
 
-foreign import viewOutputCell :: Json -> (View OutputCell)
+foreign import viewCachedOutputCell :: Json -> (View CachedOutputCell)
 
-foreign import unviewOutputCell :: (View OutputCell) -> Json
+foreign import unviewCachedOutputCell :: (View CachedOutputCell) -> Json
 
-foreign import outputCellUuid :: (View OutputCell) -> (View UUID)
+foreign import cachedOutputCellUuid :: (View CachedOutputCell) -> (View UUID)
 
-foreign import outputCellName :: (View OutputCell) -> String
+foreign import cachedOutputCellName :: (View CachedOutputCell) -> String
 
-foreign import outputCellCode :: (View OutputCell) -> String
+foreign import cachedOutputCellCode :: (View CachedOutputCell) -> (View CachedText)
 
-foreign import outputCellResult :: (View OutputCell) -> (View Result)
+foreign import cachedOutputCellResult :: (View CachedOutputCell) -> (View CachedResult)
 
-foreign import outputCellOrder :: (View OutputCell) -> Int
-
-foreign import outputCellHash :: (View OutputCell) -> (View Hash)
+foreign import cachedOutputCellOrder :: (View CachedOutputCell) -> Int
 
 foreign import viewInputCell1 :: Json -> (View InputCell1)
 
@@ -463,4 +461,22 @@ foreign import viewHash :: Json -> (View Hash)
 foreign import unviewHash :: (View Hash) -> Json
 
 foreign import unHash :: (View Hash) -> String
+
+foreign import viewCachedText :: Json -> (View CachedText)
+
+foreign import unviewCachedText :: (View CachedText) -> Json
+
+foreign import caseCachedText :: forall r. {
+  "FreshText" :: String -> (View Hash) -> r,
+  "CachedText" :: (View Hash) -> r
+  } -> (View CachedText) -> r
+
+foreign import viewCachedResult :: Json -> (View CachedResult)
+
+foreign import unviewCachedResult :: (View CachedResult) -> Json
+
+foreign import caseCachedResult :: forall r. {
+  "FreshResult" :: (View Result) -> (View Hash) -> r,
+  "CachedResult" :: (View Hash) -> r
+  } -> (View CachedResult) -> r
 

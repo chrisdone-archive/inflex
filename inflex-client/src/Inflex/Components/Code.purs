@@ -8,8 +8,6 @@ module Inflex.Components.Code
   , Command(..)
   ) where
 
-import Inflex.Frisson
-
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -18,7 +16,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Data.UUID (UUID)
+import Data.UUID (UUID, uuidToString)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (error)
@@ -26,7 +24,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Inflex.Components.CodeMirror as CM
 import Inflex.Lexer (Token(..), lexString)
-import Inflex.Schema as Shared
+import Inflex.Types (OutputCell(..))
 import Prelude (Unit, bind, discard, map, pure, unit, ($), (-), (<<<), (<>))
 
 --------------------------------------------------------------------------------
@@ -44,13 +42,13 @@ prims = M.fromFoldable (map (\prim -> Tuple (prim.name) (prim.display)) (meta.pr
 
 data Input = Input
   { code :: String
-  , cells :: Map UUID (View Shared.OutputCell)
+  , cells :: Map UUID (OutputCell)
   }
 
 data Output =
   TextOutput String
 
-data Query a = SetCells (Map UUID (View Shared.OutputCell))
+data Query a = SetCells (Map UUID (OutputCell))
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -61,7 +59,7 @@ data Command
 
 data State = State
   { code :: String
-  , cells :: Map UUID (View  Shared.OutputCell)
+  , cells :: Map UUID (OutputCell)
   }
 
 type Slots (i :: Type -> Type) =
@@ -165,13 +163,13 @@ render (State state) =
        , autoCloseBrackets: true
        , highlightSelectionMatches: true
        , namesInScope:
-          map (\(Tuple _key cell) ->
-                 let uuid = unUUID (outputCellUuid cell)
-                     name = outputCellName cell
+          map (\(Tuple _key (OutputCell cell)) ->
+                 let uuid = cell.uuid
+                     name = cell.name
                  in
                 -- let  (Shared.OutputCell{uuid: UUID uuid, name})
-                 { text: "@uuid:" <> uuid, -- what will be inserted
-                   key: uuid, -- what will be raised later to PS
+                 { text: "@uuid:" <> uuidToString uuid, -- what will be inserted
+                   key: uuidToString uuid, -- what will be raised later to PS
                    displayText: name, -- we can put whatever in here, and even a render function
                    -- <https://codemirror.net/doc/manual.html#addons>
                    matchText: name -- string that will match this identifier
@@ -190,7 +188,7 @@ render (State state) =
     (case _ of
        CM.CMEventOut event -> Just (CMEvent event))
 
-makeSetMarks :: forall t55. Map UUID (View Shared.OutputCell) -> String -> Effect (Array (CM.Query t55))
+makeSetMarks :: forall t55. Map UUID (OutputCell) -> String -> Effect (Array (CM.Query t55))
 makeSetMarks cells code = do
           result <- lexString (code)
           case result of
@@ -228,6 +226,6 @@ makeSetMarks cells code = do
                                   , ch: location . end . column - 1
                                   }
                                   {
-                                    replaceText: outputCellName cell
+                                    replaceText: let OutputCell{name}= cell in name
                                   }))
                 tokens)

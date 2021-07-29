@@ -189,21 +189,19 @@ exports.unviewInputDocument1 = function(x){return x};
 
 exports.inputDocument1Cells = function(x){return x};
 
-exports.viewOutputCell = function(x){return x};
+exports.viewCachedOutputCell = function(x){return x};
 
-exports.unviewOutputCell = function(x){return x};
+exports.unviewCachedOutputCell = function(x){return x};
 
-exports.outputCellUuid = function(a){return a[0]};
+exports.cachedOutputCellUuid = function(a){return a[0]};
 
-exports.outputCellName = function(a){return a[1]};
+exports.cachedOutputCellName = function(a){return a[1]};
 
-exports.outputCellCode = function(a){return a[2]};
+exports.cachedOutputCellCode = function(a){return a[2]};
 
-exports.outputCellResult = function(a){return a[3]};
+exports.cachedOutputCellResult = function(a){return a[3]};
 
-exports.outputCellOrder = function(a){return a[4]};
-
-exports.outputCellHash = function(a){return a[5]};
+exports.cachedOutputCellOrder = function(a){return a[4]};
 
 exports.viewInputCell1 = function(x){return x};
 
@@ -560,4 +558,34 @@ exports.viewHash = function(x){return x};
 exports.unviewHash = function(x){return x};
 
 exports.unHash = function(x){return x};
+
+exports.viewCachedText = function(x){return x};
+
+exports.unviewCachedText = function(x){return x};
+
+exports.caseCachedText = function(k) {
+return function(a) {
+switch (a[0]) {
+case 0: return k["FreshText"](a[1])(a[2]);
+case 1: return k["CachedText"](a[1]);
+default: throw Exception('BUG: case accessor failed');
+}
+}
+}
+;
+
+exports.viewCachedResult = function(x){return x};
+
+exports.unviewCachedResult = function(x){return x};
+
+exports.caseCachedResult = function(k) {
+return function(a) {
+switch (a[0]) {
+case 0: return k["FreshResult"](a[1])(a[2]);
+case 1: return k["CachedResult"](a[1]);
+default: throw Exception('BUG: case accessor failed');
+}
+}
+}
+;
 

@@ -277,10 +277,20 @@ instance showInputCell1 :: Show InputCell1 where show = genericShow
 instance decodeInputCell1 :: Decode InputCell1 where decode = genericDecode opts
 instance encodeInputCell1 :: Encode InputCell1 where encode = genericEncode opts
 
-derive instance genericOutputCell :: Generic OutputCell _
-instance showOutputCell :: Show OutputCell where show = genericShow
-instance decodeOutputCell :: Decode OutputCell where decode = genericDecode opts
-instance encodeOutputCell :: Encode OutputCell where encode = genericEncode opts
+derive instance genericCachedOutputCell :: Generic CachedOutputCell _
+instance showCachedOutputCell :: Show CachedOutputCell where show = genericShow
+instance decodeCachedOutputCell :: Decode CachedOutputCell where decode = genericDecode opts
+instance encodeCachedOutputCell :: Encode CachedOutputCell where encode = genericEncode opts
+
+derive instance genericCachedText :: Generic CachedText _
+instance showCachedText :: Show CachedText where show = genericShow
+instance decodeCachedText :: Decode CachedText where decode = genericDecode opts
+instance encodeCachedText :: Encode CachedText where encode = genericEncode opts
+
+derive instance genericCachedResult :: Generic CachedResult _
+instance showCachedResult :: Show CachedResult where show = genericShow
+instance decodeCachedResult :: Decode CachedResult where decode = genericDecode opts
+instance encodeCachedResult :: Encode CachedResult where encode = genericEncode opts
 
 derive instance genericDocumentId :: Generic DocumentId _
 instance showDocumentId :: Show DocumentId where show = genericShow

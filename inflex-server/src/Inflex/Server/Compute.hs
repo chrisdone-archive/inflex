@@ -14,13 +14,13 @@
 module Inflex.Server.Compute where
 
 import           Control.Early
-import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.Functor.Contravariant
 import qualified Data.HashMap.Strict as HM
 import           Data.List
 import           Data.Maybe
 import           Data.Ord
+import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
@@ -28,10 +28,8 @@ import           Inflex.Display ()
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Renamer
-import qualified Inflex.Schema as OutputCell (OutputCell(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
-import           Inflex.Server.Types.Sha256
 import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
@@ -43,6 +41,14 @@ import           RIO (HasGLogFunc(..), RIO, glog)
 milliseconds :: Int
 milliseconds = 20_000
 
+data OutputCell = OutputCell
+  { uuid :: Shared.UUID
+  , name :: Text
+  , code :: Text
+  , result :: Shared.Result
+  , order :: Int
+  }
+
 loadInputDocument ::
      ( RIO.MonadUnliftIO m
      , HasGLogFunc env
@@ -50,7 +56,7 @@ loadInputDocument ::
      , GMsg env ~ ServerMsg
      )
   => Shared.InputDocument1
-  -> m (Maybe Shared.OutputDocument)
+  -> m (Maybe (Vector OutputCell))
 loadInputDocument (Shared.InputDocument1 {cells}) = do
   logfunc <- RIO.view gLogFuncL
   loaded <-
@@ -87,10 +93,9 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
     RIO.pooledMapConcurrently
       (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
-         hashOutputCell
-           (Shared.OutputCell
+         pure
+           (OutputCell
               { uuid = Shared.UUID uuid
-              , hash = Shared.Hash mempty
               , result =
                   either
                     (Shared.ResultError . toCellError)
@@ -98,13 +103,13 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
                        Shared.ResultOk
                          (Shared.ResultTree
                             (case parsed
-                                          -- A temporary
-                                          -- specialization to
-                                          -- display lambdas in a
-                                          -- cell as the original
-                                          -- code. But, later,
-                                          -- toTree will render
-                                          -- lambdas structurally.
+                                  -- A temporary
+                                  -- specialization to
+                                  -- display lambdas in a
+                                  -- cell as the original
+                                  -- code. But, later,
+                                  -- toTree will render
+                                  -- lambdas structurally.
                                    of
                                LambdaExpression {} ->
                                  Shared.MiscTree2
@@ -120,11 +125,10 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
       (unToposorted topo)
   pure
     (Just
-       (Shared.OutputDocument
-          (V.fromList
-             (sortBy
-                (comparing (\Shared.OutputCell {order} -> order))
-                outputCells))))
+       (V.fromList
+          (sortBy
+             (comparing (\OutputCell {order} -> order))
+             outputCells)))
   where
     defaultDocument1' top = do
       !v <- defaultDocument1 top
@@ -138,24 +142,6 @@ evalDocument1' ::
 evalDocument1' env cells = do
   !v <- evalDocument1 env cells
   pure v
-
--- | Hash the output cell, strictly, timing it. This fully forces the
--- output tree, so it gives us a good indication of how long it takes
--- to force the tree and encode it to JSON.
-hashOutputCell ::
-     ( RIO.MonadIO m
-     , HasGLogFunc env
-     , RIO.MonadReader env m
-     , GMsg env ~ ServerMsg
-     )
-  => Shared.OutputCell
-  -> m Shared.OutputCell
-hashOutputCell cell@Shared.OutputCell{name} =
-  timed
-    (TimedHashOutputCell name)
-    (do let !hashText =
-              sha256AsHexText (sha256LazyByteString (Aeson.encode cell))
-        pure cell {OutputCell.hash = Shared.Hash hashText})
 
 toTree :: Maybe (Expression Parsed) -> Expression Resolved -> Shared.Tree2
 toTree original =

@@ -135,20 +135,23 @@ newtype DocumentId =
   DocumentId Int
 
 data OutputDocument = OutputDocument
-  { cells :: Vector OutputCell
+  { cells :: Vector CachedOutputCell
   }
 
 data InputDocument1 = InputDocument1
   { cells :: Vector InputCell1
   }
 
-data OutputCell = OutputCell
+data CachedText = FreshText Text Hash | CachedText Hash
+
+data CachedResult = FreshResult Result Hash | CachedResult Hash
+
+data CachedOutputCell = CachedOutputCell
   { uuid :: UUID
   , name :: Text
-  , code :: Text
-  , result :: Result
+  , code :: CachedText
+  , result :: CachedResult
   , order :: Int
-  , hash :: Hash
   }
 
 data InputCell1 = InputCell1

@@ -11,6 +11,7 @@
 module Inflex.Server.Handlers.Rpc where
 
 import           Criterion.Measurement
+import qualified Data.Aeson as Aeson
 import           Data.Char
 import qualified Data.Csv as Csv
 import           Data.Foldable
@@ -27,6 +28,7 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.Esqueleto as E
 import           Database.Persist.Sql
+import qualified Inflex.Schema as CachedOutputCell (CachedOutputCell(..))
 import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
@@ -36,6 +38,7 @@ import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
+import           Inflex.Server.Types.Sha256
 import           Inflex.Types hiding (Cell)
 import           Inflex.Types.SHA512
 import qualified RIO
@@ -57,27 +60,34 @@ rpcLoadDocument docId =
 
 rpcUpdateSandbox :: Shared.UpdateSandbox -> Handler Shared.UpdateResult
 rpcUpdateSandbox Shared.UpdateSandbox {document, update = update'} =
-  applyUpdate update' document updateDocument
-  where updateDocument _ = pure ()
+  applyUpdate
+    mempty -- maybe populate later
+    update'
+    document
+    updateDocument
+  where
+    updateDocument _ = pure ()
 
 rpcUpdateDocument :: Shared.UpdateDocument -> Handler Shared.UpdateResult
-rpcUpdateDocument Shared.UpdateDocument {documentId, update = update'} =
+rpcUpdateDocument Shared.UpdateDocument {documentId, update = update', seen} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        RevisedDocument {..} <-
          runDB (getRevisedDocument loginAccountId documentId)
        now <- liftIO getCurrentTime
        applyUpdate
+         seen
          update'
          revisedInputDocument
          (runDB . setInputDocument now loginAccountId documentKey revisionId))
 
 applyUpdate ::
-     Shared.Update
+     Vector Shared.Hash
+  -> Shared.Update
   -> Shared.InputDocument1
   -> (Shared.InputDocument1 -> HandlerFor App ())
   -> HandlerFor App Shared.UpdateResult
-applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
+applyUpdate seen update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
   case update' of
     Shared.CellNew Shared.NewCell {code} -> do
       uuid <- liftIO UUID.nextRandom
@@ -94,19 +104,19 @@ applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
-      pure (Shared.UpdatedDocument outputDocument)
+      pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellDelete delete' -> do
       let inputDocument = applyDelete delete' inputDocument0
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
-      pure (Shared.UpdatedDocument outputDocument)
+      pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellRename rename -> do
       let inputDocument = applyRename rename inputDocument0
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
-      pure (Shared.UpdatedDocument outputDocument)
+      pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellUpdate update''@Shared.UpdateCell { uuid
                                                  , update = Shared.UpdatePath {path}
                                                  } -> do
@@ -125,7 +135,8 @@ applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
           case cellHadErrorInNestedPlace uuid path outputDocument of
             Nothing -> do
               setInputDoc inputDocument
-              pure (Shared.UpdatedDocument outputDocument)
+              pure
+                (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
             Just cellError -> do
               glog CellErrorInNestedPlace
               pure
@@ -139,15 +150,15 @@ applyUpdate update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
 cellHadErrorInNestedPlace ::
      Shared.UUID
   -> Shared.DataPath
-  -> Shared.OutputDocument
+  -> Vector OutputCell
   -> Maybe Shared.CellError
-cellHadErrorInNestedPlace uuid0 path (Shared.OutputDocument cells) =
+cellHadErrorInNestedPlace uuid0 path cells =
   case path of
     Shared.DataHere -> Nothing
     _ ->
       listToMaybe
         (mapMaybe
-           (\Shared.OutputCell {uuid, result} ->
+           (\OutputCell {uuid, result} ->
               case result of
                 Shared.ResultError cellError | uuid == uuid0 -> pure cellError
                 _ -> Nothing)
@@ -315,7 +326,9 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = do
 
 loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
 loadRevisedDocument RevisedDocument {..} =
-  forceTimeout TimedLoadDocument (loadInputDocument revisedInputDocument)
+  fmap
+    (cellsToOutputDocument mempty) -- TODO: populate the mempty?
+    (forceTimeout TimedLoadDocument (loadInputDocument revisedInputDocument))
 
 --------------------------------------------------------------------------------
 -- Importing CSV
@@ -423,8 +436,8 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                           file
                           rows
                           revisedInputDocument)
-
-                   loaded <- forceTimeout TimedLoadDocument (loadInputDocument document)
+                   loaded <-
+                     forceTimeout TimedLoadDocument (loadInputDocument document)
                    now <- liftIO getCurrentTime
                    runDB
                      (setInputDocument
@@ -433,8 +446,10 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                         documentKey
                         revisionId
                         document)
-
-                   pure loaded)
+                   pure
+                     (cellsToOutputDocument
+                        mempty -- TODO: populate cache?
+                        loaded))
 
 insertImportedCsv ::
      Shared.CsvImportSpec
@@ -476,3 +491,29 @@ forceTimeout timed' m = do
     Just v'' -> do
       glog (Timed timed' (end - start))
       pure v''
+
+--------------------------------------------------------------------------------
+-- Producing a cached output document
+
+cellsToOutputDocument :: Vector Shared.Hash -> Vector OutputCell -> Shared.OutputDocument
+cellsToOutputDocument seen = Shared.OutputDocument . fmap cons
+  where
+    cons OutputCell {..} =
+      Shared.CachedOutputCell
+        { result =
+            let hash =
+                  Shared.Hash
+                    (sha256AsHexText
+                       (sha256LazyByteString (Aeson.encode result)))
+             in if V.elem hash seen
+                  then Shared.CachedResult hash
+                  else Shared.FreshResult result hash
+        , code =
+            let hash =
+                  Shared.Hash
+                    (sha256AsHexText (sha256LazyByteString (Aeson.encode code)))
+             in if V.elem hash seen
+                  then Shared.CachedText hash
+                  else Shared.FreshText code hash
+        , ..
+        }

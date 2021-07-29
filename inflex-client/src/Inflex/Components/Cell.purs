@@ -8,8 +8,6 @@ module Inflex.Components.Cell
   , Output(..)
   ) where
 
-import Inflex.Frisson
-
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -27,7 +25,9 @@ import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.FieldName (validFieldName)
+import Inflex.Frisson (View, caseResult, unResultTree)
 import Inflex.Schema as Shared
+import Inflex.Types (OutputCell(..))
 import Prelude (class Ord, class Show, Unit, bind, discard, identity, mempty, pure, show, unit, (<<<), (<>))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
@@ -36,8 +36,8 @@ import Web.HTML.Event.DragEvent as DE
 -- Component types
 
 data Input = Input {
-  cell :: View Shared.OutputCell,
-  cells :: Map UUID (View Shared.OutputCell)
+  cell :: OutputCell,
+  cells :: Map UUID (OutputCell)
   }
 
 data Query a
@@ -50,7 +50,7 @@ data Output
 
 data State = State
   { cell :: Cell
-  , cells:: Map UUID (View Shared.OutputCell)
+  , cells:: Map UUID (OutputCell)
   }
 
 data Command
@@ -72,7 +72,6 @@ data Cell = Cell
   { name :: String
   , code :: String
   , result :: Either (View Shared.CellError) (View Shared.Tree2)
-  , hash :: String
   }
 
 derive instance genericCell :: Generic Cell _
@@ -97,18 +96,17 @@ component =
             }
     }
 
-outputCellToCell :: View Shared.OutputCell -> Cell
-outputCellToCell cell =
+outputCellToCell :: OutputCell -> Cell
+outputCellToCell (OutputCell cell) =
   Cell
-    { name: outputCellName cell
-    , code: outputCellCode cell
-    , hash: unHash (outputCellHash cell)
+    { name: cell.name
+    , code: cell.code
     , result:
         caseResult
           { "ResultError": Left
           , "ResultOk": \resultTree -> Right (unResultTree resultTree)
           }
-          (outputCellResult cell)
+          (cell.result)
     }
 
 --------------------------------------------------------------------------------
@@ -143,7 +141,7 @@ eval =
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     SetCellFromInput (Input {cell: c, cells}) -> do
-      let cell@(Cell {hash, name}) = outputCellToCell c
+      let cell@(Cell {name}) = outputCellToCell c
       H.modify_
         (\(State s) -> State (s {cell = cell, cells = cells}))
     DeleteCell -> H.raise RemoveCell
@@ -156,7 +154,7 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State { cell: Cell {name, code, result, hash}
+render (State { cell: Cell {name, code, result}
               , cells
               }) =
   HH.div
