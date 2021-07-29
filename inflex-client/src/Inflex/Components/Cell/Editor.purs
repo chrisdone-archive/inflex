@@ -174,12 +174,11 @@ query ::
 query =
   case _ of
     ResetDisplayIfDirty -> do
-      H.modify_
-        (\(State st) ->
-           State
-             (if st . dirty
-                then st {display = DisplayEditor}
-                else st))
+      State st <- H.get
+      if st .dirty
+         then
+           H.put (State (st {display = DisplayEditor}))
+         else pure unit
       pure Nothing
     NestedCellError cellError -> do
       State {path} <- H.get
@@ -248,8 +247,10 @@ eval' =
               else code))
     SetEditorInput input@(EditorAndCode {editor, code, path, cells}) -> do
       State state <- H.get
+      -- TODO: I think we can drop this lastInput stuff now that we have a dirtiness flag.
       case state . display of
-        DisplayCode | pure input == state.lastInput -> pure unit -- Ignore if we're editing and input is the same.
+        DisplayCode
+          | pure input == state.lastInput -> pure unit -- Ignore if we're editing and input is the same.
         _ ->
           H.put
             (State
