@@ -164,28 +164,14 @@ eval =
     SetCellFromInput (Input {cell: c, cells}) -> do
       State {cell: oldCell} <- H.get
       let newCell@(Cell {name}) = outputCellToCell c
-      -- Disabled this logic.
-      --
-      -- The tricky part is for inner cell updates, e.g. array
-      -- item. If you put in an error (x/) then the server will return
-      -- fail. Fix the error, but it doesn't go away.
-      --
-      -- The server doesn't send back a list of cells when there's an
-      -- error in an inner-cell update. It returns an error. Therefore
-      -- the new cell and old cell will be the same.
-      --
-      -- For the error message to go away and the inner editor to
-      -- reset, this modification needs to happen. Tricky. Look into a
-      -- cleaner logic.
-      if true -- newCell /= oldCell
+      if newCell /= oldCell
         then do
           log
             ("Cell.eval: Updating: " <> name)
           H.modify_ (\(State s) -> State (s {cell = newCell, cells = cells}))
-        else pure unit
-      -- This is connected to the disabled logic above.
-      -- _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplayIfDirty
-      pure unit
+        else do
+          _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
+          pure unit
     DeleteCell -> H.raise RemoveCell
 
 --------------------------------------------------------------------------------

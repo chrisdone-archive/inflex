@@ -61,9 +61,7 @@ data State = State
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe (View CellError)
-  , lastInput :: Maybe EditorAndCode
   , cells :: Map UUID (OutputCell)
-  , dirty :: Boolean
   }
 
 data Command
@@ -81,7 +79,7 @@ data Command
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)
- | ResetDisplayIfDirty
+ | ResetDisplay
 
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
@@ -150,9 +148,7 @@ component =
              , code
              , path
              , cellError: Nothing
-             , lastInput: Just input
              , cells
-             , dirty: false
              })
     , render
     , eval:
@@ -173,12 +169,8 @@ query ::
   -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
   case _ of
-    ResetDisplayIfDirty -> do
-      State st <- H.get
-      if st .dirty
-         then
-           H.put (State (st {display = DisplayEditor}))
-         else pure unit
+    ResetDisplay -> do
+      H.modify_ (\(State st) ->  (State (st {display = DisplayEditor})))
       pure Nothing
     NestedCellError cellError -> do
       State {path} <- H.get
@@ -238,8 +230,7 @@ eval' =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      -- log ("[FinishEditing] Got code:  "<> code)
-      H.modify_ (\(State s) -> State (s {lastInput = Nothing, display = DisplayCode, code = code, dirty = true}))
+      H.modify_ (\(State s) -> State (s {code = code}))
       H.raise
         (NewCode
            (if trim code == ""
@@ -247,40 +238,15 @@ eval' =
               else code))
     SetEditorInput input@(EditorAndCode {editor, code, path, cells}) -> do
       State state <- H.get
-      -- TODO: I think we can drop this lastInput stuff now that we have a dirtiness flag.
-      case state . display of
-        DisplayCode
-          | pure input == state.lastInput -> pure unit -- Ignore if we're editing and input is the same.
-        _ ->
-          H.put
+      H.put
             (State
                { path
                , editor
                , code
                , display: DisplayEditor
                , cellError: Nothing
-               , lastInput: Just input
                , cells
-               , dirty: false
                })
-      -- do undefined
-      --    H.put (State {path, editor, code, display:DisplayEditor, cellError:Nothing})
-    {-Autoresize ev -> do
-      case currentTarget ev of
-        Nothing -> pure unit
-        Just x ->
-          case fromEventTarget x of
-            Just htmlelement -> do
-              mvalue <- H.liftEffect (getValue htmlelement)
-              case toMaybe mvalue of
-                Nothing -> pure unit
-                Just v ->
-                  H.liftEffect
-                    (setStyle
-                       ("width:" <> show (max 3 (length v + 1)) <>
-                        "ch")
-                       htmlelement)
-            Nothing -> pure unit-}
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
