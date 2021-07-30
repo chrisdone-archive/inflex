@@ -41,7 +41,6 @@ import qualified Forge.Verify as Forge
 import           Inflex.Backend
 import           Inflex.Document (DocumentMsg)
 import           Inflex.Schema (UUID)
-import qualified Inflex.Schema as Shared
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
@@ -95,6 +94,11 @@ data Timed
   | TimedDefaulter
   | TimedStepper
   | TimedHashOutputCell Text
+  | TimedGetRevisedDocument
+  | TimedSelectDoc
+  | TimedSelectRevision
+  | TimedSelectCells
+  | TimedSetInputDocument
   deriving (Show)
 
 -- | A generic log output.
@@ -114,6 +118,15 @@ timed timed' m = do
   v' <- m
   end <- fmap realToFrac (liftIO getTime)
   glog (Timed timed' (end - start))
+  pure v'
+
+liftedTimed :: (HasGLogFunc (Yesod.HandlerData app app), GMsg (Yesod.HandlerData app app) ~ ServerMsg)
+  => Timed -> YesodDB app a -> YesodDB app a
+liftedTimed timed' m = do
+  start <- fmap realToFrac (liftIO getTime)
+  v' <- m
+  end <- fmap realToFrac (liftIO getTime)
+  lift $ glog (Timed timed' (end - start))
   pure v'
 
 --------------------------------------------------------------------------------

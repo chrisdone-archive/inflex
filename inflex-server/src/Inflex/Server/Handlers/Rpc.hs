@@ -229,17 +229,18 @@ data RevisedDocument = RevisedDocument
   }
 
 getRevisedDocument :: AccountID -> Shared.DocumentId -> YesodDB App RevisedDocument
-getRevisedDocument loginAccountId docId = do
+getRevisedDocument loginAccountId docId = liftedTimed TimedGetRevisedDocument $ do
   mdoc <-
-    selectFirst
+    liftedTimed TimedSelectDoc $ selectFirst
       [ DocumentAccount ==. fromAccountID loginAccountId
       , DocumentId ==. toSqlKey (fromIntegral docId)
       ]
       []
   case mdoc of
     Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
-      revision <- get404 revisionId
+      revision <- liftedTimed TimedSelectRevision $ get404 revisionId
       cells <-
+        liftedTimed TimedSelectCells $
         fmap
           (fmap
              (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
@@ -276,7 +277,7 @@ setInputDocument ::
   -> RevisionId
   -> Shared.InputDocument1
   -> YesodDB App ()
-setInputDocument now accountId documentId _oldRevisionId inputDocument = do
+setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedTimed TimedSetInputDocument $ do
   revisionId <-
     insert
       Revision
