@@ -99,6 +99,7 @@ data Timed
   | TimedSelectRevision
   | TimedSelectCells
   | TimedSetInputDocument
+  | TimedRpcCall Text
   deriving (Show)
 
 -- | A generic log output.

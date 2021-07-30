@@ -7,7 +7,7 @@ module Inflex.Rpc where
 import           Data.Aeson
 import           Data.Text (Text)
 import           Inflex.Schema
-import           Inflex.Server.App (Handler)
+import           Inflex.Server.App (Handler, timed, Timed(..))
 import           Inflex.Server.Handlers.Rpc
 import           Yesod hiding (Html)
 
@@ -17,47 +17,47 @@ postAppRpcR = selectRep . provideRep . rpcHandler
 rpcHandler :: Text -> Handler Value
 rpcHandler name =
   case name of
-    "CsvCheckSchema" -> do
+    "CsvCheckSchema" -> timed (TimedRpcCall "CsvCheckSchema") $ do
       input <- requireCheckJsonBody
       output <- rpcCsvCheckSchema (input :: CsvImportSpec)
       pure (toJSON (output :: CsvCheckStatus))
 
-    "CsvGuessSchema" -> do
+    "CsvGuessSchema" -> timed (TimedRpcCall "CsvGuessSchema") $ do
       input <- requireCheckJsonBody
       output <- rpcCsvGuessSchema (input :: File)
       pure (toJSON (output :: CsvGuess))
 
-    "CsvImport" -> do
+    "CsvImport" -> timed (TimedRpcCall "CsvImport") $ do
       input <- requireCheckJsonBody
       output <- rpcCsvImport (input :: CsvImportFinal)
       pure (toJSON (output :: OutputDocument))
 
-    "GetFiles" -> do
+    "GetFiles" -> timed (TimedRpcCall "GetFiles") $ do
       input <- requireCheckJsonBody
       output <- rpcGetFiles (input :: FileQuery)
       pure (toJSON (output :: FilesOutput))
 
-    "LoadDocument" -> do
+    "LoadDocument" -> timed (TimedRpcCall "LoadDocument") $ do
       input <- requireCheckJsonBody
       output <- rpcLoadDocument (input :: DocumentId)
       pure (toJSON (output :: OutputDocument))
 
-    "RedoDocument" -> do
+    "RedoDocument" -> timed (TimedRpcCall "RedoDocument") $ do
       input <- requireCheckJsonBody
       output <- rpcRedoDocument (input :: DocumentId)
       pure (toJSON (output :: OutputDocument))
 
-    "UndoDocument" -> do
+    "UndoDocument" -> timed (TimedRpcCall "UndoDocument") $ do
       input <- requireCheckJsonBody
       output <- rpcUndoDocument (input :: DocumentId)
       pure (toJSON (output :: OutputDocument))
 
-    "UpdateDocument" -> do
+    "UpdateDocument" -> timed (TimedRpcCall "UpdateDocument") $ do
       input <- requireCheckJsonBody
       output <- rpcUpdateDocument (input :: UpdateDocument)
       pure (toJSON (output :: UpdateResult))
 
-    "UpdateSandbox" -> do
+    "UpdateSandbox" -> timed (TimedRpcCall "UpdateSandbox") $ do
       input <- requireCheckJsonBody
       output <- rpcUpdateSandbox (input :: UpdateSandbox)
       pure (toJSON (output :: UpdateResult))

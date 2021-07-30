@@ -85,7 +85,7 @@ hsDispatch sigs =
         (map
            (\(name, Sig {input, output}) ->
               T.unlines
-                [ "    \"" <> name <> "\" -> do"
+                [ "    \"" <> name <> "\" -> timed (TimedRpcCall \"" <> name <> "\") $ do"
                 , "      input <- requireCheckJsonBody"
                 , "      output <- rpc" <> name <> " (input :: " <> input <> ")"
                 , "      pure (toJSON (output :: " <> output <> "))"
