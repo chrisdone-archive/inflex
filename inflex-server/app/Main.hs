@@ -6,6 +6,7 @@
 module Main (main) where
 
 import qualified Buffering
+import           Control.Concurrent (killThread)
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
@@ -35,6 +36,7 @@ import           System.Environment
 import qualified System.Metrics.Prometheus.Concurrent.Registry as Prometheus.Registry
 import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
 import qualified System.Metrics.Prometheus.Metric.Counter as Counter
+import           System.Posix.Signals
 -- import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram
 import           Yesod hiding (Html)
 
@@ -43,6 +45,10 @@ import           Yesod hiding (Html)
 
 main :: IO ()
 main = do
+  mainId <- RIO.myThreadId
+  _ <-
+    installHandler softwareTermination (CatchOnce (do S8.putStrLn "Received SIGTERM. Killing main thread."
+                                                      killThread mainId)) Nothing
   Buffering.setAppBuffering
   initializeTime
   now <- getCurrentTime
@@ -54,46 +60,49 @@ main = do
           , ("X-Process-Started", fromString (show now))
           ]
   fp <- getEnv "CONFIG"
-  config <- decodeFileEither fp >>= either throwIO return
+  config <- decodeFileEither fp >>= either RIO.throwIO return
   port <- fmap read (getEnv "PORT")
   registry <- Prometheus.Registry.new
-  runRIO
-    databaseLogFunc
-    (withDBPool
-       config
-       (\pool -> do
-          runSqlPool (manualMigration (stripeConfig config) migrateAll) pool
-          entries <- runSqlPool (showMigration migrateAll) pool
-          if not (List.null entries)
-            then liftIO
-                   (do putStrLn
-                         "Persistent has an inconsistent view of the database."
-                       putStrLn "Persistent's proposed changes:"
-                       mapM_ T.putStrLn entries
-                       exitFailure)
-            else do
-              logFunc <- liftIO (makeAppLogFunc registry)
-              app <-
-                liftIO
-                  (toWaiAppPlain
-                     App
-                       { appLogFunc = logFunc
-                       , appPool = pool
-                       , appConfig = config
-                       })
-              let runMyWarp thisPort =
-                    Warp.runSettings
-                      (Warp.setPort thisPort (warpSettings logFunc))
-              liftIO
-                (concurrently_
-                   (runMyWarp
-                      9090
-                      (Prometheus.prometheusApp
-                         ["metrics"]
-                         (Prometheus.Registry.sample registry)))
-                   (runMyWarp
-                      port
-                      (addServerHeader (gzip def {gzipFiles = GzipCompress} app))))))
+  finally
+    (runRIO
+       databaseLogFunc
+       (withDBPool
+          config
+          (\pool -> do
+             runSqlPool (manualMigration (stripeConfig config) migrateAll) pool
+             entries <- runSqlPool (showMigration migrateAll) pool
+             if not (List.null entries)
+               then liftIO
+                      (do putStrLn
+                            "Persistent has an inconsistent view of the database."
+                          putStrLn "Persistent's proposed changes:"
+                          mapM_ T.putStrLn entries
+                          exitFailure)
+               else do
+                 logFunc <- liftIO (makeAppLogFunc registry)
+                 app <-
+                   liftIO
+                     (toWaiAppPlain
+                        App
+                          { appLogFunc = logFunc
+                          , appPool = pool
+                          , appConfig = config
+                          })
+                 let runMyWarp thisPort =
+                       Warp.runSettings
+                         (Warp.setPort thisPort (warpSettings logFunc))
+                 liftIO
+                   (concurrently_
+                      (runMyWarp
+                         9090
+                         (Prometheus.prometheusApp
+                            ["metrics"]
+                            (Prometheus.Registry.sample registry)))
+                      (runMyWarp
+                         port
+                         (addServerHeader
+                            (gzip def {gzipFiles = GzipCompress} app)))))))
+    (putStrLn "Server exiting: OK")
   where
     warpSettings parentGLogFunc =
       Warp.setLogger

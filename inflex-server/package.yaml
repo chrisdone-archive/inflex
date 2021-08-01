@@ -41,6 +41,7 @@ dependencies:
 - cassava
 - deepseq
 - esqueleto
+- unix
 - formatting
 - time-qq
 - th-lift
