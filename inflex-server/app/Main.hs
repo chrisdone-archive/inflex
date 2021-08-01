@@ -102,7 +102,7 @@ main = do
                          port
                          (addServerHeader
                             (gzip def {gzipFiles = GzipCompress} app)))))))
-    (putStrLn "Server exiting: OK")
+    (S8.putStrLn "Server shutdown: OK")
   where
     warpSettings parentGLogFunc =
       Warp.setLogger
