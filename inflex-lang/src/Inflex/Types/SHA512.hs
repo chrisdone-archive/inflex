@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,9 +18,14 @@ module Inflex.Types.SHA512
   , valueToSha512
   , sha512Text
   , SHA512(..)
+  , Sha512Digest
+  , sha512DigestBS
+  , sha512DigestText
+  , digestsToSha512
+  , concatDigests
   ) where
 
-import qualified Crypto.Hash as Hash (Digest, SHA512, hash)
+import qualified Crypto.Hash as Hash (Digest, SHA512, hash, hashInit, hashUpdates, hashFinalize)
 import           Data.Aeson
 import qualified Data.Attoparsec.Text as Atto.T
 import           Data.ByteArray
@@ -127,3 +133,30 @@ sha512String str = sha512ByteString $ encodeUtf8 $ T.pack str
 
 sha512Text :: Text -> SHA512
 sha512Text = sha512ByteString . encodeUtf8
+
+--------------------------------------------------------------------------------
+-- Digests
+
+newtype Sha512Digest = Sha512Digest
+  { unSha512Digest :: Hash.Digest Hash.SHA512
+  } deriving (Show, Eq, Ord)
+
+sha512DigestBS :: ByteString -> Sha512Digest
+sha512DigestBS =
+  Sha512Digest . (Hash.hash :: ByteString -> Hash.Digest Hash.SHA512)
+
+sha512DigestText :: Text -> Sha512Digest
+sha512DigestText = sha512DigestBS . encodeUtf8
+
+concatDigests :: [Sha512Digest] -> Sha512Digest
+concatDigests =
+  Sha512Digest .
+  Hash.hashFinalize .
+  Hash.hashUpdates (Hash.hashInit @Hash.SHA512) . fmap unSha512Digest
+
+digestsToSha512 :: [Sha512Digest] -> SHA512
+digestsToSha512 =
+  SHA512 .
+  convert .
+  Hash.hashFinalize .
+  Hash.hashUpdates (Hash.hashInit @Hash.SHA512) . fmap unSha512Digest
