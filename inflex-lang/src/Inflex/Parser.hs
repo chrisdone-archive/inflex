@@ -14,6 +14,7 @@
 module Inflex.Parser
   ( parseText
   , parseTextWith
+  , parseTokens
   , parseType
   , numberExpressionParser
   , LexParseError(..)
@@ -111,9 +112,12 @@ type Parser a = Reparsec.ParserT (Seq (Located Token)) ParseErrors Identity a
 parseText :: FilePath -> Text -> Either LexParseError (Expression Parsed)
 parseText fp bs = do
   tokens <- first LexerError (lexText fp bs)
-  first
-    ParseError
-    (runIdentity (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens))
+  first ParseError (parseTokens tokens)
+
+-- | Parse from a tokens list.
+parseTokens :: (Seq (Located Token)) -> Either ParseErrors (Expression Parsed)
+parseTokens tokens = do
+  (runIdentity (Reparsec.parseOnlyT (expressionParser <* Reparsec.endOfInput) tokens))
 
 -- | Parse a given block of text.
 parseTextWith :: Parser e -> Text -> Either LexParseError e

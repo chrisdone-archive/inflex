@@ -29,10 +29,11 @@ import qualified Data.Vector as V
 import qualified Database.Esqueleto as E
 import           Database.Persist.Sql
 import qualified Inflex.Schema as CachedOutputCell (CachedOutputCell(..))
-import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
+import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
+import qualified Inflex.Server.Compute as InputCell (InputCell(..))
 import           Inflex.Server.Csv
 import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
@@ -63,7 +64,7 @@ rpcUpdateSandbox Shared.UpdateSandbox {document, update = update'} =
   applyUpdate
     mempty -- maybe populate later
     update'
-    document
+    (fromInputDocument1 document)
     updateDocument
   where
     updateDocument _ = pure ()
@@ -84,23 +85,23 @@ rpcUpdateDocument Shared.UpdateDocument {documentId, update = update', seen} =
 applyUpdate ::
      Vector Shared.Hash
   -> Shared.Update
-  -> Shared.InputDocument1
-  -> (Shared.InputDocument1 -> HandlerFor App ())
+  -> InputDocument
+  -> (InputDocument -> HandlerFor App ())
   -> HandlerFor App Shared.UpdateResult
-applyUpdate seen update' inputDocument0@Shared.InputDocument1 {cells} setInputDoc =
+applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
   case update' of
     Shared.CellNew Shared.NewCell {code} -> do
       uuid <- liftIO UUID.nextRandom
       let newcell =
-            Shared.InputCell1
+            InputCell
               { uuid = Shared.UUID (UUID.toText uuid)
               , name = ""
               , code
               , order = V.length cells + 1
-              , version = Shared.versionRefl
+              , sourceHash = HashNotKnownYet
               }
           inputDocument =
-            inputDocument0 {InputDocument1.cells = cells <> pure newcell}
+            inputDocument0 {InputDocument.cells = cells <> pure newcell}
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc inputDocument
@@ -225,57 +226,68 @@ data RevisedDocument = RevisedDocument
   { documentKey :: !DocumentId
   , revisionId :: !RevisionId
   , revision :: !Revision
-  , revisedInputDocument :: !Shared.InputDocument1
+  , revisedInputDocument :: !InputDocument
   }
 
 getRevisedDocument :: AccountID -> Shared.DocumentId -> YesodDB App RevisedDocument
-getRevisedDocument loginAccountId docId = liftedTimed TimedGetRevisedDocument $ do
-  mdoc <-
-    liftedTimed TimedSelectDoc $ selectFirst
-      [ DocumentAccount ==. fromAccountID loginAccountId
-      , DocumentId ==. toSqlKey (fromIntegral docId)
-      ]
-      []
-  case mdoc of
-    Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
-      revision <- liftedTimed TimedSelectRevision $ get404 revisionId
-      cells <-
-        liftedTimed TimedSelectCells $
-        fmap
-          (fmap
-             (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
-                Shared.InputCell1
-                  { uuid = cellUuid
-                  , name = cellName
-                  , code = codeSource
-                  , order = revisionCellOrder
-                  , version = Shared.versionRefl
-                  }))
-          (E.select
-             (E.from
-                (\row@(code, cell, revisionCell) -> do
-                   pure ()
+getRevisedDocument loginAccountId docId =
+  liftedTimed TimedGetRevisedDocument $ do
+    mdoc <-
+      liftedTimed TimedSelectDoc $
+      selectFirst
+        [ DocumentAccount ==. fromAccountID loginAccountId
+        , DocumentId ==. toSqlKey (fromIntegral docId)
+        ]
+        []
+    case mdoc of
+      Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
+        revision <- liftedTimed TimedSelectRevision $ get404 revisionId
+        cells <-
+          liftedTimed TimedSelectCells $
+          fmap
+            (fmap
+               (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
+                  Shared.InputCell1
+                    { uuid = cellUuid
+                    , name = cellName
+                    , code = codeSource
+                    , order = revisionCellOrder
+                    , version = Shared.versionRefl
+                    }))
+            (E.select
+               (E.from
+                  (\row@(code, cell, revisionCell) -> do
+                     pure ()
                    -- Join code to cell:
-                   E.where_ (code E.^. CodeId E.==. cell E.^. CellCode)
+                     E.where_ (code E.^. CodeId E.==. cell E.^. CellCode)
                    -- Join cell to revision cell:
-                   E.where_
-                     (cell E.^. CellId E.==. revisionCell E.^. RevisionCellCell)
+                     E.where_
+                       (cell E.^. CellId E.==. revisionCell E.^.
+                        RevisionCellCell)
                    -- Join revision cell to revision.
-                   E.where_
-                     (revisionCell E.^. RevisionCellRevision E.==.
-                      E.val revisionId)
-                   pure row)))
-      let revisedInputDocument =
-            Shared.InputDocument1 {cells = V.fromList cells}
-      pure RevisedDocument {..}
-    _ -> notFound -- Cheeky.
+                     E.where_
+                       (revisionCell E.^. RevisionCellRevision E.==.
+                        E.val revisionId)
+                     pure row)))
+        let revisedInputDocument =
+              InputDocument
+                { cells =
+                    fmap fromInputCell1
+                    -- TODO: Instead of this, we'll put the source
+                    -- hash on the revision_cell and use that to
+                    -- populate InputCell.
+                     $
+                    V.fromList cells
+                }
+        pure RevisedDocument {..}
+      _ -> notFound -- Cheeky.
 
 setInputDocument ::
      UTCTime
   -> AccountID
   -> DocumentId
   -> RevisionId
-  -> Shared.InputDocument1
+  -> InputDocument
   -> YesodDB App ()
 setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedTimed TimedSetInputDocument $ do
   revisionId <-
@@ -286,15 +298,15 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedT
         , revisionCreated = now
         }
   for_
-    (InputDocument1.cells inputDocument)
-    (\Shared.InputCell1 {uuid, name, code, order} -> do
+    (InputDocument.cells inputDocument)
+    (\InputCell {uuid, name, code, order} -> do
        Entity {entityKey = codeId} <-
-         upsert -- TODO: Avoid re-inserting the same code.
+         upsert
            Code
              {codeSource = code, codeHash = sha512Text code, codeCreated = now}
            []
        Entity {entityKey = cellId} <-
-         upsert -- TODO: Avoid re-inserting the same cell.
+         upsert
            Cell
              { cellAccount = fromAccountID accountId
              , cellDocument = documentId
@@ -456,22 +468,22 @@ insertImportedCsv ::
      Shared.CsvImportSpec
   -> Shared.File
   -> Vector (InsOrdHashMap Text (Expression Parsed))
-  -> Shared.InputDocument1
-  -> IO Shared.InputDocument1
-insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows Shared.InputDocument1 {..} = do
+  -> InputDocument
+  -> IO InputDocument
+insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows InputDocument {..} = do
   uuid <- liftIO UUID.nextRandom
   pure
-    Shared.InputDocument1
+    InputDocument
       { cells =
           cells <>
           pure
-            (Shared.InputCell1
+            (InputCell
                { uuid = Shared.UUID (UUID.toText uuid)
                  -- TODO: We can include many more chars here.
                , name = T.filter okChar name <> T.pack (show (fileId :: Int))
                , code = RIO.textDisplay (rowsToArray csvImportSpec rows)
-               , order = V.length cells + 1
-               , version = Shared.versionRefl
+               , InputCell.order = V.length cells + 1
+               , sourceHash = HashNotKnownYet
                })
       }
   where

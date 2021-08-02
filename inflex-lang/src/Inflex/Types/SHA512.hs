@@ -21,10 +21,11 @@ module Inflex.Types.SHA512
   , Sha512Digest
   , sha512DigestBS
   , sha512DigestText
-  , digestsToSha512
+  , digestToSha512
   , concatDigests
   ) where
 
+import           Control.DeepSeq
 import qualified Crypto.Hash as Hash (Digest, SHA512, hash, hashInit, hashUpdates, hashFinalize)
 import           Data.Aeson
 import qualified Data.Attoparsec.Text as Atto.T
@@ -33,6 +34,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Base16 as Hex
 import           Data.ByteString.Lazy (toStrict)
+import           Data.Hashable (Hashable)
 import           Data.String
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -50,7 +52,7 @@ import           Language.Haskell.TH.Syntax (Lift(..), Q, TExp(..))
 -- | A SHA512 key to address blobs.
 newtype SHA512 =
   SHA512 ByteString
-  deriving (Eq, Ord, Lift, Generic, PersistFieldSql, PersistField)
+  deriving (Eq, Ord, Lift, Generic, PersistFieldSql, PersistField, Hashable, NFData)
 
 --------------------------------------------------------------------------------
 -- Instances
@@ -154,9 +156,9 @@ concatDigests =
   Hash.hashFinalize .
   Hash.hashUpdates (Hash.hashInit @Hash.SHA512) . fmap unSha512Digest
 
-digestsToSha512 :: [Sha512Digest] -> SHA512
-digestsToSha512 =
+digestToSha512 :: Sha512Digest -> SHA512
+digestToSha512 =
   SHA512 .
   convert .
   Hash.hashFinalize .
-  Hash.hashUpdates (Hash.hashInit @Hash.SHA512) . fmap unSha512Digest
+  Hash.hashUpdates (Hash.hashInit @Hash.SHA512) . pure . unSha512Digest

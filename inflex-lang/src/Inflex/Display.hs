@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Decimal
-import           Inflex.Instances
+import           Inflex.Instances ()
 import           Inflex.Location
 import           Inflex.Types
 import           Inflex.Types.SHA512

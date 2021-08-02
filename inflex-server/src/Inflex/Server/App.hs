@@ -39,7 +39,7 @@ import           Database.Persist.Quasi
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
-import           Inflex.Document (DocumentMsg)
+import           Inflex.Document (DocumentMsg, LoadedExpression)
 import           Inflex.Schema (UUID)
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
@@ -63,6 +63,7 @@ data App = App
   { appPool :: !(Pool SqlBackend)
   , appConfig :: !Config
   , appLogFunc :: GLogFunc AppMsg
+  , appCache :: IORef (HashMap SHA512 LoadedExpression)
   }
 
 -- | App log message.

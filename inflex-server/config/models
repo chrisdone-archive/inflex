@@ -65,6 +65,8 @@ RevisionCell
   revision RevisionId
   cell CellId
   order Int
+  -- TODO: this
+  -- sourceHash SHA512
   deriving Show
 
 -- We put the name and creation time here because that's specific to a

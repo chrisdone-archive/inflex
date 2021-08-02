@@ -49,15 +49,30 @@ data OutputCell = OutputCell
   , order :: Int
   }
 
+data InputDocument = InputDocument
+  { cells :: Vector InputCell
+  }
+
+data InputCell = InputCell
+  { uuid :: Shared.UUID
+  , name :: Text
+  , code :: Text
+  , order :: Int
+  , sourceHash :: SourceHash
+  }
+
+fromInputDocument1 :: Shared.InputDocument1 -> InputDocument
+fromInputDocument1 Shared.InputDocument1 {..} =
+  InputDocument {cells = fmap fromInputCell1 cells}
+
+fromInputCell1 :: Shared.InputCell1 -> InputCell
+fromInputCell1 =
+  \Shared.InputCell1 {..} -> InputCell {sourceHash = HashNotKnownYet, ..}
+
 loadInputDocument ::
-     ( RIO.MonadUnliftIO m
-     , HasGLogFunc env
-     , RIO.MonadReader env m
-     , GMsg env ~ ServerMsg
-     )
-  => Shared.InputDocument1
-  -> m (Maybe (Vector OutputCell))
-loadInputDocument (Shared.InputDocument1 {cells}) = do
+     InputDocument
+  -> Handler (Maybe (Vector OutputCell))
+loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
   loaded <-
     timed
@@ -68,12 +83,13 @@ loadInputDocument (Shared.InputDocument1 {cells}) = do
             (1000 * milliseconds)
             (loadDocument1
                (map
-                  (\Shared.InputCell1 { uuid = Shared.UUID uuid
-                                      , name
-                                      , code
-                                      , order
-                                      } ->
-                     Named {uuid = Uuid uuid, name, thing = code, order, code})
+                  (\InputCell{ uuid = Shared.UUID uuid
+                             , name
+                             , code
+                             , order
+                             , sourceHash
+                             } ->
+                     Named {uuid = Uuid uuid, name, thing = code, order, code, sourceHash})
                   (toList cells)))))?
   defaulted <-
     timed
@@ -274,6 +290,7 @@ toCellError =
     CycleError _names -> Shared.CyclicCells mempty -- TODO: (V.fromList names)
     RenameLoadError parseRenameError -> parseRename parseRenameError
     DuplicateName -> Shared.DuplicateCellName
+    LoadBadLex -> Shared.SyntaxError
     LoadGenerateError e ->
       case e of
         RenameGenerateError parseRenameError -> parseRename parseRenameError

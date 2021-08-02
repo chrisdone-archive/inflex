@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -F -pgmF=early #-}
@@ -20,6 +21,7 @@ module Inflex.Document
   , defaultDocument1
   , evalEnvironment1
   , evalDocument1
+  , LoadedExpression(..)
   , EvaledExpression(..)
   , Toposorted(..)
   , LoadError(..)
@@ -37,6 +39,8 @@ import           Data.List.Extra
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
+import           Data.Sequence (Seq)
+import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -44,8 +48,10 @@ import           Inflex.Defaulter
 import           Inflex.Generaliser
 import           Inflex.Generator
 import           Inflex.Hash
+import           Inflex.Lexer
 import           Inflex.NormalFormCheck
 import           Inflex.Optics
+import           Inflex.Parser
 import qualified Inflex.Parser as Parser1
 import qualified Inflex.Parser2 as Parser2
 import           Inflex.Renamer
@@ -54,6 +60,7 @@ import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
+import           Inflex.Types.SHA512
 import           Optics.Lens
 import           Optics.TH
 import qualified RIO
@@ -67,6 +74,7 @@ data LoadError
   = CycleError [Uuid]
   | RenameLoadError ParseRenameError
   | DuplicateName
+  | LoadBadLex
   | LoadGenerateError (RenameGenerateError LoadError)
   | LoadSolveError (GenerateSolveError LoadError)
   | LoadGeneraliseError (SolveGeneraliseError LoadError)
@@ -79,13 +87,16 @@ newtype Toposorted a = Toposorted {unToposorted :: [a]}
   deriving (Functor, Traversable, Foldable, Show, Eq, Ord, NFData)
 
 data Context = Context
-  { hashedCells :: Map Hash (Either LoadError LoadedExpression)
-  , nameHashes :: FillerEnv LoadError
+  { hashedCells :: !(Map Hash (Either LoadError LoadedExpression))
+  , nameHashes :: !(FillerEnv LoadError)
+  , uuidDigests :: !(Map Uuid Sha512Digest)
   }
 
 data LoadedExpression = LoadedExpression
   { resolvedExpression :: IsResolved (Expression Resolved)
   , parsedExpression :: Expression Parsed
+  , sourceHash :: Sha512Digest
+    -- ^ A hash of the source and also any UUIDs upon which we depend.
   }
 
 data EvaledExpression = EvaledExpression
@@ -98,8 +109,9 @@ data DocumentReader = DocumentReader
   }
 
 data DocumentMsg
-  = UsedNormalFormCodePath Text
+  = UsedFullyResolvedCodePath Text
   | UsedFullLexParseRenameCodePath Text
+  | UsedLexerWithUUIDs Text
   deriving (Show)
 
 $(makeLensesWith (inflexRules ['Inflex.Document.glogfunc, 'counter]) ''DocumentReader)
@@ -113,14 +125,17 @@ instance HasGLogFunc DocumentReader where
 -- records, or the regular slow load use for all code (lambdas, case,
 -- etc.).
 data Independent
-  = FullyResolvedNormalForm (IsResolved (Expression Resolved))
-                            (Expression Parsed)
+  = FullyResolved (IsResolved (Expression Resolved))
+                  (Expression Parsed)
+                  (Set Uuid)
     -- ^ It was parsed with the fast parser and normal-form-checked
-    -- all the way to resolved.
+    -- all the way to resolved. Or else it was cached so we have the
+    -- daa immediately.
   | Renamed (IsRenamed (Expression Renamed))
             (Expression Parsed)
    -- ^ It's not necessarily a normal form checkable expression, so we
    -- renamed it.
+  | LexedWithUuids (Seq (Located Token)) (Set Uuid)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -194,7 +209,12 @@ defaultDocument1 =
               fmap
                 (bimap
                    LoadDefaulterError
-                   (\Cell {..} -> Cell1 {parsed = parsedExpression, ..}))
+                   (\Cell {..} ->
+                      Cell1
+                        { parsed = parsedExpression
+                        , sourceHash = digestToSha512 sourceHash
+                        , ..
+                        }))
                 (defaultResolvedExpression resolvedExpression)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
@@ -246,7 +266,13 @@ independentLoadDocument names =
                      uuid' /= uuid && name == name')
                   names -- TODO: Fix this O(n^2) operation
                then Left DuplicateName
-               else independentLoad (T.unpack name) thing
+               else -- TODO: Using the hash that we'll add to Named,
+                    -- do a lookup in a cache passed from
+                    -- loadInputDocument in Compute, to produce a
+                    -- FullyResolved.
+                    -- Failing that, do an independentLoad.
+
+                    independentLoad (T.unpack name) thing
          , ..
          })
     names
@@ -257,11 +283,11 @@ independentLoad :: String -> Text -> Either LoadError Independent
 independentLoad name source =
   case Parser2.parseText name source of
     Left Parser2.Failed ->
-      first
-        RenameLoadError
-        (do expression <- first ParserErrored (Parser1.parseText name source)
-            isRenamed <- first RenamerErrors (renameParsed expression)
-            pure (Renamed isRenamed expression))
+      case lexTextPlusUUIDs source of
+        Left _e -> Left LoadBadLex
+        -- Fas parse wasn't possible, but a lex with the standard
+        -- lexer was fine. Proceed from here.
+        Right (tokens, uuids) -> pure (LexedWithUuids tokens uuids)
     -- A fast parse was possible. Let's try a fast type check.
     Right expression ->
       case resolveParsedResolved expression of
@@ -272,7 +298,7 @@ independentLoad name source =
             (do isRenamed <- first RenamerErrors (renameParsed expression)
                 pure (Renamed isRenamed expression))
         -- We got a successful type check and resolve. Use that.
-        Right isResolved -> pure (FullyResolvedNormalForm isResolved expression)
+        Right isResolved -> pure (FullyResolved isResolved expression mempty)
 
 -- | Fill, generate, solve, generalize, resolve, default, step.
 --
@@ -281,33 +307,74 @@ dependentLoadDocument ::
      Toposorted (Named (Either LoadError Independent))
   -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
 dependentLoadDocument =
-  fmap snd . mapAccumM loadCell (Context mempty emptyFillerEnv)
+  fmap snd .
+  mapAccumM
+    loadCell
+    Context
+      {uuidDigests = mempty, hashedCells = mempty, nameHashes = emptyFillerEnv}
   where
     loadCell ::
          Context
       -> Named (Either LoadError Independent)
       -> RIO DocumentReader (Context, Named (Either LoadError LoadedExpression))
-    loadCell Context {hashedCells, nameHashes} result@Named {name} = do
+    loadCell Context {hashedCells, nameHashes, uuidDigests} result@Named { name
+                                                                         , uuid
+                                                                         , code
+                                                                         } = do
+      let makeSourceHash uuids =
+            concatDigests
+              (sha512DigestText code :
+               mapMaybe (\uuid' -> M.lookup uuid' uuidDigests) (Set.toList uuids))
       namedMaybeCell <-
         traverse
           (\case
              Left e -> pure (Left e)
-             Right (FullyResolvedNormalForm resolvedExpression parsedExpression) -> do
-               glog (UsedNormalFormCodePath name)
+             Right (FullyResolved resolvedExpression parsedExpression uuids) -> do
+               glog (UsedFullyResolvedCodePath name)
                pure
-                 (Right LoadedExpression {resolvedExpression, parsedExpression})
-             Right (Renamed renamed parsedExpression) -> do
+                 (Right
+                    LoadedExpression
+                      { resolvedExpression
+                      , parsedExpression
+                      , sourceHash = makeSourceHash uuids
+                      })
+             Right (LexedWithUuids tokens uuids) -> do
+               glog (UsedLexerWithUUIDs name)
+               case do parsed <-
+                         first
+                           (ParserErrored . ParseError)
+                           (Parser1.parseTokens tokens)
+                       fmap
+                         (parsed, )
+                         (first RenamerErrors (renameParsed parsed)) of
+                 Left e -> pure (Left (RenameLoadError e))
+                 Right (parsedExpression, renamed) -> do
+                   isResolved <-
+                     resolveRenamedCell hashedCells nameHashes renamed
+                   pure
+                     (do resolvedExpression <- isResolved
+                         pure
+                           LoadedExpression
+                             { resolvedExpression
+                             , parsedExpression
+                             , sourceHash = makeSourceHash uuids
+                             })
+             Right (Renamed renamed@IsRenamed {unresolvedUuids = uuids} parsedExpression) -> do
                glog (UsedFullLexParseRenameCodePath name)
                isResolved <- resolveRenamedCell hashedCells nameHashes renamed
                pure
                  (do resolvedExpression <- isResolved
                      pure
-                       LoadedExpression {resolvedExpression, parsedExpression}))
+                       LoadedExpression
+                         { resolvedExpression
+                         , parsedExpression
+                         , sourceHash = makeSourceHash uuids
+                         }))
           result
       let nameHashes' =
-            insertNameAndUuid name uuid (fmap hashLoaded thing) nameHashes
+            insertNameAndUuid name uuid' (fmap hashLoaded thing) nameHashes
             where
-              Named {uuid, thing} = namedMaybeCell
+              Named {uuid = uuid', thing} = namedMaybeCell
           hashedCells' =
             case namedMaybeCell of
               Named {thing = Left {}} -> hashedCells
@@ -315,8 +382,17 @@ dependentLoadDocument =
                 M.insert (hashLoaded loaded) (Right loaded) hashedCells
           hashLoaded LoadedExpression {resolvedExpression = cell} =
             hashResolved cell
+          uuidDigests' =
+            case namedMaybeCell of
+              Named {thing = Right LoadedExpression {sourceHash}} ->
+                M.insert uuid sourceHash uuidDigests
+              _ -> uuidDigests
       pure
-        ( Context {hashedCells = hashedCells', nameHashes = nameHashes'}
+        ( Context
+            { uuidDigests = uuidDigests'
+            , hashedCells = hashedCells'
+            , nameHashes = nameHashes'
+            }
         , namedMaybeCell)
 
 -- | Sort the named cells in the document by reverse dependency order.
@@ -328,6 +404,10 @@ topologicalSortDocument nameds =
   where
     toNode named@Named {uuid, thing = result} =
       case result of
+        Right (LexedWithUuids _tokens uuids) ->
+          ( named
+          , uuid
+          , toList uuids)
         Right (Renamed IsRenamed {unresolvedGlobals, unresolvedUuids} _) ->
           ( named
           , uuid
@@ -338,7 +418,7 @@ topologicalSortDocument nameds =
                    find (\Named {name = name'} -> nameToLookup == name') nameds
                  pure foundUuid)
               (Set.toList unresolvedGlobals))
-        Right FullyResolvedNormalForm{} -> (named, uuid, mempty)
+        Right FullyResolved {} -> (named, uuid, mempty)
         Left {} -> (named, uuid, mempty)
     cycleCheck =
       \case
@@ -347,7 +427,9 @@ topologicalSortDocument nameds =
           fmap
             (\(named, _, _) ->
                fmap
-                 (const (Left (CycleError (map (\(_, uuid, _) -> uuid) cyclicNameds))))
+                 (const
+                    (Left
+                       (CycleError (map (\(_, uuid, _) -> uuid) cyclicNameds))))
                  named)
             cyclicNameds
 

@@ -80,6 +80,7 @@ main = do
                           exitFailure)
                else do
                  logFunc <- liftIO (makeAppLogFunc registry)
+                 cacheRef <- newIORef mempty
                  app <-
                    liftIO
                      (toWaiAppPlain
@@ -87,6 +88,7 @@ main = do
                           { appLogFunc = logFunc
                           , appPool = pool
                           , appConfig = config
+                          , appCache = cacheRef
                           })
                  let runMyWarp thisPort =
                        Warp.runSettings

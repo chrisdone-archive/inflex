@@ -151,11 +151,18 @@ data Named a = Named
   , order :: Int
   , code :: Text
   , thing :: a
+  , sourceHash :: !SourceHash
   } deriving (Show, Lift, Eq, Ord, Functor, Generic, Traversable, Foldable)
 instance NFData a => NFData (Named a)
 
+data SourceHash
+  = HashNotKnownYet
+  | HashKnown SHA512
+  deriving (Show, Lift, Eq, Ord, Generic)
+instance NFData SourceHash
+
 newtype Uuid = Uuid Text
- deriving (Eq, Ord, Show, Lift, NFData)
+ deriving (Eq, Ord, Show, Lift, NFData, Hashable)
 
 -- | A ref @foo in the source code.
 data Ref
@@ -184,6 +191,7 @@ data Cell1 = Cell1
   , scheme :: !(Scheme Polymorphic)
   , defaultedClassConstraints :: !(Seq (Default Polymorphic))
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
+  , sourceHash :: !SHA512
   }
 
 -- | A defaulted class constraint. Contains the original and defaulted

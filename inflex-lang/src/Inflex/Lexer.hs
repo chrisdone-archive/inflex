@@ -48,24 +48,23 @@ module Inflex.Lexer
   , _HashToken
   , _GlobalToken
   , _BarToken
-  , lexUUIDs
+  , lexTextPlusUUIDs
   ) where
 
 import           Control.Monad
 import           Data.Bifunctor
 import           Data.Char
 import           Data.Foldable
-import           Data.HashSet (HashSet)
-import qualified Data.HashSet as HS
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Read as T
-import           Data.UUID
 import qualified Data.UUID as UUID
 import           Data.Void
 import           GHC.Generics
@@ -141,20 +140,20 @@ lexTextSingleton bs =
     (Mega.runParser (Mega.space *> tokenLexer <* Mega.eof) "single-token" bs)
 
 -- | Find UUIDs in a source text, so that we can find any
--- dependencies. It's OK if it fails to lex, that just returns
--- an empty set.
-lexUUIDs :: Text -> HashSet UUID
-lexUUIDs text =
+-- dependencies.
+lexTextPlusUUIDs :: Text -> Either LexError (Seq (Located Token), Set Uuid)
+lexTextPlusUUIDs text =
   case lexText "" text of
-    Left _ -> mempty
+    Left err -> Left err
     Right toks ->
-      HS.fromList
-        (mapMaybe
-           (\case
-              Located {thing = GlobalToken (ParsedUuid (Uuid txt))} ->
-                UUID.fromText txt
-              _ -> Nothing)
-           (toList toks))
+      pure
+        ( toks
+        , Set.fromList
+            (mapMaybe
+               (\case
+                  Located {thing = GlobalToken (ParsedUuid uuid)} -> pure uuid
+                  _ -> Nothing)
+               (toList toks)))
 
 --------------------------------------------------------------------------------
 -- Lexer

@@ -16,9 +16,11 @@ module Inflex.Server.Transforms
 import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Vector as V
+import           Inflex.Server.Compute
 import           Inflex.Display ()
 import           Inflex.Parser
-import qualified Inflex.Schema as InputDocument1 (InputDocument1(..))
+import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
+import qualified Inflex.Server.Compute as InputCell (InputCell(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Types
 import qualified Inflex.Types as Field (Field(..))
@@ -33,35 +35,35 @@ data TransformError
 --------------------------------------------------------------------------------
 -- General dispatcher
 
-applyRename :: Shared.RenameCell -> Shared.InputDocument1 -> Shared.InputDocument1
+applyRename :: Shared.RenameCell -> InputDocument -> InputDocument
 applyRename (Shared.RenameCell {uuid = uuid0, newname}) inputDocument1 =
   inputDocument1
-    { InputDocument1.cells =
+    { InputDocument.cells =
         fmap
-          (\Shared.InputCell1 {..} ->
-             Shared.InputCell1
+          (\InputCell {..} ->
+             InputCell
                { name =
                    if uuid == uuid0
                      then newname
                      else name
                , ..
                })
-          (InputDocument1.cells inputDocument1)
+          (InputDocument.cells inputDocument1)
     }
 
-applyDelete :: Shared.DeleteCell -> Shared.InputDocument1 -> Shared.InputDocument1
+applyDelete :: Shared.DeleteCell -> InputDocument -> InputDocument
 applyDelete (Shared.DeleteCell {uuid = uuid0}) inputDocument1 =
   inputDocument1
-    { InputDocument1.cells =
+    { InputDocument.cells =
         V.filter
-          (\Shared.InputCell1 {..} -> uuid /= uuid0)
-          (InputDocument1.cells inputDocument1)
+          (\InputCell {..} -> uuid /= uuid0)
+          (InputDocument.cells inputDocument1)
     }
 
 applyUpdateToDocument ::
      Shared.UpdateCell
-  -> Shared.InputDocument1
-  -> Either TransformError Shared.InputDocument1
+  -> InputDocument
+  -> Either TransformError InputDocument
 applyUpdateToDocument Shared.UpdateCell {uuid, update} =
   case cmd of
     Shared.NewFieldUpdate Shared.NewField {name = name0} ->
@@ -323,24 +325,30 @@ mapUuidPath ::
      Shared.UUID
   -> Shared.DataPath
   -> Mapping
-  -> Shared.InputDocument1
-  -> Either TransformError Shared.InputDocument1
+  -> InputDocument
+  -> Either TransformError InputDocument
 mapUuidPath uuid path mapping = mapUuid uuid (mapPath path mapping)
 
 -- | Change something at a uuid in the document.
 mapUuid ::
      Shared.UUID
   -> (Text -> Either TransformError Text)
-  -> Shared.InputDocument1
-  -> Either TransformError Shared.InputDocument1
-mapUuid uuid0 f Shared.InputDocument1 {cells} =
-  do cells' <- traverse apply cells
-     pure (Shared.InputDocument1 {cells = cells'})
+  -> InputDocument
+  -> Either TransformError InputDocument
+mapUuid uuid0 f InputDocument {cells} = do
+  cells' <- traverse apply cells
+  pure (InputDocument {cells = cells'})
   where
-    apply same@Shared.InputCell1 {..} =
+    apply same@InputCell {..} =
       if uuid == uuid0
-        then do code' <- f code
-                pure Shared.InputCell1 {code = code', ..}
+        then do
+          code' <- f code
+          pure
+            InputCell
+              { code = code'
+              , sourceHash = HashNotKnownYet -- IMPORTANT: This ensures cache invalidation.
+              , ..
+              }
         else pure same
 
 -- | Change something at a path in the source code.
