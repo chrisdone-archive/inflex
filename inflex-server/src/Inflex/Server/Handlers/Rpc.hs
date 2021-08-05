@@ -18,10 +18,12 @@ import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import           Data.Maybe
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
+import           Data.Traversable
 import           Data.UUID as UUID
 import           Data.UUID.V4 as UUID
 import           Data.Vector (Vector)
@@ -32,8 +34,8 @@ import qualified Inflex.Schema as CachedOutputCell (CachedOutputCell(..))
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Server.Compute
-import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
 import qualified Inflex.Server.Compute as InputCell (InputCell(..))
+import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
 import           Inflex.Server.Csv
 import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
@@ -99,6 +101,7 @@ applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
               , code
               , order = V.length cells + 1
               , sourceHash = HashNotKnownYet
+              , dependencies = mempty
               }
           inputDocument =
             inputDocument0 {InputDocument.cells = cells <> pure newcell}
@@ -242,21 +245,23 @@ getRevisedDocument loginAccountId docId =
     case mdoc of
       Just (Entity documentKey Document {documentRevision = Just revisionId}) -> do
         revision <- liftedTimed TimedSelectRevision $ get404 revisionId
-        cells <-
+        cells0 <-
           liftedTimed TimedSelectCells $
           fmap
             (fmap
-               (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
-                  InputCell
-                    { uuid = cellUuid
-                    , name = cellName
-                    , code = codeSource
-                    , order = revisionCellOrder
-                    , sourceHash =
-                        case revisionCellMsourceHash of
-                          Nothing -> HashNotKnownYet
-                          Just hash -> HashKnown hash
-                    }))
+               (\(Entity _ Code {..}, Entity cellId Cell {..}, Entity _ RevisionCell {..}) ->
+                  ( cellId
+                  , InputCell
+                      { uuid = cellUuid
+                      , name = cellName
+                      , code = codeSource
+                      , order = revisionCellOrder
+                      , sourceHash =
+                          case revisionCellMsourceHash of
+                            Nothing -> HashNotKnownYet
+                            Just hash -> HashKnown hash
+                      , dependencies = mempty -- TODO: Fill this in.
+                      })))
             (E.select
                (E.from
                   (\row@(code, cell, revisionCell) -> do
@@ -272,6 +277,24 @@ getRevisedDocument loginAccountId docId =
                        (revisionCell E.^. RevisionCellRevision E.==.
                         E.val revisionId)
                      pure row)))
+        -- TODO: make this not so gross. Rushed it due to time limits.
+        cells <-
+          for
+            cells0
+            (\(cellId, InputCell {..}) -> do
+               depCellIds <- selectList [CellDependencyOrigin ==. cellId] []
+               pure
+                 InputCell
+                   { dependencies =
+                       Set.fromList
+                         (mapMaybe
+                            (\(Entity _ CellDependency {cellDependencyTarget = cellId'}) -> do
+                               InputCell {uuid = Shared.UUID uuid'} <-
+                                 lookup cellId' cells0
+                               pure (Uuid uuid'))
+                            depCellIds)
+                   , ..
+                   })
         let revisedInputDocument = InputDocument {cells = V.fromList cells}
         pure RevisedDocument {..}
       _ -> notFound -- Cheeky.
@@ -283,42 +306,63 @@ setInputDocument ::
   -> RevisionId
   -> Vector OutputCell
   -> YesodDB App ()
-setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedTimed TimedSetInputDocument $ do
-  revisionId <-
-    insert
-      Revision
-        { revisionAccount = fromAccountID accountId
-        , revisionDocument = documentId
-        , revisionCreated = now
-        }
-  for_
-    inputDocument
-    (\OutputCell {uuid, name, code, order, msourceHash} -> do
-       Entity {entityKey = codeId} <-
-         upsert
-           Code
-             {codeSource = code, codeHash = sha512Text code, codeCreated = now}
-           []
-       Entity {entityKey = cellId} <-
-         upsert
-           Cell
-             { cellAccount = fromAccountID accountId
-             , cellDocument = documentId
-             , cellCode = codeId
-             , cellCreated = now
-             , cellName = name
-             , cellUuid = uuid
-             }
-           []
-       insert_
-         RevisionCell
-           { revisionCellRevision = revisionId
-           , revisionCellCell = cellId
-           , revisionCellOrder = order
-           , revisionCellMsourceHash = msourceHash
-           }
-       pure ())
-  update documentId [DocumentRevision =. pure revisionId]
+setInputDocument now accountId documentId _oldRevisionId inputDocument =
+  liftedTimed TimedSetInputDocument $ do
+    revisionId <-
+      insert
+        Revision
+          { revisionAccount = fromAccountID accountId
+          , revisionDocument = documentId
+          , revisionCreated = now
+          }
+    cells <-
+      for
+        inputDocument
+        (\OutputCell {uuid, name, code, order, msourceHash, dependencies} -> do
+           Entity {entityKey = codeId} <-
+             upsert
+               Code
+                 { codeSource = code
+                 , codeHash = sha512Text code
+                 , codeCreated = now
+                 }
+               []
+           Entity {entityKey = cellId} <-
+             upsert
+               Cell
+                 { cellAccount = fromAccountID accountId
+                 , cellDocument = documentId
+                 , cellCode = codeId
+                 , cellCreated = now
+                 , cellName = name
+                 , cellUuid = uuid
+                 }
+               []
+           insert_
+             RevisionCell
+               { revisionCellRevision = revisionId
+               , revisionCellCell = cellId
+               , revisionCellOrder = order
+               , revisionCellMsourceHash = msourceHash
+               }
+           pure (uuid, (cellId, dependencies)))
+    for_
+      cells
+      (\(_uuid, (cellId, dependencies)) -> do
+         let targets =
+               mapMaybe
+                 (\(Uuid uuid') -> do
+                    (cellId', _) <- lookup (Shared.UUID uuid') (toList cells)
+                    pure cellId')
+                 (toList dependencies)
+         for_
+           targets
+           (\target -> do
+              upsert
+                CellDependency
+                  {cellDependencyOrigin = cellId, cellDependencyTarget = target}
+                []))
+    update documentId [DocumentRevision =. pure revisionId]
   -- TODO: Garbage collect old revisions.
   -- revisions <- selectKeysList [RevisionDocument ==. documentId] [Asc RevisionId]
   -- config <- fmap appConfig getYesod
@@ -479,6 +523,7 @@ insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows InputDocume
                , code = RIO.textDisplay (rowsToArray csvImportSpec rows)
                , InputCell.order = V.length cells + 1
                , sourceHash = HashNotKnownYet
+               , dependencies = mempty
                })
       }
   where

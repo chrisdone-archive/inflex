@@ -14,6 +14,7 @@ module Inflex.Migrate where
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Trans.Reader
+import           Data.String
 import           Data.String.Quote
 import           Data.Text (Text)
 import qualified Data.Text.IO as T
@@ -75,7 +76,19 @@ ALTER TABLE "cell" ADD CONSTRAINT "unique_cell" UNIQUE("document","code","name",
 
 ALTER TABLE "revision_cell" ADD COLUMN "msource_hash" BYTEA NULL;
 
+-- cell dependency
+
+CREATe TABLE "cell_dependency"("id" SERIAL8  PRIMARY KEY UNIQUE,"origin" INT8 NOT NULL,"target" INT8 NOT NULL);
+ALTER TABLE "cell_dependency" ADD CONSTRAINT "unique_cell_dependency" UNIQUE("origin","target");
+ALTER TABLE "cell_dependency" ADD CONSTRAINT "cell_dependency_origin_fkey" FOREIGN KEY("origin") REFERENCES "cell"("id");
+ALTER TABLE "cell_dependency" ADD CONSTRAINT "cell_dependency_target_fkey" FOREIGN KEY("target") REFERENCES "cell"("id");
+
 |]
+
+skipPersistent :: IsString a => [a]
+skipPersistent =
+  [
+  ]
 
 --------------------------------------------------------------------------------
 -- Migration harness

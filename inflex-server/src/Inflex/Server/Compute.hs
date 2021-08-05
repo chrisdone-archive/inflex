@@ -14,12 +14,16 @@
 module Inflex.Server.Compute where
 
 import           Control.Early
+import           Control.Monad.IO.Class
 import           Data.Foldable
 import           Data.Functor.Contravariant
 import qualified Data.HashMap.Strict as HM
+import           Data.IORef
 import           Data.List
 import           Data.Maybe
 import           Data.Ord
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -38,6 +42,7 @@ import           Inflex.Types.SHA512
 import           Prelude hiding (putStrLn)
 import qualified RIO
 import           RIO (HasGLogFunc(..), RIO, glog)
+import           Yesod (getYesod)
 
 milliseconds :: Int
 milliseconds = 20_000
@@ -49,6 +54,7 @@ data OutputCell = OutputCell
   , result :: Shared.Result
   , order :: Int
   , msourceHash :: Maybe SHA512
+  , dependencies :: Set Uuid
   }
 
 data InputDocument = InputDocument
@@ -61,6 +67,7 @@ data InputCell = InputCell
   , code :: Text
   , order :: Int
   , sourceHash :: SourceHash
+  , dependencies :: Set Uuid
   }
 
 fromInputDocument1 :: Shared.InputDocument1 -> InputDocument
@@ -69,13 +76,15 @@ fromInputDocument1 Shared.InputDocument1 {..} =
 
 fromInputCell1 :: Shared.InputCell1 -> InputCell
 fromInputCell1 =
-  \Shared.InputCell1 {..} -> InputCell {sourceHash = HashNotKnownYet, ..}
+  \Shared.InputCell1 {..} -> InputCell {sourceHash = HashNotKnownYet, dependencies = mempty, ..}
 
 loadInputDocument ::
      InputDocument
   -> Handler (Maybe (Vector OutputCell))
 loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
+  loadedCacheRef <- fmap appCache getYesod
+  loadedCache <- liftIO (readIORef loadedCacheRef)
   loaded <-
     timed
       TimedLoadDocument1
@@ -84,15 +93,50 @@ loadInputDocument (InputDocument {cells}) = do
          (RIO.timeout
             (1000 * milliseconds)
             (loadDocument1
+               loadedCache
                (map
-                  (\InputCell{ uuid = Shared.UUID uuid
-                             , name
-                             , code
-                             , order
-                             , sourceHash
-                             } ->
-                     Named {uuid = Uuid uuid, name, thing = code, order, code, sourceHash})
+                  (\InputCell { uuid = Shared.UUID uuid
+                              , name
+                              , code
+                              , order
+                              , sourceHash
+                              , dependencies
+                              } ->
+                     Named
+                       { uuid = Uuid uuid
+                       , name
+                       , thing = code
+                       , order
+                       , code
+                       , sourceHash =
+                           if all -- TODO: Make this less ugly and more efficient.
+                                (\uuid0 ->
+                                   case V.find
+                                          (\InputCell { uuid = Shared.UUID uuid'
+                                                      , sourceHash = sourceHash'
+                                                      } ->
+                                             Uuid uuid' == uuid0 &&
+                                             sourceHash' /= HashNotKnownYet)
+                                          cells of
+                                     Nothing -> False
+                                     Just {} -> True)
+                                (Set.toList dependencies)
+                             then sourceHash
+                             else HashNotKnownYet
+                       , dependencies
+                       })
                   (toList cells)))))?
+  liftIO
+    (writeIORef
+       loadedCacheRef
+       (foldl'
+          (\cache Named {thing} ->
+             case thing of
+               Right loadedExpression@LoadedExpression {..} ->
+                 HM.insert (digestToSha512 sourceHash) loadedExpression cache
+               Left {} -> cache)
+          loadedCache
+          loaded))
   defaulted <-
     timed
       TimedDefaulter
@@ -109,11 +153,12 @@ loadInputDocument (InputDocument {cells}) = do
             (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
   outputCells <-
     RIO.pooledMapConcurrently
-      (\Named {uuid = Uuid uuid, name, thing, order, code} -> do
+      (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
          pure
            (OutputCell
-              { uuid = Shared.UUID uuid
+              { dependencies
+              , uuid = Shared.UUID uuid
               , result =
                   either
                     (Shared.ResultError . toCellError)
@@ -139,17 +184,17 @@ loadInputDocument (InputDocument {cells}) = do
               , code
               , name
               , order
-              , msourceHash = case thing of
-                  Left{} -> Nothing
-                  Right EvaledExpression{cell=Cell1{sourceHash}} -> Just sourceHash
+              , msourceHash =
+                  case thing of
+                    Left {} -> Nothing
+                    Right EvaledExpression {cell = Cell1 {sourceHash}} ->
+                      Just sourceHash
               }))
       (unToposorted topo)
   pure
     (Just
        (V.fromList
-          (sortBy
-             (comparing (\OutputCell {order} -> order))
-             outputCells)))
+          (sortBy (comparing (\OutputCell {order} -> order)) outputCells)))
   where
     defaultDocument1' top = do
       !v <- defaultDocument1 top

@@ -13,20 +13,21 @@
 
 module Inflex.Types where
 
-import Control.DeepSeq
-import Data.Hashable
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Sequence (Seq)
-import Data.String
-import Data.Text (Text)
-import Data.UUID (UUID)
-import Data.Vector (Vector)
-import Data.Void
-import FlatParse.Basic as FlatParse
-import GHC.Generics
-import Inflex.Types.SHA512
-import Language.Haskell.TH.Lift
-import Numeric.Natural
+import           Control.DeepSeq
+import           Data.Hashable
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Sequence (Seq)
+import           Data.Set (Set)
+import           Data.String
+import           Data.Text (Text)
+import           Data.UUID (UUID)
+import           Data.Vector (Vector)
+import           Data.Void
+import           FlatParse.Basic as FlatParse
+import           GHC.Generics
+import           Inflex.Types.SHA512
+import           Language.Haskell.TH.Lift
+import           Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -152,6 +153,7 @@ data Named a = Named
   , code :: Text
   , thing :: a
   , sourceHash :: !SourceHash
+  , dependencies :: Set Uuid
   } deriving (Show, Lift, Eq, Ord, Functor, Generic, Traversable, Foldable)
 instance NFData a => NFData (Named a)
 

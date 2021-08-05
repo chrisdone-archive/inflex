@@ -89,6 +89,17 @@ Cell
   UniqueCell document code name uuid
   deriving Show
 
+-- TODO: below. persistent bug stopping me.
+
+-- We store what other cells this cell depends on.
+--
+-- APPEND-ONLY
+CellDependency
+  origin CellId
+  target CellId
+  UniqueCellDependency origin target
+  deriving Show
+
 -- Independent from any specific document. It's just a piece of code
 -- with a unique hash. We put the creation date to have some log of
 -- where it came from.

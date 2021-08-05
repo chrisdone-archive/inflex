@@ -47,8 +47,12 @@ main :: IO ()
 main = do
   mainId <- RIO.myThreadId
   _ <-
-    installHandler softwareTermination (CatchOnce (do S8.putStrLn "Received SIGTERM. Killing main thread."
-                                                      killThread mainId)) Nothing
+    installHandler
+      softwareTermination
+      (CatchOnce
+         (do S8.putStrLn "Received SIGTERM. Killing main thread."
+             killThread mainId))
+      Nothing
   Buffering.setAppBuffering
   initializeTime
   now <- getCurrentTime
@@ -71,7 +75,7 @@ main = do
           (\pool -> do
              runSqlPool (manualMigration (stripeConfig config) migrateAll) pool
              entries <- runSqlPool (showMigration migrateAll) pool
-             if not (List.null entries)
+             if not (List.null (filter (flip notElem skipPersistent) entries))
                then liftIO
                       (do putStrLn
                             "Persistent has an inconsistent view of the database."
@@ -79,6 +83,13 @@ main = do
                           mapM_ T.putStrLn entries
                           exitFailure)
                else do
+                 let skipped = filter (flip elem skipPersistent) entries
+                 when
+                   (not (null skipped))
+                   (liftIO
+                      (putStrLn
+                         ("Skipped " ++
+                          show (length skipped) ++ " persistent suggestions.")))
                  logFunc <- liftIO (makeAppLogFunc registry)
                  cacheRef <- newIORef mempty
                  app <-

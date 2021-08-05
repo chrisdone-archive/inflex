@@ -35,6 +35,8 @@ import           Control.Parallel.Strategies
 import           Data.Bifunctor
 import           Data.Foldable
 import           Data.Graph
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import           Data.List.Extra
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -97,6 +99,8 @@ data LoadedExpression = LoadedExpression
   , parsedExpression :: Expression Parsed
   , sourceHash :: Sha512Digest
     -- ^ A hash of the source and also any UUIDs upon which we depend.
+  , uuids :: Set Uuid
+    -- ^ UUIDs that we depend on.
   }
 
 data EvaledExpression = EvaledExpression
@@ -112,6 +116,7 @@ data DocumentMsg
   = UsedFullyResolvedCodePath Text
   | UsedFullLexParseRenameCodePath Text
   | UsedLexerWithUUIDs Text
+  | UsedCachedLoadedExpression Text
   deriving (Show)
 
 $(makeLensesWith (inflexRules ['Inflex.Document.glogfunc, 'counter]) ''DocumentReader)
@@ -129,13 +134,15 @@ data Independent
                   (Expression Parsed)
                   (Set Uuid)
     -- ^ It was parsed with the fast parser and normal-form-checked
-    -- all the way to resolved. Or else it was cached so we have the
-    -- daa immediately.
+    -- all the way to resolved.
+  | CachedLoadedExpression LoadedExpression
+    -- ^ It was cached so we have the data immediately.
   | Renamed (IsRenamed (Expression Renamed))
             (Expression Parsed)
    -- ^ It's not necessarily a normal form checkable expression, so we
    -- renamed it.
-  | LexedWithUuids (Seq (Located Token)) (Set Uuid)
+  | LexedWithUuids (Seq (Located Token))
+                   (Set Uuid)
 
 --------------------------------------------------------------------------------
 -- Top-level entry points
@@ -151,14 +158,15 @@ loadDocument =
     (fmap
        (fmap
           (second (\LoadedExpression {resolvedExpression} -> resolvedExpression)))) .
-  loadDocument1
+  loadDocument1 mempty
 
 -- | Load a document up to resolution.
 loadDocument1 ::
-     [Named Text]
+     HashMap SHA512 LoadedExpression
+  -> [Named Text]
   -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
-loadDocument1 =
-  dependentLoadDocument . topologicalSortDocument . independentLoadDocument
+loadDocument1 cache =
+  dependentLoadDocument . topologicalSortDocument . independentLoadDocument cache
 
 -- | Construct an evaluation environment.
 evalEnvironment ::
@@ -253,28 +261,40 @@ evalDocument1 env =
 
 -- | Lex, parse, rename -- can all be done per cell in parallel.
 independentLoadDocument ::
-     [Named Text] -> [Named (Either LoadError Independent)]
-independentLoadDocument names =
+     HashMap SHA512 LoadedExpression
+  -> [Named Text]
+  -> [Named (Either LoadError Independent)]
+independentLoadDocument cache names =
   parMap
     rseq
     (\Named {..} ->
-       Named
-         { thing =
-             if not (T.null (T.strip name)) &&
-                any
-                  (\Named {uuid = uuid', name = name'} ->
-                     uuid' /= uuid && name == name')
-                  names -- TODO: Fix this O(n^2) operation
-               then Left DuplicateName
-               else -- TODO: Using the hash that we'll add to Named,
-                    -- do a lookup in a cache passed from
-                    -- loadInputDocument in Compute, to produce a
-                    -- FullyResolved.
-                    -- Failing that, do an independentLoad.
-
-                    independentLoad (T.unpack name) thing
-         , ..
-         })
+       let independent =
+             case sourceHash of
+               HashKnown sha512'
+                 | Just loadedExpression <- HM.lookup sha512' cache ->
+                   Right (CachedLoadedExpression loadedExpression)
+               _ -> independentLoad (T.unpack name) thing
+           dependencies' =
+             case independent of
+               Left {} -> mempty
+               Right indep ->
+                 case indep of
+                   FullyResolved _ _ uuids -> uuids
+                   CachedLoadedExpression LoadedExpression {uuids} -> uuids
+                   Renamed IsRenamed {unresolvedUuids} _ -> unresolvedUuids
+                   LexedWithUuids _ uuids -> uuids
+        in Named
+             { thing =
+                 if not (T.null (T.strip name)) &&
+                    any
+                      (\Named {uuid = uuid', name = name'} ->
+                         uuid' /= uuid && name == name')
+                      names -- TODO: Fix this O(n^2) operation
+                   then Left DuplicateName
+                   else independent
+             , dependencies = dependencies'
+             , ..
+             })
     names
 
 -- | Load a cell's source as far as possible which can be done
@@ -324,17 +344,23 @@ dependentLoadDocument =
       let makeSourceHash uuids =
             concatDigests
               (sha512DigestText code :
-               mapMaybe (\uuid' -> M.lookup uuid' uuidDigests) (Set.toList uuids))
+               mapMaybe
+                 (\uuid' -> M.lookup uuid' uuidDigests)
+                 (Set.toList uuids))
       namedMaybeCell <-
         traverse
           (\case
              Left e -> pure (Left e)
+             Right (CachedLoadedExpression loadedExpression) -> do
+               glog (UsedCachedLoadedExpression name)
+               pure (Right loadedExpression)
              Right (FullyResolved resolvedExpression parsedExpression uuids) -> do
                glog (UsedFullyResolvedCodePath name)
                pure
                  (Right
                     LoadedExpression
-                      { resolvedExpression
+                      { uuids
+                      , resolvedExpression
                       , parsedExpression
                       , sourceHash = makeSourceHash uuids
                       })
@@ -355,7 +381,8 @@ dependentLoadDocument =
                      (do resolvedExpression <- isResolved
                          pure
                            LoadedExpression
-                             { resolvedExpression
+                             { uuids
+                             , resolvedExpression
                              , parsedExpression
                              , sourceHash = makeSourceHash uuids
                              })
@@ -366,7 +393,8 @@ dependentLoadDocument =
                  (do resolvedExpression <- isResolved
                      pure
                        LoadedExpression
-                         { resolvedExpression
+                         { uuids
+                         , resolvedExpression
                          , parsedExpression
                          , sourceHash = makeSourceHash uuids
                          }))
@@ -404,10 +432,9 @@ topologicalSortDocument nameds =
   where
     toNode named@Named {uuid, thing = result} =
       case result of
-        Right (LexedWithUuids _tokens uuids) ->
-          ( named
-          , uuid
-          , toList uuids)
+        Right (LexedWithUuids _tokens uuids) -> (named, uuid, toList uuids)
+        Right (CachedLoadedExpression LoadedExpression {uuids}) ->
+          (named, uuid, toList uuids)
         Right (Renamed IsRenamed {unresolvedGlobals, unresolvedUuids} _) ->
           ( named
           , uuid
