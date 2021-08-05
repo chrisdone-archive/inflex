@@ -247,12 +247,15 @@ getRevisedDocument loginAccountId docId =
           fmap
             (fmap
                (\(Entity _ Code {..}, Entity _ Cell {..}, Entity _ RevisionCell {..}) ->
-                  Shared.InputCell1
+                  InputCell
                     { uuid = cellUuid
                     , name = cellName
                     , code = codeSource
                     , order = revisionCellOrder
-                    , version = Shared.versionRefl
+                    , sourceHash =
+                        case revisionCellMsourceHash of
+                          Nothing -> HashNotKnownYet
+                          Just hash -> HashKnown hash
                     }))
             (E.select
                (E.from
@@ -269,16 +272,7 @@ getRevisedDocument loginAccountId docId =
                        (revisionCell E.^. RevisionCellRevision E.==.
                         E.val revisionId)
                      pure row)))
-        let revisedInputDocument =
-              InputDocument
-                { cells =
-                    fmap fromInputCell1
-                    -- TODO: Instead of this, we'll put the source
-                    -- hash on the revision_cell and use that to
-                    -- populate InputCell.
-                     $
-                    V.fromList cells
-                }
+        let revisedInputDocument = InputDocument {cells = V.fromList cells}
         pure RevisedDocument {..}
       _ -> notFound -- Cheeky.
 
