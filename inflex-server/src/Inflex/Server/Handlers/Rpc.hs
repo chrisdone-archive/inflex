@@ -86,7 +86,7 @@ applyUpdate ::
      Vector Shared.Hash
   -> Shared.Update
   -> InputDocument
-  -> (InputDocument -> HandlerFor App ())
+  -> (Vector OutputCell -> HandlerFor App ())
   -> HandlerFor App Shared.UpdateResult
 applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
   case update' of
@@ -104,19 +104,19 @@ applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
             inputDocument0 {InputDocument.cells = cells <> pure newcell}
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
-      setInputDoc inputDocument
+      setInputDoc outputDocument
       pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellDelete delete' -> do
       let inputDocument = applyDelete delete' inputDocument0
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
-      setInputDoc inputDocument
+      setInputDoc outputDocument
       pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellRename rename -> do
       let inputDocument = applyRename rename inputDocument0
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
-      setInputDoc inputDocument
+      setInputDoc outputDocument
       pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellUpdate update''@Shared.UpdateCell { uuid
                                                  , update = Shared.UpdatePath {path}
@@ -135,7 +135,7 @@ applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
             forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
           case cellHadErrorInNestedPlace uuid path outputDocument of
             Nothing -> do
-              setInputDoc inputDocument
+              setInputDoc outputDocument
               pure
                 (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
             Just cellError -> do
@@ -287,7 +287,7 @@ setInputDocument ::
   -> AccountID
   -> DocumentId
   -> RevisionId
-  -> InputDocument
+  -> Vector OutputCell
   -> YesodDB App ()
 setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedTimed TimedSetInputDocument $ do
   revisionId <-
@@ -298,8 +298,8 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedT
         , revisionCreated = now
         }
   for_
-    (InputDocument.cells inputDocument)
-    (\InputCell {uuid, name, code, order} -> do
+    inputDocument
+    (\OutputCell {uuid, name, code, order, msourceHash} -> do
        Entity {entityKey = codeId} <-
          upsert
            Code
@@ -321,6 +321,7 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument = liftedT
            { revisionCellRevision = revisionId
            , revisionCellCell = cellId
            , revisionCellOrder = order
+           , revisionCellMsourceHash = msourceHash
            }
        pure ())
   update documentId [DocumentRevision =. pure revisionId]
@@ -458,7 +459,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
                         loginAccountId
                         documentKey
                         revisionId
-                        document)
+                        loaded)
                    pure
                      (cellsToOutputDocument
                         mempty -- TODO: populate cache?

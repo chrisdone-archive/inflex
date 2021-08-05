@@ -34,6 +34,7 @@ import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
+import           Inflex.Types.SHA512
 import           Prelude hiding (putStrLn)
 import qualified RIO
 import           RIO (HasGLogFunc(..), RIO, glog)
@@ -47,6 +48,7 @@ data OutputCell = OutputCell
   , code :: Text
   , result :: Shared.Result
   , order :: Int
+  , msourceHash :: Maybe SHA512
   }
 
 data InputDocument = InputDocument
@@ -137,6 +139,9 @@ loadInputDocument (InputDocument {cells}) = do
               , code
               , name
               , order
+              , msourceHash = case thing of
+                  Left{} -> Nothing
+                  Right EvaledExpression{cell=Cell1{sourceHash}} -> Just sourceHash
               }))
       (unToposorted topo)
   pure

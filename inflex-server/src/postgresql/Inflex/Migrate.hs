@@ -73,6 +73,8 @@ ALTER TABLE "code" ADD CONSTRAINT "unique_code" UNIQUE("hash");
 
 ALTER TABLE "cell" ADD CONSTRAINT "unique_cell" UNIQUE("document","code","name","uuid");
 
+ALTER TABLE "revision_cell" ADD COLUMN "msource_hash" BYTEA NULL;
+
 |]
 
 --------------------------------------------------------------------------------
