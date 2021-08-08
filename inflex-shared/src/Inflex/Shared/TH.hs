@@ -73,7 +73,7 @@ pursCall (name0, Sig {input, output}) =
 hsDispatch :: Map Text Sig -> Text
 hsDispatch sigs =
   T.unlines
-    [ "rpcHandler :: Text -> Handler Value"
+    [ "rpcHandler :: Text -> Handler Encoding"
     , "rpcHandler name ="
     , "  case name of"
     , dispatch
@@ -88,6 +88,6 @@ hsDispatch sigs =
                 [ "    \"" <> name <> "\" -> timed (TimedRpcCall \"" <> name <> "\") $ do"
                 , "      input <- requireCheckJsonBody"
                 , "      output <- rpc" <> name <> " (input :: " <> input <> ")"
-                , "      pure (toJSON (output :: " <> output <> "))"
+                , "      pure (toEncoding (output :: " <> output <> "))"
                 ])
            (M.toList sigs))
