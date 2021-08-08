@@ -12,6 +12,7 @@ module Inflex.Server.Handlers.Rpc where
 
 import           Criterion.Measurement
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as L
 import           Data.Char
 import qualified Data.Csv as Csv
 import           Data.Foldable
@@ -554,17 +555,24 @@ cellsToOutputDocument seen = Shared.OutputDocument . fmap cons
     cons OutputCell {..} =
       Shared.CachedOutputCell
         { result =
-            let hash =
-                  Shared.Hash
-                    (sha256AsHexText
-                       (sha256LazyByteString (Aeson.encode result)))
-             in if V.elem hash seen
+            case msourceHash of
+              Nothing ->
+                let hash =
+                      Shared.Hash
+                        (sha256AsHexText
+                           (sha256ByteString (L.toStrict (Aeson.encode result))))
+                 in if V.elem hash seen
+                      then Shared.CachedResult hash
+                      else Shared.FreshResult result hash
+              Just hash0 ->
+                if V.elem hash seen
                   then Shared.CachedResult hash
                   else Shared.FreshResult result hash
+                where hash = Shared.Hash (sha512AsHexText hash0)
         , code =
             let hash =
                   Shared.Hash
-                    (sha256AsHexText (sha256LazyByteString (Aeson.encode code)))
+                    (sha512AsHexText (sha512ByteString (T.encodeUtf8 code)))
              in if V.elem hash seen
                   then Shared.CachedText hash
                   else Shared.FreshText code hash
