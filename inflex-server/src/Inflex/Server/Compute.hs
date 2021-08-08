@@ -17,6 +17,7 @@ import           Control.Early
 import           Control.Monad.IO.Class
 import           Data.Foldable
 import           Data.Functor.Contravariant
+import qualified Data.Graph as Graph
 import qualified Data.HashMap.Strict as HM
 import           Data.IORef
 import           Data.List
@@ -85,6 +86,51 @@ loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
   loadedCacheRef <- fmap appCache getYesod
   loadedCache <- liftIO (readIORef loadedCacheRef)
+  let cachedUuids =
+        foldl'
+          (\acc (_, uuid, deps) ->
+             if null deps || all (\dep -> Set.member dep acc) deps
+               then Set.insert uuid acc
+               else acc)
+          mempty
+          (Graph.flattenSCCs
+             (Graph.stronglyConnCompR
+                (mapMaybe
+                   (\InputCell { uuid = Shared.UUID uuid
+                               , dependencies
+                               , sourceHash
+                               } ->
+                      case sourceHash of
+                        HashNotKnownYet -> Nothing
+                        HashKnown {} ->
+                          Just ((), Uuid uuid, toList dependencies))
+                   (toList cells))))
+  let inputCells =
+        map
+          (\InputCell { uuid = Shared.UUID uuid
+                      , name
+                      , code
+                      , order
+                      , sourceHash
+                      , dependencies
+                      } ->
+             Named
+               { uuid = Uuid uuid
+               , name
+               , thing = code
+               , order
+               , code
+               , sourceHash =
+                   if Set.member (Uuid uuid) cachedUuids
+                      -- Only use the hash if we haven't been invalidated by other cells.
+                     then sourceHash
+                     else HashNotKnownYet
+               , dependencies
+               })
+          (toList cells)
+  for_
+    inputCells
+    (\Named {name, sourceHash} -> liftIO (print (name, sourceHash)))
   loaded <-
     timed
       TimedLoadDocument1
@@ -92,40 +138,7 @@ loadInputDocument (InputDocument {cells}) = do
          DocumentReader {glogfunc = contramap LoadDocumentMsg logfunc}
          (RIO.timeout
             (1000 * milliseconds)
-            (loadDocument1
-               loadedCache
-               (map
-                  (\InputCell { uuid = Shared.UUID uuid
-                              , name
-                              , code
-                              , order
-                              , sourceHash
-                              , dependencies
-                              } ->
-                     Named
-                       { uuid = Uuid uuid
-                       , name
-                       , thing = code
-                       , order
-                       , code
-                       , sourceHash =
-                           if all -- TODO: Make this less ugly and more efficient.
-                                (\uuid0 ->
-                                   case V.find
-                                          (\InputCell { uuid = Shared.UUID uuid'
-                                                      , sourceHash = sourceHash'
-                                                      } ->
-                                             Uuid uuid' == uuid0 &&
-                                             sourceHash' /= HashNotKnownYet)
-                                          cells of
-                                     Nothing -> False
-                                     Just {} -> True)
-                                (Set.toList dependencies)
-                             then sourceHash
-                             else HashNotKnownYet
-                       , dependencies
-                       })
-                  (toList cells)))))?
+            (loadDocument1 loadedCache inputCells)))?
   liftIO
     (writeIORef
        loadedCacheRef
@@ -155,6 +168,9 @@ loadInputDocument (InputDocument {cells}) = do
     RIO.pooledMapConcurrently
       (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
+         case thing of
+           Left loadError -> glog (CellError loadError)
+           _ -> pure ()
          pure
            (OutputCell
               { dependencies

@@ -326,12 +326,26 @@ dependentLoadDocument ::
      Toposorted (Named (Either LoadError Independent))
   -> RIO DocumentReader (Toposorted (Named (Either LoadError LoadedExpression)))
 dependentLoadDocument =
-  fmap snd .
+  fmap updateHashes .
   mapAccumM
     loadCell
     Context
       {uuidDigests = mempty, hashedCells = mempty, nameHashes = emptyFillerEnv}
   where
+    updateHashes ::
+         (Context, Toposorted (Named (Either LoadError LoadedExpression)))
+      -> Toposorted (Named (Either LoadError LoadedExpression))
+    updateHashes (Context {uuidDigests}, nameds) =
+      fmap
+        (\Named {uuid, ..} ->
+           Named
+             { sourceHash =
+                 case M.lookup uuid uuidDigests of
+                   Nothing -> HashNotKnownYet
+                   Just sha512' -> HashKnown (digestToSha512 sha512')
+             , ..
+             })
+        nameds
     loadCell ::
          Context
       -> Named (Either LoadError Independent)

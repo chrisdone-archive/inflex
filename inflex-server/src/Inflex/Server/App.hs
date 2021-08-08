@@ -39,7 +39,7 @@ import           Database.Persist.Quasi
 import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
-import           Inflex.Document (DocumentMsg, LoadedExpression)
+import           Inflex.Document (LoadError, DocumentMsg, LoadedExpression)
 import           Inflex.Schema (UUID)
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
@@ -86,6 +86,7 @@ data ServerMsg
   | StripeCreateCustomerFailed Text CreateCustomerError
   | SubscriptionUpdated Text Text (Maybe Bool)
   | CellResultOk Text Bool
+  | CellError LoadError
   | LoadDocumentMsg DocumentMsg
   deriving (Show)
 
