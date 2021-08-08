@@ -86,6 +86,11 @@ loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
   loadedCacheRef <- fmap appCache getYesod
   loadedCache <- liftIO (readIORef loadedCacheRef)
+  -- Cache invalidation:
+  --
+  -- Here we generate a topologically sorted list, then iteratively
+  -- insert the uuids into a set. If any of the cell's dependencies
+  -- aren't present in this accumulating set, then don't include it.
   let cachedUuids =
         foldl'
           (\acc (_, uuid, deps) ->
