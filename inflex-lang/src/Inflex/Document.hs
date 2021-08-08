@@ -49,7 +49,6 @@ import qualified Data.Text as T
 import           Inflex.Defaulter
 import           Inflex.Generaliser
 import           Inflex.Generator
-import           Inflex.Hash
 import           Inflex.Lexer
 import           Inflex.NormalFormCheck
 import           Inflex.Optics
@@ -175,10 +174,10 @@ evalEnvironment ::
 evalEnvironment =
   M.fromList .
   mapMaybe
-    (\Named {thing = result} ->
+    (\Named {thing = result, sourceHash} ->
        case result of
-         Right IsResolved {thing} -> pure (hashExpression thing, thing)
-         Left {} -> Nothing) .
+         Right IsResolved {thing} | HashKnown sha512' <- sourceHash -> pure (Hash sha512', thing)
+         _ -> Nothing) .
   toList
 
 evalEnvironment1 ::
@@ -408,8 +407,8 @@ dependentLoadDocument =
               Named {thing = Left {}} -> hashedCells
               Named {thing = Right loaded} ->
                 M.insert (hashLoaded loaded) (Right loaded) hashedCells
-          hashLoaded LoadedExpression {resolvedExpression = cell} =
-            hashResolved cell
+          hashLoaded LoadedExpression {sourceHash} =
+            Hash (digestToSha512 sourceHash)
           uuidDigests' =
             case namedMaybeCell of
               Named {thing = Right LoadedExpression {sourceHash}} ->
