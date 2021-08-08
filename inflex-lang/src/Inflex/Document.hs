@@ -194,13 +194,9 @@ defaultDocument ::
 defaultDocument =
   traverse
     (traverse
-       (\result ->
-          case result of
-            Left a -> pure (Left a)
-            Right expression ->
-              fmap
-                (first LoadDefaulterError)
-                (defaultResolvedExpression expression)))
+       (\result -> do
+          expression <- pure result?
+          fmap (first LoadDefaulterError) (defaultResolvedExpression expression)))
 
 -- | Default the expressions in a document to cells.
 defaultDocument1 ::
@@ -209,20 +205,18 @@ defaultDocument1 ::
 defaultDocument1 =
   traverse
     (traverse
-       (\result ->
-          case result of
-            Left a -> pure (Left a)
-            Right LoadedExpression {..} -> do
-              fmap
-                (bimap
-                   LoadDefaulterError
-                   (\Cell {..} ->
-                      Cell1
-                        { parsed = parsedExpression
-                        , sourceHash = digestToSha512 sourceHash
-                        , ..
-                        }))
-                (defaultResolvedExpression resolvedExpression)))
+       (\result -> do
+          LoadedExpression {..} <- pure result?
+          fmap
+            (bimap
+               LoadDefaulterError
+               (\Cell {..} ->
+                  Cell1
+                    { parsed = parsedExpression
+                    , sourceHash = digestToSha512 sourceHash
+                    , ..
+                    }))
+            (defaultResolvedExpression resolvedExpression)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument ::
@@ -232,10 +226,9 @@ evalDocument ::
 evalDocument env =
   RIO.pooledMapConcurrently
     (traverse
-       (\result ->
-          case result of
-            Left e -> pure (Left e)
-            Right cell -> fmap (first LoadStepError) (stepDefaulted env cell)))
+       (\result -> do
+          cell <- pure result?
+          fmap (first LoadStepError) (stepDefaulted env cell)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::
@@ -246,14 +239,10 @@ evalDocument1 env =
   RIO.pooledMapConcurrently
     (traverse
        (\result -> do
-          case result of
-            Left e -> pure (Left e)
-            Right cell@Cell1 {..} -> do
-              resultExpression0 <-
-                fmap (first LoadStepError) (stepDefaulted env Cell {..})
-              case resultExpression0 of
-                Left e -> pure (Left e)
-                Right resultExpression -> pure (Right EvaledExpression {..})))
+          cell@Cell1 {..} <- pure result?
+          resultExpression <-
+            fmap (first LoadStepError) (stepDefaulted env Cell {..})?
+          pure (Right EvaledExpression {..})))
 
 --------------------------------------------------------------------------------
 -- Document loading
