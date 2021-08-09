@@ -223,7 +223,7 @@ boundaryResolver nesting Boundary {..} = do
 arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved)
 arrayResolver nesting Array {..} = do
   expressions' <- traverse (expressionResolver nesting) expressions
-  pure Array {expressions = expressions', ..}
+  pure Array {expressions = expressions', form = Unevaluated, ..}
 
 variantResolver :: DeBrujinNesting -> Variant Generalised -> Resolve (Variant Resolved)
 variantResolver nesting Variant {..} = do

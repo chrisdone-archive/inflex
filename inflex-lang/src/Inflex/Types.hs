@@ -105,10 +105,15 @@ data Hole s = Hole
   , typ :: !(StagedType s)
   }
 
+data TermForm
+  = Evaluated
+  | Unevaluated
+
 data Array s = Array
   { expressions :: !(Vector (Expression s))
   , typ :: !(StagedType s)
   , location :: !(StagedLocation s)
+  , form :: !(StagedForm s)
   }
 
 data Prop s = Prop
@@ -634,6 +639,10 @@ data Resolved
 
 --------------------------------------------------------------------------------
 -- Families
+
+type family StagedForm s where
+  StagedForm Resolved = TermForm
+  StagedForm s = ()
 
 type family StagedLocation s where
   StagedLocation Parsed = SourceLocation

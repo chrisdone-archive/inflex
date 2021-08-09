@@ -82,6 +82,7 @@ arrayParser env = F.branch openBracket elements (recordParser env)
              { typ = Nothing
              , location = SourceLocation {start = start, end = end}
              , expressions = V.fromList es
+             , form = ()
              })
 
 recordParser :: Env -> F.Parser ParseError (Expression Parsed)

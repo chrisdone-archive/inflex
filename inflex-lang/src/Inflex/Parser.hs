@@ -412,6 +412,7 @@ arrayParser = do
       { expressions = V.fromList expressions
       , typ
       , location = SourceLocation {start, end}
+      , form = ()
       }
 
 propParser :: Parser (Prop Parsed)

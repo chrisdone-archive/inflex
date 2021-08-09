@@ -236,9 +236,12 @@ stepProp Prop {..} = do
     _ -> pure (Errored NotARecord)
 
 stepArray :: Array Resolved -> Step (Result (Expression Resolved))
-stepArray Array {..} = do
-  expressions' <- traverseE stepExpression expressions?
-  pure (Ok (ArrayExpression Array {expressions = expressions', ..}))
+stepArray Array {..} =
+  case form of
+    Evaluated -> pure (Ok (ArrayExpression (Array {..})))
+    Unevaluated -> do
+      expressions' <- traverseE stepExpression expressions?
+      pure (Ok (ArrayExpression Array {expressions = expressions', ..}))
 
 stepVariant :: Variant Resolved -> Step (Result (Expression Resolved))
 stepVariant Variant {..} = do
@@ -897,6 +900,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                           (typeOutput (expressionType functionExpression))
                     , location = applyLocation
                     , expressions = expressions'
+                    , form = Evaluated
                     }))
         _ -> error "Invalid argument to function."
     FilterFunction ->
@@ -932,6 +936,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                     { typ
                     , location = applyLocation
                     , expressions = (V.mapMaybe id expressions')
+                    , form = Evaluated
                     }))
         _ -> error "Invalid argument to function."
     _ -> error "TODO: Missing function implementation!"

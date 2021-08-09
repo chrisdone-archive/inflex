@@ -101,6 +101,7 @@ rowsToArray CsvImportSpec {columns = cols} vs =
                  , typ = Nothing
                  })
           vs
+    , form = ()
     , typ =
         Just
           (ArrayType

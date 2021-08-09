@@ -424,7 +424,11 @@ apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
   pure
     (ArrayExpression
        array
-         {expressions = expressions', location = BuiltIn, typ = ArrayType typ})
+         { expressions = expressions'
+         , location = BuiltIn
+         , typ = ArrayType typ
+         , form = Evaluated
+         })
 -- TODO: Parallelism?
 apply (RecordExpression record@Record {fields}) typ@(RecordType (RowType TypeRow {fields = types})) = do
   fields' <-

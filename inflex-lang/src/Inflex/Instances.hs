@@ -175,6 +175,11 @@ deriving instance Ord (Array Resolved)
 deriving instance Show (Array Resolved)
 deriving instance Lift (Array Resolved)
 
+deriving instance Show (TermForm)
+deriving instance Lift (TermForm)
+deriving instance Eq (TermForm)
+deriving instance Ord (TermForm)
+
 deriving instance Show (FieldE Parsed)
 deriving instance Show (FieldE Parsed2)
 deriving instance Lift (FieldE Parsed)
