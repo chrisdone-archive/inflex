@@ -38,10 +38,10 @@ rpcGetFiles = rpcCall "GetFiles"
 rpcLoadDocument :: forall m. MonadAff m => DocumentId -> m (Either String (View OutputDocument))
 rpcLoadDocument = rpcCall "LoadDocument"
 
-rpcRedoDocument :: forall m. MonadAff m => DocumentId -> m (Either String (View OutputDocument))
+rpcRedoDocument :: forall m. MonadAff m => TravelDocument -> m (Either String (View OutputDocument))
 rpcRedoDocument = rpcCall "RedoDocument"
 
-rpcUndoDocument :: forall m. MonadAff m => DocumentId -> m (Either String (View OutputDocument))
+rpcUndoDocument :: forall m. MonadAff m => TravelDocument -> m (Either String (View OutputDocument))
 rpcUndoDocument = rpcCall "UndoDocument"
 
 rpcUpdateDocument :: forall m. MonadAff m => UpdateDocument -> m (Either String (View UpdateResult))

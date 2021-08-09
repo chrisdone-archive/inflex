@@ -57,7 +57,7 @@ rpcLoadDocument docId =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        revisedDocument <- runDB (getRevisedDocument loginAccountId docId)
-       loadRevisedDocument revisedDocument)
+       loadRevisedDocument mempty revisedDocument)
 
 --------------------------------------------------------------------------------
 -- Update document
@@ -178,50 +178,59 @@ transformErrorToCellError =
 --------------------------------------------------------------------------------
 -- Undo/Redo document
 
--- TODO: fix undo/redo commented out code
-
-
-rpcUndoDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
-rpcUndoDocument docId =
+rpcUndoDocument :: Shared.TravelDocument -> Handler Shared.OutputDocument
+rpcUndoDocument Shared.TravelDocument{documentId=docId, seen} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        revisedDocument <-
          runDB
-           (do RevisedDocument {..} <- getRevisedDocument loginAccountId docId
-               mrevisionId <-
+           (do mdoc <-
+                 liftedTimed TimedSelectDoc $
                  selectFirst
-                   [RevisionId <. revisionId, RevisionDocument ==. documentKey]
-                   [Desc RevisionId]
-               case mrevisionId of
-                 Just (Entity revisionId' revision') -> do
-                   -- update revisionId [RevisionActive =. False]
-                   -- update revisionId' [RevisionActive =. True]
-                   pure
-                     RevisedDocument
-                       {revisionId = revisionId', revision = revision', ..}
-                 Nothing -> pure RevisedDocument {..})
-       loadRevisedDocument revisedDocument)
+                   [ DocumentAccount ==. fromAccountID loginAccountId
+                   , DocumentId ==. toSqlKey (fromIntegral docId)
+                   ]
+                   []
+               for_ mdoc $ \(Entity documentKey Document {documentRevision = Just revisionId}) -> do
+                 mrevisionId <-
+                   selectKeysList
+                     [ RevisionId <. revisionId
+                     , RevisionDocument ==. documentKey
+                     ]
+                     [Desc RevisionId, LimitTo 1]
+                 for_ mrevisionId $ \revisionId' ->
+                   update
+                     (toSqlKey (fromIntegral docId))
+                     [DocumentRevision =. pure revisionId']
+               getRevisedDocument loginAccountId docId)
+       loadRevisedDocument seen revisedDocument)
 
-rpcRedoDocument :: Shared.DocumentId -> Handler Shared.OutputDocument
-rpcRedoDocument docId =
+rpcRedoDocument :: Shared.TravelDocument -> Handler Shared.OutputDocument
+rpcRedoDocument Shared.TravelDocument{documentId=docId, seen} =
   withLogin
     (\_ (LoginState {loginAccountId}) -> do
        revisedDocument <-
          runDB
-           (do RevisedDocument {..} <- getRevisedDocument loginAccountId docId
-               mrevisionId <-
+           (do mdoc <-
+                 liftedTimed TimedSelectDoc $
                  selectFirst
-                   [RevisionId >. revisionId, RevisionDocument ==. documentKey]
-                   [Asc RevisionId]
-               case mrevisionId of
-                 Just (Entity revisionId' revision') -> do
-                   -- update revisionId [RevisionActive =. False]
-                   -- update revisionId' [RevisionActive =. True]
-                   pure
-                     RevisedDocument
-                       {revisionId = revisionId', revision = revision', ..}
-                 Nothing -> pure RevisedDocument {..})
-       loadRevisedDocument revisedDocument)
+                   [ DocumentAccount ==. fromAccountID loginAccountId
+                   , DocumentId ==. toSqlKey (fromIntegral docId)
+                   ]
+                   []
+               for_ mdoc $ \(Entity documentKey Document {documentRevision = Just revisionId}) -> do
+                 mrevisionId <-
+                   selectKeysList
+                     [ RevisionId >. revisionId
+                     , RevisionDocument ==. documentKey
+                     ]
+                     [Asc RevisionId, LimitTo 1]
+                 for_ mrevisionId $ \revisionId' ->
+                   update
+                     (toSqlKey (fromIntegral docId))
+                     [DocumentRevision =. pure revisionId']
+               getRevisedDocument loginAccountId docId)
+       loadRevisedDocument seen revisedDocument)
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -377,10 +386,10 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument =
 --------------------------------------------------------------------------------
 -- Loading
 
-loadRevisedDocument :: RevisedDocument -> Handler Shared.OutputDocument
-loadRevisedDocument RevisedDocument {..} =
+loadRevisedDocument :: Vector Shared.Hash -> RevisedDocument -> Handler Shared.OutputDocument
+loadRevisedDocument seen RevisedDocument {..} =
   fmap
-    (cellsToOutputDocument mempty) -- TODO: populate the mempty?
+    (cellsToOutputDocument seen)
     (forceTimeout TimedLoadDocument (loadInputDocument revisedInputDocument))
 
 --------------------------------------------------------------------------------

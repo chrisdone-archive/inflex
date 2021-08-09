@@ -182,6 +182,11 @@ instance showUpdateDocument :: Show UpdateDocument where show = genericShow
 instance decodeUpdateDocument :: Decode UpdateDocument where decode = genericDecode opts
 instance encodeUpdateDocument :: Encode UpdateDocument where encode = genericEncode opts
 
+derive instance genericTravelDocument :: Generic TravelDocument _
+instance showTravelDocument :: Show TravelDocument where show = genericShow
+instance decodeTravelDocument :: Decode TravelDocument where decode = genericDecode opts
+instance encodeTravelDocument :: Encode TravelDocument where encode = genericEncode opts
+
 derive instance genericUpdateSandbox :: Generic UpdateSandbox _
 instance showUpdateSandbox :: Show UpdateSandbox where show = genericShow
 instance decodeUpdateSandbox :: Decode UpdateSandbox where decode = genericDecode opts

@@ -78,9 +78,15 @@ data UpdateDocument = UpdateDocument
   , seen :: Vector Hash
   }
 
+data TravelDocument = TravelDocument
+  { documentId :: DocumentId
+  , seen :: Vector Hash
+  }
+
 data UpdateSandbox = UpdateSandbox
   { update :: Update
   , document :: InputDocument1
+  -- TODO: Add 'seen' field?
   }
 
 data UpdateResult
@@ -582,6 +588,12 @@ deriving instance Generic UpdateDocument
 deriving instance Show UpdateDocument
 -- instance ToJSON UpdateDocument
 instance FromJSON UpdateDocument
+
+instance NFData TravelDocument
+deriving instance Generic TravelDocument
+deriving instance Show TravelDocument
+-- instance ToJSON TravelDocument
+instance FromJSON TravelDocument
 
 instance NFData Update
 deriving instance Generic Update

@@ -8,10 +8,10 @@ UpdateSandbox:
   input: UpdateSandbox
   output: UpdateResult
 UndoDocument:
-  input: DocumentId
+  input: TravelDocument
   output: OutputDocument
 RedoDocument:
-  input: DocumentId
+  input: TravelDocument
   output: OutputDocument
 GetFiles:
   input: FileQuery

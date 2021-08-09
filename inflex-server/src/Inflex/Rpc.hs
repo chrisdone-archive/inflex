@@ -44,12 +44,12 @@ rpcHandler name =
 
     "RedoDocument" -> timed (TimedRpcCall "RedoDocument") $ do
       input <- requireCheckJsonBody
-      output <- rpcRedoDocument (input :: DocumentId)
+      output <- rpcRedoDocument (input :: TravelDocument)
       pure (toEncoding (output :: OutputDocument))
 
     "UndoDocument" -> timed (TimedRpcCall "UndoDocument") $ do
       input <- requireCheckJsonBody
-      output <- rpcUndoDocument (input :: DocumentId)
+      output <- rpcUndoDocument (input :: TravelDocument)
       pure (toEncoding (output :: OutputDocument))
 
     "UpdateDocument" -> timed (TimedRpcCall "UpdateDocument") $ do

@@ -46,9 +46,15 @@ data UpdateDocument = UpdateDocument
   , seen :: Vector Hash
   }
 
+data TravelDocument = TravelDocument
+  { documentId :: DocumentId
+  , seen :: Vector Hash
+  }
+
 data UpdateSandbox = UpdateSandbox
   { update :: Update
   , document :: InputDocument1
+  -- TODO: Add 'seen' field?
   }
 
 data UpdateResult

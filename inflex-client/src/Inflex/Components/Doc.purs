@@ -335,7 +335,10 @@ eval =
       case documentId of
         Nothing -> error "Sandbox doesn't support undo!"
         Just docId -> do
-          result <- rpcUndoDocument (DocumentId docId)
+          {seenTexts,seenResults} <- H.get
+          result <- rpcUndoDocument (Shared.TravelDocument{
+                    documentId:DocumentId docId, seen: Set.toUnfoldable (M.keys seenResults <> M.keys seenTexts)
+          })
           case result of
             Left err -> error err
             Right outputDocument -> setOutputDocument outputDocument
@@ -343,7 +346,10 @@ eval =
       case documentId of
         Nothing -> error "Sandbox doesn't support redo!"
         Just docId -> do
-          result <- rpcRedoDocument (DocumentId docId)
+          {seenTexts,seenResults} <- H.get
+          result <- rpcRedoDocument (Shared.TravelDocument{
+                    documentId:DocumentId docId, seen: Set.toUnfoldable (M.keys seenResults <> M.keys seenTexts)
+          })
           case result of
             Left err -> error err
             Right outputDocument -> setOutputDocument outputDocument

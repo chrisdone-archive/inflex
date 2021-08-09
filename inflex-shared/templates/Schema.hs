@@ -269,6 +269,12 @@ deriving instance Show UpdateDocument
 -- instance ToJSON UpdateDocument
 instance FromJSON UpdateDocument
 
+instance NFData TravelDocument
+deriving instance Generic TravelDocument
+deriving instance Show TravelDocument
+-- instance ToJSON TravelDocument
+instance FromJSON TravelDocument
+
 instance NFData Update
 deriving instance Generic Update
 deriving instance Show Update

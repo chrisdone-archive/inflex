@@ -72,9 +72,15 @@ data UpdateDocument = UpdateDocument
   , seen :: Vector Hash
   }
 
+data TravelDocument = TravelDocument
+  { documentId :: DocumentId
+  , seen :: Vector Hash
+  }
+
 data UpdateSandbox = UpdateSandbox
   { update :: Update
   , document :: InputDocument1
+  -- TODO: Add 'seen' field?
   }
 
 data UpdateResult
@@ -495,6 +501,11 @@ derive instance genericUpdateDocument :: Generic UpdateDocument _
 instance showUpdateDocument :: Show UpdateDocument where show = genericShow
 instance decodeUpdateDocument :: Decode UpdateDocument where decode = genericDecode opts
 instance encodeUpdateDocument :: Encode UpdateDocument where encode = genericEncode opts
+
+derive instance genericTravelDocument :: Generic TravelDocument _
+instance showTravelDocument :: Show TravelDocument where show = genericShow
+instance decodeTravelDocument :: Decode TravelDocument where decode = genericDecode opts
+instance encodeTravelDocument :: Encode TravelDocument where encode = genericEncode opts
 
 derive instance genericUpdateSandbox :: Generic UpdateSandbox _
 instance showUpdateSandbox :: Show UpdateSandbox where show = genericShow
