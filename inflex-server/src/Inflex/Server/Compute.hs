@@ -18,9 +18,12 @@ import           Control.Monad.IO.Class
 import           Data.Foldable
 import           Data.Functor.Contravariant
 import qualified Data.Graph as Graph
+import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.IORef
 import           Data.List
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Ord
 import           Data.Set (Set)
@@ -84,8 +87,10 @@ loadInputDocument ::
   -> Handler (Maybe (Vector OutputCell))
 loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
-  loadedCacheRef <- fmap appCache getYesod
+  loadedCacheRef <- fmap appLoadCache getYesod
   loadedCache <- liftIO (readIORef loadedCacheRef)
+  evalCacheRef <- fmap appEvalCache getYesod
+  evalCache <- liftIO (readIORef evalCacheRef)
   -- Cache invalidation:
   --
   -- Here we generate a topologically sorted list, then iteratively
@@ -168,7 +173,19 @@ loadInputDocument (InputDocument {cells}) = do
          StepReader
          (RIO.timeout
             (1000 * milliseconds)
-            (evalDocument1' (evalEnvironment1 loaded) defaulted)))?
+            (evalDocument1' evalCache (evalEnvironment1 loaded) defaulted)))?
+  liftIO
+    (writeIORef
+       evalCacheRef
+       (foldl'
+          (\cache Named {thing, sourceHash} ->
+             case thing of
+               Right evalExpression@EvaledExpression {..}
+                 | HashKnown hash <- sourceHash ->
+                   HM.insert hash evalExpression cache
+               _ -> cache)
+          evalCache
+          topo))
   outputCells <-
     RIO.pooledMapConcurrently
       (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies} -> do
@@ -223,11 +240,12 @@ loadInputDocument (InputDocument {cells}) = do
 
 -- | Evaluate and force the result.
 evalDocument1' ::
-     RIO.Map Hash (Expression Resolved)
+     HashMap SHA512 EvaledExpression
+  -> RIO.Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
   -> RIO.RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
-evalDocument1' env cells = do
-  !v <- evalDocument1 env cells
+evalDocument1' cache env cells = do
+  !v <- evalDocument1 cache env cells
   pure v
 
 toTree :: Maybe (Expression Parsed) -> Expression Resolved -> Shared.Tree2

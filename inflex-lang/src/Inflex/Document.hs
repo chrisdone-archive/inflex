@@ -232,17 +232,23 @@ evalDocument env =
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::
-     Map Hash (Expression Resolved)
+     HashMap SHA512 EvaledExpression
+  -> Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
   -> RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
-evalDocument1 env =
+evalDocument1 cache env =
   RIO.pooledMapConcurrently
     (traverse
        (\result -> do
           cell@Cell1 {..} <- pure result?
-          resultExpression <-
-            fmap (first LoadStepError) (stepDefaulted env Cell {..})?
-          pure (Right EvaledExpression {..})))
+          case HM.lookup sourceHash cache of
+            Nothing -> do
+              resultExpression <-
+                fmap
+                  (first LoadStepError)
+                  (stepDefaulted env Cell {..})?
+              pure (Right EvaledExpression {..})
+            Just evaled -> pure (Right evaled)))
 
 --------------------------------------------------------------------------------
 -- Document loading

@@ -91,7 +91,8 @@ main = do
                          ("Skipped " ++
                           show (length skipped) ++ " persistent suggestions.")))
                  logFunc <- liftIO (makeAppLogFunc registry)
-                 cacheRef <- newIORef mempty
+                 loadedRef <- newIORef mempty
+                 evaledRef <- newIORef mempty
                  app <-
                    liftIO
                      (toWaiAppPlain
@@ -99,7 +100,8 @@ main = do
                           { appLogFunc = logFunc
                           , appPool = pool
                           , appConfig = config
-                          , appCache = cacheRef
+                          , appLoadCache = loadedRef
+                          , appEvalCache = evaledRef
                           })
                  let runMyWarp thisPort =
                        Warp.runSettings
