@@ -230,7 +230,7 @@ eval' =
     StartEditor -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode}))
     FinishEditing code -> do
-      H.modify_ (\(State s) -> State (s {code = code}))
+      H.modify_ (\(State s) -> State (s {code = code, display = DisplayCode}))
       H.raise
         (NewCode
            (if trim code == ""
