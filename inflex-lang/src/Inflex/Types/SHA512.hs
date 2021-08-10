@@ -101,7 +101,7 @@ sha512 i =
 
 instance IsString (Q (TExp SHA512)) where
   fromString i =
-    if Prelude.length i == 64
+    if Prelude.length i == 128
       then case Hex.decode (fromString i) of
              (result, wrong)
                | S.null wrong -> fmap TExp (lift (SHA512 result))
