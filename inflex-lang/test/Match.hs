@@ -38,9 +38,10 @@ expToPat e0 = do
         TH.ListE es -> TH.ListP (map go es)
         TH.SigE e t -> TH.SigP (go e) t
         TH.UnboundVarE {} -> TH.WildP
-        e@TH.VarE{} -> TH.ViewP (TH.InfixE Nothing (TH.VarE '(==)) (pure e)) (TH.ConP 'True [])
         e ->
-          error ("Cannot convert expression to a pattern:\n" ++ show (TH.ppr e))
+          TH.ViewP
+            (TH.InfixE Nothing (TH.VarE '(==)) (pure e))
+            (TH.ConP 'True [])
     unfold e args =
       case e of
         TH.AppE f a -> unfold f (a : args)
@@ -52,5 +53,5 @@ expToPat e0 = do
       where
         clean s =
           case List.stripPrefix "$sel:" s of
-            Just rest -> takeWhile (/=':') rest
+            Just rest -> takeWhile (/= ':') rest
             Nothing -> s
