@@ -58,7 +58,7 @@ newtype SHA512 =
 -- Instances
 
 instance Show SHA512 where
-  show (SHA512 key) = show (Hex.encode key)
+  show (SHA512 key) = "$$(" ++ show (Hex.encode key) ++ ")"
 
 --------------------------------------------------------------------------------
 -- JSON
