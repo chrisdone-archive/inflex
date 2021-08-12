@@ -241,7 +241,10 @@ stepArray Array {..} =
     Evaluated -> pure (Ok (ArrayExpression (Array {..})))
     Unevaluated -> do
       expressions' <- traverseE stepExpression expressions?
-      pure (Ok (ArrayExpression Array {expressions = expressions', ..}))
+      pure
+        (Ok
+           (ArrayExpression
+              Array {expressions = expressions', form = Evaluated, ..}))
 
 stepVariant :: Variant Resolved -> Step (Result (Expression Resolved))
 stepVariant Variant {..} = do

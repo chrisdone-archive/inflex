@@ -1975,7 +1975,7 @@ table_map_defaulting =
     (\[u1, u2] ->
        [ Named
            {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashNotKnownYet
+           , sourceHash = HashKnown $$("ceb16ec7295de1dfee5b07a2ca2e16b720f53bf4e51883a09d7772dfd3c14beb0257a0660194e052e65fe0b6e85f759f9ce8f91319275cbbfeba3a9f3616660f")
            , name = "t"
            , order = 0
            , code = "[{x:3,y:2.0}]"
@@ -2225,8 +2225,8 @@ table_map_defaulting =
                        }))
            }
        , Named
-           {dependencies = mempty,  uuid = Uuid u2
-           , sourceHash = HashNotKnownYet
+           {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
+           , sourceHash = HashKnown $$("95f7e58a79f26392d5a20f2bd5f3aaf83e6fe991585e3c5d3c3da553505c8a4324378ab4892752468560e04ae2c147e37b36c7b21d4d505f81cb011e2e72f910")
            , name = "k"
            , order = 1
            , code = "@prim:array_map(r:r.x*r.y, @uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
