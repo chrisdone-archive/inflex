@@ -13,6 +13,12 @@ exports.getValue = function(e) {
   }
 }
 
+exports.getDeltaY = function(e) {
+  return function(){
+    return e.deltaY;
+  }
+}
+
 exports.autosize = function(e) {
   return function(){
     e.oninput = function(){

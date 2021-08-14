@@ -39,12 +39,13 @@ import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, mempty, pure, show, unit, (&&), (+), (<<<), (<>), (==), (-))
+import Prelude
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.MouseEvent (toEvent)
+import Web.UIEvent.WheelEvent (toEvent) as Wheel
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -62,6 +63,8 @@ data State = State
   , path :: Shared.DataPath -> Shared.DataPath
   , cellError :: Maybe (View CellError)
   , cells :: Map UUID (OutputCell)
+  , tableOffset :: Int
+  , rowCount :: Int
   }
 
 data Command
@@ -76,6 +79,7 @@ data Command
   | InputElementChanged (ElemRef' Element)
   | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
+  | ScrollTable Event'
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)
@@ -149,6 +153,8 @@ component =
              , path
              , cellError: Nothing
              , cells
+             , tableOffset: 0
+             , rowCount: getRowCount editor
              })
     , render
     , eval:
@@ -159,6 +165,19 @@ component =
             , handleQuery = query
             }
     }
+
+getRowCount :: Either (View Shared.CellError) (View Shared.Tree2) -> Int
+getRowCount editor =
+  case editor of
+    Left _ -> 0
+    Right e ->
+      caseTree2
+         ((caseTree2Default 0)
+          {
+           "TableTreeMaybe2" = \_v _src flds rows ->
+             Array.length rows
+         })
+         e
 
 --------------------------------------------------------------------------------
 -- Query
@@ -209,7 +228,6 @@ eval cmd = do
 eval' :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
-
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
@@ -246,7 +264,14 @@ eval' =
                , display: DisplayEditor
                , cellError: Nothing
                , cells
+               , tableOffset: 0
+               , rowCount: getRowCount editor
                })
+    ScrollTable (Event' e) -> do
+      delta <- H.liftEffect (getDeltaY e)
+      if delta > 0.0
+         then H.modify_ (\(State s) -> State (s { tableOffset = min (s.rowCount - pageSize) (s.tableOffset + 1) }))
+         else H.modify_ (\(State s) -> State (s { tableOffset = max 0 (s.tableOffset - 1) }))
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
@@ -254,6 +279,7 @@ eval' =
       eval' c
     NoOp -> pure unit
 
+foreign import getDeltaY :: Event -> Effect Number
 foreign import getValue :: Element -> Effect (Nullable String)
 foreign import setStyle :: String -> Element -> Effect Unit
 foreign import autosize :: HTMLElement -> Effect Unit
@@ -263,7 +289,7 @@ foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
 -- Render main component
 
 render :: forall a. MonadAff a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-render (State {display, code, editor, path, cellError, cells}) =
+render (State {display, code, editor, path, cellError, cells, tableOffset}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
@@ -271,7 +297,7 @@ render (State {display, code, editor, path, cellError, cells}) =
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
-                        Right e -> renderEditor path cells e)
+                        Right e -> renderEditor tableOffset path cells e)
   where
     renderControl =
       [ HH.slot
@@ -343,11 +369,11 @@ blank code editor =
 
 renderEditor ::
      forall a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Int -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> View Shared.Tree2
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor path cells =
+renderEditor offset path cells =
   caseTree2 {
     "MiscTree2":       \v _originalSource t ->
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]],
@@ -362,7 +388,7 @@ renderEditor path cells =
     "RecordTree2":     \v _originalSource fields ->
       [renderRecordEditor path cells fields],
     "TableTreeMaybe2": \v _originalSource columns rows ->
-      renderTableEditor path cells columns rows,
+      renderTableEditor offset path cells columns rows,
     "HoleTree": [] -- TODO:
   }
 
@@ -473,21 +499,27 @@ mapWithIndexNarrow dropping taking' f xs =
        taking'
        (Array.drop dropping (Array.zip (Array.range 0 (Array.length xs - 1)) xs)))
 
+pageSize :: Int
+pageSize = 10
+
 renderTableEditor ::
      forall a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Int
+  -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor path cells columns rows =
+renderTableEditor offset path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading path columns emptyTable
       , HH.tbody
-          [HP.class_ (HH.ClassName "table-body")]
+          [HP.class_ (HH.ClassName "table-body"), HE.onWheel (\e -> Just (PreventDefault
+                                                                   (Event' (Wheel.toEvent e))
+                                                                   (ScrollTable (Event' (Wheel.toEvent e)))))]
           (bodyGuide emptyTable emptyRows <>
-           mapWithIndexNarrow 0 10 (\i -> caseMaybeRow {
+           mapWithIndexNarrow offset pageSize (\i -> caseMaybeRow {
              "SomeRow": tableRow columns path cells i
             ,"HoleRow": tableRowHole columns path cells i
            }) rows <>
