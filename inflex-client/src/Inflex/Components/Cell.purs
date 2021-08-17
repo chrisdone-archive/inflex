@@ -25,7 +25,6 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
-import Inflex.FieldName (validFieldName)
 import Inflex.Frisson (View, caseResult, unResultTree)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
@@ -199,7 +198,7 @@ render (State { cell: Cell {name, code, result}
                       { placeholder: "Type a name here"
                       , unfilled: "(unnamed)"
                       , title: "Click to edit cell's name"
-                      , validator: validFieldName
+                      , validator: \_ -> true
                       }))
                 (TextInput.Input
                    {text: name, notThese: mempty})
