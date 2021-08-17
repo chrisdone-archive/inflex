@@ -158,6 +158,12 @@ render state =
                  [HH.text "List"]
              , HH.button
                  [ HP.class_ (HH.ClassName "new-cell full-button")
+                 , HE.onClick (\_ -> pure (NewCell "{}"))
+                 , HP.disabled (meta . readonly)
+                 ]
+                 [HH.text "Record"]
+             , HH.button
+                 [ HP.class_ (HH.ClassName "new-cell full-button")
                  , HE.onClick (\_ -> pure (NewCell "[] :: [{}]"))
                  , HP.disabled (meta . readonly)
                  ]
@@ -193,27 +199,28 @@ render state =
          ]
          (map
             (\outputCell@(OutputCell cell) ->
-               let uuid = (cell.uuid)
-               in HH.slot
-                 (SProxy :: SProxy "Cell")
-                 (uuidToString (cell.uuid))
-                 Cell.component
-                 (Cell.Input
-                    { cell: outputCell
-                    , cells:
-                        M.delete
-                          uuid
-                          (M.fromFoldable
-                             (map
-                                (\cell'@(OutputCell cell'0) -> Tuple ((cell'0.uuid)) cell')
-                                (state . cells)))
-                    })
-                 (\update0 ->
-                    pure
-                      (case update0 of
-                         Cell.RemoveCell -> DeleteCell uuid
-                         Cell.UpdatePath update' -> UpdatePath uuid update'
-                         Cell.RenameCell name' -> RenameCell uuid name')))
+               let uuid = (cell . uuid)
+                in HH.slot
+                     (SProxy :: SProxy "Cell")
+                     (uuidToString (cell . uuid))
+                     Cell.component
+                     (Cell.Input
+                        { cell: outputCell
+                        , cells:
+                            M.delete
+                              uuid
+                              (M.fromFoldable
+                                 (map
+                                    (\cell'@(OutputCell cell'0) ->
+                                       Tuple ((cell'0 . uuid)) cell')
+                                    (state . cells)))
+                        })
+                     (\update0 ->
+                        pure
+                          (case update0 of
+                             Cell.RemoveCell -> DeleteCell uuid
+                             Cell.UpdatePath update' -> UpdatePath uuid update'
+                             Cell.RenameCell name' -> RenameCell uuid name')))
             (state . cells))
      ] <>
      case state . modal of
@@ -228,7 +235,8 @@ render state =
       standardNames <>
       M.fromFoldable
         (map
-           (\(OutputCell cell) -> Tuple (uuidToString (cell.uuid)) (cell.name))
+           (\(OutputCell cell) ->
+              Tuple (uuidToString (cell . uuid)) (cell . name))
            (state . cells))
 
 standardNames :: Map String String
