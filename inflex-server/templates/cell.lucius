@@ -154,6 +154,21 @@
     box-shadow: none;
   }
 
+
+  /* Misc */
+
+  .remove-column-button, .remove-field-button {
+    opacity: 0.5;
+    border: 0;
+    background: inherit;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .remove-column-button:hover, .remove-field-button:hover {
+    background: #15263b;
+    color: #fff;
+  }
+
   /* Tables */
 
   .table-column {
@@ -206,17 +221,6 @@
       }
       .cell-name:hover {
         border-radius: none;
-      }
-      .remove-column-button {
-        opacity: 0.5;
-        border: 0;
-        background: inherit;
-        cursor: pointer;
-        font-weight: bold;
-      }
-      .remove-column-button:hover {
-        background: #15263b;
-        color: #fff;
       }
     }
     .table-body {

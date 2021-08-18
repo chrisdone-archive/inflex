@@ -1011,7 +1011,7 @@ renderRecordEditor path cells fields =
                     [ HH.td
                         [HP.class_ (HH.ClassName "record-field-name")]
                         [ HH.button
-                            [ HP.class_ (HH.ClassName "wip-button")
+                            [ HP.class_ (HH.ClassName "remove-field-button")
                             , HE.onClick
                                 (\e ->
                                    pure
@@ -1029,8 +1029,7 @@ renderRecordEditor path cells fields =
                                                        })
                                               }))))
                             ]
-                            [HH.text "-"]
-                                               -- HH.text key
+                            [HH.text "×"]
                         , HH.slot
                             (SProxy :: SProxy "fieldname")
                             key
