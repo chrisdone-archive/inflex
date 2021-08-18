@@ -400,6 +400,7 @@ renderEditor offset path cells =
       [renderRecordEditor path cells fields],
     "TableTreeMaybe2": \v _originalSource columns rows ->
       renderTableEditor offset path cells columns rows,
+    -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
     "HoleTree": [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
   }
 
