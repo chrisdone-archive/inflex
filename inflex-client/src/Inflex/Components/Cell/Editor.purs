@@ -339,6 +339,17 @@ render (State {display, code, editor, path, cellError, cells, tableOffset}) =
                   ((caseTree2Default
                    boundaryWrap)
                    {
+                    "HoleTree" =
+                      HH.div
+                        [ HP.class_
+                            (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                        , HP.title "Click to edit"
+                        , HE.onClick
+                            (\ev ->
+                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                        ]
+                        inner,
+
                     "MiscTree2" = \v _originalSource t ->
                       HH.div
                         [ HP.class_
