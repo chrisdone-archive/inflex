@@ -389,7 +389,7 @@ renderEditor offset path cells =
       [renderRecordEditor path cells fields],
     "TableTreeMaybe2": \v _originalSource columns rows ->
       renderTableEditor offset path cells columns rows,
-    "HoleTree": [] -- TODO:
+    "HoleTree": [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text "_"]]
   }
 
 --------------------------------------------------------------------------------
