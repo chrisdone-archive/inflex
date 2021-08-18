@@ -389,7 +389,7 @@ renderEditor offset path cells =
       [renderRecordEditor path cells fields],
     "TableTreeMaybe2": \v _originalSource columns rows ->
       renderTableEditor offset path cells columns rows,
-    "HoleTree": [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text "_"]]
+    "HoleTree": [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
   }
 
 --------------------------------------------------------------------------------
@@ -850,21 +850,21 @@ newColumnButton path columns =
                           , update:
                               Shared.NewFieldUpdate
                                 (Shared.NewField
-                                   {name: generateColumnName columns})
+                                   {name: generateColumnName "column" columns})
                           }))))
         ]
         [HH.text "+"]
     ]
 
 -- | Search for a unique column name of the form "columnN".
-generateColumnName :: Array String -> String
-generateColumnName columns = iterate 1
+generateColumnName :: String -> Array String -> String
+generateColumnName prefix columns = iterate 1
   where
     set = Set.fromFoldable columns
     iterate i = if Set.member candidate set
                  then iterate (i+1)
                  else candidate
-      where candidate = "column" <> show i
+      where candidate = prefix <> show i
 
 --------------------------------------------------------------------------------
 -- Render arrays
@@ -966,107 +966,121 @@ renderRecordEditor ::
 renderRecordEditor path cells fields =
   HH.table
     [HP.class_ (HH.ClassName "record")]
-    ((if false
-        then []
-        else [ HH.button
-                 [ HP.class_ (HH.ClassName "wip-button")
-                 , HE.onClick
-                     (\e ->
-                        pure
-                          (PreventDefault
-                             (Event' (toEvent e))
-                             (TriggerUpdatePath
-                                (Shared.UpdatePath
-                                   { path: path Shared.DataHere
-                                   , update:
-                                       Shared.NewFieldUpdate
-                                         (Shared.NewField
-                                            {name: "foo"})
-                                   }))))
-                 ]
-                 [HH.text "Add field"]
-             ]) <>
-     (case fields of
-        [] -> [HH.text "(No fields yet)"]
-        _ -> []) <>
+    (([ HH.button
+          [ HP.class_ (HH.ClassName "add-field-button")
+          , HE.onClick
+              (\e ->
+                 pure
+                   (PreventDefault
+                      (Event' (toEvent e))
+                      (TriggerUpdatePath
+                         (Shared.UpdatePath
+                            { path: path Shared.DataHere
+                            , update:
+                                Shared.NewFieldUpdate
+                                  (Shared.NewField
+                                     { name:
+                                         generateColumnName
+                                           "field"
+                                           (map field2Key fields)
+                                     })
+                            }))))
+          , HP.title "Add field"
+          ]
+          [HH.text "+"]
+      ]) <>
      map
-       (\field ->let key = field2Key field
-                     editor' = field2Value field
-                in
-          let childPath = path <<< Shared.DataFieldOf key
-          in HH.tr
-            [HP.class_ (HH.ClassName "record-field")]
-            [ HH.td
-                [HP.class_ (HH.ClassName "record-field-name")]
-                [ HH.button
-                    [ HP.class_ (HH.ClassName "wip-button")
-                    , HE.onClick
-                        (\e ->
-                           pure
-                             (PreventDefault
-                                (Event' (toEvent e))
-                                (TriggerUpdatePath
-                                   (Shared.UpdatePath
-                                      { path:
-                                          path Shared.DataHere
-                                      , update:
-                                          Shared.DeleteFieldUpdate
-                                            (Shared.DeleteField
-                                               {name: key})
-                                      }))))
-                    ]
-                    [HH.text "-"]
+       (\field ->
+          let key = field2Key field
+              editor' = field2Value field
+           in let childPath = path <<< Shared.DataFieldOf key
+               in HH.tr
+                    [HP.class_ (HH.ClassName "record-field")]
+                    [ HH.td
+                        [HP.class_ (HH.ClassName "record-field-name")]
+                        [ HH.button
+                            [ HP.class_ (HH.ClassName "wip-button")
+                            , HE.onClick
+                                (\e ->
+                                   pure
+                                     (PreventDefault
+                                        (Event' (toEvent e))
+                                        (TriggerUpdatePath
+                                           (Shared.UpdatePath
+                                              { path:
+                                                  path Shared.DataHere
+                                              , update:
+                                                  Shared.DeleteFieldUpdate
+                                                    (Shared.DeleteField
+                                                       { name:
+                                                           key
+                                                       })
+                                              }))))
+                            ]
+                            [HH.text "-"]
                                                -- HH.text key
-                , HH.slot
-                    (SProxy :: SProxy "fieldname")
-                    key
-                    (TextInput.component
-                      (TextInput.Config
-                         { placeholder: "Type field name here"
-                         , unfilled: "(empty field name)"
-                         , title: "Click to edit field name"
-                         , validator: validFieldName
-                         }))
-                    (TextInput.Input {text: key, notThese: Set.fromFoldable (map field2Key fields)})
-                    (\name' ->
-                       pure
-                         (TriggerUpdatePath
-                            (Shared.UpdatePath
-                               { path: path Shared.DataHere
-                               , update:
-                                   Shared.RenameFieldUpdate
-                                     (Shared.RenameField
-                                        { from: key
-                                        , to: name'
-                                        })
-                               })))
-                ]
-            , HH.td
-                [HP.class_ (HH.ClassName "record-field-value")]
-                [ HH.slot
-                    (SProxy :: SProxy "editor")
-                    key
-                    component
-                    (EditorAndCode
-                       { editor: Right editor'
-                       , cells
-                       , code: editorCode editor'
-                       , path: path <<< Shared.DataFieldOf key
-                       })
-                    (\output ->
-                       case output of
-                         UpdatePath update -> Just (TriggerUpdatePath update)
-                         NewCode rhs ->
-                           Just
-                             (TriggerUpdatePath
-                                (Shared.UpdatePath
-                                   { path: childPath Shared.DataHere
-                                   , update:
-                                       Shared.CodeUpdate
-                                         (Shared.Code {text: rhs})
-                                   })))
-                ]
-            ])
+                        , HH.slot
+                            (SProxy :: SProxy "fieldname")
+                            key
+                            (TextInput.component
+                               (TextInput.Config
+                                  { placeholder:
+                                      "Type field name here"
+                                  , unfilled:
+                                      "(empty field name)"
+                                  , title:
+                                      "Click to edit field name"
+                                  , validator: validFieldName
+                                  }))
+                            (TextInput.Input
+                               { text: key
+                               , notThese:
+                                   Set.fromFoldable (map field2Key fields)
+                               })
+                            (\name' ->
+                               pure
+                                 (TriggerUpdatePath
+                                    (Shared.UpdatePath
+                                       { path:
+                                           path Shared.DataHere
+                                       , update:
+                                           Shared.RenameFieldUpdate
+                                             (Shared.RenameField
+                                                { from: key
+                                                , to: name'
+                                                })
+                                       })))
+                        ]
+                    , HH.td
+                        [HP.class_ (HH.ClassName "record-field-value")]
+                        [ HH.slot
+                            (SProxy :: SProxy "editor")
+                            key
+                            component
+                            (EditorAndCode
+                               { editor: Right editor'
+                               , cells
+                               , code: editorCode editor'
+                               , path:
+                                   path <<< Shared.DataFieldOf key
+                               })
+                            (\output ->
+                               case output of
+                                 UpdatePath update ->
+                                   Just (TriggerUpdatePath update)
+                                 NewCode rhs ->
+                                   Just
+                                     (TriggerUpdatePath
+                                        (Shared.UpdatePath
+                                           { path:
+                                               childPath Shared.DataHere
+                                           , update:
+                                               Shared.CodeUpdate
+                                                 (Shared.Code
+                                                    {text: rhs})
+                                           })))
+                        ]
+                    ])
        fields)
 
 --------------------------------------------------------------------------------

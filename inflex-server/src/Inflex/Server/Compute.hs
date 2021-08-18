@@ -338,6 +338,7 @@ toTree original =
         (case argument of
            Just arg -> Shared.VariantArgument (toTree Nothing arg)
            Nothing -> Shared.NoVariantArgument)
+    HoleExpression {} -> Shared.HoleTree
     expression ->
       Shared.MiscTree2
         Shared.versionRefl

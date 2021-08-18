@@ -3,6 +3,16 @@
   -khtml-user-drag: element;
   padding: 5px;
 
+  .hole {
+    display: block;
+    background: #fff19063;
+    color: #c5b540;
+    border-radius: 3px;
+    padding: 3px;
+    border-style: dashed;
+    border-color: #fbe01c;
+  }
+
   .cell {
     display: inline-block;
     background: #e9eef2;
@@ -98,6 +108,20 @@
 
 
   /* Records */
+
+  .record {
+    .add-field-button {
+      border: 0;
+      background: inherit;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 3px;
+    }
+    .add-field-button:hover {
+      background: #15263b;
+      color: #fff;
+    }
+  }
 
   td.record-field-name {
     vertical-align: top;
