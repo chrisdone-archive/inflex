@@ -225,7 +225,7 @@ foreign import caseTree2 :: forall r. {
   "VariantTree2" :: (View Version2) -> (View OriginalSource) -> String -> (View VariantArgument) -> r,
   "MiscTree2" :: (View Version2) -> (View OriginalSource) -> String -> r,
   "TableTreeMaybe2" :: (View Version2) -> (View OriginalSource) -> (Array String) -> (Array (View MaybeRow)) -> r,
-  "HoleTree" :: r
+  "HoleTree" :: (View OriginalSource) -> r
   } -> (View Tree2) -> r
 
 foreign import viewVariantArgument :: Json -> (View VariantArgument)

@@ -209,7 +209,7 @@ data Tree2
   | VariantTree2 Version2 OriginalSource Text VariantArgument
   | MiscTree2 Version2 OriginalSource Text
   | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
-  | HoleTree
+  | HoleTree OriginalSource
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument

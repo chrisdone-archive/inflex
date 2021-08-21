@@ -40,7 +40,7 @@ import qualified Forge.Internal.Types as Forge
 import qualified Forge.Verify as Forge
 import           Inflex.Backend
 import           Inflex.Document (LoadError, DocumentMsg, LoadedExpression, EvaledExpression)
-import           Inflex.Schema (UUID)
+import           Inflex.Schema (UUID, Result)
 import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
@@ -89,6 +89,7 @@ data ServerMsg
   | CellResultOk Text Bool
   | CellError LoadError
   | LoadDocumentMsg DocumentMsg
+  | CellSharedResult Result
   deriving (Show)
 
 data Timed

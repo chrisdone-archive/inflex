@@ -8,8 +8,8 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
-import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseVariantArgument, field2Key, field2Value, nestedCellErrorError, nestedCellErrorPath, rowFields)
-import Inflex.Types (OutputCell)
+import Prelude
+
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -37,9 +37,10 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
+import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseVariantArgument, field2Key, field2Value, nestedCellErrorError, nestedCellErrorPath, rowFields)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
-import Prelude
+import Inflex.Types (OutputCell)
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -339,19 +340,10 @@ render (State {display, code, editor, path, cellError, cells, tableOffset}) =
                   ((caseTree2Default
                    boundaryWrap)
                    {
-                    "HoleTree" =
-                      HH.div
-                        [ HP.class_
-                            (HH.ClassName "editor-boundary-wrap clickable-to-edit")
-                        , HP.title "Click to edit"
-                        , HE.onClick
-                            (\ev ->
-                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
-                        ]
-                        inner,
-
-                    "MiscTree2" = \v _originalSource t ->
-                      HH.div
+                    "HoleTree" = \originalSource ->
+                      caseOriginalSource {
+                        "NoOriginalSource": HH.div [] inner,
+                        "OriginalSource": \_ -> HH.div
                         [ HP.class_
                             (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                         , HP.title "Click to edit"
@@ -360,12 +352,34 @@ render (State {display, code, editor, path, cellError, cells, tableOffset}) =
                                pure (PreventDefault (Event' (toEvent ev)) StartEditor))
                         ]
                         inner
+                        } originalSource,
+                    "MiscTree2" = \v originalSource t ->
+                     caseOriginalSource {
+                        "NoOriginalSource": HH.div [notEditable] inner,
+                        "OriginalSource": \_ -> HH.div
+                        [ HP.class_
+                            (HH.ClassName "editor-boundary-wrap clickable-to-edit")
+                        , HP.title "Click to edit"
+                        , HE.onClick
+                            (\ev ->
+                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                        ]
+                        inner
+                     } originalSource
                   })
                   e
     errorDisplay =
       case cellError of
         Nothing -> []
         Just error -> [renderError error]
+
+notEditable :: forall t100 t101.
+  HH.IProp
+    ( class :: String
+    | t101
+    )
+    t100
+notEditable = HP.class_ (HH.ClassName "not-editable")
 
 blank :: forall e. String -> Either e (View Shared.Tree2) -> Boolean
 blank code editor =
@@ -398,10 +412,11 @@ renderEditor offset path cells =
       [renderArrayEditor path cells editors],
     "RecordTree2":     \v _originalSource fields ->
       [renderRecordEditor path cells fields],
-    "TableTreeMaybe2": \v _originalSource columns rows ->
-      renderTableEditor offset path cells columns rows,
+    "TableTreeMaybe2": \v originalSource columns rows ->
+      renderTableEditor originalSource offset path cells columns rows,
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
-    "HoleTree": [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
+    "HoleTree": \originalSource ->
+      [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
   }
 
 --------------------------------------------------------------------------------
@@ -516,13 +531,13 @@ pageSize = 10
 
 renderTableEditor ::
      forall a. MonadAff a
-  => Int
+  => Shared.OriginalSource -> Int
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor offset path cells columns rows =
+renderTableEditor originalSource offset path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading path columns emptyTable
@@ -764,18 +779,20 @@ bodyGuide emptyTable emptyRows =
 
 tableHeading :: forall t627 t628 t629.
    MonadAff t628
-  => (Shared.DataPath -> Shared.DataPath)
+  => Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Boolean
   -> HH.HTML (H.ComponentSlot HH.HTML ( fieldname :: H.Slot t627 String String | t629) t628 Command) Command
-tableHeading path columns emptyTable =
+tableHeading originalSource path columns emptyTable =
   HH.thead
     [HP.class_ (HH.ClassName "table-header")]
     ([HH.th [HP.class_ (HH.ClassName "table-column"), HP.title ""] []] <>
      mapWithIndex
        (\i text ->
           HH.th
-            [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
+            (if hasOriginalSource originalSource
+                then [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
+                else [HP.class_ (HH.ClassName "not-editable")]
             [ HH.div
                 [HP.class_ (HH.ClassName "table-column-content")]
                 [columnNameSlot (Set.fromFoldable columns) path i text, removeColumnButton path text]
@@ -784,7 +801,7 @@ tableHeading path columns emptyTable =
      (if emptyTable
         then [HH.th [] []]
         else []) <>
-     [newColumnButton path columns])
+     (if hasOriginalSource then [newColumnButton path columns] else []))
 
 columnNameSlot :: forall t627 t628 t629.
     MonadAff t628
@@ -1143,7 +1160,7 @@ editorCode =
       originalOr original "",
     "TableTreeMaybe2": \v original columns rows ->
       originalOr original "",
-    "HoleTree": "_"
+    "HoleTree": \original -> originalOr original "_"
   }
 
 originalOr :: View Shared.OriginalSource -> String -> String
@@ -1152,13 +1169,19 @@ originalOr v s = caseOriginalSource  {
    "OriginalSource": \s' -> s'
    } v
 
+hasOriginalSource :: View Shared.OriginalSource -> Boolean
+hasOriginalSource = caseOriginalSource  {
+   "NoOriginalSource": false,
+   "OriginalSource": \_ -> true
+   }
+
 --------------------------------------------------------------------------------
 -- Tree casing
 
 caseTree2Default :: forall t628 t629 t630 t631 t632 t633 t634 t635 t636 t637 t638 t639 t640 t641 t642 t643 t644 t645 t646 t647 t648 t649 t650 t651.
   t648
   -> { "ArrayTree2" :: t641 -> t642 -> t643 -> t648
-     , "HoleTree" :: t648
+     , "HoleTree" :: t650 -> t648
      , "MiscTree2" :: t628 -> t629 -> t630 -> t648
      , "RecordTree2" :: t638 -> t639 -> t640 -> t648
      , "TableTreeMaybe2" :: t644 -> t645 -> t646 -> t647 -> t648
@@ -1174,5 +1197,5 @@ caseTree2Default d = {
     "ArrayTree2":      \v _originalSource editors -> d,
     "TableTreeMaybe2":      \v _originalSource editors _ -> d,
     "VegaTree2":       \v _originalSource t -> d,
-    "HoleTree": d
+    "HoleTree": \_originalSource -> d
   }

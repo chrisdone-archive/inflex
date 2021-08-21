@@ -3,6 +3,11 @@
   -khtml-user-drag: element;
   padding: 5px;
 
+  .not-editable {
+    cursor: not-allowed;
+    pointer-events: all !important;
+  }
+
   .hole {
     display: block;
     background: #fff19063;

@@ -193,32 +193,33 @@ loadInputDocument (InputDocument {cells}) = do
          case thing of
            Left loadError -> glog (CellError loadError)
            _ -> pure ()
+         let result = either
+                        (Shared.ResultError . toCellError)
+                        (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
+                           Shared.ResultOk
+                             (Shared.ResultTree
+                                (case parsed
+                                      -- A temporary
+                                      -- specialization to
+                                      -- display lambdas in a
+                                      -- cell as the original
+                                      -- code. But, later,
+                                      -- toTree will render
+                                      -- lambdas structurally.
+                                       of
+                                   LambdaExpression {} ->
+                                     Shared.MiscTree2
+                                       Shared.versionRefl
+                                       (Shared.OriginalSource code)
+                                       code
+                                   _ -> toTree (pure parsed) resultExpression)))
+                        thing
+         glog (CellSharedResult result)
          pure
            (OutputCell
               { dependencies
               , uuid = Shared.UUID uuid
-              , result =
-                  either
-                    (Shared.ResultError . toCellError)
-                    (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
-                       Shared.ResultOk
-                         (Shared.ResultTree
-                            (case parsed
-                                  -- A temporary
-                                  -- specialization to
-                                  -- display lambdas in a
-                                  -- cell as the original
-                                  -- code. But, later,
-                                  -- toTree will render
-                                  -- lambdas structurally.
-                                   of
-                               LambdaExpression {} ->
-                                 Shared.MiscTree2
-                                   Shared.versionRefl
-                                   (Shared.OriginalSource code)
-                                   code
-                               _ -> toTree (pure parsed) resultExpression)))
-                    thing
+              , result
               , code
               , name
               , order
@@ -293,7 +294,7 @@ toTree original =
                                              (HM.lookup key hash))
                                         (V.fromList fields)
                               }
-                      _ -> Shared.HoleRow Shared.HoleTree)
+                      _ -> Shared.HoleRow (Shared.HoleTree originalSource))
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
@@ -338,7 +339,7 @@ toTree original =
         (case argument of
            Just arg -> Shared.VariantArgument (toTree Nothing arg)
            Nothing -> Shared.NoVariantArgument)
-    HoleExpression {} -> Shared.HoleTree
+    HoleExpression {} -> Shared.HoleTree originalSource
     expression ->
       Shared.MiscTree2
         Shared.versionRefl

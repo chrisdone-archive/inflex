@@ -246,7 +246,7 @@ case 3: return k["VegaTree2"](a[1])(a[2])(a[3]);
 case 4: return k["VariantTree2"](a[1])(a[2])(a[3])(a[4]);
 case 5: return k["MiscTree2"](a[1])(a[2])(a[3]);
 case 6: return k["TableTreeMaybe2"](a[1])(a[2])(a[3])(a[4]);
-case 7: return k["HoleTree"];
+case 7: return k["HoleTree"](a[1]);
 default: throw Exception('BUG: case accessor failed');
 }
 }
