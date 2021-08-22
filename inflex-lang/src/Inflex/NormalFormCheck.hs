@@ -47,6 +47,8 @@ import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as OM
 import qualified Data.List as List
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Text (Text)
 import           Data.Traversable
@@ -54,11 +56,12 @@ import           GHC.Generics
 import           GHC.Natural
 import           Inflex.Decimal
 import           Inflex.Generator
+import           Inflex.Location
 import           Inflex.Parser2
-import           Inflex.Types.Resolver
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Generator
+import           Inflex.Types.Resolver
 
 --------------------------------------------------------------------------------
 -- Types
@@ -109,7 +112,7 @@ resolveParsed expression =
         Just sigT -> do
           inferredT <- expressionGenerate expression
           finalT <- oneWayUnifyT sigT inferredT
-          apply expression (toTypeMono finalT)
+          evalStateT (apply expression (toTypeMono finalT)) mempty
 
 -- | This function only works when an expression has an explicit type
 -- signature, which has only monomorphic types. Also ensures that the
@@ -126,7 +129,7 @@ resolveParsedResolved expression =
         Just sigT -> do
           inferredT <- expressionGenerate expression
           finalT <- oneWayUnifyT sigT inferredT
-          thing <- apply expression (toTypeMono finalT)
+          (thing, mappings) <- runStateT (apply expression (toTypeMono finalT)) mempty
           pure
             IsResolved
               { thing
@@ -136,7 +139,7 @@ resolveParsedResolved expression =
                     , constraints = []
                     , typ = toTypePoly finalT
                     }
-              , mappings = mempty
+              , mappings
               }
 
 -- | Same as 'resolveParsed', but returns the T.
@@ -407,46 +410,48 @@ toTypePoly =
 -- types work first with a type sig. Then worry about generalization
 -- later.
 --
-
--- TODO: generate source mappings: Map Cursor SourceLocation
---                                     ^ generate, ^ get from Expression Parsed
---
 apply ::
      Expression Parsed
   -> Type Generalised
-  -> Either NormalFormCheckProblem (Expression Resolved)
-apply (LiteralExpression literal) typ =
+  -> StateT (Map Cursor SourceLocation) (Either NormalFormCheckProblem) (Expression Resolved)
+apply e@(LiteralExpression literal) typ = do
+  location <- generateCursor e
   pure
     (LiteralExpression
        (case literal of
-          NumberLiteral number -> NumberLiteral (increasePrecisionNumber number typ)
-          TextLiteral text -> TextLiteral text {typ, location = BuiltIn}))
+          NumberLiteral number ->
+            NumberLiteral (increasePrecisionNumber location number typ)
+          TextLiteral text -> TextLiteral text {typ, location}))
 -- TODO: Parallelism?
-apply (ArrayExpression array@Array {expressions}) (ArrayType typ) = do
+apply e@(ArrayExpression array@Array {expressions}) (ArrayType typ) = do
+  location <- generateCursor e
   expressions' <- traverse (flip apply typ) expressions
   pure
     (ArrayExpression
        array
          { expressions = expressions'
-         , location = BuiltIn
+         , location
          , typ = ArrayType typ
          , form = Evaluated
          })
 -- TODO: Parallelism?
-apply (RecordExpression record@Record {fields}) typ@(RecordType (RowType TypeRow {fields = types})) = do
+apply e@(RecordExpression record@Record {fields}) typ@(RecordType (RowType TypeRow {fields = types})) = do
+  location <- generateCursor e
   fields' <-
     traverse
-      (\FieldE {expression, name, ..} -> do
+      (\FieldE {expression, name, location = location', ..} -> do
          case List.find (\Field{name = name'} -> name == name') types of
            Nothing -> error "TODO: This is a bug."
            Just Field{typ=typ'} -> do
+             location'' <- generateCursorFromLocation location'
              expression' <- apply expression typ'
-             pure FieldE {expression = expression', location = BuiltIn, ..})
+             pure FieldE {expression = expression', location = location'', ..})
       fields
   pure
     (RecordExpression
-       record {fields = fields', typ, location = BuiltIn})
-apply (VariantExpression variant@Variant {argument, tag}) typ@(VariantType (RowType TypeRow {fields = types})) = do
+       record {fields = fields', typ, location})
+apply e@(VariantExpression variant@Variant {argument, tag}) typ@(VariantType (RowType TypeRow {fields = types})) = do
+  location <- generateCursor e
   argument' <-
     traverse
       (\expression -> do
@@ -457,14 +462,14 @@ apply (VariantExpression variant@Variant {argument, tag}) typ@(VariantType (RowT
              pure expression')
       argument
   pure
-    (VariantExpression variant {argument = argument', location = BuiltIn, typ})
-apply _ _ = Left NotNormalForm
+    (VariantExpression variant {argument = argument', location, typ})
+apply _ _ = lift $ Left NotNormalForm
 
-increasePrecisionNumber :: Number s -> Type Generalised -> Number Resolved
-increasePrecisionNumber number@Number {number = someNumber} typ =
+increasePrecisionNumber :: Cursor -> Number s -> Type Generalised -> Number Resolved
+increasePrecisionNumber location number@Number {number = someNumber} typ =
   number
     { typ
-    , location = BuiltIn
+    , location
     , number =
         case someNumber of
           IntegerNumber i
@@ -512,3 +517,18 @@ toT =
           fs
       pure (RecordT (OM.fromList fs'))
     _ -> Nothing
+
+--------------------------------------------------------------------------------
+-- Generating cursors
+
+generateCursor ::
+     Monad m => Expression Parsed -> StateT (Map Cursor SourceLocation) m Cursor
+generateCursor = generateCursorFromLocation . expressionLocation
+
+generateCursorFromLocation ::
+     Monad m => SourceLocation -> StateT (Map Cursor SourceLocation) m Cursor
+generateCursorFromLocation loc = do
+  size <- gets M.size
+  let key = NFCursor size
+  modify' (M.insert key loc)
+  pure key

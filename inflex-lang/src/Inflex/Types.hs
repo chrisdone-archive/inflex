@@ -537,6 +537,7 @@ data Cursor
   | ArrayElementCursor Int Cursor
   | VariantElementCursor Cursor
   | IfCursor Cursor
+  | NFCursor Int
   deriving (Show, Lift, Eq, Ord)
 
 -- | Zero-based de Brujin indexing.
