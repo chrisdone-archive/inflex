@@ -725,7 +725,7 @@ tableRow editable columns path cells rowIndex row =
                 ]
             Nothing -> HH.td [] [HH.text "BUG!"])
        (rowFields row) <>
-     [addColumnBlank])
+     (if editable then [addColumnBlank] else []))
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
 
