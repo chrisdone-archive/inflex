@@ -13,6 +13,13 @@
     }
   }
 
+  .text {
+    border: 2px solid #e9eef2;
+    padding: 5px;
+    font-family: sans-serif;
+    border-top-left-radius: 5px;
+  }
+
   .hole {
     display: block;
     background: #fff19063;

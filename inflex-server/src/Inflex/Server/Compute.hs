@@ -334,7 +334,7 @@ toTree mappings original final =
                     })
                (V.fromList fields))
     LiteralExpression (TextLiteral (LiteralText {text})) ->
-      Shared.TextTree2 Shared.versionRefl (originalSource True) text
+      Shared.TextTree2 Shared.versionRefl (originalSource False) text
     ApplyExpression Apply { typ = ConstantType TypeConstant {name = VegaTypeName}
                           , argument
                           } ->

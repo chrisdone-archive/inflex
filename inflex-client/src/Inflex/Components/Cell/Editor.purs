@@ -402,8 +402,8 @@ renderEditor offset path cells =
   caseTree2 {
     "MiscTree2":       \v _originalSource t ->
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]],
-    "TextTree2":       \v _originalSource t ->
-      [renderTextEditor path t],
+    "TextTree2":       \v originalSource t ->
+      [renderTextEditor originalSource path t],
     "VegaTree2":       \v _originalSource t ->
       [renderVegaEditor path t],
     "VariantTree2":    \v _originalSource tag arg ->
@@ -487,33 +487,32 @@ renderVegaEditor path vegaSpec =
 
 renderTextEditor ::
      forall i a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> String
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots i) a Command) Command
-renderTextEditor path text =
-  HH.div
-    [HP.class_ (HH.ClassName "text")]
-    [ HH.slot
-        (SProxy :: SProxy "textEditor")
-        unit
-        (TextInput.component
-           (TextInput.Config
-              { placeholder: "Type text here"
-              , unfilled: "(empty text)"
-              , title: "Click to edit text"
-              , validator: const true
-              }))
-        (TextInput.Input {text, notThese: mempty})
-        (\text' ->
-           pure
-             (TriggerUpdatePath
-                (Shared.UpdatePath
-                   { path: path Shared.DataHere
-                   , update:
-                       Shared.CodeUpdate
-                         (Shared.Code {text: show text'})
-                   })))
-    ]
+renderTextEditor originalSource path text =
+  if hasOriginalSource originalSource
+    then HH.slot
+           (SProxy :: SProxy "textEditor")
+           unit
+           (TextInput.component
+              (TextInput.Config
+                 { placeholder: "Type text here"
+                 , unfilled: "(empty text)"
+                 , title: "Click to edit text"
+                 , validator: const true
+                 }))
+           (TextInput.Input {text, notThese: mempty})
+           (\text' ->
+              pure
+                (TriggerUpdatePath
+                   (Shared.UpdatePath
+                      { path: path Shared.DataHere
+                      , update:
+                          Shared.CodeUpdate
+                            (Shared.Code {text: show text'})
+                      })))
+    else HH.div [HP.class_ (HH.ClassName "text not-editable")] [HH.text text]
 
 --------------------------------------------------------------------------------
 -- Tables
