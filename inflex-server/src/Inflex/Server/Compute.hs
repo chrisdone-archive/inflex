@@ -263,7 +263,7 @@ toTree mappings original final =
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
         Shared.TableTreeMaybe2
           Shared.versionRefl
-          (originalSource False)
+          (originalSource inArray False)
           (V.fromList (map (\Field {name = FieldName text} -> text) fields))
           (let originalArray = inArray original
             in V.imap
@@ -274,8 +274,11 @@ toTree mappings original final =
                             originalRecord = inRecord arrayItem
                          in Shared.SomeRow $
                             Shared.Row
-                              { source = originalSource' False -- TODO: review.
-                                                               arrayItem
+                              { source =
+                                  originalSource'
+                                    id
+                                    False -- TODO: review.
+                                    arrayItem
                               , fields =
                                   let hash =
                                         HM.fromList
@@ -303,12 +306,13 @@ toTree mappings original final =
                                              (HM.lookup key hash))
                                         (V.fromList fields)
                               }
-                      _ -> Shared.HoleRow (Shared.HoleTree (originalSource True)))
+                      _ ->
+                        Shared.HoleRow (Shared.HoleTree (originalSource id True)))
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
         Shared.versionRefl
-        (originalSource False)
+        (originalSource inArray False)
         (let originalArray = inArray original
           in V.imap
                (\i expression ->
@@ -317,7 +321,7 @@ toTree mappings original final =
     RecordExpression Record {fields} ->
       Shared.RecordTree2
         Shared.versionRefl
-        (originalSource False)
+        (originalSource inRecord False)
         (let originalRecord = inRecord original
           in V.imap
                (\i FieldE {name = FieldName key, expression} ->
@@ -334,7 +338,7 @@ toTree mappings original final =
                     })
                (V.fromList fields))
     LiteralExpression (TextLiteral (LiteralText {text})) ->
-      Shared.TextTree2 Shared.versionRefl (originalSource False) text
+      Shared.TextTree2 Shared.versionRefl (originalSource id False) text
     ApplyExpression Apply { typ = ConstantType TypeConstant {name = VegaTypeName}
                           , argument
                           } ->
@@ -350,11 +354,11 @@ toTree mappings original final =
         (case argument of
            Just arg -> Shared.VariantArgument (toTree mappings Nothing arg)
            Nothing -> Shared.NoVariantArgument)
-    HoleExpression {} -> Shared.HoleTree (originalSource True)
+    HoleExpression {} -> Shared.HoleTree (originalSource id True)
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
-        (originalSource True)
+        (originalSource id True)
         (RIO.textDisplay expression)
   where
     inRecord :: Maybe (Expression Parsed) -> Maybe [FieldE Parsed]
@@ -380,15 +384,25 @@ toTree mappings original final =
         Just vector
           | Just e <- lookup idx (zip [0 ..] vector) -> pure e
         _ -> Nothing
-    originalSource atomic = originalSource' atomic original
-    originalSource' atomic =
-      \case
-        Just expression
-          | atomic -> Shared.OriginalSource (RIO.textDisplay expression)
-          | Just sourceLocation <- M.lookup (expressionLocation final) mappings
-          , sourceLocation == expressionLocation expression ->
-            Shared.OriginalSource (RIO.textDisplay expression)
-        _ -> Shared.NoOriginalSource
+    originalSource ::
+         (Maybe (Expression Parsed) -> Maybe a) -> Bool -> Shared.OriginalSource
+    originalSource check atomic = originalSource' check atomic original
+    originalSource' ::
+         (Maybe (Expression Parsed) -> Maybe a)
+      -> Bool
+      -> Maybe (Expression Parsed)
+      -> Shared.OriginalSource
+    originalSource' check atomic e
+      | Just {} <- check e =
+        case e of
+          Just expression
+            | atomic -> Shared.OriginalSource (RIO.textDisplay expression)
+            | Just sourceLocation <-
+               M.lookup (expressionLocation final) mappings
+            , sourceLocation == expressionLocation expression ->
+              Shared.OriginalSource (RIO.textDisplay expression)
+          _ -> Shared.NoOriginalSource
+      | otherwise = Shared.NoOriginalSource
 
 toCellError :: LoadError -> Shared.CellError
 toCellError =
