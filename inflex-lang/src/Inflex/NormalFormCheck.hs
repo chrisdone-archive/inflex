@@ -408,6 +408,9 @@ toTypePoly =
 -- later.
 --
 
+-- TODO: generate source mappings: Map Cursor SourceLocation
+--                                     ^ generate, ^ get from Expression Parsed
+--
 apply ::
      Expression Parsed
   -> Type Generalised
