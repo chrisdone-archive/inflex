@@ -531,7 +531,7 @@ pageSize = 10
 
 renderTableEditor ::
      forall a. MonadAff a
-  => Shared.OriginalSource -> Int
+  => View Shared.OriginalSource -> Int
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array String
@@ -540,20 +540,21 @@ renderTableEditor ::
 renderTableEditor originalSource offset path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
-      [ tableHeading path columns emptyTable
+      [ tableHeading originalSource path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body"), HE.onWheel (\e -> Just (PreventDefault
                                                                    (Event' (Wheel.toEvent e))
                                                                    (ScrollTable (Event' (Wheel.toEvent e)))))]
-          (bodyGuide emptyTable emptyRows <>
+          (bodyGuide hasOriginalSource' emptyTable emptyRows <>
            mapWithIndexNarrow offset pageSize (\i -> caseMaybeRow {
-             "SomeRow": tableRow columns path cells i
-            ,"HoleRow": tableRowHole columns path cells i
+             "SomeRow": tableRow hasOriginalSource' columns path cells i
+            ,"HoleRow": tableRowHole hasOriginalSource' columns path cells i
            }) rows <>
-           addNewRow)
+           if hasOriginalSource' then addNewRow else [])
       ]
   ]
   where
+    hasOriginalSource' = hasOriginalSource originalSource
     emptyTable = Array.null columns && Array.null rows
     emptyRows = Array.null rows
     addNewRow =
@@ -618,16 +619,16 @@ originateFromField columns key code =
 
 tableRowHole ::
      forall a. MonadAff a
-  => Array String
+  => Boolean -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Tree2
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRowHole columns path cells rowIndex editor' =
+tableRowHole editable columns path cells rowIndex editor' =
   HH.tr
     []
-    ([rowNumber rowIndex path] <>
+    ([rowNumber editable rowIndex path] <>
      map
        (\key ->
           HH.td
@@ -675,16 +676,17 @@ tableRowHole columns path cells rowIndex editor' =
 
 tableRow ::
      forall a. MonadAff a
-  => Array String
+  => Boolean
+  -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow columns path cells rowIndex row =
+tableRow editable columns path cells rowIndex row =
   HH.tr
     []
-    ([rowNumber rowIndex path] <>
+    ([rowNumber editable rowIndex path] <>
      Array.mapWithIndex
        (\idx editor' ->
           case Array.index columns idx of
@@ -728,8 +730,8 @@ tableRow columns path cells rowIndex row =
   where
     addColumnBlank = HH.td [HP.class_ (HH.ClassName "add-column-blank")] []
 
-rowNumber :: forall t19. Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t19 Command
-rowNumber rowIndex path =
+rowNumber :: forall t19. Boolean -> Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t19 Command
+rowNumber editable rowIndex path =
   HH.td
     [HP.class_ (HH.ClassName "row-number")]
     [ HH.div
@@ -737,29 +739,31 @@ rowNumber rowIndex path =
         [ HH.div
             [HP.class_ (HH.ClassName "row-number-text")]
             [HH.text (show (rowIndex + 1))]
-        , HH.button
-            [ HP.class_ (HH.ClassName "remove-row-button")
-            , HE.onClick
-                (\e ->
-                   pure
-                     (PreventDefault
-                        (Event' (toEvent e))
-                        (TriggerUpdatePath
-                           (Shared.UpdatePath
-                              { path: path Shared.DataHere
-                              , update:
-                                  Shared.RemoveUpdate
-                                    (Shared.Removal
-                                       {index: rowIndex})
-                              }))))
-            ]
-            [HH.text "×"]
+        , if editable
+             then HH.button
+                    [ HP.class_ (HH.ClassName "remove-row-button")
+                    , HE.onClick
+                        (\e ->
+                           pure
+                             (PreventDefault
+                                (Event' (toEvent e))
+                                (TriggerUpdatePath
+                                   (Shared.UpdatePath
+                                      { path: path Shared.DataHere
+                                      , update:
+                                          Shared.RemoveUpdate
+                                            (Shared.Removal
+                                               {index: rowIndex})
+                                      }))))
+                    ]
+                    [HH.text "×"]
+             else HH.text ""
         ]
     ]
 
-bodyGuide :: forall t651 t652. Boolean -> Boolean -> Array (HH.HTML t652 t651)
-bodyGuide emptyTable emptyRows =
-  if emptyTable
+bodyGuide :: forall t651 t652. Boolean -> Boolean -> Boolean -> Array (HH.HTML t652 t651)
+bodyGuide hasOriginalSource' emptyTable emptyRows =
+  if emptyTable && hasOriginalSource'
     then [ HH.tr
              []
              [ HH.td
@@ -767,7 +771,7 @@ bodyGuide emptyTable emptyRows =
                  [HH.text "Hit the top-right button to add columns! ↗"]
              ]
          ]
-    else if emptyRows
+    else if emptyRows && hasOriginalSource'
            then [ HH.tr
                     []
                     [ HH.td
@@ -775,11 +779,18 @@ bodyGuide emptyTable emptyRows =
                         [HH.text "↙ Hit the bottom-left button to add rows!"]
                     ]
                 ]
-           else []
+           else if emptyTable && emptyRows then
+            [ HH.tr
+                    []
+                    [ HH.td
+                        [HP.colSpan 3, HP.class_ (HH.ClassName "table-empty")]
+                        [HH.text "(Empty table)"]
+                    ]
+                ] else []
 
 tableHeading :: forall t627 t628 t629.
    MonadAff t628
-  => Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
+  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Array String
   -> Boolean
   -> HH.HTML (H.ComponentSlot HH.HTML ( fieldname :: H.Slot t627 String String | t629) t628 Command) Command
@@ -791,17 +802,28 @@ tableHeading originalSource path columns emptyTable =
        (\i text ->
           HH.th
             (if hasOriginalSource originalSource
-                then [HP.class_ (HH.ClassName "table-column"), HP.title "Click to edit"]
-                else [HP.class_ (HH.ClassName "not-editable")]
+               then [ HP.class_ (HH.ClassName "table-column")
+                    , HP.title "Click to edit"
+                    ]
+               else [HP.class_ (HH.ClassName "not-editable")])
             [ HH.div
                 [HP.class_ (HH.ClassName "table-column-content")]
-                [columnNameSlot (Set.fromFoldable columns) path i text, removeColumnButton path text]
+                (if hasOriginalSource originalSource
+                   then [ columnNameSlot (Set.fromFoldable columns) path i text
+                        , removeColumnButton path text
+                        ]
+                   else [ HH.div
+                            [HP.class_ (HH.ClassName "cell-name")]
+                            [HH.text text]
+                        ])
             ])
        columns <>
      (if emptyTable
         then [HH.th [] []]
         else []) <>
-     (if hasOriginalSource then [newColumnButton path columns] else []))
+     (if hasOriginalSource originalSource
+        then [newColumnButton path columns]
+        else []))
 
 columnNameSlot :: forall t627 t628 t629.
     MonadAff t628
@@ -926,7 +948,8 @@ renderArrayEditor path cells editors =
            let childPath = path <<< Shared.DataElemOf i
             in HH.tr
                  []
-                 [ rowNumber i path
+                 [ rowNumber true -- TODO:
+                    i path
                  , HH.td
                      [HP.class_ (HH.ClassName "array-datum-value")]
                      [ HH.slot

@@ -6,6 +6,11 @@
   .not-editable {
     cursor: not-allowed;
     pointer-events: all !important;
+    .table-column-content {
+      .cell-name {
+        border: 0;
+      }
+    }
   }
 
   .hole {
@@ -225,7 +230,7 @@
         flex-direction: row;
       }
       .cell-name:hover {
-        border-radius: none;
+        border-radius: 0;
       }
     }
     .table-body {
@@ -433,7 +438,7 @@
         flex-direction: row;
       }
       .cell-name:hover {
-        border-radius: none;
+        border-radius: 0;
       }
       .remove-column-button {
         opacity: 0.5;
