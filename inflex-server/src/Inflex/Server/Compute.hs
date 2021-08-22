@@ -16,6 +16,7 @@ module Inflex.Server.Compute where
 import           Control.Early
 import           Control.Monad.IO.Class
 import           Data.Foldable
+import           Data.Function
 import           Data.Functor.Contravariant
 import qualified Data.Graph as Graph
 import           Data.HashMap.Strict (HashMap)
@@ -35,6 +36,7 @@ import           Inflex.Defaulter
 import           Inflex.Display ()
 import           Inflex.Document
 import           Inflex.Instances ()
+import           Inflex.Location
 import           Inflex.Renamer
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
@@ -193,12 +195,13 @@ loadInputDocument (InputDocument {cells}) = do
          case thing of
            Left loadError -> glog (CellError loadError)
            _ -> pure ()
-         let result = either
-                        (Shared.ResultError . toCellError)
-                        (\EvaledExpression {cell = Cell1 {parsed}, ..} ->
-                           Shared.ResultOk
-                             (Shared.ResultTree
-                                (case parsed
+         let result =
+               either
+                 (Shared.ResultError . toCellError)
+                 (\EvaledExpression {cell = Cell1 {parsed, mappings}, ..} ->
+                    Shared.ResultOk
+                      (Shared.ResultTree
+                         (case parsed
                                       -- A temporary
                                       -- specialization to
                                       -- display lambdas in a
@@ -206,14 +209,14 @@ loadInputDocument (InputDocument {cells}) = do
                                       -- code. But, later,
                                       -- toTree will render
                                       -- lambdas structurally.
-                                       of
-                                   LambdaExpression {} ->
-                                     Shared.MiscTree2
-                                       Shared.versionRefl
-                                       (Shared.OriginalSource code)
-                                       code
-                                   _ -> toTree (pure parsed) resultExpression)))
-                        thing
+                                of
+                            LambdaExpression {} ->
+                              Shared.MiscTree2
+                                Shared.versionRefl
+                                (Shared.OriginalSource code)
+                                code
+                            _ -> toTree mappings (pure parsed) resultExpression)))
+                 thing
          glog (CellSharedResult result)
          pure
            (OutputCell
@@ -249,9 +252,13 @@ evalDocument1' cache env cells = do
   !v <- evalDocument1 cache env cells
   pure v
 
-toTree :: Maybe (Expression Parsed) -> Expression Resolved -> Shared.Tree2
-toTree original =
-  \case
+toTree ::
+     (Map Cursor SourceLocation)
+  -> Maybe (Expression Parsed)
+  -> Expression Resolved
+  -> Shared.Tree2
+toTree mappings original final =
+  case final of
     ArrayExpression Array {typ, expressions} -- Recognize a table.
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
         Shared.TableTreeMaybe2
@@ -284,6 +291,7 @@ toTree original =
                                                 "TODO: Serious bug if this occurs. FIXME.")
                                              (\(fieldIndex, expression) ->
                                                 toTree
+                                                  mappings
                                                   (fmap
                                                      (\FieldE {expression = e} ->
                                                         e)
@@ -302,7 +310,8 @@ toTree original =
         originalSource
         (let originalArray = inArray original
           in V.imap
-               (\i expression -> toTree (atIndex i originalArray) expression)
+               (\i expression ->
+                  toTree mappings (atIndex i originalArray) expression)
                expressions)
     RecordExpression Record {fields} ->
       Shared.RecordTree2
@@ -316,6 +325,7 @@ toTree original =
                     , version = Shared.versionRefl
                     , value =
                         toTree
+                          mappings
                           (fmap
                              (\FieldE {expression = e} -> e)
                              (atNth i originalRecord))
@@ -337,7 +347,7 @@ toTree original =
         Shared.NoOriginalSource
         tag
         (case argument of
-           Just arg -> Shared.VariantArgument (toTree Nothing arg)
+           Just arg -> Shared.VariantArgument (toTree mappings Nothing arg)
            Nothing -> Shared.NoVariantArgument)
     HoleExpression {} -> Shared.HoleTree originalSource
     expression ->
@@ -372,8 +382,11 @@ toTree original =
     originalSource = originalSource' original
     originalSource' =
       \case
-        Nothing -> Shared.NoOriginalSource
-        Just expression -> Shared.OriginalSource (RIO.textDisplay expression)
+        Just expression
+          | Just sourceLocation <- M.lookup (expressionLocation final) mappings
+          , sourceLocation == expressionLocation expression ->
+            Shared.OriginalSource (RIO.textDisplay expression)
+        _ -> Shared.NoOriginalSource
 
 toCellError :: LoadError -> Shared.CellError
 toCellError =

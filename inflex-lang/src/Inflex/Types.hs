@@ -16,6 +16,7 @@ module Inflex.Types where
 import           Control.DeepSeq
 import           Data.Hashable
 import           Data.List.NonEmpty (NonEmpty(..))
+import           Data.Map.Strict (Map)
 import           Data.Sequence (Seq)
 import           Data.Set (Set)
 import           Data.String
@@ -196,6 +197,7 @@ data Cell1 = Cell1
   , defaulted :: !(Expression Resolved)
   , parsed :: !(Expression Parsed)
   , scheme :: !(Scheme Polymorphic)
+  , mappings :: !(Map Cursor SourceLocation)
   , defaultedClassConstraints :: !(Seq (Default Polymorphic))
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
   , sourceHash :: !SHA512

@@ -69,4 +69,4 @@ $(makeLensesWith
     (inflexRules ['counter, 'equalityConstraints])
     ''GenerateState)
 $(makeLensesWith (inflexRules ['scope]) ''Env)
-$(makeLensesWith (inflexRules ['mappings]) ''HasConstraints)
+$(makeLensesWith (inflexRules ['Inflex.Types.Generator.mappings]) ''HasConstraints)
