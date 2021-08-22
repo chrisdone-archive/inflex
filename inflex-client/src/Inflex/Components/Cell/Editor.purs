@@ -408,8 +408,8 @@ renderEditor offset path cells =
       [renderVegaEditor path t],
     "VariantTree2":    \v _originalSource tag arg ->
       [renderVariantEditor path cells tag arg],
-    "ArrayTree2":      \v _originalSource editors ->
-      [renderArrayEditor path cells editors],
+    "ArrayTree2":      \v originalSource editors ->
+      [renderArrayEditor originalSource path cells editors],
     "RecordTree2":     \v _originalSource fields ->
       [renderRecordEditor path cells fields],
     "TableTreeMaybe2": \v originalSource columns rows ->
@@ -922,11 +922,11 @@ generateColumnName prefix columns = iterate 1
 
 renderArrayEditor ::
      forall a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array (View Shared.Tree2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderArrayEditor path cells editors =
+renderArrayEditor originalSource path cells editors =
   HH.table
     [HP.class_ (HH.ClassName "array")]
     [HH.tbody [HP.class_ (HH.ClassName "array-body")] (body <> addNewRow)]
@@ -938,7 +938,9 @@ renderArrayEditor path cells editors =
               []
               [ HH.td
                   [HP.colSpan 3, HP.class_ (HH.ClassName "array-empty")]
-                  [HH.text "↙ Hit the bottom-left button to add rows!"]
+                  [HH.text (if hasOriginalSource'
+                               then "↙ Hit the bottom-left button to add rows!"
+                               else "(Empty list)")]
               ]
           ]
         _ -> rows
@@ -948,8 +950,7 @@ renderArrayEditor path cells editors =
            let childPath = path <<< Shared.DataElemOf i
             in HH.tr
                  []
-                 [ rowNumber true -- TODO:
-                    i path
+                 [ rowNumber hasOriginalSource' i path
                  , HH.td
                      [HP.class_ (HH.ClassName "array-datum-value")]
                      [ HH.slot
@@ -980,31 +981,35 @@ renderArrayEditor path cells editors =
                      ]
                  ])
         editors
+    hasOriginalSource' = hasOriginalSource originalSource
     addNewRow =
-      [ HH.tr
-          []
-          [ HH.td
-              [HP.class_ (HH.ClassName "add-row")]
-              [ HH.button
-                  [ HP.class_ (HH.ClassName ("add-row-button "))
-                  , HP.title "Add row"
-                  , HE.onClick
-                      (\e ->
-                         pure
-                           (PreventDefault
-                              (Event' (toEvent e))
-                              (TriggerUpdatePath
-                                 (Shared.UpdatePath
-                                    { path: path Shared.DataHere
-                                    , update:
-                                        Shared.AddToEndUpdate
-                                    }))))
-                  ]
-                  [HH.text "+"]
-              ]
-          , HH.td [HP.class_ (HH.ClassName "bottom-blank")] []
-          ]
-      ]
+      if hasOriginalSource'
+        then [ HH.tr
+                 []
+                 [ HH.td
+                     [HP.class_ (HH.ClassName "add-row")]
+                     [ HH.button
+                         [ HP.class_ (HH.ClassName ("add-row-button "))
+                         , HP.title "Add row"
+                         , HE.onClick
+                             (\e ->
+                                pure
+                                  (PreventDefault
+                                     (Event' (toEvent e))
+                                     (TriggerUpdatePath
+                                        (Shared.UpdatePath
+                                           { path:
+                                               path Shared.DataHere
+                                           , update:
+                                               Shared.AddToEndUpdate
+                                           }))))
+                         ]
+                         [HH.text "+"]
+                     ]
+                 , HH.td [HP.class_ (HH.ClassName "bottom-blank")] []
+                 ]
+             ]
+        else []
 
 --------------------------------------------------------------------------------
 -- Records
