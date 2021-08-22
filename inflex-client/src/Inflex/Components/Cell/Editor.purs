@@ -410,8 +410,8 @@ renderEditor offset path cells =
       [renderVariantEditor path cells tag arg],
     "ArrayTree2":      \v originalSource editors ->
       [renderArrayEditor originalSource path cells editors],
-    "RecordTree2":     \v _originalSource fields ->
-      [renderRecordEditor path cells fields],
+    "RecordTree2":     \v originalSource fields ->
+      [renderRecordEditor originalSource path cells fields],
     "TableTreeMaybe2": \v originalSource columns rows ->
       renderTableEditor originalSource offset path cells columns rows,
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
@@ -1015,14 +1015,14 @@ renderArrayEditor originalSource path cells editors =
 
 renderRecordEditor ::
      forall a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array (View Shared.Field2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderRecordEditor path cells fields =
+renderRecordEditor originalSource path cells fields =
   HH.table
     [HP.class_ (HH.ClassName "record")]
-    (([ HH.button
+    ((if hasOriginalSource' then [ HH.button
           [ HP.class_ (HH.ClassName "add-field-button")
           , HE.onClick
               (\e ->
@@ -1044,7 +1044,7 @@ renderRecordEditor path cells fields =
           , HP.title "Add field"
           ]
           [HH.text "+"]
-      ]) <>
+      ] else []) <>
      map
        (\field ->
           let key = field2Key field
@@ -1054,26 +1054,28 @@ renderRecordEditor path cells fields =
                     [HP.class_ (HH.ClassName "record-field")]
                     [ HH.td
                         [HP.class_ (HH.ClassName "record-field-name")]
-                        [ HH.button
-                            [ HP.class_ (HH.ClassName "remove-field-button")
-                            , HE.onClick
-                                (\e ->
-                                   pure
-                                     (PreventDefault
-                                        (Event' (toEvent e))
-                                        (TriggerUpdatePath
-                                           (Shared.UpdatePath
-                                              { path:
-                                                  path Shared.DataHere
-                                              , update:
-                                                  Shared.DeleteFieldUpdate
-                                                    (Shared.DeleteField
-                                                       { name:
-                                                           key
-                                                       })
-                                              }))))
-                            ]
-                            [HH.text "×"]
+                        [ if hasOriginalSource'
+                             then HH.button
+                                    [ HP.class_ (HH.ClassName "remove-field-button")
+                                    , HE.onClick
+                                        (\e ->
+                                           pure
+                                             (PreventDefault
+                                                (Event' (toEvent e))
+                                                (TriggerUpdatePath
+                                                   (Shared.UpdatePath
+                                                      { path:
+                                                          path Shared.DataHere
+                                                      , update:
+                                                          Shared.DeleteFieldUpdate
+                                                            (Shared.DeleteField
+                                                               { name:
+                                                                   key
+                                                               })
+                                                      }))))
+                                    ]
+                                    [HH.text "×"]
+                             else HH.text ""
                         , HH.slot
                             (SProxy :: SProxy "fieldname")
                             key
@@ -1137,6 +1139,7 @@ renderRecordEditor path cells fields =
                         ]
                     ])
        fields)
+  where hasOriginalSource' = hasOriginalSource originalSource
 
 --------------------------------------------------------------------------------
 -- Errors
