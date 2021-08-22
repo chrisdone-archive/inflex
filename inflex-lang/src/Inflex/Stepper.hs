@@ -219,9 +219,9 @@ stepRecord :: Record Resolved -> Step (Result (Expression Resolved))
 stepRecord Record {..} = do
   fields' <-
     traverseE
-      (\FieldE {location = l, ..} -> do
+      (\FieldE {expression, name} -> do
          e' <- stepExpression expression?
-         pure (Ok (FieldE {location = l, expression = e', ..})))
+         pure (Ok (FieldE {location = SteppedCursor, expression = e', ..})))
       fields?
   pure (Ok (RecordExpression (Record {fields = fields', ..})))
 
@@ -244,14 +244,19 @@ stepArray Array {..} =
       pure
         (Ok
            (ArrayExpression
-              Array {expressions = expressions', form = Evaluated, ..}))
+              Array
+                { expressions = expressions'
+                , form = Evaluated
+                , ..
+                }))
 
 stepVariant :: Variant Resolved -> Step (Result (Expression Resolved))
 stepVariant Variant {..} = do
-  -- trace ("stepVariant: " <> show argument) (pure ())
   argument' <- traverseE stepExpression argument?
-  -- trace ("stepVariant => " <> show argument') (pure ())
-  pure (Ok (VariantExpression Variant {argument = argument', ..}))
+  pure
+    (Ok
+       (VariantExpression
+          Variant {argument = argument', location = SteppedCursor, ..}))
 
 stepIf :: If Resolved -> Step (Result (Expression Resolved))
 stepIf If {..} = do
@@ -262,7 +267,11 @@ stepIf If {..} = do
     Ok (BoolR _ False) -> stepExpression alternative
     Ok _ -> pure (Errored ShouldGetBool)
     Returned r -> pure (Returned r)
-    FoundHole{} -> pure (Ok (IfExpression If {condition = condition', ..}))
+    FoundHole {} ->
+      pure
+        (Ok
+           (IfExpression
+              If {condition = condition', location = SteppedCursor, ..}))
     Errored e -> pure (Errored e)
 
 stepCase :: Case Resolved -> Step (Result (Expression Resolved))
@@ -271,7 +280,11 @@ stepCase Case {..} = do
   case listToMaybe (mapMaybe (match scrutinee') (toList alternatives)) of
     Just e -> stepExpression e
     -- TODO: warn about unmatched case?
-    Nothing -> pure (Ok (CaseExpression (Case {scrutinee = scrutinee', ..})))
+    Nothing ->
+      pure
+        (Ok
+           (CaseExpression
+              (Case {scrutinee = scrutinee', location = SteppedCursor, ..})))
 
 -- | Finds a match, if any, and the result must be stepped again.
 match :: Expression Resolved -> Alternative Resolved -> Maybe (Expression Resolved)
@@ -486,6 +499,8 @@ stepConcat easis (array@Array {expressions}) returnedType = do
               (array
                  { Array.typ = returnedType
                  , expressions = V.concat (V.toList xs)
+                 , Array.location = SteppedCursor
+                 , form = Evaluated
                  })))
     Returned e -> pure (Ok (variantSigged okTagName returnedType (pure e)))
     FoundHole {} -> pure (Ok easis)
@@ -632,7 +647,11 @@ stepDistinct asis (list@Array {expressions}, _listApplyType) _cmpInst = do
       pure
         (Ok
            (ArrayExpression
-              list {expressions = V.fromList (map originalR (nubOrd es))}))
+              list
+                { expressions = V.fromList (map originalR (nubOrd es))
+                , Array.location = SteppedCursor
+                , form = Evaluated
+                }))
     Errored e -> pure (Errored e)
     Returned e -> pure (Returned e)
 
@@ -654,8 +673,13 @@ stepSort asis (list@Array {expressions}, _listApplyType) _cmpInst = do
     Errored err -> pure (Errored err)
     Ok es ->
       pure
-        (Ok (ArrayExpression
-            list {expressions = V.fromList (map originalR (List.sort es))}))
+        (Ok
+           (ArrayExpression
+              list
+                { expressions = V.fromList (map originalR (List.sort es))
+                , Array.location = SteppedCursor
+                , form = Evaluated
+                }))
 
 stepMinimum ::
      Expression Resolved
@@ -863,7 +887,7 @@ stepFunction2 ::
   -> Cursor
   -> Type Generalised
   -> Step (Result (Expression Resolved))
-stepFunction2 function argument' functionExpression location applyLocation originalArrayType =
+stepFunction2 function argument' functionExpression location _applyLocation originalArrayType =
   case function of
     FromOkFunction ->
       do result <- stepApply
@@ -901,7 +925,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                     { typ =
                         ArrayType
                           (typeOutput (expressionType functionExpression))
-                    , location = applyLocation
+                    , location = SteppedCursor
                     , expressions = expressions'
                     , form = Evaluated
                     }))
@@ -937,7 +961,7 @@ stepFunction2 function argument' functionExpression location applyLocation origi
                (ArrayExpression
                   Array
                     { typ
-                    , location = applyLocation
+                    , location = SteppedCursor
                     , expressions = (V.mapMaybe id expressions')
                     , form = Evaluated
                     }))
@@ -954,7 +978,13 @@ stepInfix Infix {..} = do
   right' <- stepExpression right?
   let asis =
         (InfixExpression
-           Infix {global = global', left = left', right = right', ..})
+           Infix
+             { global = global'
+             , left = left'
+             , right = right'
+             , location = SteppedCursor
+             , ..
+             })
   case (left', right') of
     (HoleExpression {}, _) -> pure (Ok asis)
     (_, HoleExpression {}) -> pure (Ok asis)
