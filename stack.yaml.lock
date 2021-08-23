@@ -132,6 +132,17 @@ packages:
   original:
     url: https://github.com/inflex-io/early/archive/a642cea8d33bd5475fe56c0d31ff51287692789d.tar.gz
 - completed:
+    size: 4288
+    url: https://github.com/chrisdone/lexx/archive/1d57bf997666d35cf4304418b22d6c08ede41dcc.tar.gz
+    name: lexx
+    version: 0.1.0.0
+    sha256: 6daad6926a8ce7e6838c95372cfb22ee2080909d6a84c2ecb6fcd8e9d0aa570c
+    pantry-tree:
+      size: 451
+      sha256: 59d87ed7eff3de2df1d1ad290ef32ede0b28d9aa01ae73aee6580a5500f0cfe1
+  original:
+    url: https://github.com/chrisdone/lexx/archive/1d57bf997666d35cf4304418b22d6c08ede41dcc.tar.gz
+- completed:
     hackage: byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
     pantry-tree:
       size: 322
@@ -208,6 +219,13 @@ packages:
       sha256: 3b1cb27cf8cb0a8da83b5730e85132e058e808f8dd1be349ea3dbb162c7f14c3
   original:
     hackage: prometheus-2.2.2@sha256:d794f5fe975be2f3ca7d7af71a7aeeb006615ad7d98835fa42caba9457a51936,4288
+- completed:
+    hackage: rainbow-0.34.2.2@sha256:522458692f361d86fa0dbc5085f96511138959dd664c8828c3672032ae558b67,2111
+    pantry-tree:
+      size: 630
+      sha256: 1d73c5c6181919ea860b9d14421d48464266b5dbf4f7884f2e6b1b407632b6eb
+  original:
+    hackage: rainbow-0.34.2.2@sha256:522458692f361d86fa0dbc5085f96511138959dd664c8828c3672032ae558b67,2111
 snapshots:
 - completed:
     size: 524154

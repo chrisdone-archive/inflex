@@ -26,6 +26,7 @@ import           Inflex.Migrate
 import           Inflex.Server.App
 import           Inflex.Server.Dispatch ()
 import           Inflex.Server.Types
+import           Log
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import           Network.Wai.Middleware.AddHeaders
@@ -212,17 +213,11 @@ makeAppLogFunc registry = do
                 Timed {} -> pure ()
                 LoadDocumentMsg {} -> pure ()
                 CellError{} -> pure ()
+                CellHash {} -> pure ()
                 CellSharedResult {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
             DatabaseMsg msg -> when False (prettyWrite msg)
             AppWaiMsg msg -> when False (prettyWrite msg)))
-
-prettyWrite :: Show a => a -> IO ()
-prettyWrite x = do
-  now <- getCurrentTime
-  write now x
-  where
-    write now = S8.putStrLn . S8.pack . ((show now <> " ") <>) . show
 
 databaseLogFunc :: GLogFunc DatabaseLog
 databaseLogFunc =

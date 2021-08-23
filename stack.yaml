@@ -45,6 +45,8 @@ extra-deps:
     - rio-orphans
 - github: inflex-io/early
   commit: a642cea8d33bd5475fe56c0d31ff51287692789d
+- github: chrisdone/lexx
+  commit: 1d57bf997666d35cf4304418b22d6c08ede41dcc
 
 # Specific hackage versions
 - byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
@@ -58,3 +60,4 @@ extra-deps:
 - indexed-profunctors-0.1@sha256:ddf618d0d4c58319c1e735e746bc69a1021f13b6f475dc9614b80af03432e6d4,1016
 - string-quote-0.0.1@sha256:7d91a0ba1be44b2443497c92f2f027cd4580453b893f8b5ebf061e1d85befaf3,758
 - prometheus-2.2.2@sha256:d794f5fe975be2f3ca7d7af71a7aeeb006615ad7d98835fa42caba9457a51936,4288
+- rainbow-0.34.2.2@sha256:522458692f361d86fa0dbc5085f96511138959dd664c8828c3672032ae558b67,2111

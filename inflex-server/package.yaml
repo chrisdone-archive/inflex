@@ -26,6 +26,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - criterion-measurement
+- lexx
 - conduit
 - conduit-extra
 - path

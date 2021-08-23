@@ -142,7 +142,7 @@ loadInputDocument (InputDocument {cells}) = do
           (toList cells)
   for_
     inputCells
-    (\Named {name, sourceHash} -> liftIO (print (name, sourceHash)))
+    (\Named {name, sourceHash} -> glog (CellHash name sourceHash))
   loaded <-
     timed
       TimedLoadDocument1

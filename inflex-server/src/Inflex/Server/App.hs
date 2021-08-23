@@ -45,6 +45,7 @@ import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Sha256
+import           Inflex.Types (SourceHash)
 import           Inflex.Types.SHA512
 import qualified Network.Wai.Parse
 import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
@@ -90,6 +91,7 @@ data ServerMsg
   | CellError LoadError
   | LoadDocumentMsg DocumentMsg
   | CellSharedResult Result
+  | CellHash Text SourceHash
   deriving (Show)
 
 data Timed
