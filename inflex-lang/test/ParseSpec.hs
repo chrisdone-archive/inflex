@@ -959,9 +959,9 @@ globals =
                                             {line = 1, column = 181, name = ""}
                                       }
                                 , name =
-                                    ParsedHash
+                                   ParsedHash
                                       (Hash
-                                         ($$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279")))
+                                         ($$("3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279ecb4aab48763b5b84b8c45d9ea2b90bf7356e06b063cc4478f2b817d66f449ad")))
                                 , scheme = ParsedScheme
                                 })
                          ]
@@ -1450,9 +1450,9 @@ strings =
                          , typ = Nothing
                          })))))
         it
-          "\"speech \\\" \\\\ here\""
+          "\"speech \"\" \\\\ here\""
           (shouldBe
-             (parseText "" "\"speech \\\" \\\\ here\"")
+             (parseText "" "\"speech \"\" \\\\ here\"")
              (Right
                 (LiteralExpression
                    (TextLiteral
@@ -1464,7 +1464,7 @@ strings =
                                , end =
                                    SourcePos {line = 1, column = 20, name = ""}
                                }
-                         , text = "speech \" \\ here"
+                         , text = "speech \" \\\\ here"
                          , typ = Nothing
                          }))))))
 
@@ -1746,6 +1746,7 @@ parser2 =
   describe
     "Parser2"
     (do itParsersMatch "_"
+        itParsersMatch "\"some string with quote \"\" inside \""
         itParsersMatch "\"foo\""
         itParsersMatch "#ok(123)"
         itParsersMatch "[1,_]"

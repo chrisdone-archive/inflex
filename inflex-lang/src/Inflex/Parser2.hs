@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BangPatterns #-}
@@ -13,6 +13,7 @@ module Inflex.Parser2
   ) where
 
 import           Data.ByteString (ByteString)
+import qualified Data.ByteString as S
 import           Data.Char (isAlphaNum)
 import           Data.Coerce
 import           Data.Maybe
@@ -115,12 +116,11 @@ recordParser env = F.branch openCurly elements (variantParser env)
              })
 
 stringParser :: Env -> F.Parser ParseError (Expression Parsed)
-stringParser env = F.branch speech rest (holeParser env)
+stringParser env = F.branch (F.lookahead speech) rest (holeParser env)
   where
     rest = do
-      start' <- getSourcePosPrev env
-      inner <- F.byteStringOf (F.many_ (F.satisfy (\char -> char /= '"')))
-      speech
+      start' <- getSourcePos env
+      strings <- F.many stringLexer
       end' <- getSourcePos env
       pure
         (LiteralExpression
@@ -128,9 +128,16 @@ stringParser env = F.branch speech rest (holeParser env)
               (LiteralText
                  { location = SourceLocation {start = start', end = end'}
                  , typ = Nothing
-                 , text = T.decodeUtf8 inner
+                 , text = T.decodeUtf8 (S.intercalate "\"" strings)
                  , ..
                  })))
+
+stringLexer :: F.Parser ParseError ByteString
+stringLexer = do
+  speech
+  inner <- F.byteStringOf (F.many_ (F.satisfy (\char -> char /= '"')))
+  speech
+  pure inner
 
 holeParser :: Env -> F.Parser ParseError (Expression Parsed)
 holeParser env =

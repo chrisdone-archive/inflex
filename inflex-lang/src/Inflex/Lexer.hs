@@ -197,7 +197,7 @@ tokenLexer =
     string =
       located
         (do void (Mega.char '"')
-            contents <- Mega.manyTill Lexer.charLiteral (Mega.char '"')
+            contents <- Mega.manyTill Mega.anySingle (Mega.char '"')
             pure (StringToken (T.pack contents)))
     camelWord =
       located

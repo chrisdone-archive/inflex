@@ -35,6 +35,7 @@ import           Data.Semigroup.Foldable
 import           Data.Sequence (Seq)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import           Inflex.Instances ()
 import           Inflex.Lexer
@@ -564,9 +565,28 @@ literalParser = number <> text
       umber <- numberParser
       pure (NumberLiteral umber)
     text = do
-      Located {thing = text', location} <-
+      let loop loc = do
+            mresult <-
+              fmap Just (token ExpectedText (preview _StringToken)) <>
+              pure Nothing
+            case mresult of
+              Nothing -> pure ([], loc)
+              Just Located {thing = text', location} -> do
+                (rest, loc') <- loop location
+                pure (text' : rest, loc')
+      Located {thing = first', location} <-
         token ExpectedText (preview _StringToken)
-      pure (TextLiteral (LiteralText {typ = Nothing, text = text', ..}))
+      (text', location') <- loop location
+      let SourceLocation {start} = location
+          SourceLocation {end} = location'
+      pure
+        (TextLiteral
+           (LiteralText
+              { typ = Nothing
+              , text = T.intercalate "\"" (first' : text')
+              , location = SourceLocation {start, end}
+              , ..
+              }))
 
 numberParser :: Parser (Number Parsed)
 numberParser = do

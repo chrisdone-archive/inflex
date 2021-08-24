@@ -84,7 +84,7 @@ sha512HexParser =
   Atto.T.parseOnly
     (fmap
        SHA512
-       (do bytes <- Atto.T.take 64
+       (do bytes <- Atto.T.take 128
            case Hex.decode (T.encodeUtf8 bytes) of
              (result, wrong)
                | S.null wrong -> pure result
