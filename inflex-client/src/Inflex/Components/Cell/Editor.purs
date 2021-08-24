@@ -285,6 +285,7 @@ foreign import getValue :: Element -> Effect (Nullable String)
 foreign import setStyle :: String -> Element -> Effect Unit
 foreign import autosize :: HTMLElement -> Effect Unit
 foreign import vegaInPlace :: HTMLElement -> String -> Effect Unit
+foreign import printText :: String -> String
 
 --------------------------------------------------------------------------------
 -- Render main component
@@ -510,7 +511,7 @@ renderTextEditor originalSource path text =
                       { path: path Shared.DataHere
                       , update:
                           Shared.CodeUpdate
-                            (Shared.Code {text: show text'})
+                            (Shared.Code {text: printText text'})
                       })))
     else HH.div [HP.class_ (HH.ClassName "text not-editable")] [HH.text text]
 

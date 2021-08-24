@@ -19,6 +19,7 @@ import           Data.Char (isAlphaNum)
 import           Data.Coerce
 import           Data.List
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Decimal
@@ -277,7 +278,11 @@ instance Display (Let Renamed) where
 instance Display (Literal Renamed) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
+               TextLiteral LiteralText{text} -> displayText text
+
+displayText :: Text -> Utf8Builder
+displayText t =
+  displayBytesUtf8 (T.encodeUtf8 ("\"" <> T.replace "\"" "\"\"" t <> "\""))
 
 instance Display (Number Renamed) where
   display (Number {number}) = display number

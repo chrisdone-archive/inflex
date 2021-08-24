@@ -39,3 +39,7 @@ exports.vegaInPlace = function(e){
     }
   }
 }
+
+exports.printText = function(t){
+  return '"' + t.replace(/"/g,'""') + '"';
+}

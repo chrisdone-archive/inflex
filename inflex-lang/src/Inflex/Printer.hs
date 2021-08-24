@@ -24,6 +24,7 @@ import           Data.Foldable
 import qualified Data.List as List
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Debug.Trace
 import           Inflex.Decimal
 import           Inflex.Types
@@ -139,7 +140,11 @@ instance Printer (Let Resolved) where
 instance Printer (Literal Resolved) where
   printer = \case
                NumberLiteral number -> printer number
-               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
+               TextLiteral LiteralText{text} -> displayText text
+
+displayText :: Text -> Utf8Builder
+displayText t =
+  displayBytesUtf8 (T.encodeUtf8 ("\"" <> T.replace "\"" "\"\"" t <> "\""))
 
 instance Printer (Number Resolved) where
   printer (Number {number}) = printer number
