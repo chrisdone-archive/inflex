@@ -1038,9 +1038,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "a"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            ]
                        , location = ExpressionCursor
@@ -1074,11 +1072,15 @@ records = do
        ])
   eval_it_with_uuids
     "Arith referencing a unary record is fine"
-    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "{a:666}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a * 2"))]
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "{a:666}"))
+    , (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a * 2"))
+    ]
     (\[u1, u2] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("c03d7e305d4ebcc94cc810a45e79f3c6d95e4fba91a0ac4afca17ebe3d61c42a8939fadffddf59e17dd9c8075dc6ca95cb9371f4a892fc068244d983d8c749c5")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("c03d7e305d4ebcc94cc810a45e79f3c6d95e4fba91a0ac4afca17ebe3d61c42a8939fadffddf59e17dd9c8075dc6ca95cb9371f4a892fc068244d983d8c749c5")
            , name = "x"
            , order = 0
            , code = "{a:666}"
@@ -1112,9 +1114,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "a"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            ]
                        , location = ExpressionCursor
@@ -1146,8 +1146,11 @@ records = do
                        }))
            }
        , Named
-           {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
-           , sourceHash = HashKnown $$("3bf9935908221761972174126c61d1d8868d39138e19b817e59d71918beb8b053dc5a97c63d5d3387ee50244b8a3de127180bd1589b0c604be5f8c430c560795")
+           { dependencies =
+               Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+           , uuid = Uuid u2
+           , sourceHash =
+               HashKnown $$("3bf9935908221761972174126c61d1d8868d39138e19b817e59d71918beb8b053dc5a97c63d5d3387ee50244b8a3de127180bd1589b0c604be5f8c430c560795")
            , name = "y"
            , order = 1
            , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a * 2"
@@ -1172,11 +1175,15 @@ records = do
        ])
   eval_it_with_uuids
     "Referencing a single field from a 2-ary record is fine (without type sig)"
-    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391",("x", "{a:1, b:8}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))]
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "{a:1, b:8}"))
+    , (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))
+    ]
     (\[u1, u2] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("8a08f41e772aad71028d7fabc55261c43a68af8e756ec887305a85ad3bb47bb33412793579411130cf34426b4aa2135e4cd915e57214cbb4fb3273521a851a35")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("8a08f41e772aad71028d7fabc55261c43a68af8e756ec887305a85ad3bb47bb33412793579411130cf34426b4aa2135e4cd915e57214cbb4fb3273521a851a35")
            , name = "x"
            , order = 0
            , code = "{a:1, b:8}"
@@ -1210,9 +1217,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "a"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            , FieldE
                                { name = FieldName {unFieldName = "b"}
@@ -1239,9 +1244,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "b"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            ]
                        , location = ExpressionCursor
@@ -1289,8 +1292,11 @@ records = do
                        }))
            }
        , Named
-           {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
-           , sourceHash = HashKnown $$("f526912dc66236a4336a699a2649bae27e3705d022a881a3487ecb026a532ca622f3b5a4d89fdf66f5ec60cde30755dd0aed444ff75aa042e9babe45390b746c")
+           { dependencies =
+               Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+           , uuid = Uuid u2
+           , sourceHash =
+               HashKnown $$("f526912dc66236a4336a699a2649bae27e3705d022a881a3487ecb026a532ca622f3b5a4d89fdf66f5ec60cde30755dd0aed444ff75aa042e9babe45390b746c")
            , name = "y"
            , order = 1
            , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"
@@ -1320,11 +1326,16 @@ records = do
   -- annotation, then there is no class inference issue.
   eval_it_with_uuids
     "Referencing a single field from a 2-ary record is fine (with type sig)"
-    [(Just "85cbcc37-0c41-4871-a66a-31390a3ef391",("x", "{a:1, b:8 :: Integer}")), (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))]
+    [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
+      , ("x", "{a:1, b:8 :: Integer}"))
+    , (Nothing, ("y", "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"))
+    ]
     (\[u1, u2] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("99dfe6586d94f0c9264c8d8c5cdba1eff050940d76e1e0e3cead4bd02ef2c84d6485792e02526328e33cba7cde1a3d6f975943947dd758bd12745bbd1ba88d6b")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("99dfe6586d94f0c9264c8d8c5cdba1eff050940d76e1e0e3cead4bd02ef2c84d6485792e02526328e33cba7cde1a3d6f975943947dd758bd12745bbd1ba88d6b")
            , name = "x"
            , order = 0
            , code = "{a:1, b:8 :: Integer}"
@@ -1358,9 +1369,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "a"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            , FieldE
                                { name = FieldName {unFieldName = "b"}
@@ -1387,9 +1396,7 @@ records = do
                                                     })
                                            }))
                                , location =
-                                   RecordFieldCursor
-                                     (FieldName {unFieldName = "b"})
-                                     TypeCursor
+                                   SteppedCursor
                                }
                            ]
                        , location = ExpressionCursor
@@ -1440,8 +1447,11 @@ records = do
                        }))
            }
        , Named
-           {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
-           , sourceHash = HashKnown $$("528d5b6c0dde5ef28d838c1b5673292e9707b8b9b6ea219cb350f3359ad2b4fac5b1645aa846dbad0a55cfe14359920b77bcd9c3eeeb6a60451bbfe33e523e93")
+           { dependencies =
+               Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+           , uuid = Uuid u2
+           , sourceHash =
+               HashKnown $$("528d5b6c0dde5ef28d838c1b5673292e9707b8b9b6ea219cb350f3359ad2b4fac5b1645aa846dbad0a55cfe14359920b77bcd9c3eeeb6a60451bbfe33e523e93")
            , name = "y"
            , order = 1
            , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391.a"
@@ -1501,9 +1511,7 @@ records = do
                                                })
                                       }))
                           , location =
-                              RecordFieldCursor
-                                (FieldName {unFieldName = "a"})
-                                TypeCursor
+                              SteppedCursor
                           }
                       , FieldE
                           { name = FieldName {unFieldName = "b"}
@@ -1529,9 +1537,7 @@ records = do
                                                })
                                       }))
                           , location =
-                              RecordFieldCursor
-                                (FieldName {unFieldName = "b"})
-                                TypeCursor
+                              SteppedCursor
                           }
                       ]
                   , location = ExpressionCursor
@@ -1597,8 +1603,10 @@ records = do
     [("x", "{a:1}.a")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("8d1c99250adf37964a3d85bac79d7eca856bc89b2ddae025b5f36f875e08185458eff8dabc4d35ab4e7d89f48deef1aae6615f37c481ba9500e0cca9c08226a2")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("8d1c99250adf37964a3d85bac79d7eca856bc89b2ddae025b5f36f875e08185458eff8dabc4d35ab4e7d89f48deef1aae6615f37c481ba9500e0cca9c08226a2")
            , name = "x"
            , order = 0
            , code = "{a:1}.a"
@@ -1631,8 +1639,10 @@ records = do
     [("x", "({a:{b:2}}.a).b")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("b534f402e5b8308635a60211984249c272c131e96c2d8ccedd67acff4a42b3555b6ddc0988d1c57fe5a061195fb2e655d06c2638df7295bf758ffdff4a909f8f")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("b534f402e5b8308635a60211984249c272c131e96c2d8ccedd67acff4a42b3555b6ddc0988d1c57fe5a061195fb2e655d06c2638df7295bf758ffdff4a909f8f")
            , name = "x"
            , order = 0
            , code = "({a:{b:2}}.a).b"
@@ -1675,8 +1685,10 @@ records = do
     [("x", "{a:3,b:2}.a * {x:1,y:2}.y")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("1a1cbd8626272a46060d49c63ab803ef9d4a471a0746f3a110eefb912d669df7c2b2b7ef8bc9cc6713e0617db5acfec52c98fa35fedb4092d0f46fd82242f6fb")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("1a1cbd8626272a46060d49c63ab803ef9d4a471a0746f3a110eefb912d669df7c2b2b7ef8bc9cc6713e0617db5acfec52c98fa35fedb4092d0f46fd82242f6fb")
            , name = "x"
            , order = 0
            , code = "{a:3,b:2}.a * {x:1,y:2}.y"
@@ -1707,8 +1719,10 @@ records = do
     [("x", "{a:3.1,b:2}.a * {x:1,y:2}.y")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("caf4c09bedce9a0e104917cff2857e0854b7303fb37ed8571f1c2a720f30a83fc219042ae500b71569096acd69965c4ccb10fcc7cf53fd715568ae8ccf3bcbba")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("caf4c09bedce9a0e104917cff2857e0854b7303fb37ed8571f1c2a720f30a83fc219042ae500b71569096acd69965c4ccb10fcc7cf53fd715568ae8ccf3bcbba")
            , name = "x"
            , order = 0
            , code = "{a:3.1,b:2}.a * {x:1,y:2}.y"
@@ -1766,8 +1780,10 @@ records = do
     [("x", "{a:3.1,b:2}.a * {x:1,y:2.51}.y")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("3c7010946744873af91f97276c86614321f43cf1589fdd6d87814d82d801aa74a016ad7dd5c7468841d148d1a0c2f8b134e71fc8b512abd613139d70b793248a")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("3c7010946744873af91f97276c86614321f43cf1589fdd6d87814d82d801aa74a016ad7dd5c7468841d148d1a0c2f8b134e71fc8b512abd613139d70b793248a")
            , name = "x"
            , order = 0
            , code = "{a:3.1,b:2}.a * {x:1,y:2.51}.y"
@@ -1826,8 +1842,10 @@ records = do
     [("x", "[1.0,2*3]")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
-           , sourceHash = HashKnown $$("07fea6cc46f28f88ce0bcff56a56309e4c933598a55088478d1aa6f28ad1e17d7aa3017cc45694dea4cd8b76898832f6d03576d48f39a4c3cd67a4efdb41276b")
+           { dependencies = mempty
+           , uuid = Uuid u1
+           , sourceHash =
+               HashKnown $$("07fea6cc46f28f88ce0bcff56a56309e4c933598a55088478d1aa6f28ad1e17d7aa3017cc45694dea4cd8b76898832f6d03576d48f39a4c3cd67a4efdb41276b")
            , name = "x"
            , order = 0
            , code = "[1.0,2*3]"
@@ -1835,8 +1853,8 @@ records = do
                Right
                  (ArrayExpression
                     (Array
-                       { form = Evaluated,
-                         expressions =
+                       { form = Evaluated
+                       , expressions =
                            V.fromList
                              [ LiteralExpression
                                  (NumberLiteral
@@ -1960,7 +1978,7 @@ mapfunc =
                                    , index = 0
                                    , kind = TypeKind
                                    }))
-                       , location = ApplyFuncCursor ExpressionCursor
+                       , location = SteppedCursor
                        }))
            }
        ])
@@ -2026,12 +2044,7 @@ table_map_defaulting =
                                                                  })
                                                         }))
                                             , location =
-                                                ArrayElementCursor
-                                                  0
-                                                  (RecordFieldCursor
-                                                     (FieldName
-                                                        {unFieldName = "x"})
-                                                     TypeCursor)
+                                                SteppedCursor
                                             }
                                         , FieldE
                                             { name =
@@ -2098,12 +2111,7 @@ table_map_defaulting =
                                                                  })
                                                         }))
                                             , location =
-                                                ArrayElementCursor
-                                                  0
-                                                  (RecordFieldCursor
-                                                     (FieldName
-                                                        {unFieldName = "y"})
-                                                     TypeCursor)
+                                                SteppedCursor
                                             }
                                         ]
                                     , location =
@@ -2267,7 +2275,7 @@ table_map_defaulting =
                                    , index = 0
                                    , kind = TypeKind
                                    }))
-                       , location = ApplyFuncCursor ExpressionCursor
+                       , location = SteppedCursor
                        }))
            }
        ])
