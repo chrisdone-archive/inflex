@@ -102,7 +102,9 @@ renameLiteral env@Env {cursor} =
   \case
     TextLiteral LiteralText {..} -> do
       final <- finalizeCursor cursor TypeCursor location
-      pure (LiteralExpression (TextLiteral LiteralText {location = final, typ = Nothing, ..}))
+      pure
+        (LiteralExpression
+           (TextLiteral LiteralText {location = final, typ = Nothing, ..}))
     NumberLiteral number -> do
       number' <- renameNumber env number
       pure
@@ -132,6 +134,7 @@ renameLiteral env@Env {cursor} =
                                      ExactGlobalRef FromDecimalGlobal
                          , scheme = RenamedScheme
                          }
+                 , style = OverloadedApply
                  })
   where
     sigMatchesNumber typ Number {number} =
@@ -418,7 +421,14 @@ renameApply env@Env {cursor} Apply {..} = do
     renameExpression (over envCursorL (. ApplyArgCursor) env) argument
   final <- finalizeCursor cursor ExpressionCursor location
   typ' <- renameSignature env typ
-  pure Apply {function = function', argument = argument', location = final, typ = typ'}
+  pure
+    Apply
+      { function = function'
+      , argument = argument'
+      , location = final
+      , typ = typ'
+      , style
+      }
 
 renameIf :: Env -> If Parsed -> Renamer (If Renamed)
 renameIf env@Env {cursor} If {..} = do

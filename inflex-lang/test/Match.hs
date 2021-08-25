@@ -5,9 +5,15 @@
 
 module Match where
 
+import           Data.Generics
 import qualified Data.List as List
+import           Data.Maybe
 import           Language.Haskell.TH (Q, Pat, Exp)
 import qualified Language.Haskell.TH as TH
+import           Test.Hspec.Expectations
+
+shouldReturnSatisfy :: (HasCallStack, Show a, Eq a) => IO a -> (a -> Bool) -> Expectation
+action `shouldReturnSatisfy` expected = action >>= (`shouldSatisfy` expected)
 
 -- | Take a pattern and see whether it matches.
 match :: Q Exp -> Q Exp
@@ -22,16 +28,16 @@ match pat =
 expToPat :: Q Exp -> Q Pat
 expToPat e0 = do
   e <- e0
-  pure (go e)
+  pure (go (everywhere (mkT cleanName) e))
   where
     go =
       \case
         TH.AppE f arg
           | (TH.ConE name, args) <- unfold f [arg] ->
-            TH.ConP (cleanName name) (map go args)
-        TH.ConE name -> TH.ConP (cleanName name) []
+            TH.ConP name (map go args)
+        TH.ConE name -> TH.ConP name []
         TH.RecConE name fields ->
-          TH.RecP name (map (\(k, v) -> (cleanName k, go v)) fields)
+          TH.RecP name (map (\(k, v) -> (k, go v)) fields)
         TH.LitE lit -> TH.LitP lit
         TH.ParensE e -> TH.ParensP (go e)
         TH.TupE es -> TH.TupP (map go es)
@@ -49,9 +55,9 @@ expToPat e0 = do
     -- Clean disambiguated record fields: $sel:file:CsvImportSpec => file
     -- If we don't clean these up, TH complains about it being an invalid name:
     -- Illegal variable name: ‘$sel:file:CsvImportSpec’
-    cleanName = TH.mkName . clean . TH.nameBase
+    cleanName n = fromMaybe n (fmap TH.mkName .  clean . TH.nameBase $ n)
       where
         clean s =
           case List.stripPrefix "$sel:" s of
-            Just rest -> takeWhile (/= ':') rest
-            Nothing -> s
+            Just rest -> pure (takeWhile (/= ':') rest)
+            Nothing -> Nothing

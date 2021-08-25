@@ -530,6 +530,7 @@ stepFind asis (Array {expressions}, typ) predicate =
                            , argument = e'
                            , location = BuiltIn
                            , typ = typeOutput (expressionType predicate)
+                           , style = DefaulterApply
                            }))?
                  boolR <- reify boolish
                  case boolR of
@@ -571,11 +572,11 @@ stepAny asis (Array {expressions}, typ) predicate = do
                            , argument = e'
                            , location = BuiltIn
                            , typ = typeOutput (expressionType predicate)
+                           , style = DefaulterApply
                            }))?
                  boolR <- reify boolish
                  case boolR of
-                   Ok (BoolR _ True) ->
-                     pure (Returned (trueVariant BuiltIn))
+                   Ok (BoolR _ True) -> pure (Returned (trueVariant BuiltIn))
                    Ok (BoolR _ False) -> pure (Ok ())
                    Ok _ -> pure (Errored ShouldGetBool)
                    Returned r' -> pure (Errored (EarlyReturnWithoutBoundary r'))
@@ -583,9 +584,10 @@ stepAny asis (Array {expressions}, typ) predicate = do
                    Errored err -> pure (Errored err))
           (toList expressions)
       case result of
-        Ok () -> pure (Ok (variantSigged okTagName typ (pure (falseVariant BuiltIn))))
+        Ok () ->
+          pure (Ok (variantSigged okTagName typ (pure (falseVariant BuiltIn))))
         Returned e -> pure (Ok (variantSigged okTagName typ (pure e)))
-        FoundHole{} -> pure (Ok asis)
+        FoundHole {} -> pure (Ok asis)
         Errored e -> pure (Errored e)
 
 -- | All is a bool-specific version of find.
@@ -613,6 +615,7 @@ stepAll asis (Array {expressions}, typ) predicate = do
                            , argument = e'
                            , location = BuiltIn
                            , typ = typeOutput (expressionType predicate)
+                           , style = DefaulterApply
                            }))?
                  boolR <- reify boolish
                  case boolR of
@@ -754,6 +757,7 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
                                 , name = NumericBinOpGlobal DivideOp
                                 }
                         , argument = divideOp
+                        , style = DefaulterApply
                         }
                 , left = total
                 , right = lenE
@@ -781,6 +785,7 @@ stepAverage list@(Array {expressions}, listApplyType) (addOp, _) (divideOp, _) f
                                 , name = NumericBinOpGlobal AddOp
                                 }
                         , argument = addOp
+                        , style = DefaulterApply
                         }
                 , left = acc
                 , right = e
@@ -809,6 +814,7 @@ stepLength (Array {expressions}, listApplyType) (fromIntegerOp, _fromIntegerType
               , typ = listApplyType
               , argument = fromIntegerOp
               , location = BuiltIn
+              , style = DefaulterApply
               }
       , typ = listApplyType
       , argument =
@@ -819,6 +825,7 @@ stepLength (Array {expressions}, listApplyType) (fromIntegerOp, _fromIntegerType
                  , location = SteppedCursor
                  , typ = listApplyType
                  })
+      , style = DefaulterApply
       }
 
 stepSum ::
@@ -854,6 +861,7 @@ stepSum (Array {expressions}, listApplyType) (addOp, _addOpType) (_fromIntegerOp
                                 , name = NumericBinOpGlobal AddOp
                                 }
                         , argument = addOp
+                        , style = DefaulterApply
                         }
                 , left = acc
                 , right = e
@@ -875,6 +883,7 @@ stepFunction1 returnType func argument =
              , function = nullFunction
              , argument
              , typ = returnType
+             , style = DefaulterApply
              }
          pure result
     _ -> error "bad 1-ary function."
@@ -898,9 +907,11 @@ stepFunction2 function argument' functionExpression location _applyLocation orig
                                             , function = from_okFunction
                                             , argument = functionExpression
                                             , typ = typeOutput (expressionType functionExpression)
+                                            , style = DefaulterApply
                                             }
              , argument = argument'
              , typ = originalArrayType
+             , style = DefaulterApply
              }
          pure result
     MapFunction ->
@@ -916,6 +927,7 @@ stepFunction2 function argument' functionExpression location _applyLocation orig
                          , argument = arrayItem
                          , location = location
                          , typ = typeOutput (expressionType functionExpression)
+                         , style = DefaulterApply
                          })))
               expressions?
           pure
@@ -946,6 +958,7 @@ stepFunction2 function argument' functionExpression location _applyLocation orig
                            , location = location
                            , typ =
                                typeOutput (expressionType functionExpression)
+                           , style = DefaulterApply
                            }))?
                  boolR <- reify bool
                  case boolR of

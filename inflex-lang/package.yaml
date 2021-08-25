@@ -2,6 +2,8 @@ name:                inflex-lang
 version:             0
 
 dependencies:
+- hspec-expectations
+- syb
 - persistent
 - insert-ordered-containers
 - base >= 4.7 && < 5

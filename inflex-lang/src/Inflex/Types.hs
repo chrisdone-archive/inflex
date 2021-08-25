@@ -255,7 +255,21 @@ data Apply s = Apply
   , function :: !(Expression s)
   , argument :: !(Expression s)
   , typ :: !(StagedType s)
+  , style :: !ApplyStyle
   }
+
+data ApplyStyle
+  = PrefixApply
+    -- ^ Classic prefix: foo(x,y)
+  | DotApply
+    -- ^ OO-style: x.foo(y)
+  | OverloadedApply
+    -- ^ Overloaded code: 1 means fromInteger(1)
+  | ImplicitApply
+    -- ^ Implicit dictionary argument: \d -> .. 1 ==(d) 2 ..
+  | DefaulterApply
+    -- ^ Added by the defaulter: (\d -> ..) IntDict
+  deriving (Eq, Ord, Show, Lift)
 
 data Param s = Param
   { location :: !(StagedLocation s)

@@ -283,7 +283,8 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      {dependencies = mempty,  uuid = Uuid u1
+                      { dependencies = mempty
+                      , uuid = Uuid u1
                       , name = "x"
                       , thing = "1"
                       , code = "1"
@@ -292,7 +293,8 @@ success = do
                       }
                   , let code = "@uuid:" <> u1
                      in Named
-                          {dependencies = Set.fromList [Uuid u1],  uuid = Uuid u2
+                          { dependencies = Set.fromList [Uuid u1]
+                          , uuid = Uuid u2
                           , name = "y"
                           , thing = code
                           , code = code
@@ -302,11 +304,13 @@ success = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = mempty,  uuid = Uuid u1
+              { dependencies = mempty
+              , uuid = Uuid u1
               , name = "x"
               , order = 0
               , code = "1"
-              , sourceHash = HashKnown $$("496cc8e18513539a6614899b2d949ea22aef1fc91bc944ceed35467b4c5abc5919c40cad381802c9e9b70be434c049e72070959d99c823399396d0993a340d7b")
+              , sourceHash =
+                  HashKnown $$("496cc8e18513539a6614899b2d949ea22aef1fc91bc944ceed35467b4c5abc5919c40cad381802c9e9b70be434c049e72070959d99c823399396d0993a340d7b")
               , thing =
                   Right
                     (LiteralExpression
@@ -323,8 +327,11 @@ success = do
                              })))
               }
           , Named
-              {dependencies = Set.fromList [Uuid "85cbaaaa-0c41-4871-a66a-aaaa0a3ef391"],  uuid = Uuid u2
-              , sourceHash = HashKnown $$("f488895acc364d9fc7c930adf83f5bd84674592d73d3be734f6b1e8bc8782f09efc144f2f90cdb44d46cdfe713be1cd02d818c7f6b7bea5a4054efef312246ef")
+              { dependencies =
+                  Set.fromList [Uuid "85cbaaaa-0c41-4871-a66a-aaaa0a3ef391"]
+              , uuid = Uuid u2
+              , sourceHash =
+                  HashKnown $$("f488895acc364d9fc7c930adf83f5bd84674592d73d3be734f6b1e8bc8782f09efc144f2f90cdb44d46cdfe713be1cd02d818c7f6b7bea5a4054efef312246ef")
               , name = "y"
               , order = 1
               , code = "@uuid:" <> u1
@@ -353,7 +360,8 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      {dependencies = mempty,  uuid = Uuid u1
+                      { dependencies = mempty
+                      , uuid = Uuid u1
                       , sourceHash = HashNotKnownYet
                       , name = "x"
                       , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391 + 2"
@@ -361,15 +369,19 @@ success = do
                       , order = 0
                       }
                   , Named
-                      {dependencies = mempty,  uuid = Uuid u2
+                      { dependencies = mempty
+                      , uuid = Uuid u2
                       , sourceHash = HashNotKnownYet
                       , name = "y"
-                      , thing = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
-                      , code = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
+                      , thing =
+                          "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
+                      , code =
+                          "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
                       , order = 1
                       }
                   , Named
-                      {dependencies = mempty,  uuid = Uuid u3
+                      { dependencies = mempty
+                      , uuid = Uuid u3
                       , sourceHash = HashNotKnownYet
                       , name = "z"
                       , thing = "2"
@@ -379,8 +391,11 @@ success = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u1
-              , sourceHash = HashKnown $$("02fbb41a6ba5518920be928053205ba21d9db3cf29d260c99304e0784814dd730ad7b3965888e6fa72617372ab2b8e7aa5f1e14f364275308b59afb5d2a5caa6")
+              { dependencies =
+                  Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+              , uuid = Uuid u1
+              , sourceHash =
+                  HashKnown $$("02fbb41a6ba5518920be928053205ba21d9db3cf29d260c99304e0784814dd730ad7b3965888e6fa72617372ab2b8e7aa5f1e14f364275308b59afb5d2a5caa6")
               , name = "x"
               , order = 0
               , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391 + 2"
@@ -402,8 +417,11 @@ success = do
                              })))
               }
           , Named
-              {dependencies = Set.fromList [Uuid "12cbcc37-0c41-4871-a66a-31390a3ef666"],  uuid = Uuid u2
-              , sourceHash = HashKnown $$("0e7d48f450dfb84239d528219e711aef445452adb190a5ddc216a0514cd0685edaff0bd9378575ebad34f58042ac19ded073c97ab04ac5a57753b006a86b116d")
+              { dependencies =
+                  Set.fromList [Uuid "12cbcc37-0c41-4871-a66a-31390a3ef666"]
+              , uuid = Uuid u2
+              , sourceHash =
+                  HashKnown $$("0e7d48f450dfb84239d528219e711aef445452adb190a5ddc216a0514cd0685edaff0bd9378575ebad34f58042ac19ded073c97ab04ac5a57753b006a86b116d")
               , name = "y"
               , order = 1
               , code = "@uuid:12cbcc37-0c41-4871-a66a-31390a3ef666 * 3.1"
@@ -425,8 +443,10 @@ success = do
                              })))
               }
           , Named
-              {dependencies = mempty,  uuid = Uuid u3
-              , sourceHash = HashKnown $$("28ef94662cf6bf410f6a5b8a207a89c914d300fd804a44442637eca15a88df1af4d77407a8c211db0bcf237fcf221b274b69fb449a629cd12acc1ce8dda66fed")
+              { dependencies = mempty
+              , uuid = Uuid u3
+              , sourceHash =
+                  HashKnown $$("28ef94662cf6bf410f6a5b8a207a89c914d300fd804a44442637eca15a88df1af4d77407a8c211db0bcf237fcf221b274b69fb449a629cd12acc1ce8dda66fed")
               , name = "z"
               , order = 2
               , code = "2"
@@ -455,7 +475,8 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      {dependencies = mempty,  uuid = Uuid u1
+                      { dependencies = mempty
+                      , uuid = Uuid u1
                       , sourceHash = HashNotKnownYet
                       , name = "double"
                       , thing = "x: x * 2"
@@ -463,7 +484,8 @@ success = do
                       , order = 0
                       }
                   , Named
-                      {dependencies = mempty,  uuid = Uuid u2
+                      { dependencies = mempty
+                      , uuid = Uuid u2
                       , sourceHash = HashNotKnownYet
                       , name = "a"
                       , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(1)"
@@ -471,18 +493,22 @@ success = do
                       , order = 1
                       }
                   , Named
-                      {dependencies = mempty,  uuid = Uuid u3
+                      { dependencies = mempty
+                      , uuid = Uuid u3
                       , sourceHash = HashNotKnownYet
                       , name = "b"
-                      , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
+                      , thing =
+                          "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
                       , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"
                       , order = 2
                       }
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = mempty,  uuid = Uuid u1
-              , sourceHash = HashKnown $$("81cf95480a9cfab96a11cbe687a56a38af3b018ded75aaf1c7933baf2ee4e291f39aacc454f124171d5e7293ba0f3778cf37d7742e0606b784f729e4009f5686")
+              { dependencies = mempty
+              , uuid = Uuid u1
+              , sourceHash =
+                  HashKnown $$("81cf95480a9cfab96a11cbe687a56a38af3b018ded75aaf1c7933baf2ee4e291f39aacc454f124171d5e7293ba0f3778cf37d7742e0606b784f729e4009f5686")
               , name = "double"
               , order = 0
               , code = "x: x * 2"
@@ -517,6 +543,7 @@ success = do
                                                   (LambdaBodyCursor
                                                      (InfixOpCursor
                                                         ExpressionCursor))
+                                            , style = ImplicitApply
                                             , function =
                                                 GlobalExpression
                                                   (Global
@@ -736,12 +763,14 @@ success = do
                                        ApplyExpression
                                          (Apply
                                             { location = BuiltIn
+                                            , style = OverloadedApply
                                             , function =
                                                 ApplyExpression
                                                   (Apply
                                                      { location =
                                                          ImplicitlyApplicationOn
                                                            BuiltIn
+                                                     , style = ImplicitApply
                                                      , function =
                                                          GlobalExpression
                                                            (Global
@@ -935,8 +964,11 @@ success = do
                           }))
               }
           , Named
-              {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
-              , sourceHash = HashKnown $$("e9532ff1b95318b17bff6d3c1a48eb54ed6a5fe353ec788f8488438f688a8a508f2c09d9a582e94903c5024aea77c8013c4293638e3722b85b6eca70216a7d3e")
+              { dependencies =
+                  Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+              , uuid = Uuid u2
+              , sourceHash =
+                  HashKnown $$("e9532ff1b95318b17bff6d3c1a48eb54ed6a5fe353ec788f8488438f688a8a508f2c09d9a582e94903c5024aea77c8013c4293638e3722b85b6eca70216a7d3e")
               , name = "a"
               , order = 1
               , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(1)"
@@ -957,8 +989,11 @@ success = do
                              })))
               }
           , Named
-              {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u3
-              , sourceHash = HashKnown $$("afcd6a9e22c37eb56b024c2dcd9da567da8da174d3c91fb68d52bc042d637c3ab59d00b19458b9482d995c4158d239fb1207842425f056e7a9c0dfefb128378d")
+              { dependencies =
+                  Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
+              , uuid = Uuid u3
+              , sourceHash =
+                  HashKnown $$("afcd6a9e22c37eb56b024c2dcd9da567da8da174d3c91fb68d52bc042d637c3ab59d00b19458b9482d995c4158d239fb1207842425f056e7a9c0dfefb128378d")
               , name = "b"
               , order = 2
               , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(2.2)"

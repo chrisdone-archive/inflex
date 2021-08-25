@@ -305,6 +305,7 @@ addImplicitArgsToGlobal nesting implicitArgs global =
                        , typ = typ -- TODO: Check that this makes sense. [low prio]
                        }
            , typ = typeOutput (expressionType inner)
+           , style = ImplicitApply
            })
     (GlobalExpression Global {scheme = ResolvedScheme typ, name = refl, ..})
     implicitArgs

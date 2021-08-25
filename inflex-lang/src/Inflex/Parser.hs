@@ -484,21 +484,25 @@ applyParser = do
     list function = do
       array <- arrayParser
       pure
-        (ApplyExpression Apply
-           { location = expressionLocation (ArrayExpression array)
-           , function
-           , argument = ArrayExpression array
-           , typ = Nothing
-           })
+        (ApplyExpression
+           Apply
+             { location = expressionLocation (ArrayExpression array)
+             , function
+             , argument = ArrayExpression array
+             , typ = Nothing
+             , style = PrefixApply
+             })
     record function = do
       record' <- recordParser
       pure
-        (ApplyExpression Apply
-           { location = expressionLocation (RecordExpression record')
-           , function
-           , argument = RecordExpression record'
-           , typ = Nothing
-           })
+        (ApplyExpression
+           Apply
+             { location = expressionLocation (RecordExpression record')
+             , function
+             , argument = RecordExpression record'
+             , typ = Nothing
+             , style = PrefixApply
+             })
     tuple function = do
       token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
       let loop = do
@@ -528,6 +532,7 @@ applyParser = do
                       if i == length arguments
                         then typ
                         else Nothing
+                  , style = PrefixApply
                   })
            function
            (zip [1 ..] (toList arguments)))

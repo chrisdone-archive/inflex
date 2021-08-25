@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RecordWildCards, TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -18,6 +20,7 @@ import           Data.Text (Text)
 import           Inflex.Generator
 import           Inflex.Instances ()
 import           Inflex.Types
+import           Match
 import           Optics
 import           Test.Hspec
 
@@ -39,7 +42,9 @@ spec = do
   it
     "Literal"
     (do shouldBe
-          (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "123::Integer"))
+          (second
+             (set hasConstraintsMappingsL mempty)
+             (generateText' mempty "" "123::Integer"))
           (Right
              (HasConstraints
                 { equalities = Seq.fromList []
@@ -59,7 +64,9 @@ spec = do
                 , mappings = mempty
                 }))
         shouldBe
-          (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "123.0 :: Decimal 1"))
+          (second
+             (set hasConstraintsMappingsL mempty)
+             (generateText' mempty "" "123.0 :: Decimal 1"))
           (Right
              (HasConstraints
                 { equalities = Seq.fromList []
@@ -93,7 +100,9 @@ spec = do
                 , mappings = mempty
                 }))
         shouldBe
-          (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "0.00 ::Decimal 2"))
+          (second
+             (set hasConstraintsMappingsL mempty)
+             (generateText' mempty "" "0.00 ::Decimal 2"))
           (Right
              (HasConstraints
                 { equalities = Seq.fromList []
@@ -129,7 +138,9 @@ spec = do
   it
     "Lambda"
     (shouldBe
-       (second (set hasConstraintsMappingsL mempty) (generateText' mempty "" "x:(123::Integer)"))
+       (second
+          (set hasConstraintsMappingsL mempty)
+          (generateText' mempty "" "x:(123::Integer)"))
        (Right
           (HasConstraints
              { equalities = Seq.fromList []
@@ -203,243 +214,260 @@ spec = do
              })))
   it
     "Apply"
-    (do shouldBe
+    (do shouldSatisfy
           (second
              (set hasConstraintsMappingsL mempty)
              (generateText' mempty "" "(x:x)(123::Integer)"))
-          (Right
-             (HasConstraints
-                { equalities =
-                    Seq.fromList
-                      [ EqualityConstraint
-                          { type1 =
-                              VariableType
-                                (TypeVariable
-                                   { location =
-                                       ApplyFuncCursor
-                                         (LambdaBodyCursor ExpressionCursor)
-                                   , prefix = VariablePrefix
-                                   , index = 1
-                                   , kind = TypeKind
-                                   })
-                          , type2 =
-                              VariableType
-                                (TypeVariable
-                                   { location =
-                                       ApplyFuncCursor LambdaParamCursor
-                                   , prefix = LambdaParameterPrefix
-                                   , index = 0
-                                   , kind = TypeKind
-                                   })
-                          , location =
-                              ApplyFuncCursor
-                                (LambdaBodyCursor ExpressionCursor)
-                          }
-                      , EqualityConstraint
-                          { type1 =
-                              ApplyType
-                                (TypeApplication
-                                   { function =
-                                       ApplyType
-                                         (TypeApplication
-                                            { function =
-                                                ConstantType
-                                                  (TypeConstant
-                                                     { location =
-                                                         ApplyFuncCursor
-                                                           ExpressionCursor
-                                                     , name = FunctionTypeName
-                                                     })
-                                            , argument =
-                                                VariableType
-                                                  (TypeVariable
-                                                     { location =
-                                                         ApplyFuncCursor
-                                                           LambdaParamCursor
-                                                     , prefix =
-                                                         LambdaParameterPrefix
-                                                     , index = 0
-                                                     , kind = TypeKind
-                                                     })
-                                            , location =
-                                                ApplyFuncCursor ExpressionCursor
-                                            , kind = FunKind TypeKind TypeKind
-                                            })
-                                   , argument =
-                                       VariableType
-                                         (TypeVariable
-                                            { location =
-                                                ApplyFuncCursor
-                                                  (LambdaBodyCursor
-                                                     ExpressionCursor)
-                                            , prefix = VariablePrefix
-                                            , index = 1
-                                            , kind = TypeKind
-                                            })
-                                   , location = ApplyFuncCursor ExpressionCursor
-                                   , kind = TypeKind
-                                   })
-                          , type2 =
-                              ApplyType
-                                (TypeApplication
-                                   { function =
-                                       ApplyType
-                                         (TypeApplication
-                                            { function =
-                                                ConstantType
-                                                  (TypeConstant
-                                                     { location =
-                                                         ExpressionCursor
-                                                     , name = FunctionTypeName
-                                                     })
-                                            , argument =
-                                                ConstantType
-                                                  (TypeConstant
-                                                     { location =
-                                                         ApplyArgCursor
-                                                           ExpressionCursor
-                                                     , name = IntegerTypeName
-                                                     })
-                                            , location = ExpressionCursor
-                                            , kind = FunKind TypeKind TypeKind
-                                            })
-                                   , argument =
-                                       VariableType
-                                         (TypeVariable
-                                            { location =
-                                                ApplyArgCursor ExpressionCursor
-                                            , prefix = ApplyPrefix
-                                            , index = 2
-                                            , kind = TypeKind
-                                            })
-                                   , location = ApplyFuncCursor ExpressionCursor
-                                   , kind = TypeKind
-                                   })
-                          , location = ExpressionCursor
-                          }
-                      ]
-                , thing =
-                    ApplyExpression
-                      (Apply
-                         { location = ExpressionCursor
-                         , function =
-                             LambdaExpression
-                               (Lambda
-                                  { location = ApplyFuncCursor ExpressionCursor
-                                  , param =
-                                      Param
+          $(match
+              [|Right
+                  (HasConstraints
+                     { equalities =
+                         Seq.fromList
+                           [ EqualityConstraint
+                               { type1 =
+                                   VariableType
+                                     (TypeVariable
+                                        { location =
+                                            ApplyFuncCursor
+                                              (LambdaBodyCursor ExpressionCursor)
+                                        , prefix = VariablePrefix
+                                        , index = 1
+                                        , kind = TypeKind
+                                        })
+                               , type2 =
+                                   VariableType
+                                     (TypeVariable
                                         { location =
                                             ApplyFuncCursor LambdaParamCursor
-                                        , name = ()
-                                        , typ =
+                                        , prefix = LambdaParameterPrefix
+                                        , index = 0
+                                        , kind = TypeKind
+                                        })
+                               , location =
+                                   ApplyFuncCursor
+                                     (LambdaBodyCursor ExpressionCursor)
+                               }
+                           , EqualityConstraint
+                               { type1 =
+                                   ApplyType
+                                     (TypeApplication
+                                        { function =
+                                            ApplyType
+                                              (TypeApplication
+                                                 { function =
+                                                     ConstantType
+                                                       (TypeConstant
+                                                          { location =
+                                                              ApplyFuncCursor
+                                                                ExpressionCursor
+                                                          , name =
+                                                              FunctionTypeName
+                                                          })
+                                                 , argument =
+                                                     VariableType
+                                                       (TypeVariable
+                                                          { location =
+                                                              ApplyFuncCursor
+                                                                LambdaParamCursor
+                                                          , prefix =
+                                                              LambdaParameterPrefix
+                                                          , index = 0
+                                                          , kind = TypeKind
+                                                          })
+                                                 , location =
+                                                     ApplyFuncCursor
+                                                       ExpressionCursor
+                                                 , kind =
+                                                     FunKind TypeKind TypeKind
+                                                 })
+                                        , argument =
                                             VariableType
                                               (TypeVariable
                                                  { location =
                                                      ApplyFuncCursor
-                                                       LambdaParamCursor
-                                                 , prefix =
-                                                     LambdaParameterPrefix
-                                                 , index = 0
+                                                       (LambdaBodyCursor
+                                                          ExpressionCursor)
+                                                 , prefix = VariablePrefix
+                                                 , index = 1
                                                  , kind = TypeKind
                                                  })
-                                        }
-                                  , body =
-                                      VariableExpression
-                                        (Variable
-                                           { location =
-                                               ApplyFuncCursor
-                                                 (LambdaBodyCursor
-                                                    ExpressionCursor)
-                                           , name = DeBrujinIndex 0
-                                           , typ =
-                                               VariableType
-                                                 (TypeVariable
-                                                    { location =
-                                                        ApplyFuncCursor
-                                                          (LambdaBodyCursor
-                                                             ExpressionCursor)
-                                                    , prefix = VariablePrefix
-                                                    , index = 1
-                                                    , kind = TypeKind
-                                                    })
-                                           })
-                                  , typ =
-                                      ApplyType
-                                        (TypeApplication
-                                           { function =
-                                               ApplyType
-                                                 (TypeApplication
-                                                    { function =
-                                                        ConstantType
-                                                          (TypeConstant
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   ExpressionCursor
-                                                             , name =
-                                                                 FunctionTypeName
-                                                             })
-                                                    , argument =
-                                                        VariableType
-                                                          (TypeVariable
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   LambdaParamCursor
-                                                             , prefix =
-                                                                 LambdaParameterPrefix
-                                                             , index = 0
-                                                             , kind = TypeKind
-                                                             })
-                                                    , location =
-                                                        ApplyFuncCursor
-                                                          ExpressionCursor
-                                                    , kind =
-                                                        FunKind
-                                                          TypeKind
-                                                          TypeKind
-                                                    })
-                                           , argument =
-                                               VariableType
-                                                 (TypeVariable
-                                                    { location =
-                                                        ApplyFuncCursor
-                                                          (LambdaBodyCursor
-                                                             ExpressionCursor)
-                                                    , prefix = VariablePrefix
-                                                    , index = 1
-                                                    , kind = TypeKind
-                                                    })
-                                           , location =
-                                               ApplyFuncCursor ExpressionCursor
-                                           , kind = TypeKind
-                                           })
-                                  })
-                         , argument =
-                             LiteralExpression
-                               (NumberLiteral
-                                  (Number
-                                     { location =
-                                         ApplyArgCursor ExpressionCursor
-                                     , number = IntegerNumber 123
-                                     , typ =
-                                         ConstantType
-                                           (TypeConstant
-                                              { location =
-                                                  ApplyArgCursor
-                                                    ExpressionCursor
-                                              , name = IntegerTypeName
-                                              })
-                                     }))
-                         , typ =
-                             VariableType
-                               (TypeVariable
-                                  { location = ApplyArgCursor ExpressionCursor
-                                  , prefix = ApplyPrefix
-                                  , index = 2
-                                  , kind = TypeKind
-                                  })
-                         })
-                , mappings = mempty
-                })))
+                                        , location =
+                                            ApplyFuncCursor ExpressionCursor
+                                        , kind = TypeKind
+                                        })
+                               , type2 =
+                                   ApplyType
+                                     (TypeApplication
+                                        { function =
+                                            ApplyType
+                                              (TypeApplication
+                                                 { function =
+                                                     ConstantType
+                                                       (TypeConstant
+                                                          { location =
+                                                              ExpressionCursor
+                                                          , name =
+                                                              FunctionTypeName
+                                                          })
+                                                 , argument =
+                                                     ConstantType
+                                                       (TypeConstant
+                                                          { location =
+                                                              ApplyArgCursor
+                                                                ExpressionCursor
+                                                          , name =
+                                                              IntegerTypeName
+                                                          })
+                                                 , location = ExpressionCursor
+                                                 , kind =
+                                                     FunKind TypeKind TypeKind
+                                                 })
+                                        , argument =
+                                            VariableType
+                                              (TypeVariable
+                                                 { location =
+                                                     ApplyArgCursor
+                                                       ExpressionCursor
+                                                 , prefix = ApplyPrefix
+                                                 , index = 2
+                                                 , kind = TypeKind
+                                                 })
+                                        , location =
+                                            ApplyFuncCursor ExpressionCursor
+                                        , kind = TypeKind
+                                        })
+                               , location = ExpressionCursor
+                               }
+                           ]
+                     , thing =
+                         ApplyExpression
+                           (Apply
+                              { location = ExpressionCursor
+                              , function =
+                                  LambdaExpression
+                                    (Lambda
+                                       { location =
+                                           ApplyFuncCursor ExpressionCursor
+                                       , param =
+                                           Param
+                                             { location =
+                                                 ApplyFuncCursor
+                                                   LambdaParamCursor
+                                             , name = ()
+                                             , typ =
+                                                 VariableType
+                                                   (TypeVariable
+                                                      { location =
+                                                          ApplyFuncCursor
+                                                            LambdaParamCursor
+                                                      , prefix =
+                                                          LambdaParameterPrefix
+                                                      , index = 0
+                                                      , kind = TypeKind
+                                                      })
+                                             }
+                                       , body =
+                                           VariableExpression
+                                             (Variable
+                                                { location =
+                                                    ApplyFuncCursor
+                                                      (LambdaBodyCursor
+                                                         ExpressionCursor)
+                                                , name = DeBrujinIndex 0
+                                                , typ =
+                                                    VariableType
+                                                      (TypeVariable
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  ExpressionCursor)
+                                                         , prefix =
+                                                             VariablePrefix
+                                                         , index = 1
+                                                         , kind = TypeKind
+                                                         })
+                                                })
+                                       , typ =
+                                           ApplyType
+                                             (TypeApplication
+                                                { function =
+                                                    ApplyType
+                                                      (TypeApplication
+                                                         { function =
+                                                             ConstantType
+                                                               (TypeConstant
+                                                                  { location =
+                                                                      ApplyFuncCursor
+                                                                        ExpressionCursor
+                                                                  , name =
+                                                                      FunctionTypeName
+                                                                  })
+                                                         , argument =
+                                                             VariableType
+                                                               (TypeVariable
+                                                                  { location =
+                                                                      ApplyFuncCursor
+                                                                        LambdaParamCursor
+                                                                  , prefix =
+                                                                      LambdaParameterPrefix
+                                                                  , index = 0
+                                                                  , kind =
+                                                                      TypeKind
+                                                                  })
+                                                         , location =
+                                                             ApplyFuncCursor
+                                                               ExpressionCursor
+                                                         , kind =
+                                                             FunKind
+                                                               TypeKind
+                                                               TypeKind
+                                                         })
+                                                , argument =
+                                                    VariableType
+                                                      (TypeVariable
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  ExpressionCursor)
+                                                         , prefix =
+                                                             VariablePrefix
+                                                         , index = 1
+                                                         , kind = TypeKind
+                                                         })
+                                                , location =
+                                                    ApplyFuncCursor
+                                                      ExpressionCursor
+                                                , kind = TypeKind
+                                                })
+                                       })
+                              , argument =
+                                  LiteralExpression
+                                    (NumberLiteral
+                                       (Number
+                                          { location =
+                                              ApplyArgCursor ExpressionCursor
+                                          , number = IntegerNumber 123
+                                          , typ =
+                                              ConstantType
+                                                (TypeConstant
+                                                   { location =
+                                                       ApplyArgCursor
+                                                         ExpressionCursor
+                                                   , name = IntegerTypeName
+                                                   })
+                                          }))
+                              , typ =
+                                  VariableType
+                                    (TypeVariable
+                                       { location =
+                                           ApplyArgCursor ExpressionCursor
+                                       , prefix = ApplyPrefix
+                                       , index = 2
+                                       , kind = TypeKind
+                                       })
+                              })
+                     , mappings = mempty
+                     })|]))
 
 globals :: SpecWith ()
 globals =
@@ -464,9 +492,9 @@ signatures =
     "Signatures"
     (it
        "fromInteger (123 :: Integer) :: Decimal 2"
-       (shouldBe
+       (shouldSatisfy
           (generateText' mempty "" "@prim:from_integer(123 :: Integer) :: Decimal 2")
-          (Right (HasConstraints {equalities = Seq.fromList [EqualityConstraint {type1 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), type2 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), location = ExpressionCursor}], thing = ApplyExpression (Apply {location = ExpressionCursor, function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ApplyFuncCursor ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ApplyFuncCursor ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), mappings = mempty}))))
+          $(match [|Right (HasConstraints {equalities = Seq.fromList [EqualityConstraint {type1 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind}), type2 = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = ExpressionCursor, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName}), location = ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind}), location = ApplyFuncCursor ExpressionCursor, kind = TypeKind}), location = ExpressionCursor}], thing = ApplyExpression (Apply {location = ExpressionCursor, function = GlobalExpression (Global {location = ApplyFuncCursor ExpressionCursor, name = FromIntegerGlobal, scheme = GeneratedScheme (Scheme {location = ApplyFuncCursor ExpressionCursor, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}) :| [], location = ApplyFuncCursor ExpressionCursor}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ApplyFuncCursor ExpressionCursor, prefix = IntegerPrefix, index = 0, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ApplyArgCursor ExpressionCursor, number = IntegerNumber 123, typ = ConstantType (TypeConstant {location = ApplyArgCursor ExpressionCursor, name = IntegerTypeName})})), typ = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = DecimalTypeName}), argument = ConstantType (TypeConstant {location = SignatureCursor (TypeApplyCursor TypeCursor), name = NatTypeName 2}), location = SignatureCursor TypeCursor, kind = TypeKind})}), mappings = mempty})|])))
 
 variants :: SpecWith ()
 variants =

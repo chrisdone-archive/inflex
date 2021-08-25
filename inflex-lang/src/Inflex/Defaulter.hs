@@ -170,6 +170,7 @@ applyDefaults (classConstraint:originalClassConstraints) defaults =
                             ResolvedScheme (instanceNameType instanceName)
                         , name = InstanceGlobal instanceName
                         }
+                , style = DefaulterApply
                 }
 
 --------------------------------------------------------------------------------

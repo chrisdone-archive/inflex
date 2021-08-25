@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -15,6 +16,7 @@ import           Inflex.Lexer
 import           Inflex.Parser
 import qualified Inflex.Parser2 as Parser2
 import           Inflex.Types
+import           Match
 import           Test.Hspec
 
 spec :: Spec
@@ -1024,86 +1026,86 @@ globals =
                             })
                    , typ = Nothing
                    })))
-        shouldBe
+        shouldSatisfy
           (parseText "" "x:x(y)")
-          (Right
-             (LambdaExpression
-                (Lambda
-                   { location =
-                       SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 6, name = ""}
-                         }
-                   , param =
-                       Param
-                         { location =
-                             SourceLocation
-                               { start =
-                                   SourcePos {line = 1, column = 1, name = ""}
-                               , end =
-                                   SourcePos {line = 1, column = 2, name = ""}
-                               }
-                         , name = "x"
-                         , typ = Nothing
-                         }
-                   , body =
-                       ApplyExpression
-                         (Apply
+          $(match [|Right
+                      (LambdaExpression
+                         (Lambda
                             { location =
                                 SourceLocation
-                                  { start =
-                                      SourcePos
-                                        {line = 1, column = 5, name = ""}
-                                  , end =
-                                      SourcePos
-                                        {line = 1, column = 6, name = ""}
+                                  { start = SourcePos {line = 1, column = 1, name = ""}
+                                  , end = SourcePos {line = 1, column = 6, name = ""}
                                   }
-                            , function =
-                                VariableExpression
-                                  (Variable
+                            , param =
+                                Param
+                                  { location =
+                                      SourceLocation
+                                        { start =
+                                            SourcePos {line = 1, column = 1, name = ""}
+                                        , end =
+                                            SourcePos {line = 1, column = 2, name = ""}
+                                        }
+                                  , name = "x"
+                                  , typ = Nothing
+                                  }
+                            , body =
+                                ApplyExpression
+                                  (Apply
                                      { location =
                                          SourceLocation
                                            { start =
                                                SourcePos
-                                                 { line = 1
-                                                 , column = 3
-                                                 , name = ""
-                                                 }
+                                                 {line = 1, column = 5, name = ""}
                                            , end =
                                                SourcePos
-                                                 { line = 1
-                                                 , column = 4
-                                                 , name = ""
-                                                 }
+                                                 {line = 1, column = 6, name = ""}
                                            }
-                                     , name = "x"
-                                     , typ = Nothing
-                                     })
-                            , argument =
-                                VariableExpression
-                                  (Variable
-                                     { location =
-                                         SourceLocation
-                                           { start =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 5
-                                                 , name = ""
-                                                 }
-                                           , end =
-                                               SourcePos
-                                                 { line = 1
-                                                 , column = 6
-                                                 , name = ""
-                                                 }
-                                           }
-                                     , name = "y"
+                                     , function =
+                                         VariableExpression
+                                           (Variable
+                                              { location =
+                                                  SourceLocation
+                                                    { start =
+                                                        SourcePos
+                                                          { line = 1
+                                                          , column = 3
+                                                          , name = ""
+                                                          }
+                                                    , end =
+                                                        SourcePos
+                                                          { line = 1
+                                                          , column = 4
+                                                          , name = ""
+                                                          }
+                                                    }
+                                              , name = "x"
+                                              , typ = Nothing
+                                              })
+                                     , argument =
+                                         VariableExpression
+                                           (Variable
+                                              { location =
+                                                  SourceLocation
+                                                    { start =
+                                                        SourcePos
+                                                          { line = 1
+                                                          , column = 5
+                                                          , name = ""
+                                                          }
+                                                    , end =
+                                                        SourcePos
+                                                          { line = 1
+                                                          , column = 6
+                                                          , name = ""
+                                                          }
+                                                    }
+                                              , name = "y"
+                                              , typ = Nothing
+                                              })
                                      , typ = Nothing
                                      })
                             , typ = Nothing
-                            })
-                   , typ = Nothing
-                   }))))
+                            }))|]))
 
 lambda :: Spec
 lambda = it
@@ -1115,12 +1117,12 @@ lambda = it
 apply :: SpecWith ()
 apply = it
           "Apply"
-          (do shouldBe
+          (do shouldSatisfy
                 (parseText "" "(x:x)(1)")
-                (Right (ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, function = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, name = "x", typ = Nothing}, body = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, name = "x", typ = Nothing}), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing})))
-              shouldBe
+                $(match [|Right (ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, function = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, name = "x", typ = Nothing}, body = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, name = "x", typ = Nothing}), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 7, name = ""}, end = SourcePos {line = 1, column = 8, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}))|])
+              shouldSatisfy
                 (parseText "" "(x:y:1)(1,2)")
-                (Right (ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 11, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}, function = ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, function = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, name = "x", typ = Nothing}, body = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, name = "y", typ = Nothing}, body = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 6, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 11, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}, number = IntegerNumber 2, typ = Nothing})), typ = Nothing}))))
+                $(match [|Right (ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 11, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}, function = ApplyExpression (Apply {location = SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, function = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, name = "x", typ = Nothing}, body = LambdaExpression (Lambda {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, param = Param {location = SourceLocation {start = SourcePos {line = 1, column = 4, name = ""}, end = SourcePos {line = 1, column = 5, name = ""}}, name = "y", typ = Nothing}, body = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 6, name = ""}, end = SourcePos {line = 1, column = 7, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 9, name = ""}, end = SourcePos {line = 1, column = 10, name = ""}}, number = IntegerNumber 1, typ = Nothing})), typ = Nothing}), argument = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 11, name = ""}, end = SourcePos {line = 1, column = 12, name = ""}}, number = IntegerNumber 2, typ = Nothing})), typ = Nothing}))|]))
 
 sigs :: SpecWith ()
 sigs =
@@ -1535,201 +1537,201 @@ implicitcalls =
     "Implicit calls"
     (do it
           "foo{x: 1}"
-          (shouldBe
+          (shouldSatisfy
              (parseText "" "foo{x:1}")
-             (Right
-                (ApplyExpression
-                   (Apply
-                      { location =
-                          SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 4, name = ""}
-                            , end = SourcePos {line = 1, column = 9, name = ""}
-                            }
-                      , function =
-                          VariableExpression
-                            (Variable
+             $(match [|Right
+                         (ApplyExpression
+                            (Apply
                                { location =
                                    SourceLocation
                                      { start =
-                                         SourcePos
-                                           {line = 1, column = 1, name = ""}
-                                     , end =
-                                         SourcePos
-                                           {line = 1, column = 4, name = ""}
+                                         SourcePos {line = 1, column = 4, name = ""}
+                                     , end = SourcePos {line = 1, column = 9, name = ""}
                                      }
-                               , name = "foo"
+                               , function =
+                                   VariableExpression
+                                     (Variable
+                                        { location =
+                                            SourceLocation
+                                              { start =
+                                                  SourcePos
+                                                    {line = 1, column = 1, name = ""}
+                                              , end =
+                                                  SourcePos
+                                                    {line = 1, column = 4, name = ""}
+                                              }
+                                        , name = "foo"
+                                        , typ = Nothing
+                                        })
+                               , argument =
+                                   RecordExpression
+                                     (Record
+                                        { fields =
+                                            [ FieldE
+                                                { name = FieldName {unFieldName = "x"}
+                                                , expression =
+                                                    LiteralExpression
+                                                      (NumberLiteral
+                                                         (Number
+                                                            { location =
+                                                                SourceLocation
+                                                                  { start =
+                                                                      SourcePos
+                                                                        { line = 1
+                                                                        , column = 7
+                                                                        , name = ""
+                                                                        }
+                                                                  , end =
+                                                                      SourcePos
+                                                                        { line = 1
+                                                                        , column = 8
+                                                                        , name = ""
+                                                                        }
+                                                                  }
+                                                            , number = IntegerNumber 1
+                                                            , typ = Nothing
+                                                            }))
+                                                , location =
+                                                    SourceLocation
+                                                      { start =
+                                                          SourcePos
+                                                            { line = 1
+                                                            , column = 6
+                                                            , name = ""
+                                                            }
+                                                      , end =
+                                                          SourcePos
+                                                            { line = 1
+                                                            , column = 7
+                                                            , name = ""
+                                                            }
+                                                      }
+                                                }
+                                            ]
+                                        , location =
+                                            SourceLocation
+                                              { start =
+                                                  SourcePos
+                                                    {line = 1, column = 4, name = ""}
+                                              , end =
+                                                  SourcePos
+                                                    {line = 1, column = 9, name = ""}
+                                              }
+                                        , typ = Nothing
+                                        })
                                , typ = Nothing
-                               })
-                      , argument =
-                          RecordExpression
-                            (Record
-                               { fields =
-                                   [ FieldE
-                                       { name = FieldName {unFieldName = "x"}
-                                       , expression =
-                                           LiteralExpression
-                                             (NumberLiteral
-                                                (Number
-                                                   { location =
-                                                       SourceLocation
-                                                         { start =
-                                                             SourcePos
-                                                               { line = 1
-                                                               , column = 7
-                                                               , name = ""
-                                                               }
-                                                         , end =
-                                                             SourcePos
-                                                               { line = 1
-                                                               , column = 8
-                                                               , name = ""
-                                                               }
-                                                         }
-                                                   , number = IntegerNumber 1
-                                                   , typ = Nothing
-                                                   }))
-                                       , location =
-                                           SourceLocation
-                                             { start =
-                                                 SourcePos
-                                                   { line = 1
-                                                   , column = 6
-                                                   , name = ""
-                                                   }
-                                             , end =
-                                                 SourcePos
-                                                   { line = 1
-                                                   , column = 7
-                                                   , name = ""
-                                                   }
-                                             }
-                                       }
-                                   ]
-                               , location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos
-                                           {line = 1, column = 4, name = ""}
-                                     , end =
-                                         SourcePos
-                                           {line = 1, column = 9, name = ""}
-                                     }
-                               , typ = Nothing
-                               })
-                      , typ = Nothing
-                      }))))
+                               }))|]))
         it
           "foo[1,2,3]"
-          (shouldBe
+          (shouldSatisfy
              (parseText "" "foo[1,2,3]")
-             (Right
-                (ApplyExpression
-                   (Apply
-                      { location =
-                          SourceLocation
-                            { start =
-                                SourcePos {line = 1, column = 4, name = ""}
-                            , end = SourcePos {line = 1, column = 11, name = ""}
-                            }
-                      , function =
-                          VariableExpression
-                            (Variable
+             $(match [|Right
+                         (ApplyExpression
+                            (Apply
                                { location =
                                    SourceLocation
                                      { start =
-                                         SourcePos
-                                           {line = 1, column = 1, name = ""}
-                                     , end =
-                                         SourcePos
-                                           {line = 1, column = 4, name = ""}
+                                         SourcePos {line = 1, column = 4, name = ""}
+                                     , end = SourcePos {line = 1, column = 11, name = ""}
                                      }
-                               , name = "foo"
+                               , function =
+                                   VariableExpression
+                                     (Variable
+                                        { location =
+                                            SourceLocation
+                                              { start =
+                                                  SourcePos
+                                                    {line = 1, column = 1, name = ""}
+                                              , end =
+                                                  SourcePos
+                                                    {line = 1, column = 4, name = ""}
+                                              }
+                                        , name = "foo"
+                                        , typ = Nothing
+                                        })
+                               , argument =
+                                   ArrayExpression
+                                     (Array
+                                        { form = ()
+                                        , expressions =
+                                            V.fromList
+                                              [ LiteralExpression
+                                                  (NumberLiteral
+                                                     (Number
+                                                        { location =
+                                                            SourceLocation
+                                                              { start =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 5
+                                                                    , name = ""
+                                                                    }
+                                                              , end =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 6
+                                                                    , name = ""
+                                                                    }
+                                                              }
+                                                        , number = IntegerNumber 1
+                                                        , typ = Nothing
+                                                        }))
+                                              , LiteralExpression
+                                                  (NumberLiteral
+                                                     (Number
+                                                        { location =
+                                                            SourceLocation
+                                                              { start =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 7
+                                                                    , name = ""
+                                                                    }
+                                                              , end =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 8
+                                                                    , name = ""
+                                                                    }
+                                                              }
+                                                        , number = IntegerNumber 2
+                                                        , typ = Nothing
+                                                        }))
+                                              , LiteralExpression
+                                                  (NumberLiteral
+                                                     (Number
+                                                        { location =
+                                                            SourceLocation
+                                                              { start =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 9
+                                                                    , name = ""
+                                                                    }
+                                                              , end =
+                                                                  SourcePos
+                                                                    { line = 1
+                                                                    , column = 10
+                                                                    , name = ""
+                                                                    }
+                                                              }
+                                                        , number = IntegerNumber 3
+                                                        , typ = Nothing
+                                                        }))
+                                              ]
+                                        , typ = Nothing
+                                        , location =
+                                            SourceLocation
+                                              { start =
+                                                  SourcePos
+                                                    {line = 1, column = 4, name = ""}
+                                              , end =
+                                                  SourcePos
+                                                    {line = 1, column = 11, name = ""}
+                                              }
+                                        })
                                , typ = Nothing
-                               })
-                      , argument =
-                          ArrayExpression
-                            (Array
-                               { form = ()
-                               , expressions =
-                                   V.fromList
-                                     [ LiteralExpression
-                                         (NumberLiteral
-                                            (Number
-                                               { location =
-                                                   SourceLocation
-                                                     { start =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 5
-                                                           , name = ""
-                                                           }
-                                                     , end =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 6
-                                                           , name = ""
-                                                           }
-                                                     }
-                                               , number = IntegerNumber 1
-                                               , typ = Nothing
-                                               }))
-                                     , LiteralExpression
-                                         (NumberLiteral
-                                            (Number
-                                               { location =
-                                                   SourceLocation
-                                                     { start =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 7
-                                                           , name = ""
-                                                           }
-                                                     , end =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 8
-                                                           , name = ""
-                                                           }
-                                                     }
-                                               , number = IntegerNumber 2
-                                               , typ = Nothing
-                                               }))
-                                     , LiteralExpression
-                                         (NumberLiteral
-                                            (Number
-                                               { location =
-                                                   SourceLocation
-                                                     { start =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 9
-                                                           , name = ""
-                                                           }
-                                                     , end =
-                                                         SourcePos
-                                                           { line = 1
-                                                           , column = 10
-                                                           , name = ""
-                                                           }
-                                                     }
-                                               , number = IntegerNumber 3
-                                               , typ = Nothing
-                                               }))
-                                     ]
-                               , typ = Nothing
-                               , location =
-                                   SourceLocation
-                                     { start =
-                                         SourcePos
-                                           {line = 1, column = 4, name = ""}
-                                     , end =
-                                         SourcePos
-                                           {line = 1, column = 11, name = ""}
-                                     }
-                               })
-                      , typ = Nothing
-                      })))))
+                               }))|])))
 
 _early :: SpecWith ()
 _early =

@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, TemplateHaskell, ViewPatterns #-}
 {-# OPTIONS -F -pgmF=early #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
@@ -23,6 +23,7 @@ import           Inflex.Instances ()
 import           Inflex.Solver
 import           Inflex.Type
 import           Inflex.Types
+import           Match
 import qualified RIO
 import           Test.Hspec
 
@@ -148,199 +149,15 @@ coarseGrained = do
                       }))))
         it
           "[{x:1},{x:1}]"
-          (shouldReturn
+          (shouldReturnSatisfy
              (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[{x:1},{x:1}]"))
-             (Right (ArrayExpression (Array {form = (), expressions = [RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "x"}, expression = ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}), location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor)}], location = ArrayElementCursor 0 ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))}),RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "x"}, expression = ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}), location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor)}], location = ArrayElementCursor 1 ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))})], typ = ArrayType (RecordType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))), location = ExpressionCursor}))))
+             $(match [|Right (ArrayExpression (Array {form = (), expressions = [RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "x"}, expression = ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}), location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor)}], location = ArrayElementCursor 0 ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))}),RecordExpression (Record {fields = [FieldE {name = FieldName {unFieldName = "x"}, expression = ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}), location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor)}], location = ArrayElementCursor 1 ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 1 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))})], typ = ArrayType (RecordType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) TypeCursor), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (RecordFieldCursor (FieldName {unFieldName = "x"}) (RowFieldExpression ExpressionCursor)), prefix = ApplyPrefix, index = 2, kind = TypeKind})}]}))), location = ExpressionCursor}))|]))
         it
           "{x:1}"
-          (shouldReturn
+          (shouldReturnSatisfy
              (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "{x:1}"))
-             (Right
-                (RecordExpression
-                   (Record
-                      { fields =
-                          [ FieldE
-                              { name = FieldName {unFieldName = "x"}
-                              , expression =
-                                  ApplyExpression
-                                    (Apply
-                                       { location = BuiltIn
-                                       , function =
-                                           GlobalExpression
-                                             (Global
-                                                { location = BuiltIn
-                                                , name = FromIntegerGlobal
-                                                , scheme =
-                                                    SolvedScheme
-                                                      (Scheme
-                                                         { location = BuiltIn
-                                                         , constraints =
-                                                             [ ClassConstraint
-                                                                 { className =
-                                                                     FromIntegerClassName
-                                                                 , typ =
-                                                                     VariableType
-                                                                       (TypeVariable
-                                                                          { location =
-                                                                              RecordFieldCursor
-                                                                                (FieldName
-                                                                                   { unFieldName =
-                                                                                       "x"
-                                                                                   })
-                                                                                (RowFieldExpression
-                                                                                   ExpressionCursor)
-                                                                          , prefix =
-                                                                              ApplyPrefix
-                                                                          , index =
-                                                                              1
-                                                                          , kind =
-                                                                              TypeKind
-                                                                          }) :|
-                                                                     []
-                                                                 , location =
-                                                                     BuiltIn
-                                                                 }
-                                                             ]
-                                                         , typ =
-                                                             ApplyType
-                                                               (TypeApplication
-                                                                  { function =
-                                                                      ApplyType
-                                                                        (TypeApplication
-                                                                           { function =
-                                                                               ConstantType
-                                                                                 (TypeConstant
-                                                                                    { location =
-                                                                                        BuiltIn
-                                                                                    , name =
-                                                                                        FunctionTypeName
-                                                                                    })
-                                                                           , argument =
-                                                                               ConstantType
-                                                                                 (TypeConstant
-                                                                                    { location =
-                                                                                        BuiltIn
-                                                                                    , name =
-                                                                                        IntegerTypeName
-                                                                                    })
-                                                                           , location =
-                                                                               BuiltIn
-                                                                           , kind =
-                                                                               FunKind
-                                                                                 TypeKind
-                                                                                 TypeKind
-                                                                           })
-                                                                  , argument =
-                                                                      VariableType
-                                                                        (TypeVariable
-                                                                           { location =
-                                                                               RecordFieldCursor
-                                                                                 (FieldName
-                                                                                    { unFieldName =
-                                                                                        "x"
-                                                                                    })
-                                                                                 (RowFieldExpression
-                                                                                    ExpressionCursor)
-                                                                           , prefix =
-                                                                               ApplyPrefix
-                                                                           , index =
-                                                                               1
-                                                                           , kind =
-                                                                               TypeKind
-                                                                           })
-                                                                  , location =
-                                                                      BuiltIn
-                                                                  , kind =
-                                                                      TypeKind
-                                                                  })
-                                                         })
-                                                })
-                                       , argument =
-                                           LiteralExpression
-                                             (NumberLiteral
-                                                (Number
-                                                   { location =
-                                                       RecordFieldCursor
-                                                         (FieldName
-                                                            {unFieldName = "x"})
-                                                         (RowFieldExpression
-                                                            ExpressionCursor)
-                                                   , number = IntegerNumber 1
-                                                   , typ =
-                                                       ConstantType
-                                                         (TypeConstant
-                                                            { location =
-                                                                RecordFieldCursor
-                                                                  (FieldName
-                                                                     { unFieldName =
-                                                                         "x"
-                                                                     })
-                                                                  (RowFieldExpression
-                                                                     ExpressionCursor)
-                                                            , name =
-                                                                IntegerTypeName
-                                                            })
-                                                   }))
-                                       , typ =
-                                           VariableType
-                                             (TypeVariable
-                                                { location =
-                                                    RecordFieldCursor
-                                                      (FieldName
-                                                         {unFieldName = "x"})
-                                                      (RowFieldExpression
-                                                         ExpressionCursor)
-                                                , prefix = ApplyPrefix
-                                                , index = 1
-                                                , kind = TypeKind
-                                                })
-                                       })
-                              , location =
-                                  RecordFieldCursor
-                                    (FieldName {unFieldName = "x"})
-                                    TypeCursor
-                              }
-                          ]
-                      , location = ExpressionCursor
-                      , typ =
-                          RecordType
-                            (RowType
-                               (TypeRow
-                                  { location = ExpressionCursor
-                                  , typeVariable = Nothing
-                                  , fields =
-                                      [ Field
-                                          { location =
-                                              RecordFieldCursor
-                                                (FieldName {unFieldName = "x"})
-                                                TypeCursor
-                                          , name = FieldName {unFieldName = "x"}
-                                          , typ =
-                                              VariableType
-                                                (TypeVariable
-                                                   { location =
-                                                       RecordFieldCursor
-                                                         (FieldName
-                                                            {unFieldName = "x"})
-                                                         (RowFieldExpression
-                                                            ExpressionCursor)
-                                                   , prefix = ApplyPrefix
-                                                   , index = 1
-                                                   , kind = TypeKind
-                                                   })
-                                          }
-                                      ]
-                                  }))
-                      }))))
-        it
-          "{x:1}.x"
-          (shouldReturn
-             (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "{x:1}.x"))
-             (Right
-                (PropExpression
-                   (Prop
-                      { expression =
-                          RecordExpression
+             $(match [|Right
+                         (RecordExpression
                             (Record
                                { fields =
                                    [ FieldE
@@ -353,13 +170,11 @@ coarseGrained = do
                                                     GlobalExpression
                                                       (Global
                                                          { location = BuiltIn
-                                                         , name =
-                                                             FromIntegerGlobal
+                                                         , name = FromIntegerGlobal
                                                          , scheme =
                                                              SolvedScheme
                                                                (Scheme
-                                                                  { location =
-                                                                      BuiltIn
+                                                                  { location = BuiltIn
                                                                   , constraints =
                                                                       [ ClassConstraint
                                                                           { className =
@@ -368,18 +183,17 @@ coarseGrained = do
                                                                               VariableType
                                                                                 (TypeVariable
                                                                                    { location =
-                                                                                       PropExpressionCursor
-                                                                                         (RecordFieldCursor
-                                                                                            (FieldName
-                                                                                               { unFieldName =
-                                                                                                   "x"
-                                                                                               })
-                                                                                            (RowFieldExpression
-                                                                                               ExpressionCursor))
+                                                                                       RecordFieldCursor
+                                                                                         (FieldName
+                                                                                            { unFieldName =
+                                                                                                "x"
+                                                                                            })
+                                                                                         (RowFieldExpression
+                                                                                            ExpressionCursor)
                                                                                    , prefix =
                                                                                        ApplyPrefix
                                                                                    , index =
-                                                                                       2
+                                                                                       1
                                                                                    , kind =
                                                                                        TypeKind
                                                                                    }) :|
@@ -421,18 +235,17 @@ coarseGrained = do
                                                                                VariableType
                                                                                  (TypeVariable
                                                                                     { location =
-                                                                                        PropExpressionCursor
-                                                                                          (RecordFieldCursor
-                                                                                             (FieldName
-                                                                                                { unFieldName =
-                                                                                                    "x"
-                                                                                                })
-                                                                                             (RowFieldExpression
-                                                                                                ExpressionCursor))
+                                                                                        RecordFieldCursor
+                                                                                          (FieldName
+                                                                                             { unFieldName =
+                                                                                                 "x"
+                                                                                             })
+                                                                                          (RowFieldExpression
+                                                                                             ExpressionCursor)
                                                                                     , prefix =
                                                                                         ApplyPrefix
                                                                                     , index =
-                                                                                        2
+                                                                                        1
                                                                                     , kind =
                                                                                         TypeKind
                                                                                     })
@@ -448,19 +261,193 @@ coarseGrained = do
                                                       (NumberLiteral
                                                          (Number
                                                             { location =
-                                                                PropExpressionCursor
-                                                                  (RecordFieldCursor
-                                                                     (FieldName
-                                                                        { unFieldName =
-                                                                            "x"
-                                                                        })
-                                                                     (RowFieldExpression
-                                                                        ExpressionCursor))
-                                                            , number =
-                                                                IntegerNumber 1
+                                                                RecordFieldCursor
+                                                                  (FieldName
+                                                                     {unFieldName = "x"})
+                                                                  (RowFieldExpression
+                                                                     ExpressionCursor)
+                                                            , number = IntegerNumber 1
                                                             , typ =
                                                                 ConstantType
                                                                   (TypeConstant
+                                                                     { location =
+                                                                         RecordFieldCursor
+                                                                           (FieldName
+                                                                              { unFieldName =
+                                                                                  "x"
+                                                                              })
+                                                                           (RowFieldExpression
+                                                                              ExpressionCursor)
+                                                                     , name =
+                                                                         IntegerTypeName
+                                                                     })
+                                                            }))
+                                                , typ =
+                                                    VariableType
+                                                      (TypeVariable
+                                                         { location =
+                                                             RecordFieldCursor
+                                                               (FieldName
+                                                                  {unFieldName = "x"})
+                                                               (RowFieldExpression
+                                                                  ExpressionCursor)
+                                                         , prefix = ApplyPrefix
+                                                         , index = 1
+                                                         , kind = TypeKind
+                                                         })
+                                                })
+                                       , location =
+                                           RecordFieldCursor
+                                             (FieldName {unFieldName = "x"})
+                                             TypeCursor
+                                       }
+                                   ]
+                               , location = ExpressionCursor
+                               , typ =
+                                   RecordType
+                                     (RowType
+                                        (TypeRow
+                                           { location = ExpressionCursor
+                                           , typeVariable = Nothing
+                                           , fields =
+                                               [ Field
+                                                   { location =
+                                                       RecordFieldCursor
+                                                         (FieldName {unFieldName = "x"})
+                                                         TypeCursor
+                                                   , name = FieldName {unFieldName = "x"}
+                                                   , typ =
+                                                       VariableType
+                                                         (TypeVariable
+                                                            { location =
+                                                                RecordFieldCursor
+                                                                  (FieldName
+                                                                     {unFieldName = "x"})
+                                                                  (RowFieldExpression
+                                                                     ExpressionCursor)
+                                                            , prefix = ApplyPrefix
+                                                            , index = 1
+                                                            , kind = TypeKind
+                                                            })
+                                                   }
+                                               ]
+                                           }))
+                               }))|]))
+        it
+          "{x:1}.x"
+          (shouldReturnSatisfy
+             (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "{x:1}.x"))
+             $(match [|Right
+                         (PropExpression
+                            (Prop
+                               { expression =
+                                   RecordExpression
+                                     (Record
+                                        { fields =
+                                            [ FieldE
+                                                { name = FieldName {unFieldName = "x"}
+                                                , expression =
+                                                    ApplyExpression
+                                                      (Apply
+                                                         { location = BuiltIn
+                                                         , function =
+                                                             GlobalExpression
+                                                               (Global
+                                                                  { location = BuiltIn
+                                                                  , name =
+                                                                      FromIntegerGlobal
+                                                                  , scheme =
+                                                                      SolvedScheme
+                                                                        (Scheme
+                                                                           { location =
+                                                                               BuiltIn
+                                                                           , constraints =
+                                                                               [ ClassConstraint
+                                                                                   { className =
+                                                                                       FromIntegerClassName
+                                                                                   , typ =
+                                                                                       VariableType
+                                                                                         (TypeVariable
+                                                                                            { location =
+                                                                                                PropExpressionCursor
+                                                                                                  (RecordFieldCursor
+                                                                                                     (FieldName
+                                                                                                        { unFieldName =
+                                                                                                            "x"
+                                                                                                        })
+                                                                                                     (RowFieldExpression
+                                                                                                        ExpressionCursor))
+                                                                                            , prefix =
+                                                                                                ApplyPrefix
+                                                                                            , index =
+                                                                                                2
+                                                                                            , kind =
+                                                                                                TypeKind
+                                                                                            }) :|
+                                                                                       []
+                                                                                   , location =
+                                                                                       BuiltIn
+                                                                                   }
+                                                                               ]
+                                                                           , typ =
+                                                                               ApplyType
+                                                                                 (TypeApplication
+                                                                                    { function =
+                                                                                        ApplyType
+                                                                                          (TypeApplication
+                                                                                             { function =
+                                                                                                 ConstantType
+                                                                                                   (TypeConstant
+                                                                                                      { location =
+                                                                                                          BuiltIn
+                                                                                                      , name =
+                                                                                                          FunctionTypeName
+                                                                                                      })
+                                                                                             , argument =
+                                                                                                 ConstantType
+                                                                                                   (TypeConstant
+                                                                                                      { location =
+                                                                                                          BuiltIn
+                                                                                                      , name =
+                                                                                                          IntegerTypeName
+                                                                                                      })
+                                                                                             , location =
+                                                                                                 BuiltIn
+                                                                                             , kind =
+                                                                                                 FunKind
+                                                                                                   TypeKind
+                                                                                                   TypeKind
+                                                                                             })
+                                                                                    , argument =
+                                                                                        VariableType
+                                                                                          (TypeVariable
+                                                                                             { location =
+                                                                                                 PropExpressionCursor
+                                                                                                   (RecordFieldCursor
+                                                                                                      (FieldName
+                                                                                                         { unFieldName =
+                                                                                                             "x"
+                                                                                                         })
+                                                                                                      (RowFieldExpression
+                                                                                                         ExpressionCursor))
+                                                                                             , prefix =
+                                                                                                 ApplyPrefix
+                                                                                             , index =
+                                                                                                 2
+                                                                                             , kind =
+                                                                                                 TypeKind
+                                                                                             })
+                                                                                    , location =
+                                                                                        BuiltIn
+                                                                                    , kind =
+                                                                                        TypeKind
+                                                                                    })
+                                                                           })
+                                                                  })
+                                                         , argument =
+                                                             LiteralExpression
+                                                               (NumberLiteral
+                                                                  (Number
                                                                      { location =
                                                                          PropExpressionCursor
                                                                            (RecordFieldCursor
@@ -470,60 +457,60 @@ coarseGrained = do
                                                                                  })
                                                                               (RowFieldExpression
                                                                                  ExpressionCursor))
-                                                                     , name =
-                                                                         IntegerTypeName
-                                                                     })
-                                                            }))
-                                                , typ =
-                                                    VariableType
-                                                      (TypeVariable
-                                                         { location =
-                                                             PropExpressionCursor
-                                                               (RecordFieldCursor
-                                                                  (FieldName
-                                                                     { unFieldName =
-                                                                         "x"
-                                                                     })
-                                                                  (RowFieldExpression
-                                                                     ExpressionCursor))
-                                                         , prefix = ApplyPrefix
-                                                         , index = 2
-                                                         , kind = TypeKind
+                                                                     , number =
+                                                                         IntegerNumber 1
+                                                                     , typ =
+                                                                         ConstantType
+                                                                           (TypeConstant
+                                                                              { location =
+                                                                                  PropExpressionCursor
+                                                                                    (RecordFieldCursor
+                                                                                       (FieldName
+                                                                                          { unFieldName =
+                                                                                              "x"
+                                                                                          })
+                                                                                       (RowFieldExpression
+                                                                                          ExpressionCursor))
+                                                                              , name =
+                                                                                  IntegerTypeName
+                                                                              })
+                                                                     }))
+                                                         , typ =
+                                                             VariableType
+                                                               (TypeVariable
+                                                                  { location =
+                                                                      PropExpressionCursor
+                                                                        (RecordFieldCursor
+                                                                           (FieldName
+                                                                              { unFieldName =
+                                                                                  "x"
+                                                                              })
+                                                                           (RowFieldExpression
+                                                                              ExpressionCursor))
+                                                                  , prefix = ApplyPrefix
+                                                                  , index = 2
+                                                                  , kind = TypeKind
+                                                                  })
                                                          })
-                                                })
-                                       , location =
-                                           PropExpressionCursor
-                                             (RecordFieldCursor
-                                                (FieldName {unFieldName = "x"})
-                                                TypeCursor)
-                                       }
-                                   ]
-                               , location =
-                                   PropExpressionCursor ExpressionCursor
-                               , typ =
-                                   RecordType
-                                     (RowType
-                                        (TypeRow
-                                           { location =
-                                               PropExpressionCursor
-                                                 ExpressionCursor
-                                           , typeVariable = Nothing
-                                           , fields =
-                                               [ Field
-                                                   { location =
-                                                       PropExpressionCursor
-                                                         (RecordFieldCursor
-                                                            (FieldName
-                                                               { unFieldName =
-                                                                   "x"
-                                                               })
-                                                            TypeCursor)
-                                                   , name =
-                                                       FieldName
-                                                         {unFieldName = "x"}
-                                                   , typ =
-                                                       VariableType
-                                                         (TypeVariable
+                                                , location =
+                                                    PropExpressionCursor
+                                                      (RecordFieldCursor
+                                                         (FieldName {unFieldName = "x"})
+                                                         TypeCursor)
+                                                }
+                                            ]
+                                        , location =
+                                            PropExpressionCursor ExpressionCursor
+                                        , typ =
+                                            RecordType
+                                              (RowType
+                                                 (TypeRow
+                                                    { location =
+                                                        PropExpressionCursor
+                                                          ExpressionCursor
+                                                    , typeVariable = Nothing
+                                                    , fields =
+                                                        [ Field
                                                             { location =
                                                                 PropExpressionCursor
                                                                   (RecordFieldCursor
@@ -531,116 +518,147 @@ coarseGrained = do
                                                                         { unFieldName =
                                                                             "x"
                                                                         })
-                                                                     (RowFieldExpression
-                                                                        ExpressionCursor))
-                                                            , prefix =
-                                                                ApplyPrefix
-                                                            , index = 2
-                                                            , kind = TypeKind
-                                                            })
-                                                   }
-                                               ]
-                                           }))
-                               })
-                      , name = FieldName {unFieldName = "x"}
-                      , typ =
-                          VariableType
-                            (TypeVariable
-                               { location =
-                                   PropExpressionCursor
-                                     (RecordFieldCursor
-                                        (FieldName {unFieldName = "x"})
-                                        (RowFieldExpression ExpressionCursor))
-                               , prefix = ApplyPrefix
-                               , index = 2
-                               , kind = TypeKind
-                               })
-                      , location = ExpressionCursor
-                      }))))
+                                                                     TypeCursor)
+                                                            , name =
+                                                                FieldName
+                                                                  {unFieldName = "x"}
+                                                            , typ =
+                                                                VariableType
+                                                                  (TypeVariable
+                                                                     { location =
+                                                                         PropExpressionCursor
+                                                                           (RecordFieldCursor
+                                                                              (FieldName
+                                                                                 { unFieldName =
+                                                                                     "x"
+                                                                                 })
+                                                                              (RowFieldExpression
+                                                                                 ExpressionCursor))
+                                                                     , prefix =
+                                                                         ApplyPrefix
+                                                                     , index = 2
+                                                                     , kind = TypeKind
+                                                                     })
+                                                            }
+                                                        ]
+                                                    }))
+                                        })
+                               , name = FieldName {unFieldName = "x"}
+                               , typ =
+                                   VariableType
+                                     (TypeVariable
+                                        { location =
+                                            PropExpressionCursor
+                                              (RecordFieldCursor
+                                                 (FieldName {unFieldName = "x"})
+                                                 (RowFieldExpression ExpressionCursor))
+                                        , prefix = ApplyPrefix
+                                        , index = 2
+                                        , kind = TypeKind
+                                        })
+                               , location = ExpressionCursor
+                               }))|]))
         it
           "123"
-          (shouldReturn
+          (shouldReturnSatisfy
              (solveText' mempty "" "(123::Integer)")
-             (Right
-                (IsSolved
-                   { thing =
-                       LiteralExpression
-                         (NumberLiteral
-                            (Number
-                               { location = ExpressionCursor
-                               , number = IntegerNumber 123
-                               , typ =
-                                   ConstantType
-                                     (TypeConstant
+             $(match [|Right
+                         (IsSolved
+                            { thing =
+                                LiteralExpression
+                                  (NumberLiteral
+                                     (Number
                                         { location = ExpressionCursor
-                                        , name = IntegerTypeName
-                                        })
-                               }))
-                   , mappings =
-                       mempty
-                   })))
+                                        , number = IntegerNumber 123
+                                        , typ =
+                                            ConstantType
+                                              (TypeConstant
+                                                 { location = ExpressionCursor
+                                                 , name = IntegerTypeName
+                                                 })
+                                        }))
+                            , mappings =
+                                mempty
+                            })|]))
         it
           "(x:x)123"
-          (shouldReturn
+          (shouldReturnSatisfy
              (solveText' mempty "" "(x:x)(123::Integer)")
-             (Right
-                (IsSolved
-                   { thing =
-                       ApplyExpression
-                         (Apply
-                            { location = ExpressionCursor
-                            , function =
-                                LambdaExpression
-                                  (Lambda
-                                     { location =
-                                         ApplyFuncCursor ExpressionCursor
-                                     , param =
-                                         Param
-                                           { location =
-                                               ApplyFuncCursor LambdaParamCursor
-                                           , name = ()
-                                           , typ =
-                                               ConstantType
-                                                 (TypeConstant
-                                                    { location =
-                                                        ApplyArgCursor
-                                                          ExpressionCursor
-                                                    , name = IntegerTypeName
-                                                    })
-                                           }
-                                     , body =
-                                         VariableExpression
-                                           (Variable
+             $(match [|Right
+                         (IsSolved
+                            { thing =
+                                ApplyExpression
+                                  (Apply
+                                     { location = ExpressionCursor
+                                     , function =
+                                         LambdaExpression
+                                           (Lambda
                                               { location =
-                                                  ApplyFuncCursor
-                                                    (LambdaBodyCursor
-                                                       ExpressionCursor)
-                                              , name =
-                                                  DeBrujinIndex
-                                                    (DeBrujinNesting 0)
-                                              , typ =
-                                                  ConstantType
-                                                    (TypeConstant
+                                                  ApplyFuncCursor ExpressionCursor
+                                              , param =
+                                                  Param
+                                                    { location =
+                                                        ApplyFuncCursor LambdaParamCursor
+                                                    , name = ()
+                                                    , typ =
+                                                        ConstantType
+                                                          (TypeConstant
+                                                             { location =
+                                                                 ApplyArgCursor
+                                                                   ExpressionCursor
+                                                             , name = IntegerTypeName
+                                                             })
+                                                    }
+                                              , body =
+                                                  VariableExpression
+                                                    (Variable
                                                        { location =
-                                                           ApplyArgCursor
-                                                             ExpressionCursor
-                                                       , name = IntegerTypeName
-                                                       })
-                                              })
-                                     , typ =
-                                         ApplyType
-                                           (TypeApplication
-                                              { function =
-                                                  ApplyType
-                                                    (TypeApplication
-                                                       { function =
+                                                           ApplyFuncCursor
+                                                             (LambdaBodyCursor
+                                                                ExpressionCursor)
+                                                       , name =
+                                                           DeBrujinIndex
+                                                             (DeBrujinNesting 0)
+                                                       , typ =
                                                            ConstantType
                                                              (TypeConstant
                                                                 { location =
+                                                                    ApplyArgCursor
+                                                                      ExpressionCursor
+                                                                , name = IntegerTypeName
+                                                                })
+                                                       })
+                                              , typ =
+                                                  ApplyType
+                                                    (TypeApplication
+                                                       { function =
+                                                           ApplyType
+                                                             (TypeApplication
+                                                                { function =
+                                                                    ConstantType
+                                                                      (TypeConstant
+                                                                         { location =
+                                                                             ApplyFuncCursor
+                                                                               ExpressionCursor
+                                                                         , name =
+                                                                             FunctionTypeName
+                                                                         })
+                                                                , argument =
+                                                                    ConstantType
+                                                                      (TypeConstant
+                                                                         { location =
+                                                                             ApplyArgCursor
+                                                                               ExpressionCursor
+                                                                         , name =
+                                                                             IntegerTypeName
+                                                                         })
+                                                                , location =
                                                                     ApplyFuncCursor
                                                                       ExpressionCursor
-                                                                , name =
-                                                                    FunctionTypeName
+                                                                , kind =
+                                                                    FunKind
+                                                                      TypeKind
+                                                                      TypeKind
                                                                 })
                                                        , argument =
                                                            ConstantType
@@ -648,58 +666,41 @@ coarseGrained = do
                                                                 { location =
                                                                     ApplyArgCursor
                                                                       ExpressionCursor
-                                                                , name =
-                                                                    IntegerTypeName
+                                                                , name = IntegerTypeName
                                                                 })
                                                        , location =
                                                            ApplyFuncCursor
                                                              ExpressionCursor
-                                                       , kind =
-                                                           FunKind
-                                                             TypeKind
-                                                             TypeKind
+                                                       , kind = TypeKind
                                                        })
-                                              , argument =
-                                                  ConstantType
-                                                    (TypeConstant
-                                                       { location =
-                                                           ApplyArgCursor
-                                                             ExpressionCursor
-                                                       , name = IntegerTypeName
-                                                       })
-                                              , location =
-                                                  ApplyFuncCursor
-                                                    ExpressionCursor
-                                              , kind = TypeKind
+                                              })
+                                     , argument =
+                                         LiteralExpression
+                                           (NumberLiteral
+                                              (Number
+                                                 { location =
+                                                     ApplyArgCursor ExpressionCursor
+                                                 , number = IntegerNumber 123
+                                                 , typ =
+                                                     ConstantType
+                                                       (TypeConstant
+                                                          { location =
+                                                              ApplyArgCursor
+                                                                ExpressionCursor
+                                                          , name = IntegerTypeName
+                                                          })
+                                                 }))
+                                     , typ =
+                                         ConstantType
+                                           (TypeConstant
+                                              { location =
+                                                  ApplyArgCursor ExpressionCursor
+                                              , name = IntegerTypeName
                                               })
                                      })
-                            , argument =
-                                LiteralExpression
-                                  (NumberLiteral
-                                     (Number
-                                        { location =
-                                            ApplyArgCursor ExpressionCursor
-                                        , number = IntegerNumber 123
-                                        , typ =
-                                            ConstantType
-                                              (TypeConstant
-                                                 { location =
-                                                     ApplyArgCursor
-                                                       ExpressionCursor
-                                                 , name = IntegerTypeName
-                                                 })
-                                        }))
-                            , typ =
-                                ConstantType
-                                  (TypeConstant
-                                     { location =
-                                         ApplyArgCursor ExpressionCursor
-                                     , name = IntegerTypeName
-                                     })
-                            })
-                   , mappings =
-                       mempty
-                   }))))
+                            , mappings =
+                                mempty
+                            })|])))
   erroneous
 
 erroneous :: SpecWith ()
@@ -900,25 +901,25 @@ variants :: SpecWith ()
 variants = do
   it
     "[#ok(1),#fail]"
-    (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[#ok(1),#fail]"))
-              (Right (ArrayExpression (Array {form = (), expressions = [VariantExpression (Variant {location = ArrayElementCursor 0 ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}]})), tag = TagName {unTagName = "ok"}, argument = Just (ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}))}),VariantExpression (Variant {location = ArrayElementCursor 1 ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})},Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "fail"}, argument = Nothing})], typ = ArrayType (VariantType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}]}))), location = ExpressionCursor}))))
+    (shouldReturnSatisfy (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[#ok(1),#fail]"))
+              $(match [|Right (ArrayExpression (Array {form = (), expressions = [VariantExpression (Variant {location = ArrayElementCursor 0 ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}]})), tag = TagName {unTagName = "ok"}, argument = Just (ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}))}),VariantExpression (Variant {location = ArrayElementCursor 1 ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})},Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "fail"}, argument = Nothing})], typ = ArrayType (VariantType (RowType (TypeRow {location = ArrayElementCursor 0 ExpressionCursor, typeVariable = Just (TypeVariable {location = ArrayElementCursor 1 ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ArrayElementCursor 1 ExpressionCursor, name = FieldName {unFieldName = "fail"}, typ = RecordType (RowType (TypeRow {location = ArrayElementCursor 1 ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ArrayElementCursor 0 ExpressionCursor, name = FieldName {unFieldName = "ok"}, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 (VariantElementCursor ExpressionCursor), prefix = ApplyPrefix, index = 3, kind = TypeKind})}]}))), location = ExpressionCursor}))|]))
   it
     "case #a { #b: {} }"
     (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {} }"))
               (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = VariantRowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})))))
   it
       "case #a { #b: {}, wild: {} }"
-      (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))
-                (Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))))
+      (shouldReturnSatisfy (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))
+                $(match [|Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))|]))
 
 
 arrays :: SpecWith ()
 arrays = do
   it
     "[[1],[2]]"
-    (shouldReturn
+    (shouldReturnSatisfy
        (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "[[1],[2]]"))
-       (Right (ArrayExpression (Array {form = (), expressions = [ArrayExpression (Array {form = (), expressions = [ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (ArrayElementCursor 0 ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (ArrayElementCursor 0 ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})})], typ = ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})), location = ArrayElementCursor 0 ExpressionCursor}),ArrayExpression (Array {form = (), expressions = [ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 1 (ArrayElementCursor 0 ExpressionCursor), number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = ArrayElementCursor 1 (ArrayElementCursor 0 ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})})], typ = ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})), location = ArrayElementCursor 1 ExpressionCursor})], typ = ArrayType (ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}))), location = ExpressionCursor}))))
+       $(match [|Right (ArrayExpression (Array {form = (), expressions = [ArrayExpression (Array {form = (), expressions = [ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 0 (ArrayElementCursor 0 ExpressionCursor), number = IntegerNumber 1, typ = ConstantType (TypeConstant {location = ArrayElementCursor 0 (ArrayElementCursor 0 ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})})], typ = ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})), location = ArrayElementCursor 0 ExpressionCursor}),ArrayExpression (Array {form = (), expressions = [ApplyExpression (Apply {location = BuiltIn, function = GlobalExpression (Global {location = BuiltIn, name = FromIntegerGlobal, scheme = SolvedScheme (Scheme {location = BuiltIn, constraints = [ClassConstraint {className = FromIntegerClassName, typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}) :| [], location = BuiltIn}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = BuiltIn, name = FunctionTypeName}), argument = ConstantType (TypeConstant {location = BuiltIn, name = IntegerTypeName}), location = BuiltIn, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}), location = BuiltIn, kind = TypeKind})})}), argument = LiteralExpression (NumberLiteral (Number {location = ArrayElementCursor 1 (ArrayElementCursor 0 ExpressionCursor), number = IntegerNumber 2, typ = ConstantType (TypeConstant {location = ArrayElementCursor 1 (ArrayElementCursor 0 ExpressionCursor), name = IntegerTypeName})})), typ = VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})})], typ = ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind})), location = ArrayElementCursor 1 ExpressionCursor})], typ = ArrayType (ArrayType (VariableType (TypeVariable {location = ArrayElementCursor 0 ExpressionCursor, prefix = ArrayElementPrefix, index = 1, kind = TypeKind}))), location = ExpressionCursor}))|]))
   arrayHoles
 
 arrayHoles :: Spec
