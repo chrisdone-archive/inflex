@@ -337,17 +337,18 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [  (PropExpression <$> propParser)
+       [ PropExpression <$> propParser
+       , dotFuncParser
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
-       ,  applyParser
+       , applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
        , GlobalExpression <$> globalParser
-       ,  (VariantExpression <$> variantParser)
+       , (VariantExpression <$> variantParser)
        , parensParser
        ])
 
@@ -419,14 +420,19 @@ arrayParser = do
 propParser :: Parser (Prop Parsed)
 propParser = do
   expression <-
-    (RecordExpression <$> recordParser) <>
-     (HoleExpression <$> holeParser) <>
-     applyParser <>
-     (VariableExpression <$> variableParser) <> (GlobalExpression <$> globalParser) <>
-     parensParser
+    propLhsParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   (name, _) <- fieldNameParser
   pure Prop {typ = Nothing, ..}
+
+propLhsParser :: Parser (Expression Parsed)
+propLhsParser =
+  (RecordExpression <$> recordParser) <> (ArrayExpression <$> arrayParser) <>
+  (HoleExpression <$> holeParser) <>
+  applyParser <>
+  (VariableExpression <$> variableParser) <>
+  (GlobalExpression <$> globalParser) <>
+  parensParser
 
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
@@ -476,10 +482,30 @@ bindParser = do
           {param, location = SourceLocation {start, end}, value, typ = Nothing}
     else Reparsec.failWith (liftError ExpectedEquals)
 
+dotFuncParser :: Parser (Expression Parsed)
+dotFuncParser = do
+  argument <- propLhsParser
+  Located {location} <- token ExpectedPeriod (preview _PeriodToken)
+  function <- globalParser
+  function' <- finishApplyParser (GlobalExpression function)
+  pure
+    (ApplyExpression
+       Apply
+         { function = function'
+         , argument
+         , location
+         , typ = Nothing
+         , style = PrefixApply
+         })
+
 applyParser :: Parser (Expression Parsed)
 applyParser = do
   function <- functionParser
-  tuple function <> list function <> record function
+  finishApplyParser function
+
+finishApplyParser :: Expression Parsed -> Parser (Expression Parsed)
+finishApplyParser function0 =
+  tuple function0 <> list function0 <> record function0
   where
     list function = do
       array <- arrayParser
@@ -505,20 +531,30 @@ applyParser = do
              })
     tuple function = do
       token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+      emptyOrExpr <-
+        fmap
+          (const Nothing)
+          (token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)) <>
+        fmap Just expressionParser
       let loop = do
-            bind <- expressionParser
             comma <-
               fmap
                 (const True)
                 (token_ (ExpectedToken CommaToken) (preview _CommaToken)) <>
               pure False
-            rest <-
-              if comma
-                then fmap NE.toList loop
-                else pure []
-            pure (bind :| rest)
-      arguments <- loop
-      token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+            if comma
+              then do
+                bind <- expressionParser
+                rest <- loop
+                pure (bind : rest)
+              else pure []
+      arguments <-
+        case emptyOrExpr of
+          Just expr -> do
+            args <- fmap (expr :) loop
+            token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+            pure args
+          Nothing -> pure []
       typ <- optionalSignatureParser
       pure
         (foldl'

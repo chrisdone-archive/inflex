@@ -32,6 +32,7 @@ spec = do
   apply
   records
   implicitcalls
+  dotcalls
   {-early-}
   it
     "Let"
@@ -1780,3 +1781,43 @@ parser2 =
         (shouldBe
            (first (const ()) (Parser2.parseText "" text'))
            (first (const ()) (parseText "" text')))
+
+dotcalls :: Spec
+dotcalls =
+  do it
+       "[1,2,3].@prim:array_map(f)"
+       (shouldSatisfy
+          (parseText "" "[1,2,3].@prim:array_map(f)")
+          $(match
+              [|Right
+                  (ApplyExpression
+                     (Apply
+                        { function =
+                            ApplyExpression
+                              (Apply
+                                 { function =
+                                     GlobalExpression
+                                       (Global {name = ParsedPrim MapFunction})
+                                 , argument =
+                                     VariableExpression (Variable {name = "f"})
+                                 , style = PrefixApply
+                                 })
+                        , argument = ArrayExpression _
+                        , typ = Nothing
+                        , style = PrefixApply
+                        }))|]))
+     it
+       "[1,2,3].@prim:array_length()"
+       (shouldSatisfy
+          (parseText "" "[1,2,3].@prim:array_length()")
+          $(match
+              [|Right
+                  (ApplyExpression
+                     (Apply
+                        { function =
+                            GlobalExpression
+                              (Global {name = ParsedPrim LengthFunction})
+                        , argument = ArrayExpression _
+                        , typ = Nothing
+                        , style = PrefixApply
+                        }))|]))
