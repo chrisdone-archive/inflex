@@ -484,19 +484,26 @@ bindParser = do
 
 dotFuncParser :: Parser (Expression Parsed)
 dotFuncParser = do
-  argument <- propLhsParser
+  argument0 <- propLhsParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
-  function <- globalParser
-  function' <- finishApplyParser (GlobalExpression function)
-  pure
-    (ApplyExpression
-       Apply
-         { function = function'
-         , argument
-         , location
-         , typ = Nothing
-         , style = PrefixApply
-         })
+  let loop argument = do
+        function <- globalParser
+        function' <- finishApplyParser (GlobalExpression function)
+        continue <-
+          fmap (const True) (token_ ExpectedPeriod (preview _PeriodToken)) <>
+          pure False
+        (if continue
+           then loop
+           else pure)
+          (ApplyExpression
+             Apply
+               { function = function'
+               , argument
+               , location
+               , typ = Nothing
+               , style = DotApply
+               })
+  loop argument0
 
 applyParser :: Parser (Expression Parsed)
 applyParser = do
