@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -1850,6 +1852,30 @@ dotcalls = do
                               , argument = ArrayExpression _
                               , typ = Nothing
                               , style = DotApply
+                              })
+                     , typ = Nothing
+                     , style = DotApply
+                     }))|]))
+  it
+    "{students:[1,2,3]}.students.@prim:array_length()"
+    (shouldSatisfy
+       (parseText "" "{students:[1,2,3]}.students.@prim:array_length()")
+       $(match
+           [|Right
+               (ApplyExpression
+                  (Apply
+                     { function =
+                         GlobalExpression
+                           (Global
+                              { name = ParsedPrim LengthFunction
+                              , scheme = ParsedScheme
+                              })
+                     , argument =
+                         PropExpression
+                           (Prop
+                              { expression = RecordExpression _
+                              , name = FieldName {unFieldName = "students"}
+                              , typ = Nothing
                               })
                      , typ = Nothing
                      , style = DotApply

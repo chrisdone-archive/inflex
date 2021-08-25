@@ -337,8 +337,7 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [ PropExpression <$> propParser
-       , dotFuncParser
+       [ dotFuncParser
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
@@ -487,22 +486,31 @@ dotFuncParser = do
   argument0 <- propLhsParser
   Located {location} <- token ExpectedPeriod (preview _PeriodToken)
   let loop argument = do
-        function <- globalParser
-        function' <- finishApplyParser (GlobalExpression function)
+        thing <- fmap Left globalParser <> fmap Right fieldNameParser
+        expression <-
+          case thing of
+            Left function -> do
+              function' <- finishApplyParser (GlobalExpression function)
+              pure
+                (ApplyExpression
+                   (Apply
+                      { function = function'
+                      , argument
+                      , location
+                      , typ = Nothing
+                      , style = DotApply
+                      }))
+            Right (name, _) ->
+              pure
+                (PropExpression
+                   (Prop {typ = Nothing, expression = argument, ..}))
         continue <-
           fmap (const True) (token_ ExpectedPeriod (preview _PeriodToken)) <>
           pure False
         (if continue
            then loop
            else pure)
-          (ApplyExpression
-             Apply
-               { function = function'
-               , argument
-               , location
-               , typ = Nothing
-               , style = DotApply
-               })
+          expression
   loop argument0
 
 applyParser :: Parser (Expression Parsed)
