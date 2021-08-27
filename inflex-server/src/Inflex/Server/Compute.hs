@@ -14,6 +14,7 @@
 module Inflex.Server.Compute where
 
 import           Control.Early
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Coerce
 import           Data.Foldable
@@ -311,7 +312,8 @@ toTree mappings original final =
                                         (V.fromList fields)
                               }
                       _ ->
-                        Shared.HoleRow (Shared.HoleTree (originalSource id True)))
+                        Shared.HoleRow
+                          (Shared.HoleTree (originalSource id True)))
                  expressions)
     ArrayExpression Array {expressions} ->
       Shared.ArrayTree2
@@ -353,10 +355,12 @@ toTree mappings original final =
     VariantExpression Variant {tag = TagName tag, argument} ->
       Shared.VariantTree2
         Shared.versionRefl
-        Shared.NoOriginalSource
+        (originalSource inVariant False)
         tag
         (case argument of
-           Just arg -> Shared.VariantArgument (toTree mappings Nothing arg)
+           Just arg ->
+             Shared.VariantArgument
+               (toTree mappings (join (inVariant original)) arg)
            Nothing -> Shared.NoVariantArgument)
     HoleExpression {} -> Shared.HoleTree (originalSource id True)
     expression ->
@@ -369,6 +373,11 @@ toTree mappings original final =
     inRecord =
       \case
         Just (RecordExpression Record {fields}) -> pure fields
+        _ -> Nothing
+    inVariant :: Maybe (Expression Parsed) -> Maybe (Maybe (Expression Parsed))
+    inVariant =
+      \case
+        Just (VariantExpression Variant {argument}) -> pure argument
         _ -> Nothing
     inArray :: Maybe (Expression Parsed) -> Maybe (Vector (Expression Parsed))
     inArray =

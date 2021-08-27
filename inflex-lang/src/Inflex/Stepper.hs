@@ -256,7 +256,7 @@ stepVariant Variant {..} = do
   pure
     (Ok
        (VariantExpression
-          Variant {argument = argument', location = SteppedCursor, ..}))
+          Variant {argument = argument', location, ..}))
 
 stepIf :: If Resolved -> Step (Result (Expression Resolved))
 stepIf If {..} = do
