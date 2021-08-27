@@ -67,6 +67,27 @@ deriving instance Show File
 -- instance ToJSON File
 instance FromJSON File
 
+instance NFData TypeOf
+deriving instance Generic TypeOf
+deriving instance Eq TypeOf
+deriving instance Show TypeOf
+-- instance ToJSON TypeOf
+instance FromJSON TypeOf
+
+instance NFData OpenClosed
+deriving instance Generic OpenClosed
+deriving instance Eq OpenClosed
+deriving instance Show OpenClosed
+-- instance ToJSON OpenClosed
+instance FromJSON OpenClosed
+
+instance NFData NamedType
+deriving instance Generic NamedType
+deriving instance Eq NamedType
+deriving instance Show NamedType
+-- instance ToJSON NamedType
+instance FromJSON NamedType
+
 instance NFData CsvImportFinal
 deriving instance Generic CsvImportFinal
 deriving instance Eq CsvImportFinal
@@ -437,4 +458,4 @@ $(Frisson.deriveAll
    \import Data.Argonaut.Core (Json)\n\
    \import Prelude (class Show)\n\
    \"
-  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult])
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed])

@@ -551,7 +551,9 @@ exports.viewResultTree = function(x){return x};
 
 exports.unviewResultTree = function(x){return x};
 
-exports.unResultTree = function(x){return x};
+exports.resultTreeTree = function(a){return a[0]};
+
+exports.resultTreeTyp = function(a){return a[1]};
 
 exports.viewHash = function(x){return x};
 
@@ -583,6 +585,47 @@ return function(a) {
 switch (a[0]) {
 case 0: return k["FreshResult"](a[1])(a[2]);
 case 1: return k["CachedResult"](a[1]);
+default: throw Exception('BUG: case accessor failed');
+}
+}
+}
+;
+
+exports.viewTypeOf = function(x){return x};
+
+exports.unviewTypeOf = function(x){return x};
+
+exports.caseTypeOf = function(k) {
+return function(a) {
+switch (a[0]) {
+case 0: return k["ArrayOf"](a[1]);
+case 1: return k["RecordOf"](a[1]);
+case 2: return k["TableOf"](a[1]);
+case 3: return k["VariantOf"](a[1])(a[2]);
+case 4: return k["MiscType"];
+default: throw Exception('BUG: case accessor failed');
+}
+}
+}
+;
+
+exports.viewNamedType = function(x){return x};
+
+exports.unviewNamedType = function(x){return x};
+
+exports.namedTypeName = function(a){return a[0]};
+
+exports.namedTypeTyp = function(a){return a[1]};
+
+exports.viewOpenClosed = function(x){return x};
+
+exports.unviewOpenClosed = function(x){return x};
+
+exports.caseOpenClosed = function(k) {
+return function(a) {
+switch (a[0]) {
+case 0: return k["Open"];
+case 1: return k["Closed"];
 default: throw Exception('BUG: case accessor failed');
 }
 }

@@ -172,8 +172,26 @@ data Result
   = ResultError CellError
   | ResultOk ResultTree
 
-newtype ResultTree =
-  ResultTree Tree2
+data ResultTree = ResultTree
+  { tree :: Tree2
+  , typ :: TypeOf
+  }
+
+data TypeOf
+  = ArrayOf TypeOf
+  | RecordOf (Vector NamedType)
+  | TableOf (Vector NamedType)
+  | VariantOf (Vector NamedType) OpenClosed
+  | MiscType
+
+data OpenClosed
+  = Open
+  | Closed
+
+data NamedType = NamedType
+  { name :: Text
+  , typ :: TypeOf
+  }
 
 data Tree2
   = ArrayTree2 Version2 OriginalSource (Vector Tree2)

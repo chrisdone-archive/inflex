@@ -140,9 +140,7 @@ loadInputDocument (InputDocument {cells}) = do
                , dependencies
                })
           (toList cells)
-  for_
-    inputCells
-    (\Named {name, sourceHash} -> glog (CellHash name sourceHash))
+  for_ inputCells (\Named {name, sourceHash} -> glog (CellHash name sourceHash))
   loaded <-
     timed
       TimedLoadDocument1
@@ -201,21 +199,25 @@ loadInputDocument (InputDocument {cells}) = do
                  (\EvaledExpression {cell = Cell1 {parsed, mappings}, ..} ->
                     Shared.ResultOk
                       (Shared.ResultTree
-                         (case parsed
-                                      -- A temporary
-                                      -- specialization to
-                                      -- display lambdas in a
-                                      -- cell as the original
-                                      -- code. But, later,
-                                      -- toTree will render
-                                      -- lambdas structurally.
-                                of
-                            LambdaExpression {} ->
-                              Shared.MiscTree2
-                                Shared.versionRefl
-                                (Shared.OriginalSource code)
-                                code
-                            _ -> toTree mappings (pure parsed) resultExpression)))
+                         { tree =
+                             case parsed
+                                  -- A temporary
+                                  -- specialization to
+                                  -- display lambdas in a
+                                  -- cell as the original
+                                  -- code. But, later,
+                                  -- toTree will render
+                                  -- lambdas structurally.
+                                  of
+                               LambdaExpression {} ->
+                                 Shared.MiscTree2
+                                   Shared.versionRefl
+                                   (Shared.OriginalSource code)
+                                   code
+                               _ ->
+                                 toTree mappings (pure parsed) resultExpression
+                         , typ = Shared.MiscType -- TODO:
+                         }))
                  thing
          glog (CellSharedResult result)
          pure

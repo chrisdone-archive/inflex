@@ -454,7 +454,9 @@ foreign import viewResultTree :: Json -> (View ResultTree)
 
 foreign import unviewResultTree :: (View ResultTree) -> Json
 
-foreign import unResultTree :: (View ResultTree) -> (View Tree2)
+foreign import resultTreeTree :: (View ResultTree) -> (View Tree2)
+
+foreign import resultTreeTyp :: (View ResultTree) -> (View TypeOf)
 
 foreign import viewHash :: Json -> (View Hash)
 
@@ -479,4 +481,33 @@ foreign import caseCachedResult :: forall r. {
   "FreshResult" :: (View Result) -> (View Hash) -> r,
   "CachedResult" :: (View Hash) -> r
   } -> (View CachedResult) -> r
+
+foreign import viewTypeOf :: Json -> (View TypeOf)
+
+foreign import unviewTypeOf :: (View TypeOf) -> Json
+
+foreign import caseTypeOf :: forall r. {
+  "ArrayOf" :: (View TypeOf) -> r,
+  "RecordOf" :: (Array (View NamedType)) -> r,
+  "TableOf" :: (Array (View NamedType)) -> r,
+  "VariantOf" :: (Array (View NamedType)) -> (View OpenClosed) -> r,
+  "MiscType" :: r
+  } -> (View TypeOf) -> r
+
+foreign import viewNamedType :: Json -> (View NamedType)
+
+foreign import unviewNamedType :: (View NamedType) -> Json
+
+foreign import namedTypeName :: (View NamedType) -> String
+
+foreign import namedTypeTyp :: (View NamedType) -> (View TypeOf)
+
+foreign import viewOpenClosed :: Json -> (View OpenClosed)
+
+foreign import unviewOpenClosed :: (View OpenClosed) -> Json
+
+foreign import caseOpenClosed :: forall r. {
+  "Open" :: r,
+  "Closed" :: r
+  } -> (View OpenClosed) -> r
 

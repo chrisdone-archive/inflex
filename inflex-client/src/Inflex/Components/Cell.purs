@@ -25,7 +25,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
-import Inflex.Frisson (View, caseResult, unResultTree)
+import Inflex.Frisson as F
+import Inflex.Frisson (View)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
 import Prelude
@@ -112,9 +113,9 @@ outputCellToCell (OutputCell cell) =
     , codeHash: cell.codeHash
     , resultHash: cell.resultHash
     , result:
-        caseResult
+        F.caseResult
           { "ResultError": Left
-          , "ResultOk": \resultTree -> Right (unResultTree resultTree)
+          , "ResultOk": \resultTree -> Right (F.resultTreeTree resultTree)
           }
           (cell.result)
     }

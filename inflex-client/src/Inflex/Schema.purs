@@ -198,8 +198,26 @@ data Result
   = ResultError CellError
   | ResultOk ResultTree
 
-newtype ResultTree =
-  ResultTree Tree2
+data ResultTree = ResultTree
+  { tree :: Tree2
+  , typ :: TypeOf
+  }
+
+data TypeOf
+  = ArrayOf TypeOf
+  | RecordOf (Vector NamedType)
+  | TableOf (Vector NamedType)
+  | VariantOf (Vector NamedType) OpenClosed
+  | MiscType
+
+data OpenClosed
+  = Open
+  | Closed
+
+data NamedType = NamedType
+  { name :: Text
+  , typ :: TypeOf
+  }
 
 data Tree2
   = ArrayTree2 Version2 OriginalSource (Vector Tree2)
@@ -370,6 +388,21 @@ derive instance genericFile :: Generic File _
 instance showFile :: Show File where show = genericShow
 instance decodeFile :: Decode File where decode = genericDecode opts
 instance encodeFile :: Encode File where encode = genericEncode opts
+
+derive instance genericTypeOf :: Generic TypeOf _
+instance showTypeOf :: Show TypeOf where show x = genericShow x
+instance decodeTypeOf :: Decode TypeOf where decode x = genericDecode opts x
+instance encodeTypeOf :: Encode TypeOf where encode x = genericEncode opts x
+
+derive instance genericNamedType :: Generic NamedType _
+instance showNamedType :: Show NamedType where show = genericShow
+instance decodeNamedType :: Decode NamedType where decode = genericDecode opts
+instance encodeNamedType :: Encode NamedType where encode = genericEncode opts
+
+derive instance genericOpenClosed :: Generic OpenClosed _
+instance showOpenClosed :: Show OpenClosed where show = genericShow
+instance decodeOpenClosed :: Decode OpenClosed where decode = genericDecode opts
+instance encodeOpenClosed :: Encode OpenClosed where encode = genericEncode opts
 
 derive instance genericCsvImportFinal :: Generic CsvImportFinal _
 instance showCsvImportFinal :: Show CsvImportFinal where show = genericShow

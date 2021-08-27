@@ -51,6 +51,21 @@ instance showFile :: Show File where show = genericShow
 instance decodeFile :: Decode File where decode = genericDecode opts
 instance encodeFile :: Encode File where encode = genericEncode opts
 
+derive instance genericTypeOf :: Generic TypeOf _
+instance showTypeOf :: Show TypeOf where show x = genericShow x
+instance decodeTypeOf :: Decode TypeOf where decode x = genericDecode opts x
+instance encodeTypeOf :: Encode TypeOf where encode x = genericEncode opts x
+
+derive instance genericNamedType :: Generic NamedType _
+instance showNamedType :: Show NamedType where show = genericShow
+instance decodeNamedType :: Decode NamedType where decode = genericDecode opts
+instance encodeNamedType :: Encode NamedType where encode = genericEncode opts
+
+derive instance genericOpenClosed :: Generic OpenClosed _
+instance showOpenClosed :: Show OpenClosed where show = genericShow
+instance decodeOpenClosed :: Decode OpenClosed where decode = genericDecode opts
+instance encodeOpenClosed :: Encode OpenClosed where encode = genericEncode opts
+
 derive instance genericCsvImportFinal :: Generic CsvImportFinal _
 instance showCsvImportFinal :: Show CsvImportFinal where show = genericShow
 instance decodeCsvImportFinal :: Decode CsvImportFinal where decode = genericDecode opts
