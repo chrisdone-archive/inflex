@@ -15,6 +15,7 @@ module Inflex.Server.Compute where
 
 import           Control.Early
 import           Control.Monad.IO.Class
+import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
 import           Data.Functor.Contravariant
@@ -41,6 +42,7 @@ import           Inflex.Renamer
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Stepper
+import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -196,7 +198,7 @@ loadInputDocument (InputDocument {cells}) = do
          let result =
                either
                  (Shared.ResultError . toCellError)
-                 (\EvaledExpression {cell = Cell1 {parsed, mappings}, ..} ->
+                 (\EvaledExpression {cell = Cell1 {parsed, mappings, scheme}, ..} ->
                     Shared.ResultOk
                       (Shared.ResultTree
                          { tree =
@@ -216,7 +218,7 @@ loadInputDocument (InputDocument {cells}) = do
                                    code
                                _ ->
                                  toTree mappings (pure parsed) resultExpression
-                         , typ = Shared.MiscType -- TODO:
+                         , typ = typeOf (schemeType scheme)
                          }))
                  thing
          glog (CellSharedResult result)
@@ -437,3 +439,26 @@ toCellError =
       \case
         RenamerErrors {} -> Shared.CellRenameErrors
         ParserErrored {} -> Shared.SyntaxError
+
+typeOf :: Type Polymorphic -> Shared.TypeOf
+typeOf =
+  \case
+    ArrayType t -> Shared.ArrayOf (typeOf t)
+    RecordType (RowType TypeRow {fields}) ->
+      Shared.RecordOf
+        (V.fromList
+           (map
+              (\Field {name, typ} ->
+                 Shared.NamedType {name = coerce name, typ = typeOf typ})
+              fields))
+    VariantType (RowType TypeRow {fields,typeVariable}) ->
+      Shared.VariantOf
+        (V.fromList
+           (map
+              (\Field {name, typ} ->
+                 Shared.NamedType {name = coerce name, typ = typeOf typ})
+              fields))
+        (case typeVariable of
+           Nothing -> Shared.Closed
+           Just {} -> Shared.Open)
+    _ -> Shared.MiscType
