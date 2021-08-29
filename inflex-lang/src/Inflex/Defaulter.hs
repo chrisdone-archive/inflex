@@ -260,6 +260,7 @@ substituteClassConstraint ::
 substituteClassConstraint substitutions ClassConstraint {..} =
   ClassConstraint {typ = fmap (substituteType substitutions) typ, ..}
 
+-- | TODO: This Seq is slow. Fix it!
 substituteType :: Seq Substitution -> Type Polymorphic -> Type Polymorphic
 substituteType substitutions = go
   where
