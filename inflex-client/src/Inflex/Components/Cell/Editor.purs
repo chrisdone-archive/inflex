@@ -41,7 +41,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), (/=))
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -76,6 +76,7 @@ data Command
   | FinishEditing String
   | PreventDefault Event'
                    Command
+  | AndThen Command Command
   -- | Autoresize Event
   | NoOp
   | SetInput String
@@ -83,6 +84,7 @@ data Command
   | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
   | ScrollTable Event'
+  | ScrollToBottom
   | VariantDropdownChanged Shared.DataPath Event'
 
 data Query a
@@ -307,12 +309,24 @@ eval' =
         else H.modify_
                (\(State s) ->
                   State (s {tableOffset = max 0 (s . tableOffset - 1)}))
+    ScrollToBottom ->
+      H.modify_
+               (\(State s) ->
+                  State
+                    (s
+                       { tableOffset =
+                           max 0 (min (s . rowCount - pageSize) (s . rowCount))
+                       }))
+
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
             stopPropagation e)
       eval' c
     NoOp -> pure unit
+    AndThen x y -> do
+       eval' x
+       eval' y
 
 foreign import getDeltaY :: Event -> Effect Number
 foreign import getValue :: Element -> Effect (Nullable String)
@@ -646,13 +660,16 @@ renderTableEditor type0 originalSource offset path cells columns rows =
                            else pure
                                   (PreventDefault
                                      (Event' (toEvent e))
-                                     (TriggerUpdatePath
+                                     (AndThen
+
+                                        (TriggerUpdatePath
                                         (Shared.UpdatePath
                                            { path:
                                                path Shared.DataHere
                                            , update:
                                                Shared.AddToEndUpdate
-                                           }))))
+                                           }))
+                                     (ScrollToBottom))))
                   ]
                   [HH.text "+"]
               ]
@@ -1032,7 +1049,7 @@ renderArrayEditor type' originalSource path cells offset editors =
           ]
         _ -> rows
     rows =
-      mapWithIndex
+      mapWithIndexNarrow offset pageSize
         (\i editor' ->
            let childPath = path <<< Shared.DataElemOf i
             in HH.tr
@@ -1084,13 +1101,13 @@ renderArrayEditor type' originalSource path cells offset editors =
                                 pure
                                   (PreventDefault
                                      (Event' (toEvent e))
-                                     (TriggerUpdatePath
+                                     (AndThen (TriggerUpdatePath
                                         (Shared.UpdatePath
                                            { path:
                                                path Shared.DataHere
                                            , update:
                                                Shared.AddToEndUpdate
-                                           }))))
+                                           })) ScrollToBottom)))
                          ]
                          [HH.text "+"]
                      ]
@@ -1101,8 +1118,7 @@ renderArrayEditor type' originalSource path cells offset editors =
                  ]
              ]
         else []
-
-    len = Array.length rows
+    len = Array.length editors
 
 --------------------------------------------------------------------------------
 -- Records
