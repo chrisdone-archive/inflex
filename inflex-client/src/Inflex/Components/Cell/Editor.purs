@@ -382,7 +382,7 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
                         , HP.title "Click to edit"
                         , HE.onClick
                             (\ev ->
-                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                               pure (StartEditor))
                         ]
                         inner
                         } originalSource,

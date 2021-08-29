@@ -29,6 +29,7 @@ import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (focus, fromElement)
 import Web.UIEvent.KeyboardEvent as K
+import Web.UIEvent.MouseEvent as Mouse
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -195,7 +196,7 @@ render (Config config) (State {display, name, error}) =
       HH.div
         [ HP.class_ (HH.ClassName "cell-name")
         , HP.title (config.title)
-        , HE.onClick (\e -> pure StartEditor)
+        , HE.onClick (\e -> pure (PreventDefault (Mouse.toEvent e) StartEditor))
         ]
         [ case cleanName name of
             Nothing -> HH.text (config.unfilled)
