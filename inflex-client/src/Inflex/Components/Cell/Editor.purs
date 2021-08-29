@@ -8,8 +8,6 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
-import Prelude
-
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -37,10 +35,11 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
-import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseVariantArgument, field2Key, field2Value, nestedCellErrorError, nestedCellErrorPath, rowFields)
+import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
 import Web.DOM.Element (Element)
 import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Internal.Types (Event)
@@ -66,6 +65,7 @@ data State = State
   , cells :: Map UUID (OutputCell)
   , tableOffset :: Int
   , rowCount :: Int
+  , type' :: Maybe (View Shared.TypeOf)
   }
 
 data Command
@@ -101,6 +101,7 @@ data EditorAndCode = EditorAndCode
   , code :: String
   , path :: Shared.DataPath -> Shared.DataPath
   , cells :: Map UUID (OutputCell)
+  , type' :: Maybe (View Shared.TypeOf)
   }
 instance editorAndCodeEq :: Eq EditorAndCode where
   eq (EditorAndCode x) (EditorAndCode y) =
@@ -146,7 +147,7 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\input@(EditorAndCode {editor, code, path, cells}) ->
+        (\input@(EditorAndCode {editor, code, path, cells, type'}) ->
            State
              { display: DisplayEditor
              , editor
@@ -156,6 +157,7 @@ component =
              , cells
              , tableOffset: 0
              , rowCount: getRowCount editor
+             , type'
              })
     , render
     , eval:
@@ -255,24 +257,33 @@ eval' =
            (if trim code == ""
               then "_"
               else code))
-    SetEditorInput input@(EditorAndCode {editor, code, path, cells}) -> do
+    SetEditorInput input@(EditorAndCode {editor, code, path, cells, type'}) -> do
       State state <- H.get
       H.put
-            (State
-               { path
-               , editor
-               , code
-               , display: DisplayEditor
-               , cellError: Nothing
-               , cells
-               , tableOffset: 0
-               , rowCount: getRowCount editor
-               })
+        (State
+           { path
+           , editor
+           , code
+           , display: DisplayEditor
+           , cellError: Nothing
+           , cells
+           , tableOffset: 0
+           , rowCount: getRowCount editor
+           , type'
+           })
     ScrollTable (Event' e) -> do
       delta <- H.liftEffect (getDeltaY e)
       if delta > 0.0
-         then H.modify_ (\(State s) -> State (s { tableOffset = min (s.rowCount - pageSize) (s.tableOffset + 1) }))
-         else H.modify_ (\(State s) -> State (s { tableOffset = max 0 (s.tableOffset - 1) }))
+        then H.modify_
+               (\(State s) ->
+                  State
+                    (s
+                       { tableOffset =
+                           min (s . rowCount - pageSize) (s . tableOffset + 1)
+                       }))
+        else H.modify_
+               (\(State s) ->
+                  State (s {tableOffset = max 0 (s . tableOffset - 1)}))
     PreventDefault (Event' e) c -> do
       H.liftEffect
         (do preventDefault e
@@ -291,7 +302,7 @@ foreign import printText :: String -> String
 -- Render main component
 
 render :: forall a. MonadAff a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-render (State {display, code, editor, path, cellError, cells, tableOffset}) =
+render (State {display, code, editor, path, cellError, cells, tableOffset, type'}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
@@ -299,7 +310,7 @@ render (State {display, code, editor, path, cellError, cells, tableOffset}) =
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
-                        Right e -> renderEditor tableOffset path cells e)
+                        Right e -> renderEditor type' tableOffset path cells e)
   where
     renderControl =
       [ HH.slot
@@ -395,11 +406,13 @@ blank code editor =
 
 renderEditor ::
      forall a. MonadAff a
-  => Int -> (Shared.DataPath -> Shared.DataPath)
+  => Maybe (View Shared.TypeOf)
+  -> Int
+  -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> View Shared.Tree2
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor offset path cells =
+renderEditor type' offset path cells =
   caseTree2 {
     "MiscTree2":       \v _originalSource t ->
       [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]],
@@ -408,13 +421,13 @@ renderEditor offset path cells =
     "VegaTree2":       \v _originalSource t ->
       [renderVegaEditor path t],
     "VariantTree2":    \v _originalSource tag arg ->
-      [renderVariantEditor path cells tag arg],
+      [renderVariantEditor type' path cells tag arg],
     "ArrayTree2":      \v originalSource editors ->
-      [renderArrayEditor originalSource path cells editors],
+      [renderArrayEditor type' originalSource path cells editors],
     "RecordTree2":     \v originalSource fields ->
-      [renderRecordEditor originalSource path cells fields],
+      [renderRecordEditor (rowType type') originalSource path cells fields],
     "TableTreeMaybe2": \v originalSource columns rows ->
-      renderTableEditor originalSource offset path cells columns rows,
+      renderTableEditor type' originalSource offset path cells columns rows,
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
     "HoleTree": \originalSource ->
       [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
@@ -425,12 +438,13 @@ renderEditor offset path cells =
 
 renderVariantEditor ::
      forall a. MonadAff a
-  => (Shared.DataPath -> Shared.DataPath)
+  => Maybe (View Shared.TypeOf)
+  -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> String
   -> View Shared.VariantArgument
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderVariantEditor path cells tag marg =
+renderVariantEditor type' path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")] [HH.text ("#" <> tag)]] <>
@@ -446,6 +460,7 @@ renderVariantEditor path cells tag marg =
                , code: editorCode arg
                , path: path <<< Shared.DataVariantOf tag
                , cells
+               , type'
                })
             (\output ->
                case output of
@@ -531,13 +546,15 @@ pageSize = 10
 
 renderTableEditor ::
      forall a. MonadAff a
-  => View Shared.OriginalSource -> Int
+  => Maybe (View Shared.TypeOf)
+  -> View Shared.OriginalSource
+  -> Int
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor originalSource offset path cells columns rows =
+renderTableEditor type' originalSource offset path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading originalSource path columns emptyTable
@@ -547,13 +564,14 @@ renderTableEditor originalSource offset path cells columns rows =
                                                                    (ScrollTable (Event' (Wheel.toEvent e)))))]
           (bodyGuide hasOriginalSource' emptyTable emptyRows <>
            mapWithIndexNarrow offset pageSize (\i -> caseMaybeRow {
-             "SomeRow": tableRow hasOriginalSource' columns path cells i
-            ,"HoleRow": tableRowHole hasOriginalSource' columns path cells i
+             "SomeRow": tableRow (rowType type') hasOriginalSource' columns path cells i
+            ,"HoleRow": tableRowHole (rowType type') hasOriginalSource' columns path cells i
            }) rows <>
            if hasOriginalSource' then addNewRow else [])
       ]
   ]
   where
+
     hasOriginalSource' = hasOriginalSource originalSource
     emptyTable = Array.null columns && Array.null rows
     emptyRows = Array.null rows
@@ -619,13 +637,13 @@ originateFromField columns key code =
 
 tableRowHole ::
      forall a. MonadAff a
-  => Boolean -> Array String
+  => Maybe (Array (View Shared.NamedType)) -> Boolean -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Tree2
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRowHole editable columns path cells rowIndex editor' =
+tableRowHole types editable columns path cells rowIndex editor' =
   HH.tr
     []
     ([rowNumber editable rowIndex path] <>
@@ -640,6 +658,10 @@ tableRowHole editable columns path cells rowIndex editor' =
                     (EditorAndCode
                        { editor: Right editor'
                        , code: editorCode editor'
+                       , type': do
+                           types' <- types
+                           namedType <- Array.find (\namedType -> namedTypeName namedType == key) types'
+                           pure (namedTypeTyp namedType)
                        , cells
                        , path:
                            path <<<
@@ -676,14 +698,15 @@ tableRowHole editable columns path cells rowIndex editor' =
 
 tableRow ::
      forall a. MonadAff a
-  => Boolean
+  => Maybe (Array (View Shared.NamedType))
+  -> Boolean
   -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow editable columns path cells rowIndex row =
+tableRow types editable columns path cells rowIndex row =
   HH.tr
     []
     ([rowNumber editable rowIndex path] <>
@@ -701,6 +724,10 @@ tableRow editable columns path cells rowIndex row =
                        { editor: Right editor'
                        , code: editorCode editor'
                        , cells
+                       , type': do
+                           types' <- types
+                           namedType <- Array.find (\namedType -> namedTypeName namedType == key) types'
+                           pure (namedTypeTyp namedType)
                        , path:
                            path <<<
                            Shared.DataElemOf rowIndex <<< Shared.DataFieldOf key
@@ -922,11 +949,12 @@ generateColumnName prefix columns = iterate 1
 
 renderArrayEditor ::
      forall a. MonadAff a
-  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
+  => Maybe ( (View Shared.TypeOf)) ->
+     View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array (View Shared.Tree2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderArrayEditor originalSource path cells editors =
+renderArrayEditor type' originalSource path cells editors =
   HH.table
     [HP.class_ (HH.ClassName "array")]
     [HH.tbody [HP.class_ (HH.ClassName "array-body")] (body <> addNewRow)]
@@ -962,6 +990,13 @@ renderArrayEditor originalSource path cells editors =
                             , code: editorCode editor'
                             , path: childPath
                             , cells
+                            , type': type' >>= (caseTypeOf {
+                                "ArrayOf": Just,
+                                "MiscType": Nothing
+                                ,"RecordOf": const Nothing,
+                                "TableOf": const Nothing,
+                                "VariantOf": \_ _ -> Nothing
+                                })
                             })
                          (\output ->
                             case output of
@@ -1016,11 +1051,13 @@ renderArrayEditor originalSource path cells editors =
 
 renderRecordEditor ::
      forall a. MonadAff a
-  => View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
+  => Maybe (Array (View Shared.NamedType))
+  -> View Shared.OriginalSource
+  -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array (View Shared.Field2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderRecordEditor originalSource path cells fields =
+renderRecordEditor types originalSource path cells fields =
   HH.table
     [HP.class_ (HH.ClassName "record")]
     ((if hasOriginalSource' then [ HH.button
@@ -1121,6 +1158,10 @@ renderRecordEditor originalSource path cells fields =
                                , code: editorCode editor'
                                , path:
                                    path <<< Shared.DataFieldOf key
+                               , type': do
+                                   types' <- types
+                                   namedType <- Array.find (\namedType -> namedTypeName namedType == key) types'
+                                   pure (namedTypeTyp namedType)
                                })
                             (\output ->
                                case output of
@@ -1141,6 +1182,7 @@ renderRecordEditor originalSource path cells fields =
                     ])
        fields)
   where hasOriginalSource' = hasOriginalSource originalSource
+
 
 --------------------------------------------------------------------------------
 -- Errors
@@ -1230,3 +1272,13 @@ caseTree2Default d = {
     "VegaTree2":       \v _originalSource t -> d,
     "HoleTree": \_originalSource -> d
   }
+
+rowType :: Maybe (View Shared.TypeOf) -> Maybe (Array (View Shared.NamedType))
+rowType Nothing = Nothing
+rowType (Just t) = caseTypeOf {
+  "ArrayOf": const Nothing,
+  "MiscType": Nothing
+  ,"RecordOf": const Nothing,
+  "TableOf": Just,
+  "VariantOf": \_ _ -> Nothing
+  } t

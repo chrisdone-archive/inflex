@@ -75,6 +75,7 @@ data Cell = Cell
   , codeHash :: Shared.Hash
   , result :: Either (View Shared.CellError) (View Shared.Tree2)
   , resultHash :: Shared.Hash
+  , type' :: Maybe (View Shared.TypeOf)
   }
 
 derive instance genericCell :: Generic Cell _
@@ -118,6 +119,11 @@ outputCellToCell (OutputCell cell) =
           , "ResultOk": \resultTree -> Right (F.resultTreeTree resultTree)
           }
           (cell.result)
+    , type': F.caseResult
+        { "ResultError": \_ -> Nothing
+        , "ResultOk": \resultTree -> Just (F.resultTreeTyp resultTree)
+        }
+        (cell.result)
     }
 
 --------------------------------------------------------------------------------
@@ -182,7 +188,7 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State { cell: Cell {name, code, result}
+render (State { cell: Cell {name, code, result, type'}
               , cells
               }) =
   HH.div
@@ -222,6 +228,7 @@ render (State { cell: Cell {name, code, result}
                    , code: code
                    , cells
                    , path: identity
+                   , type': type'
                    })
                 (\output ->
                    case output of
