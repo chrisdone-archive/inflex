@@ -1368,4 +1368,4 @@ materialize (Just type') originalSource offset path cells =
   } type'
 
 holeFallback :: forall a. String -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-holeFallback suffix = [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text ("_" <> suffix)]]
+holeFallback suffix = [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text ("_")]]
