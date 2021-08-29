@@ -212,7 +212,7 @@ data ResultTree = ResultTree
 data TypeOf
   = ArrayOf TypeOf
   | RecordOf (Vector NamedType)
-  | TableOf (Vector NamedType)
+  | TableOf (Vector NamedType) -- TODO: this isn't being produced by the server. remove it
   | VariantOf (Vector NamedType) OpenClosed
   | TextOf
   | MiscType

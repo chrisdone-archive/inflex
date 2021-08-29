@@ -603,7 +603,7 @@ renderTableEditor ::
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor type' originalSource offset path cells columns rows =
+renderTableEditor type0 originalSource offset path cells columns rows =
   [ HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading originalSource path columns emptyTable
@@ -620,7 +620,7 @@ renderTableEditor type' originalSource offset path cells columns rows =
       ]
   ]
   where
-
+    type' = arrayType type0
     hasOriginalSource' = hasOriginalSource originalSource
     emptyTable = Array.null columns && Array.null rows
     emptyRows = Array.null rows
@@ -1039,14 +1039,7 @@ renderArrayEditor type' originalSource path cells editors =
                             , code: editorCode editor'
                             , path: childPath
                             , cells
-                            , type': type' >>= (caseTypeOf {
-                                "ArrayOf": Just,
-                                "MiscType": Nothing,
-                                "TextOf": Nothing
-                                ,"RecordOf": const Nothing,
-                                "TableOf": const Nothing,
-                                "VariantOf": \_ _ -> Nothing
-                                })
+                            , type': arrayType type'
                             })
                          (\output ->
                             case output of
@@ -1328,10 +1321,20 @@ rowType Nothing = Nothing
 rowType (Just t) = caseTypeOf {
   "ArrayOf": const Nothing,
   "MiscType": Nothing, "TextOf": Nothing
-  ,"RecordOf": const Nothing,
-  "TableOf": Just,
+  ,"RecordOf": Just,
+  "TableOf": const Nothing,
   "VariantOf": \_ _ -> Nothing
   } t
+
+arrayType :: Maybe (View Shared.TypeOf) -> Maybe (View Shared.TypeOf)
+arrayType type' = type' >>= (caseTypeOf {
+                                "ArrayOf": Just,
+                                "MiscType": Nothing,
+                                "TextOf": Nothing
+                                ,"RecordOf": const Nothing,
+                                "TableOf": const Nothing,
+                                "VariantOf": \_ _ -> Nothing
+                                })
 
 isEmptyRecordType :: View Shared.TypeOf -> Boolean
 isEmptyRecordType = caseTypeOf {
@@ -1353,16 +1356,16 @@ materialize ::
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-materialize Nothing _ _ _ _ = holeFallback
+materialize Nothing _ _ _ _ = holeFallback "no type"
 materialize (Just type') originalSource offset path cells =
   caseTypeOf {
-  "ArrayOf": const holeFallback,
-  "MiscType": holeFallback
-  ,"RecordOf": const holeFallback,
-  "TableOf": const holeFallback,
-  "VariantOf": \_ _ -> holeFallback,
+  "ArrayOf": const (holeFallback "ArrayOf"),
+  "MiscType": holeFallback "msc"
+  ,"RecordOf": const (holeFallback "rec"),
+  "TableOf": const (holeFallback "table"),
+  "VariantOf": \_ _ -> holeFallback "variant",
   "TextOf": [renderTextEditor originalSource path ""]
   } type'
 
-holeFallback :: forall a. Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-holeFallback = [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
+holeFallback :: forall a. String -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
+holeFallback suffix = [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text ("_" <> suffix)]]
