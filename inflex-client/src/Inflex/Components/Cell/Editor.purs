@@ -8,6 +8,9 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
+import Effect.Class.Console
+import Inflex.Frisson
+
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -16,6 +19,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable)
+import Data.Nullable (Nullable, toMaybe)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith, trim)
@@ -35,13 +39,14 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
-import Inflex.Frisson
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
 import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
 import Web.DOM.Element (Element)
+import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation)
+import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.MouseEvent (toEvent)
@@ -81,6 +86,7 @@ data Command
   | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
   | ScrollTable Event'
+  | VariantDropdownChanged Shared.DataPath Event'
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)
@@ -231,6 +237,24 @@ eval cmd = do
 eval' :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
+    VariantDropdownChanged path (Event' event) ->
+      case currentTarget event of
+        Nothing -> pure unit
+        Just x ->
+          case fromEventTarget x of
+            Just htmlelement -> do
+              mvalue <- H.liftEffect (getValue htmlelement)
+              case toMaybe mvalue of
+                Nothing -> pure unit
+                Just text -> do
+                  eval' (TriggerUpdatePath
+                        (Shared.UpdatePath
+                           { path
+                           , update:
+                               Shared.CodeUpdate
+                                 (Shared.Code {text})
+                           }))
+            Nothing -> pure unit
     TriggerUpdatePath update -> H.raise (UpdatePath update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
@@ -448,19 +472,29 @@ renderVariantEditor type' path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")]
-      [HH.text ("#" <> tag)
-      ,HH.text (case type' of
-                    Nothing -> "no type info"
+      [case type' of
+                    Nothing -> HH.text "no type info"
                     Just t -> caseTypeOf {
-                        "ArrayOf": const "",
-                        "MiscType": ""
-                        ,"RecordOf": const "",
-                        "TableOf": const "",
+                        "ArrayOf": const (HH.text ""),
+                        "MiscType": (HH.text "")
+                        ,"RecordOf": const (HH.text ""),
+                        "TableOf": const (HH.text ""),
                         -- TODO:
                         "VariantOf": \types open ->
-                          show types <> " -- " <> show open
+                          -- show types <> " -- " <> show open
+                           case types of
+                             [_] -> HH.text ("#" <> tag)
+                             _ -> HH.select [HE.onChange (\e -> Just (VariantDropdownChanged
+                                                              (path Shared.DataHere)
+                                                              (Event' e)))]
+                                   (map (\typ -> HH.option [HP.value ("#" <> namedTypeName typ <>
+                                                       if isEmptyRecordType (namedTypeTyp typ)
+                                                           then "" else "(_)"
+                                                          ),
+                                                     HP.selected (namedTypeName typ == tag)] [HH.text ("#" <> namedTypeName typ)])
+                                types)
                         } t
-)]] <>
+         ]] <>
     caseVariantArgument
       {"NoVariantArgument": [],
        "VariantArgument": \arg ->
@@ -1295,3 +1329,13 @@ rowType (Just t) = caseTypeOf {
   "TableOf": Just,
   "VariantOf": \_ _ -> Nothing
   } t
+
+isEmptyRecordType :: View Shared.TypeOf -> Boolean
+isEmptyRecordType = caseTypeOf {
+  "ArrayOf": const false,
+  "MiscType": false
+  ,"RecordOf":  (case _ of [] -> true
+                           _ -> false),
+  "TableOf": const false,
+  "VariantOf": \_ _ -> false
+  }
