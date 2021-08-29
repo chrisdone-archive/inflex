@@ -470,4 +470,5 @@ typeOf =
         (case typeVariable of
            Nothing -> Shared.Closed
            Just {} -> Shared.Open)
+    ConstantType TypeConstant {name=TextTypeName} -> Shared.TextOf
     _ -> Shared.MiscType

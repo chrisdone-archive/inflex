@@ -602,7 +602,8 @@ case 0: return k["ArrayOf"](a[1]);
 case 1: return k["RecordOf"](a[1]);
 case 2: return k["TableOf"](a[1]);
 case 3: return k["VariantOf"](a[1])(a[2]);
-case 4: return k["MiscType"];
+case 4: return k["TextOf"];
+case 5: return k["MiscType"];
 default: throw Exception('BUG: case accessor failed');
 }
 }

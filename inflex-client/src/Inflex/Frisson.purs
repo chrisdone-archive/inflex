@@ -491,6 +491,7 @@ foreign import caseTypeOf :: forall r. {
   "RecordOf" :: (Array (View NamedType)) -> r,
   "TableOf" :: (Array (View NamedType)) -> r,
   "VariantOf" :: (Array (View NamedType)) -> (View OpenClosed) -> r,
+  "TextOf" :: r,
   "MiscType" :: r
   } -> (View TypeOf) -> r
 

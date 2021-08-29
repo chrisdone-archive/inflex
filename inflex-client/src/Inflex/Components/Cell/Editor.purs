@@ -352,7 +352,7 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
       case display of
         DisplayCode -> HH.div [] inner -- Should not be happening.
         DisplayEditor ->
-          let boundaryWrap =
+          let boundaryWrap inner' =
                 (HH.div
                      [HP.class_ (HH.ClassName "editor-boundary-wrap")]
                      ([ HH.div
@@ -365,13 +365,13 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
                           ]
                           []
                       ] <>
-                      inner))
+                      inner'))
           in case editor of
-             Left _ -> boundaryWrap
+             Left _ -> boundaryWrap inner
              Right e ->
                caseTree2
                   ((caseTree2Default
-                   boundaryWrap)
+                   (boundaryWrap inner))
                    {
                     "HoleTree" = \originalSource ->
                       caseOriginalSource {
@@ -451,7 +451,9 @@ renderEditor type' offset path cells =
       renderTableEditor type' originalSource offset path cells columns rows,
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
     "HoleTree": \originalSource ->
-      [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]
+      -- if hasOriginalSource originalSource then
+          materialize type' originalSource offset path cells
+       -- else holeFallback
   }
 
 --------------------------------------------------------------------------------
@@ -477,6 +479,7 @@ renderVariantEditor type' originalSource path cells tag marg =
                         "MiscType": (HH.text "")
                         ,"RecordOf": const (HH.text ""),
                         "TableOf": const (HH.text ""),
+                        "TextOf": (HH.text ""),
                         -- TODO:
                         "VariantOf": \types open ->
                           -- show types <> " -- " <> show open
@@ -1038,7 +1041,8 @@ renderArrayEditor type' originalSource path cells editors =
                             , cells
                             , type': type' >>= (caseTypeOf {
                                 "ArrayOf": Just,
-                                "MiscType": Nothing
+                                "MiscType": Nothing,
+                                "TextOf": Nothing
                                 ,"RecordOf": const Nothing,
                                 "TableOf": const Nothing,
                                 "VariantOf": \_ _ -> Nothing
@@ -1323,7 +1327,7 @@ rowType :: Maybe (View Shared.TypeOf) -> Maybe (Array (View Shared.NamedType))
 rowType Nothing = Nothing
 rowType (Just t) = caseTypeOf {
   "ArrayOf": const Nothing,
-  "MiscType": Nothing
+  "MiscType": Nothing, "TextOf": Nothing
   ,"RecordOf": const Nothing,
   "TableOf": Just,
   "VariantOf": \_ _ -> Nothing
@@ -1332,9 +1336,33 @@ rowType (Just t) = caseTypeOf {
 isEmptyRecordType :: View Shared.TypeOf -> Boolean
 isEmptyRecordType = caseTypeOf {
   "ArrayOf": const false,
-  "MiscType": false
+  "MiscType": false,"TextOf": false
   ,"RecordOf":  (case _ of [] -> true
                            _ -> false),
   "TableOf": const false,
   "VariantOf": \_ _ -> false
   }
+
+--------------------------------------------------------------------------------
+-- Materializing editors
+
+materialize ::
+     forall a. MonadAff a
+  => Maybe (View Shared.TypeOf) -> View Shared.OriginalSource
+  -> Int
+  -> (Shared.DataPath -> Shared.DataPath)
+  -> Map UUID (OutputCell)
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
+materialize Nothing _ _ _ _ = holeFallback
+materialize (Just type') originalSource offset path cells =
+  caseTypeOf {
+  "ArrayOf": const holeFallback,
+  "MiscType": holeFallback
+  ,"RecordOf": const holeFallback,
+  "TableOf": const holeFallback,
+  "VariantOf": \_ _ -> holeFallback,
+  "TextOf": [renderTextEditor originalSource path ""]
+  } type'
+
+holeFallback :: forall a. Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
+holeFallback = [HH.div [HP.class_ (HH.ClassName "hole"), HP.title "A blank hole"] [HH.text "_"]]

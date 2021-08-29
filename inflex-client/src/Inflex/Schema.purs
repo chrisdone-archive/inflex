@@ -208,6 +208,7 @@ data TypeOf
   | RecordOf (Vector NamedType)
   | TableOf (Vector NamedType)
   | VariantOf (Vector NamedType) OpenClosed
+  | TextOf
   | MiscType
 
 data OpenClosed
