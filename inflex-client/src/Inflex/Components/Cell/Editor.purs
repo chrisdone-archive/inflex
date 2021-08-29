@@ -9,6 +9,7 @@ module Inflex.Components.Cell.Editor
   , component) where
 
 
+import Data.Int
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
 import Data.Array (mapWithIndex)
@@ -41,7 +42,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), negate)
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -84,6 +85,7 @@ data Command
   | VegaElementChanged String (ElemRef' Element)
   | TriggerUpdatePath Shared.UpdatePath
   | ScrollTable Event'
+  | ScrollIntegral Int Shared.DataPath Event'
   | ScrollToBottom
   | VariantDropdownChanged Shared.DataPath Event'
 
@@ -238,6 +240,15 @@ eval cmd = do
 eval' :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
+    ScrollIntegral i path (Event' event) -> do
+       delta <- H.liftEffect (getDeltaY event)
+       eval' (TriggerUpdatePath
+                        (Shared.UpdatePath
+                           { path
+                           , update:
+                               Shared.CodeUpdate
+                                 (Shared.Code {text: show (i + (if delta > 0.0 then -1 else 1))})
+                           }))
     VariantDropdownChanged path (Event' event) ->
       case currentTarget event of
         Nothing -> pure unit
@@ -452,7 +463,14 @@ renderEditor ::
 renderEditor type' offset path cells =
   caseTree2 {
     "MiscTree2":       \v _originalSource t ->
-      [HH.div [HP.class_ (HH.ClassName "misc")] [HH.text t]],
+      [HH.div [HP.class_ (HH.ClassName "misc"),
+          HE.onWheel (\e -> case fromString t  of
+                              Nothing -> Nothing
+                              Just i -> Just (PreventDefault
+                                  (Event' (Wheel.toEvent e))
+                                  (ScrollIntegral i
+                                                  (path Shared.DataHere) (Event' (Wheel.toEvent e)))))
+       ] [HH.text t]],
     "TextTree2":       \v originalSource t ->
       [renderTextEditor originalSource path t],
     "VegaTree2":       \v _originalSource t ->
