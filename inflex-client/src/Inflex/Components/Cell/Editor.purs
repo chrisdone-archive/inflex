@@ -8,8 +8,8 @@ module Inflex.Components.Cell.Editor
   , Query(..)
   , component) where
 
-import Effect.Class.Console
-import Inflex.Frisson
+
+import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
 import Data.Array (mapWithIndex)
 import Data.Array as Array
@@ -18,7 +18,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
-import Data.Nullable (Nullable)
 import Data.Nullable (Nullable, toMaybe)
 import Data.Set (Set)
 import Data.Set as Set
@@ -43,9 +42,7 @@ import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
 import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
-import Web.DOM.Element (Element)
 import Web.DOM.Element (Element, fromEventTarget)
-import Web.Event.Event (preventDefault, stopPropagation)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.HTMLElement (HTMLElement, fromElement)
