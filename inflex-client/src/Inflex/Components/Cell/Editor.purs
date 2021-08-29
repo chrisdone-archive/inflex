@@ -41,7 +41,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=))
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), (/=))
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -182,6 +182,8 @@ getRowCount editor =
           {
            "TableTreeMaybe2" = \_v _src flds rows ->
              Array.length rows
+         , "ArrayTree2" = \_v _src rows ->
+             Array.length rows
          })
          e
 
@@ -288,7 +290,7 @@ eval' =
            , display: DisplayEditor
            , cellError: Nothing
            , cells
-           , tableOffset: 0
+           , tableOffset: state.tableOffset
            , rowCount: getRowCount editor
            , type'
            })
@@ -300,7 +302,7 @@ eval' =
                   State
                     (s
                        { tableOffset =
-                           min (s . rowCount - pageSize) (s . tableOffset + 1)
+                           max 0 (min (s . rowCount - pageSize) (s . tableOffset + 1))
                        }))
         else H.modify_
                (\(State s) ->
@@ -444,7 +446,7 @@ renderEditor type' offset path cells =
     "VariantTree2":    \v originalSource tag arg ->
       [renderVariantEditor type' originalSource path cells tag arg],
     "ArrayTree2":      \v originalSource editors ->
-      [renderArrayEditor type' originalSource path cells editors],
+      [renderArrayEditor type' originalSource path cells offset editors],
     "RecordTree2":     \v originalSource fields ->
       [renderRecordEditor (rowType type') originalSource path cells fields],
     "TableTreeMaybe2": \v originalSource columns rows ->
@@ -662,12 +664,15 @@ renderTableEditor type0 originalSource offset path cells columns rows =
                       then 1
                       else 0))
               ]
-              []
+              (if len>1 then [HH.text ((if len>pageSize then show (1+offset) <> "-" <> show (min (offset+pageSize) len) <> " of " else "") <>
+                        show (len) <> " rows")] else
+                 [])
           ]
       ]
       where
         disabled = Array.null columns
     fieldset = Set.fromFoldable columns
+    len = Array.length rows
 
 originateFromField :: Array String -> String -> String -> String
 originateFromField columns key code =
@@ -1001,12 +1006,17 @@ renderArrayEditor ::
   => Maybe ( (View Shared.TypeOf)) ->
      View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
+     -> Int
   -> Array (View Shared.Tree2)
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderArrayEditor type' originalSource path cells editors =
+renderArrayEditor type' originalSource path cells offset editors =
   HH.table
     [HP.class_ (HH.ClassName "array")]
-    [HH.tbody [HP.class_ (HH.ClassName "array-body")] (body <> addNewRow)]
+    [HH.tbody [HP.class_ (HH.ClassName "array-body"),
+    HE.onWheel (\e -> Just (PreventDefault
+                                                                   (Event' (Wheel.toEvent e))
+                                                                   (ScrollTable (Event' (Wheel.toEvent e)))))
+    ] (body <> addNewRow)]
   where
     body =
       case editors of
@@ -1084,10 +1094,15 @@ renderArrayEditor type' originalSource path cells editors =
                          ]
                          [HH.text "+"]
                      ]
-                 , HH.td [HP.class_ (HH.ClassName "bottom-blank")] []
+                 , HH.td [HP.class_ (HH.ClassName "bottom-blank")]
+                     (if len>1 then [HH.text ((if len>pageSize then show (1+offset) <> "-" <> show (min (offset+pageSize) len) <> " of " else "") <>
+                        show (len) <> " rows")] else
+                 [])
                  ]
              ]
         else []
+
+    len = Array.length rows
 
 --------------------------------------------------------------------------------
 -- Records
