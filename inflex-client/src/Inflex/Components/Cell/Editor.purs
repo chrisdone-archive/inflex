@@ -35,7 +35,7 @@ import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
 import Inflex.FieldName (validFieldName)
-import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
+import Inflex.Frisson
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
@@ -447,7 +447,20 @@ renderVariantEditor ::
 renderVariantEditor type' path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
-    ([HH.div [HP.class_ (HH.ClassName "variant-tag")] [HH.text ("#" <> tag)]] <>
+    ([HH.div [HP.class_ (HH.ClassName "variant-tag")]
+      [HH.text ("#" <> tag)
+      ,HH.text (case type' of
+                    Nothing -> "no type info"
+                    Just t -> caseTypeOf {
+                        "ArrayOf": const "",
+                        "MiscType": ""
+                        ,"RecordOf": const "",
+                        "TableOf": const "",
+                        -- TODO:
+                        "VariantOf": \types open ->
+                          show types <> " -- " <> show open
+                        } t
+)]] <>
     caseVariantArgument
       {"NoVariantArgument": [],
        "VariantArgument": \arg ->
