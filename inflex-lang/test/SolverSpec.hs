@@ -910,8 +910,8 @@ variants = do
               (Left (SolverError (RowMismatch (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = VariantRowVarPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}) (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})))))
   it
       "case #a { #b: {}, wild: {} }"
-      (shouldReturnSatisfy (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))
-                $(match [|Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 0, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))|]))
+      (shouldReturn (fmap (fmap Inflex.Solver.thing) (solveText' mempty "" "case #a { #b: {}, wild: {} }"))
+                (Right (CaseExpression (Case {location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []})), scrutinee = VariantExpression (Variant {location = ExpressionCursor, typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]})), tag = TagName {unTagName = "a"}, argument = Nothing}), alternatives = Alternative {location = ExpressionCursor, pattern' = VariantPattern (VariantP {location = ExpressionCursor, tag = TagName {unTagName = "b"}, argument = Nothing}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})} :| [Alternative {location = ExpressionCursor, pattern' = ParamPattern (Param {location = LambdaParamCursor, name = (), typ = VariantType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Just (TypeVariable {location = ExpressionCursor, prefix = SolverGeneratedPrefix RowUnifyPrefix, index = 1, kind = RowKind}), fields = [Field {location = ExpressionCursor, name = FieldName {unFieldName = "b"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))},Field {location = ExpressionCursor, name = FieldName {unFieldName = "a"}, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))}]}))}), expression = RecordExpression (Record {fields = [], location = ExpressionCursor, typ = RecordType (RowType (TypeRow {location = ExpressionCursor, typeVariable = Nothing, fields = []}))})}]}))))
 
 
 arrays :: SpecWith ()
@@ -1340,64 +1340,63 @@ regression :: SpecWith ()
 regression =
   it
     "[#foo, #bar, #zot(\"hisdsfd\")]"
-    (do pendingWith "Should contain 'zot' in array's type."
-        shouldReturnSatisfy
-          (fmap
-             (fmap Inflex.Solver.thing)
-             (solveText' mempty "" "[#foo, #bar, #zot(\"hisdsfd\")]"))
-          $(match
-              [|Right
-                  (ArrayExpression
-                     (Array
-                        { expressions =
-                            [ VariantExpression
-                                (Variant
-                                   { typ =
-                                       VariantType
-                                         (RowType
-                                            (TypeRow
-                                               { typeVariable = Just _
-                                               , fields =
-                                                   [ Field
-                                                       { name =
-                                                           FieldName
-                                                             {unFieldName = "zot"}
-                                                       }
-                                                   , Field
-                                                       { name =
-                                                           FieldName
-                                                             {unFieldName = "bar"}
-                                                       }
-                                                   , Field
-                                                       { name =
-                                                           FieldName
-                                                             {unFieldName = "foo"}
-                                                       }
-                                                   ]
-                                               }))
-                                   })
-                            , _
-                            , _
-                            ]
-                        , typ =
-                            ArrayType
-                              (VariantType
-                                 (RowType
-                                    (TypeRow
-                                       { typeVariable = Just _
-                                       , fields =
-                                           [ Field
-                                               { name =
-                                                   FieldName {unFieldName = "zot"}
-                                               }
-                                           , Field
-                                               { name =
-                                                   FieldName {unFieldName = "bar"}
-                                               }
-                                           , Field
-                                               { name =
-                                                   FieldName {unFieldName = "foo"}
-                                               }
-                                           ]
-                                       })))
-                        }))|]))
+    (shouldReturnSatisfy
+       (fmap
+          (fmap Inflex.Solver.thing)
+          (solveText' mempty "" "[#foo, #bar, #zot(\"hisdsfd\")]"))
+       $(match
+           [|Right
+               (ArrayExpression
+                  (Array
+                     { expressions =
+                         [ VariantExpression
+                             (Variant
+                                { typ =
+                                    VariantType
+                                      (RowType
+                                         (TypeRow
+                                            { typeVariable = Just _
+                                            , fields =
+                                                [ Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "zot"}
+                                                    }
+                                                , Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "bar"}
+                                                    }
+                                                , Field
+                                                    { name =
+                                                        FieldName
+                                                          {unFieldName = "foo"}
+                                                    }
+                                                ]
+                                            }))
+                                })
+                         , _
+                         , _
+                         ]
+                     , typ =
+                         ArrayType
+                           (VariantType
+                              (RowType
+                                 (TypeRow
+                                    { typeVariable = Just _
+                                    , fields =
+                                        [ Field
+                                            { name =
+                                                FieldName {unFieldName = "zot"}
+                                            }
+                                        , Field
+                                            { name =
+                                                FieldName {unFieldName = "bar"}
+                                            }
+                                        , Field
+                                            { name =
+                                                FieldName {unFieldName = "foo"}
+                                            }
+                                        ]
+                                    })))
+                     }))|]))

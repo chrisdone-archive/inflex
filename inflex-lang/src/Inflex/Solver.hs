@@ -318,7 +318,10 @@ substituteType substitutions = go
             TypeApplication {function = go function, argument = go argument, ..}
         typ@(VariableType typeVariable :: Type Generated) ->
           case HM.lookup typeVariable substitutions of
-            Just after -> after
+            Just after -> go after
+            -- Above: Not sure why 'go' is necessary here, but adding
+            -- it fixed an inferred type in the output meta data. I
+            -- think it's fine, though.
             Nothing -> typ
         RowType TypeRow {typeVariable = Just typeVariable, fields = xs, ..}
           | Just after <- HM.lookup typeVariable substitutions
