@@ -473,7 +473,7 @@ renderVariantEditor type' path cells tag marg =
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")]
       [case type' of
-                    Nothing -> HH.text "no type info"
+                    Nothing -> HH.text ("#" <> tag) -- TODO: check should never happen
                     Just t -> caseTypeOf {
                         "ArrayOf": const (HH.text ""),
                         "MiscType": (HH.text "")
