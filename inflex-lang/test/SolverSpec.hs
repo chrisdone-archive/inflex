@@ -67,6 +67,7 @@ spec :: Spec
 spec = do
   describe "Fine-grained" fineGrained
   describe "Coarse-grained" coarseGrained
+  describe "Regression" regression
 
 --------------------------------------------------------------------------------
 -- Coarse-grained tests
@@ -1334,3 +1335,69 @@ arrayHoles = do
                           } :|
                         []
                     })))))
+
+regression :: SpecWith ()
+regression =
+  it
+    "[#foo, #bar, #zot(\"hisdsfd\")]"
+    (do pendingWith "Should contain 'zot' in array's type."
+        shouldReturnSatisfy
+          (fmap
+             (fmap Inflex.Solver.thing)
+             (solveText' mempty "" "[#foo, #bar, #zot(\"hisdsfd\")]"))
+          $(match
+              [|Right
+                  (ArrayExpression
+                     (Array
+                        { expressions =
+                            [ VariantExpression
+                                (Variant
+                                   { typ =
+                                       VariantType
+                                         (RowType
+                                            (TypeRow
+                                               { typeVariable = Just _
+                                               , fields =
+                                                   [ Field
+                                                       { name =
+                                                           FieldName
+                                                             {unFieldName = "zot"}
+                                                       }
+                                                   , Field
+                                                       { name =
+                                                           FieldName
+                                                             {unFieldName = "bar"}
+                                                       }
+                                                   , Field
+                                                       { name =
+                                                           FieldName
+                                                             {unFieldName = "foo"}
+                                                       }
+                                                   ]
+                                               }))
+                                   })
+                            , _
+                            , _
+                            ]
+                        , typ =
+                            ArrayType
+                              (VariantType
+                                 (RowType
+                                    (TypeRow
+                                       { typeVariable = Just _
+                                       , fields =
+                                           [ Field
+                                               { name =
+                                                   FieldName {unFieldName = "zot"}
+                                               }
+                                           , Field
+                                               { name =
+                                                   FieldName {unFieldName = "bar"}
+                                               }
+                                           , Field
+                                               { name =
+                                                   FieldName {unFieldName = "foo"}
+                                               }
+                                           ]
+                                       })))
+                        }))|]))
