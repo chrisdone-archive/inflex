@@ -444,8 +444,8 @@ renderEditor type' offset path cells =
       [renderTextEditor originalSource path t],
     "VegaTree2":       \v _originalSource t ->
       [renderVegaEditor path t],
-    "VariantTree2":    \v _originalSource tag arg ->
-      [renderVariantEditor type' path cells tag arg],
+    "VariantTree2":    \v originalSource tag arg ->
+      [renderVariantEditor type' originalSource path cells tag arg],
     "ArrayTree2":      \v originalSource editors ->
       [renderArrayEditor type' originalSource path cells editors],
     "RecordTree2":     \v originalSource fields ->
@@ -463,18 +463,19 @@ renderEditor type' offset path cells =
 renderVariantEditor ::
      forall a. MonadAff a
   => Maybe (View Shared.TypeOf)
+  -> View Shared.OriginalSource
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> String
   -> View Shared.VariantArgument
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderVariantEditor type' path cells tag marg =
+renderVariantEditor type' originalSource path cells tag marg =
   HH.div
     [HP.class_ (HH.ClassName "variant")]
     ([HH.div [HP.class_ (HH.ClassName "variant-tag")]
       [case type' of
-                    Nothing -> HH.text ("#" <> tag) -- TODO: check should never happen
-                    Just t -> caseTypeOf {
+
+                    Just t | hasOriginalSource originalSource -> caseTypeOf {
                         "ArrayOf": const (HH.text ""),
                         "MiscType": (HH.text "")
                         ,"RecordOf": const (HH.text ""),
@@ -494,6 +495,7 @@ renderVariantEditor type' path cells tag marg =
                                                      HP.selected (namedTypeName typ == tag)] [HH.text ("#" <> namedTypeName typ)])
                                 types)
                         } t
+                    _ -> HH.text ("#" <> tag) -- TODO: check should never happen
          ]] <>
     caseVariantArgument
       {"NoVariantArgument": [],
