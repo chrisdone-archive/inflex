@@ -127,7 +127,7 @@ instance Display (Let Resolved) where
 instance Display (Literal Resolved) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
+               TextLiteral LiteralText{text} -> displayText text
 
 instance Display (Number Resolved) where
   display (Number {number}) = display number
@@ -499,7 +499,7 @@ instance Display (Let Parsed) where
 instance Display (Literal Parsed) where
   display = \case
                NumberLiteral number -> display number
-               TextLiteral LiteralText{text} -> displayBytesUtf8 (L.toStrict (encode text))
+               TextLiteral LiteralText{text} -> displayText text
 
 instance Display (Number Parsed) where
   display (Number {number}) = display number
