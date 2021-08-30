@@ -411,6 +411,8 @@ toTree mappings original final =
           Just expression
             | atomic -> Shared.OriginalSource (RIO.textDisplay expression)
             | Just sourceLocation <-
+               -- FIXME: This lookup is highly expensive due to
+               -- calculating positions. Fix this issue.
                M.lookup (expressionLocation final) mappings
             , sourceLocation == expressionLocation expression ->
               Shared.OriginalSource (RIO.textDisplay expression)
