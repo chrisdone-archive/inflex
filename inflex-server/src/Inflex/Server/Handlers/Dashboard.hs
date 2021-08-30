@@ -13,11 +13,12 @@ module Inflex.Server.Handlers.Dashboard
   ) where
 
 import           Control.Monad.Reader
-import           Data.Units
+import           Data.Foldable
 import           Data.String
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time
+import           Data.Units
 import           Database.Persist.Sql
 import qualified Formatting
 import qualified Formatting.Time
@@ -26,7 +27,7 @@ import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
-import           Lucid
+import           Lucid hiding (for_)
 import           RIO (glog)
 import           Shakespearean
 import           Text.Julius
@@ -249,12 +250,39 @@ postNewDocumentR =
 postDeleteDocumentR :: DocumentId -> Handler ()
 postDeleteDocumentR documentId =
   withLogin
-    (\_ LoginState {loginAccountId=AccountID accountId} -> do
-       -- TODO: Implement cascading of cells, revisions, etc.
-       runDB
-         (deleteWhere
-            [DocumentId ==. documentId, DocumentAccount ==. toSqlKey accountId])
+    (\_ LoginState {loginAccountId = AccountID accountId} -> do
        glog DeleteDocument
+       runDB
+         (do mdoc <-
+               selectKeysList
+                 [ DocumentId ==. documentId
+                 , DocumentAccount ==. toSqlKey accountId
+                 ]
+                 []
+             -- Cascading delete of all things attached to a document.
+             for_
+               mdoc
+               (\doc -> do
+                  -- Untie the knot.
+                  update doc [DocumentRevision =. Nothing]
+                  -- Delete revisions.
+                  revisions <- selectKeysList [RevisionDocument ==. doc] []
+                  for_
+                    revisions
+                    (\rev -> do
+                       deleteWhere [RevisionCellRevision ==. rev]
+                       delete rev)
+                  -- Delete cells.
+                  cells <- selectKeysList [CellDocument ==. doc] []
+                  for_
+                    cells
+                    (\cell -> do
+                       deleteWhere
+                         ([CellDependencyOrigin ==. cell] ||.
+                          [CellDependencyTarget ==. cell])
+                       delete cell)
+                  -- Delete the doc.
+                  delete doc))
        redirect AppDashboardR)
 
 postRenameDocumentR :: DocumentId -> Handler ()
