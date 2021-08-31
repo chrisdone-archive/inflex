@@ -17,7 +17,14 @@
 
 -- | Step the code.
 
-module Inflex.Stepper where
+module Inflex.Stepper
+  ( DefaultStepError(..)
+  , StepReader(..)
+  , stepDefaulted
+  , ResolveStepError(..)
+  , stepTextDefaulted
+  , stepText
+  ) where
 
 import           Control.Monad.Reader
 import           Data.Bifunctor
