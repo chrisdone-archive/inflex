@@ -176,6 +176,7 @@ eval =
             ("Cell.eval: Updating: " <> name)
           H.modify_ (\(State s) -> State (s {cell = newCell, cells = cells}))
         else do
+          H.modify_ (\(State s) -> State (s {cells = cells}))
           _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
           pure unit
     DeleteCell -> H.raise RemoveCell

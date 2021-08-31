@@ -52,6 +52,15 @@ exports.setOnBlurred = function(codemirror){
   }
 }
 
+exports.setNamesInScope = function(codemirror){
+  return function(f){
+    return function(){
+      codemirror._namesInScope = f;
+      return {};
+    }
+  }
+}
+
 exports.setOnPicked = function(codemirror){
   return function(f){
     return function(){
@@ -76,7 +85,7 @@ exports.codeMirror = function(parent){
       config.viewportMargin = Infinity;
       if (config.highlightSelectionMatches)
         config.highlightSelectionMatches = {showToken: true};
-      let comp = config.namesInScope;
+
       function isPrefixOf(sub,sup){
         if (sub.length == 0) throw 'invalid substring';
   	return (
@@ -93,6 +102,7 @@ exports.codeMirror = function(parent){
           var word = line.slice(start, end).toLowerCase()
           if (word.length == 0) return accept(null);
           let candidates = [];
+          let comp = cm._namesInScope;
           for (var i = 0; i < comp.length; i++) {
             // TODO: Later these could be lower cased ahead of time.
             if (isPrefixOf(word, comp[i].matchText.toLowerCase())) {
@@ -119,6 +129,7 @@ exports.codeMirror = function(parent){
       };
       ////////////////////////////////////////////////////////////////////////////////
       let cm = CodeMirror(parent, config);
+      cm._namesInScope = config.namesInScope;
       cm._onPick = function(completion){
         cm._onPickHook(completion.key)();
       }

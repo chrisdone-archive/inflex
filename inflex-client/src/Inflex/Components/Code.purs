@@ -110,7 +110,8 @@ eval ::
   -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval =
   case _ of
-    HandleInput _ -> pure unit
+    HandleInput (Input {cells}) ->
+      H.modify_ (\(State s) -> State (s {cells = cells}))
     CMEvent event -> do
       case event of
         CM.Entered -> do
@@ -132,7 +133,7 @@ eval =
           case mvalue of
             Just value -> do
               State state <- H.get
-              setMarks <- H.liftEffect $ makeSetMarks (state.cells) value
+              setMarks <- H.liftEffect $ makeSetMarks (state . cells) value
               traverse_ (H.query (SProxy :: SProxy "codemirror") unit) setMarks
             Nothing -> pure unit
         _ -> pure unit

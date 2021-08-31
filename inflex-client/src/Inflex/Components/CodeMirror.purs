@@ -15,7 +15,7 @@ module Inflex.Components.CodeMirror
   , keyHandled
   , keyPass
   , MarkOptions
-
+  , NamesInScope
   ) where
 
 import Data.Foldable
@@ -25,6 +25,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Effect.Class.Console (log)
 import Foreign.Object (Object)
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
@@ -86,13 +87,15 @@ type InternalConfig =
   , autofocus                 :: Boolean
   , autoCloseBrackets         :: Boolean
   , highlightSelectionMatches :: Boolean
-  , namesInScope              :: Array {
-           displayText :: String,
-           text :: String,
-           matchText :: String,
-           key :: String
-           }
+  , namesInScope              :: NamesInScope
   }
+
+type NamesInScope = Array {
+  displayText :: String,
+  text :: String,
+  matchText :: String,
+  key :: String
+}
 
 type Range =
   { head :: Pos
@@ -223,6 +226,7 @@ eval (SetConfig (Config config')) = do
       if config' . internalConfig . selection /= config . internalConfig . selection
         then H.liftEffect (scrollToLine cm (config . internalConfig . selection . head . line))
         else pure unit
+      H.liftEffect (setNamesInScope cm (config'.internalConfig.namesInScope))
     Nothing -> pure unit
   H.put (State {codeMirror: mcm, config: Config config'})
 
@@ -262,6 +266,11 @@ foreign import setOnBlurred
 foreign import setOnPicked
   :: CodeMirror
   -> (String -> Effect Unit)
+  -> Effect Unit
+
+foreign import setNamesInScope
+  :: CodeMirror
+  -> NamesInScope
   -> Effect Unit
 
 foreign import setOnFocused
