@@ -4,16 +4,19 @@ window.onload = function(){
   const fileSelect = document.getElementById("file-select"),
         fileElem = document.getElementById("file-input"),
         fileForm = document.getElementById("file-upload-form");
+  if (fileSelect) {
+    fileSelect.addEventListener("click", function (e) {
+      if (fileElem) {
+        fileElem.click();
+      }
+      e.preventDefault();
+    }, false);
 
-  fileSelect.addEventListener("click", function (e) {
-    if (fileElem) {
-      fileElem.click();
+    const inputElement = document.getElementById("file-input");
+    if (inputElement) {
+      inputElement.addEventListener("change", handleFiles, false);
     }
-    e.preventDefault();
-  }, false);
-
-  const inputElement = document.getElementById("file-input");
-  inputElement.addEventListener("change", handleFiles, false);
+  }
   function handleFiles() {
     const fileList = this.files; /* now you can work with the file list */
     console.log(this.files);
