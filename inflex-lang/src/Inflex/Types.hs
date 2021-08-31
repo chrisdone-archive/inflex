@@ -269,6 +269,8 @@ data ApplyStyle
     -- ^ Implicit dictionary argument: \d -> .. 1 ==(d) 2 ..
   | DefaulterApply
     -- ^ Added by the defaulter: (\d -> ..) IntDict
+  | EvalApply
+    -- ^ Added by the evaluator.
   deriving (Eq, Ord, Show, Lift)
 
 data Param s = Param
