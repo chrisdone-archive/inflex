@@ -543,7 +543,10 @@ renderVariantEditor type' originalSource path cells tag marg =
                , code: editorCode arg
                , path: path <<< Shared.DataVariantOf tag
                , cells
-               , type'
+               , type': do
+                  types' <- variantType type'
+                  namedType <- Array.find (\namedType -> namedTypeName namedType == tag) types'
+                  pure (namedTypeTyp namedType)
                })
             (\output ->
                case output of
@@ -1373,6 +1376,17 @@ rowType (Just t) = caseTypeOf {
   ,"RecordOf": Just,
   "TableOf": const Nothing,
   "VariantOf": \_ _ -> Nothing
+  } t
+
+variantType :: Maybe (View Shared.TypeOf) -> Maybe (Array (View Shared.NamedType))
+variantType Nothing = Nothing
+variantType (Just t) = caseTypeOf {
+  "ArrayOf": const Nothing,
+  "MiscType": Nothing,
+  "TextOf": Nothing,
+  "RecordOf": const Nothing,
+  "TableOf": const Nothing,
+  "VariantOf": \fields _ -> Just fields
   } t
 
 arrayType :: Maybe (View Shared.TypeOf) -> Maybe (View Shared.TypeOf)
