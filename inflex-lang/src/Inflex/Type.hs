@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
@@ -322,3 +323,21 @@ functionScheme location =
 -- TODO: implement properly
 binOpType :: NumericBinOp -> Type Generalised
 binOpType _ = nullType BuiltIn
+
+--------------------------------------------------------------------------------
+-- Patterns
+
+pattern IntegerType :: Type Generalised
+pattern IntegerType <- ConstantType TypeConstant{name=IntegerTypeName}
+
+pattern DecimalType :: Natural -> Type Generalised
+pattern DecimalType nat <-
+  ApplyType
+    TypeApplication
+      { function =
+          ConstantType TypeConstant {location = BuiltIn, name = DecimalTypeName}
+      , argument =
+          ConstantType TypeConstant {location = BuiltIn, name = NatTypeName nat}
+      , location = BuiltIn
+      , kind = TypeKind
+      }

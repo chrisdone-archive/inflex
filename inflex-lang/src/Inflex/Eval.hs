@@ -29,6 +29,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Text (Text)
+import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           GHC.Natural
 import           Inflex.Decimal
@@ -633,6 +634,10 @@ pattern ApplyFunction2 :: Function -> Expression Resolved -> Expression Resolved
 pattern ApplyFunction2 function argument1 argument2 <-
   ApplyGlobal2 (FunctionGlobal function) argument1 argument2
 
+pattern ApplyFunction3 :: Function -> Expression Resolved -> Expression Resolved -> Expression Resolved -> Expression Resolved
+pattern ApplyFunction3 function argument1 argument2 argument3 <-
+  ApplyExpression Apply{function=ApplyFunction2 function argument1 argument2, argument=argument3}
+
 --------------------------------------------------------------------------------
 -- Beta reduction
 
@@ -922,3 +927,17 @@ evalDistinct expression list@Array {expressions} = do
                 , Array.location = SteppedCursor
                 , form = Evaluated
                 })
+
+evalNumericFold ::
+     (Expression Resolved -> Maybe n)
+  -> (n -> Expression Resolved)
+  -> (Vector n -> n)
+  -> Array Resolved
+  -> Expression Resolved
+  -> RIO Eval (Expression Resolved)
+evalNumericFold reifier reflect reduce (Array {expressions}) expression = do
+  ns <- traverse (fmap reifier . evalExpression) expressions
+  pure
+    (if any isNothing ns
+       then expression
+       else reflect (reduce (V.mapMaybe id ns)))
