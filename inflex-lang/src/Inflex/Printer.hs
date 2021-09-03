@@ -78,8 +78,7 @@ instance Printer (Boundary Resolved) where
 instance Printer (If Resolved) where
   printer If {..} =
     "if " <> printer condition <> " then " <> printer consequent <> " else " <>
-    printer alternative <>
-    "}"
+    printer alternative
 
 instance Printer (Alternative Resolved) where
   printer Alternative {..} =

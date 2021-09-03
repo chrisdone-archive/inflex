@@ -420,7 +420,7 @@ evalDecimalOp expression places numericBinOp left' right' =
 evalIf :: If Resolved -> RIO Eval (Expression Resolved)
 evalIf If {..} = do
   condition' <- evalExpression condition
-  case condition of
+  case condition' of
     BoolAtom bool ->
       if bool
         then evalExpression consequent
@@ -477,7 +477,7 @@ apply2 function argument1 argument2 typ =
 
 pattern BoolAtom :: Bool -> Expression Resolved
 pattern BoolAtom bool <-
-  VariantExpression Variant {tag = TagName ((== "true") -> bool), argument = Nothing}
+  VariantExpression Variant {tag = TagName ((== "true") -> bool)}
   where
     BoolAtom bool = VariantExpression Variant
       { tag = TagName

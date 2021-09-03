@@ -65,8 +65,7 @@ instance Display (Boundary Resolved) where
 instance Display (If Resolved) where
   display If {..} =
     "if " <> display condition <> " then " <> display consequent <> " else " <>
-    display alternative <>
-    "}"
+    display alternative
 
 instance Display (Alternative Resolved) where
   display Alternative {..} =
@@ -225,8 +224,7 @@ instance Display (Case Renamed) where
 instance Display (If Renamed) where
   display If {..} =
     "if " <> display condition <> " then " <> display consequent <> " else " <>
-    display alternative <>
-    "}"
+    display alternative
 
 instance Display (Alternative Renamed) where
   display Alternative {..} =
@@ -394,8 +392,7 @@ instance Display (Case Parsed) where
 instance Display (If Parsed) where
   display If {..} =
     "if " <> display condition <> " then " <> display consequent <> " else " <>
-    display alternative <>
-    "}"
+    display alternative
 
 instance Display (Alternative Parsed) where
   display Alternative {..} =
