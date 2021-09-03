@@ -12,6 +12,7 @@ module Inflex.Eval
   ( Eval(..)
   , evalTextDefaulted
   , evalTextRepl
+  , evalDefaulted
   ) where
 
 import           Data.Bifunctor
@@ -73,6 +74,12 @@ evalTextDefaulted schemes fp text = do
   case result of
     Right Cell{defaulted} -> fmap Right (evalExpression defaulted)
     Left e -> pure (Left e)
+
+evalDefaulted ::
+     Cell
+  -> RIO Eval (Either (DefaultEvalError e) (Expression Resolved))
+evalDefaulted Cell{defaulted} = do
+  fmap Right (evalExpression defaulted)
 
 --------------------------------------------------------------------------------
 -- Expression evaluator

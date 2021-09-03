@@ -47,6 +47,7 @@ import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Defaulter
+import qualified Inflex.Eval as Eval
 import           Inflex.Generaliser
 import           Inflex.Generator
 import           Inflex.Lexer
@@ -60,6 +61,7 @@ import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Stepper
 import           Inflex.Types
+import qualified Inflex.Types.Eval as Eval
 import           Inflex.Types.Filler
 import           Inflex.Types.SHA512
 import           Optics.Lens
@@ -81,7 +83,7 @@ data LoadError
   | LoadGeneraliseError (SolveGeneraliseError LoadError)
   | LoadResolveError (GeneraliseResolveError LoadError)
   | LoadDefaulterError DefaulterError
-  | LoadStepError (DefaultStepError LoadError)
+  | LoadStepError (Eval.DefaultEvalError LoadError)
   deriving (Show, Eq)
 
 newtype Toposorted a = Toposorted {unToposorted :: [a]}
@@ -229,7 +231,11 @@ evalDocument env =
     (traverse
        (\result -> do
           cell <- pure result?
-          fmap (first LoadStepError) (stepDefaulted env cell)))
+          fmap
+            (first LoadStepError)
+            (RIO.runRIO
+               Eval.Eval {globals = env, glogfunc = mempty}
+               (Eval.evalDefaulted cell))))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::
@@ -247,7 +253,9 @@ evalDocument1 cache env =
               resultExpression <-
                 fmap
                   (first LoadStepError)
-                  (stepDefaulted env Cell {..})?
+                  (RIO.runRIO
+                     Eval.Eval {globals = env, glogfunc = mempty}
+                     (Eval.evalDefaulted Cell {..}))?
               pure (Right EvaledExpression {..})
             Just evaled -> pure (Right evaled)))
 
