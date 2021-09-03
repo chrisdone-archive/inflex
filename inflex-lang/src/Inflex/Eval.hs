@@ -27,6 +27,7 @@ import qualified Data.Vector as V
 import           GHC.Natural
 import           Inflex.Decimal
 import           Inflex.Defaulter
+import           Inflex.Derived
 import           Inflex.Printer
 import           Inflex.Renamer (patternParam)
 import           Inflex.Type
@@ -213,15 +214,17 @@ evalApply Apply {function, argument, ..} = do
 
 -- | Apply after the function and argument are reduced to normal form.
 evalApplyNF :: Expression Resolved -> RIO Eval (Expression Resolved)
-evalApplyNF =
-  \case
-    ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
-      evalLength fromInteger' array
+evalApplyNF expression =
+  case expression of
     ApplyMethod1 FromIntegerGlobal instance' argument@(IntegerAtom integer typ) ->
       evalFromInteger typ argument integer instance'
-    expression@(ApplyMethod1 FromDecimalGlobal (FromDecimalDecimalInstance instance') (DecimalAtom decimal typ)) ->
+    ApplyMethod1 FromDecimalGlobal (FromDecimalDecimalInstance instance') (DecimalAtom decimal typ) ->
       evalFromDecimal typ expression decimal instance'
-    expression -> pure expression
+    ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
+      evalLength fromInteger' array (expressionType expression)
+    ApplyFunction1 NullFunction argument ->
+      apply1 nullFunction argument (expressionType expression)
+    _ -> pure expression
 
 --------------------------------------------------------------------------------
 -- Infix
@@ -414,6 +417,49 @@ evalIf If {..} = do
         (IfExpression If {condition = condition', location = SteppedCursor, ..})
 
 --------------------------------------------------------------------------------
+-- Applying functions easily
+
+apply1 ::
+     Expression Resolved
+  -> Expression Resolved
+  -> Type Generalised
+  -> RIO Eval (Expression Resolved)
+apply1 function argument typ =
+  evalApply
+    Apply
+      { location = BuiltIn
+      , function
+      , argument
+      , typ
+      , style = EvalApply
+      }
+
+apply2 ::
+     Expression Resolved
+  -> Expression Resolved
+  -> Expression Resolved
+  -> Type Generalised
+  -> RIO Eval (Expression Resolved)
+apply2 function argument1 argument2 typ =
+  evalApply
+    Apply
+      { location = BuiltIn
+      , function =
+          ApplyExpression
+            Apply
+              { function
+              , typ
+              , argument = argument1
+              , location = BuiltIn
+              , style = EvalApply
+              }
+      , typ
+      , argument =
+          argument2
+      , style = EvalApply
+      }
+
+--------------------------------------------------------------------------------
 -- Reification/reflection
 
 pattern BoolAtom :: Bool -> Expression Resolved
@@ -478,6 +524,10 @@ pattern ApplyDict1 method' instance' <-
 pattern ApplyGlobal2 :: GlobalRef Resolved -> Expression Resolved -> Expression Resolved -> Expression Resolved
 pattern ApplyGlobal2 global argument1 argument2 <-
   ApplyExpression Apply {function = ApplyGlobal1 global argument1, argument=argument2}
+
+pattern ApplyFunction1 :: Function -> Expression Resolved -> Expression Resolved
+pattern ApplyFunction1 function argument1 <-
+  ApplyGlobal1 (FunctionGlobal function) argument1
 
 pattern ApplyFunction2 :: Function -> Expression Resolved -> Expression Resolved -> Expression Resolved
 pattern ApplyFunction2 function argument1 argument2 <-
@@ -639,34 +689,25 @@ evalFromDecimalMaybe fromDecimalInstance decimal =
 --------------------------------------------------------------------------------
 -- Primitive functions
 
-evalLength :: Expression Resolved -> Array Resolved -> RIO Eval (Expression Resolved)
-evalLength fromInteger' (Array {typ, expressions}) =
-  evalApply
-    Apply
-      { location = BuiltIn
-      , function =
-          ApplyExpression
-            Apply
-              { function =
-                  GlobalExpression
-                    (Global
-                       { location = SteppedCursor
-                       , scheme = ResolvedScheme (nullType BuiltIn) -- TODO:
-                       , name = FromIntegerGlobal
-                       })
-              , typ
-              , argument = fromInteger'
-              , location = SteppedCursor
-              , style = EvalApply
-              }
-      , typ
-      , argument =
-          LiteralExpression
-            (NumberLiteral
-               Number
-                 { number = IntegerNumber (fromIntegral (V.length expressions))
-                 , location = SteppedCursor
-                 , typ
-                 })
-      , style = EvalApply
-      }
+evalLength ::
+     Expression Resolved
+  -> Array Resolved
+  -> Type Generalised
+  -> RIO Eval (Expression Resolved)
+evalLength fromInteger' (Array {expressions}) typ =
+  apply2
+    (GlobalExpression
+       (Global
+          { location = SteppedCursor
+          , scheme = ResolvedScheme (nullType BuiltIn) -- TODO:
+          , name = FromIntegerGlobal
+          }))
+    fromInteger'
+    (LiteralExpression
+       (NumberLiteral
+          Number
+            { number = IntegerNumber (fromIntegral (V.length expressions))
+            , location = SteppedCursor
+            , typ -- TODO:
+            }))
+    typ
