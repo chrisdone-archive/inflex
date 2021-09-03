@@ -224,6 +224,8 @@ evalApplyNF expression =
       evalLength fromInteger' array (expressionType expression)
     ApplyFunction1 NullFunction argument ->
       apply1 nullFunction argument (expressionType expression)
+    ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
+      evalFilter predicate array (expressionType expression)
     _ -> pure expression
 
 --------------------------------------------------------------------------------
@@ -711,3 +713,36 @@ evalLength fromInteger' (Array {expressions}) typ =
             , typ -- TODO:
             }))
     typ
+
+evalFilter ::
+     Expression Resolved
+  -> Array Resolved
+  -> Type Generalised
+  -> RIO Eval (Expression Resolved)
+evalFilter predicate (Array {expressions}) typ = do
+  expressions' <-
+    traverse
+      (\arrayItem -> do
+         arrayItem' <- evalExpression arrayItem
+         bool <-
+           evalExpression
+             (ApplyExpression
+                (Apply
+                   { function = predicate
+                   , argument = arrayItem'
+                   , location = BuiltIn
+                   , typ = typeOutput (expressionType predicate)
+                   , style = EvalApply
+                   }))
+         case bool of
+           BoolAtom True -> pure (Just arrayItem')
+           _ -> pure Nothing)
+      expressions
+  pure
+    (ArrayExpression
+       Array
+         { typ
+         , location = SteppedCursor
+         , expressions = (V.mapMaybe id expressions')
+         , form = Evaluated
+         })
