@@ -928,14 +928,14 @@ evalDistinct expression list@Array {expressions} = do
                 , form = Evaluated
                 })
 
-evalNumericFold ::
+evalAtomicFold ::
      (Expression Resolved -> Maybe n)
   -> (n -> Expression Resolved)
   -> (Vector n -> n)
   -> Array Resolved
   -> Expression Resolved
   -> RIO Eval (Expression Resolved)
-evalNumericFold reifier reflect reduce (Array {expressions}) expression = do
+evalAtomicFold reifier reflect reduce (Array {expressions}) expression = do
   ns <- traverse (fmap reifier . evalExpression) expressions
   pure
     (if any isNothing ns
