@@ -226,6 +226,8 @@ evalApplyNF expression =
       apply1 nullFunction argument (expressionType expression)
     ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
       evalFilter expression predicate array
+    ApplyFunction2 MapFunction function (ArrayExpression array) ->
+      evalMap expression function array
     _ -> pure expression
 
 --------------------------------------------------------------------------------
@@ -753,3 +755,32 @@ evalFilter expression predicate (Array {expressions}) = do
                 , expressions = (V.mapMaybe id expressions')
                 , form = Evaluated
                 })
+
+evalMap ::
+     Expression Resolved
+  -> Expression Resolved
+  -> Array Resolved
+  -> RIO Eval (Expression Resolved)
+evalMap expression func (Array {expressions}) = do
+  expressions' <-
+    traverse
+      (\arrayItem -> do
+         arrayItem' <- evalExpression arrayItem
+         evalExpression
+           (ApplyExpression
+              (Apply
+                 { function = func
+                 , argument = arrayItem'
+                 , location = BuiltIn
+                 , typ = typeOutput (expressionType func)
+                 , style = EvalApply
+                 })))
+      expressions
+  pure
+    (ArrayExpression
+       Array
+         { typ = expressionType expression
+         , location = SteppedCursor
+         , expressions = expressions'
+         , form = Evaluated
+         })
