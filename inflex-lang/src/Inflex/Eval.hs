@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns, OverloadedStrings #-}
@@ -20,6 +23,7 @@ import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Foldable
 import           Data.Functor.Identity
+import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -33,6 +37,7 @@ import           Inflex.Printer
 import           Inflex.Renamer (patternParam)
 import           Inflex.Type
 import           Inflex.Types
+import           Inflex.Types as Array (Array(..))
 import           Inflex.Types.Eval
 import           Inflex.Variants
 import           Lexx
@@ -227,12 +232,16 @@ evalApplyNF expression =
       evalFromInteger typ argument integer instance'
     ApplyMethod1 FromDecimalGlobal (FromDecimalDecimalInstance instance') (DecimalAtom decimal typ) ->
       evalFromDecimal typ expression decimal instance'
-    ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
-      evalLength fromInteger' array (expressionType expression)
+    -- Derived:
     ApplyFunction1 NullFunction argument ->
       apply1 nullFunction argument (expressionType expression)
     ApplyFunction2 FromOkFunction default' argument ->
       apply2 from_okFunction default' argument (expressionType expression)
+    -- Primitives:
+    ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
+      evalLength fromInteger' array (expressionType expression)
+    ApplyFunction2 SortFunction _comparator (ArrayExpression array) ->
+      evalSort expression array
     ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->
@@ -489,6 +498,15 @@ pattern BoolAtom bool <-
       , typ = boolType BuiltIn
       }
 
+pattern TextAtom :: Text -> Expression Resolved
+pattern TextAtom text <-
+  LiteralExpression (TextLiteral (LiteralText { text}))
+  where
+    TextAtom text  =
+      LiteralExpression
+        (TextLiteral
+          (LiteralText {text, location = BuiltIn, typ = textT}))
+
 pattern IntegerAtom :: Integer -> Type Generalised -> Expression Resolved
 pattern IntegerAtom integer typ <-
   LiteralExpression (NumberLiteral (Number { number = IntegerNumber integer
@@ -518,6 +536,53 @@ pattern DecimalAtom decimal typ <-
             , typ
             , location = BuiltIn
             }))
+
+--------------------------------------------------------------------------------
+-- Reification
+
+data Reified e
+  = TextR e !Text
+  | IntegerR e !Integer
+  | DecimalR e !Decimal
+  | BoolR e !Bool
+  | HoleR e
+  deriving (Functor, Traversable, Foldable)
+
+instance Eq (Reified e) where
+  (==) x y =
+    case (x, y) of
+      (TextR _ a, TextR _ b) -> a == b
+      (IntegerR _ a, IntegerR _ b) -> a == b
+      (DecimalR _ a, DecimalR _ b) -> a == b
+      (BoolR _ a, BoolR _ b) -> a == b
+      _ -> error "Invalid Eq comparison between types."
+
+instance Ord (Reified e) where
+  compare x y =
+    case (x, y) of
+      (TextR _ a, TextR _ b) -> a `compare` b
+      (IntegerR _ a, IntegerR _ b) -> a `compare` b
+      (DecimalR _ a, DecimalR _ b) -> a `compare` b
+      (BoolR _ a, BoolR _ b) -> a `compare` b
+      _ -> error "Invalid Ord comparison between types."
+
+originalR :: Reified e -> e
+originalR =
+  \case
+    TextR e _ -> e
+    IntegerR e _ -> e
+    DecimalR e _ -> e
+    BoolR e _ -> e
+    HoleR e -> e
+
+reify :: Expression Resolved -> Reified (Expression Resolved)
+reify e' =
+  case e' of
+    BoolAtom bool -> BoolR e' bool
+    TextAtom text -> TextR e' text
+    IntegerAtom integer _ -> IntegerR e' integer
+    DecimalAtom decimal _ -> DecimalR e' decimal
+    _ -> HoleR e'
 
 --------------------------------------------------------------------------------
 -- Apply patterns up to arity-4
@@ -793,3 +858,24 @@ evalMap expression func (Array {expressions}) = do
          , expressions = expressions'
          , form = Evaluated
          })
+
+evalSort ::
+     Expression Resolved
+  -> Array Resolved
+  -> RIO Eval (Expression Resolved)
+evalSort expression list@Array {expressions} = do
+  expressions' <- traverse (fmap reify . evalExpression) (toList expressions)
+  pure
+    (if any
+          (\case
+             HoleR {} -> True
+             _ -> False)
+          expressions'
+       then expression
+       else ArrayExpression
+              list
+                { expressions =
+                    V.fromList (map originalR (List.sort expressions'))
+                , Array.location = SteppedCursor
+                , form = Evaluated
+                })
