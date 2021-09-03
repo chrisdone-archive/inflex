@@ -225,7 +225,7 @@ evalApplyNF expression =
     ApplyFunction1 NullFunction argument ->
       apply1 nullFunction argument (expressionType expression)
     ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
-      evalFilter predicate array (expressionType expression)
+      evalFilter expression predicate array
     _ -> pure expression
 
 --------------------------------------------------------------------------------
@@ -716,10 +716,11 @@ evalLength fromInteger' (Array {expressions}) typ =
 
 evalFilter ::
      Expression Resolved
+  -> Expression Resolved
   -> Array Resolved
-  -> Type Generalised
   -> RIO Eval (Expression Resolved)
-evalFilter predicate (Array {expressions}) typ = do
+evalFilter expression predicate (Array {expressions}) = do
+  seenHoleRef <- RIO.newSomeRef False
   expressions' <-
     traverse
       (\arrayItem -> do
@@ -736,13 +737,19 @@ evalFilter predicate (Array {expressions}) typ = do
                    }))
          case bool of
            BoolAtom True -> pure (Just arrayItem')
+           HoleExpression {} -> do
+             RIO.writeSomeRef seenHoleRef True
+             pure Nothing
            _ -> pure Nothing)
       expressions
+  seenHole <- RIO.readSomeRef seenHoleRef
   pure
-    (ArrayExpression
-       Array
-         { typ
-         , location = SteppedCursor
-         , expressions = (V.mapMaybe id expressions')
-         , form = Evaluated
-         })
+    (if seenHole
+       then expression
+       else ArrayExpression
+              Array
+                { typ = expressionType expression
+                , location = SteppedCursor
+                , expressions = (V.mapMaybe id expressions')
+                , form = Evaluated
+                })
