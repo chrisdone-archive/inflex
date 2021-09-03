@@ -21,6 +21,7 @@ module Inflex.Eval
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
+import           Data.Containers.ListUtils
 import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List as List
@@ -242,6 +243,8 @@ evalApplyNF expression =
       evalLength fromInteger' array (expressionType expression)
     ApplyFunction2 SortFunction _comparator (ArrayExpression array) ->
       evalSort expression array
+    ApplyFunction2 DistinctFunction _comparator (ArrayExpression array) ->
+      evalDistinct expression array
     ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->
@@ -876,6 +879,27 @@ evalSort expression list@Array {expressions} = do
               list
                 { expressions =
                     V.fromList (map originalR (List.sort expressions'))
+                , Array.location = SteppedCursor
+                , form = Evaluated
+                })
+
+evalDistinct ::
+     Expression Resolved
+  -> Array Resolved
+  -> RIO Eval (Expression Resolved)
+evalDistinct expression list@Array {expressions} = do
+  expressions' <- traverse (fmap reify . evalExpression) (toList expressions)
+  pure
+    (if any
+          (\case
+             HoleR {} -> True
+             _ -> False)
+          expressions'
+       then expression
+       else ArrayExpression
+              list
+                { expressions =
+                    V.fromList (map originalR (nubOrd expressions'))
                 , Array.location = SteppedCursor
                 , form = Evaluated
                 })
