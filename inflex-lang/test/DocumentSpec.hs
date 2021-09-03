@@ -1894,7 +1894,7 @@ records = do
                              [ LiteralExpression
                                  (NumberLiteral
                                     (Number
-                                       { location = BuiltIn
+                                       { location = SteppedCursor
                                        , number =
                                            DecimalNumber
                                              (Decimal {places = 1, integer = 10})
@@ -2088,7 +2088,7 @@ table_map_defaulting =
                                                 LiteralExpression
                                                   (NumberLiteral
                                                      (Number
-                                                        { location = BuiltIn
+                                                        { location = SteppedCursor
                                                         , number =
                                                             DecimalNumber
                                                               (Decimal
