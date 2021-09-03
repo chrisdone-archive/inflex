@@ -224,6 +224,8 @@ evalApplyNF expression =
       evalLength fromInteger' array (expressionType expression)
     ApplyFunction1 NullFunction argument ->
       apply1 nullFunction argument (expressionType expression)
+    ApplyFunction2 FromOkFunction default' argument ->
+      apply2 from_okFunction default' argument (expressionType expression)
     ApplyFunction2 FilterFunction predicate (ArrayExpression array) ->
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->

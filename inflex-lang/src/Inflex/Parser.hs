@@ -416,16 +416,9 @@ arrayParser = do
       , form = ()
       }
 
-propParser :: Parser (Prop Parsed)
-propParser = do
-  expression <-
-    propLhsParser
-  Located {location} <- token ExpectedPeriod (preview _PeriodToken)
-  (name, _) <- fieldNameParser
-  pure Prop {typ = Nothing, ..}
-
 propLhsParser :: Parser (Expression Parsed)
 propLhsParser =
+  (VariantExpression <$> variantParser) <>
   (RecordExpression <$> recordParser) <> (ArrayExpression <$> arrayParser) <>
   (HoleExpression <$> holeParser) <>
   applyParser <>
