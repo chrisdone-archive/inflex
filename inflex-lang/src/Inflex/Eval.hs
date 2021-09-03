@@ -251,6 +251,25 @@ evalApplyNF expression =
       evalMap expression function array
     _ -> pure expression
 
+-- TODO:
+--
+-- Missing cases:
+--
+-- concat
+--
+-- lookups:
+--
+-- find
+-- any
+-- all
+
+-- folds:
+--
+-- minimum
+-- maximum
+-- average
+-- sum
+
 --------------------------------------------------------------------------------
 -- Infix
 
