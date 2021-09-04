@@ -30,11 +30,10 @@ import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Core as Core
 import Halogen.HTML.Elements.Keyed as Keyed
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Halogen.Query.Input as Input
+import Halogen.Manage as Manage
 import Halogen.VDom.DOM.Prop (ElemRef(..))
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Components.Code as Code
@@ -137,9 +136,6 @@ instance showRow :: Show Row where show x = genericShow x
 newtype Field = Field { key :: String , value :: View Shared.Tree2}
 derive instance genericField :: Generic Field _
 instance showField :: Show Field where show x = genericShow x
-
-manage :: forall r i. (ElemRef Element -> i) -> HP.IProp r i
-manage act = HP.IProp (Core.Ref (Just <<< Input.Action <<< act))
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -579,7 +575,7 @@ renderVegaEditor path vegaSpec =
     [ Tuple vegaSpec
             (HH.div
                [ HP.class_ (HH.ClassName "vega")
-               , manage (VegaElementChanged vegaSpec <<< ElemRef')
+               , Manage.manage (VegaElementChanged vegaSpec <<< ElemRef')
                ]
                [])
     ]
