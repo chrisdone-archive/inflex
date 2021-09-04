@@ -64,11 +64,15 @@ exports.newDragger = function(element){
 }
 
 exports.attach = function(actuator){
-  return function(dragme){
+  return function(levels){
     return function(dragger){
       return function(tellme){
         return function(){
           console.log('dragger: %o', dragger);
+          var dragme = actuator;
+          for (var i = 0; i < levels; i++) {
+            dragme = dragme.parentNode;
+          }
           if (dragme._draggable) {
             console.debug('already draggable, ignoring');
             return {};

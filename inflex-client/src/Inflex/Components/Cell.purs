@@ -15,18 +15,21 @@ import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.UUID (UUID)
+import Dragger as Dragger
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Manage as Manage
+import Halogen.Query.EventSource (effectEventSource, emit) as Src
 import Inflex.Components.Cell.Editor as Editor
 import Inflex.Components.Cell.TextInput as TextInput
+import Inflex.Frisson (View, casePosition)
 import Inflex.Frisson as F
-import Inflex.Frisson (View)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
 import Prelude
@@ -38,7 +41,8 @@ import Web.HTML.Event.DragEvent as DE
 
 data Input = Input {
   cell :: OutputCell,
-  cells :: Map UUID (OutputCell)
+  cells :: Map UUID (OutputCell),
+  dragger :: Dragger.Dragger
   }
 
 data Query a
@@ -48,10 +52,12 @@ data Output
   = RemoveCell
   | UpdatePath Shared.UpdatePath
   | RenameCell String
+  | RepositionCell Int Int
 
 data State = State
   { cell :: Cell
   , cells:: Map UUID (OutputCell)
+  , dragger :: Dragger.Dragger
   }
 
 data Command
@@ -59,9 +65,11 @@ data Command
   | DeleteCell
   | TriggerUpdatePath Shared.UpdatePath
   | TriggerRenameCell String
+  | TriggerRepositionCell Int Int
+  | DragElementAvailable (Manage.ElemRef Manage.Element)
 
-derive instance genericCommand :: Generic Command _
-instance showCommand :: Show Command where show x = genericShow x
+-- derive instance genericCommand :: Generic Command _
+-- instance showCommand :: Show Command where show x = genericShow x
 
 derive instance genericInput :: Generic Input _
 instance showInput :: Show Input where show x = genericShow x
@@ -76,6 +84,7 @@ data Cell = Cell
   , result :: Either (View Shared.CellError) (View Shared.Tree2)
   , resultHash :: Shared.Hash
   , type' :: Maybe (View Shared.TypeOf)
+  , position :: View Shared.Position
   }
 
 derive instance genericCell :: Generic Cell _
@@ -94,8 +103,8 @@ component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
 component =
   H.mkComponent
     { initialState:
-        (\(Input {cell, cells}) ->
-           State {cell: outputCellToCell cell, cells})
+        (\(Input {cell, cells, dragger}) ->
+           State {cell: outputCellToCell cell, cells, dragger})
     , render: \state -> timed "Cell.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -124,6 +133,7 @@ outputCellToCell (OutputCell cell) =
         , "ResultOk": \resultTree -> Just (F.resultTreeTyp resultTree)
         }
         (cell.result)
+    , position: cell.position
     }
 
 --------------------------------------------------------------------------------
@@ -153,9 +163,9 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 --   eval cmd
 
 
-eval :: forall t184 t187 t225 t227 t228.
-  MonadEffect t184 => Ord t227 => Command
-                                  -> H.HalogenM State t187
+eval :: forall t184 t225 t227 t228.
+  MonadAff t184 => Ord t227 => Command
+                                  -> H.HalogenM State Command
                                        ( editor :: H.Slot Editor.Query t228 t227
                                        | t225
                                        )
@@ -164,19 +174,38 @@ eval :: forall t184 t187 t225 t227 t228.
                                        Unit
 eval =
   case _ of
+    DragElementAvailable elemRef ->
+      case elemRef of
+        Manage.Created (element) ->
+          case Manage.fromElement element of
+            Just htmlelement -> do
+              State{dragger} <- H.get
+              void
+               (H.subscribe
+                  (Src.effectEventSource
+                     (\emitter -> do
+                        Dragger.attach htmlelement
+                                       3
+                                       dragger
+                                       (\x y -> Src.emit emitter (TriggerRepositionCell x y))
+                        pure mempty)))
+            Nothing -> pure unit
+        Manage.Removed _ -> pure unit
     TriggerUpdatePath update -> do
       H.raise (UpdatePath update)
     TriggerRenameCell update -> H.raise (RenameCell update)
-    SetCellFromInput (Input {cell: c, cells}) -> do
+    TriggerRepositionCell x y -> H.raise (RepositionCell x y)
+    SetCellFromInput (Input {cell: c, cells, dragger}) -> do
       State {cell: oldCell} <- H.get
       let newCell@(Cell {name}) = outputCellToCell c
       if newCell /= oldCell
         then do
-          log
-            ("Cell.eval: Updating: " <> name)
-          H.modify_ (\(State s) -> State (s {cell = newCell, cells = cells}))
+          log ("Cell.eval:Updating:" <> name)
+          H.modify_
+            (\(State s) ->
+               State (s {cell = newCell, cells = cells, dragger = dragger}))
         else do
-          H.modify_ (\(State s) -> State (s {cells = cells}))
+          H.modify_ (\(State s) -> State (s {cells = cells, dragger = dragger}))
           _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
           pure unit
     DeleteCell -> H.raise RemoveCell
@@ -189,16 +218,22 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State { cell: Cell {name, code, result, type'}
+render (State { cell: Cell {name, code, result, type', position}
               , cells
               }) =
   HH.div
-    [HP.class_ (HH.ClassName "cell-wrapper")]
+    [HP.class_ (HH.ClassName "cell-wrapper")
+    ,HP.attr (AttrName "style") (casePosition {
+                                    "Unpositioned": "",
+                                    "AbsolutePosition": \x y ->
+                                       "position: absolute; left: " <> show x <> "px; top: " <> show y <> "px"
+                                    } position)]
     [ HH.div
         [HP.class_ (HH.ClassName "cell")]
         [ HH.div
             [HP.class_ (HH.ClassName "cell-header")]
-            [ HH.slot
+            [ HH.div [Manage.manage DragElementAvailable] [HH.text "✋"],
+              HH.slot
                 (SProxy :: SProxy "declname")
                 unit
                 (TextInput.component

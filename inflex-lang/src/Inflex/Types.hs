@@ -161,6 +161,7 @@ data Named a = Named
   , thing :: a
   , sourceHash :: !SourceHash
   , dependencies :: Set Uuid
+  , position :: Maybe (Int,Int)
   } deriving (Show, Lift, Eq, Ord, Functor, Generic, Traversable, Foldable)
 instance NFData a => NFData (Named a)
 

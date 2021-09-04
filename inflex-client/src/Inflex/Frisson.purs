@@ -68,6 +68,7 @@ foreign import unviewUpdate :: (View Update) -> Json
 foreign import caseUpdate :: forall r. {
   "CellUpdate" :: (View UpdateCell) -> r,
   "CellRename" :: (View RenameCell) -> r,
+  "CellReposition" :: (View RepositionCell) -> r,
   "CellDelete" :: (View DeleteCell) -> r,
   "CellNew" :: (View NewCell) -> r
   } -> (View Update) -> r
@@ -91,6 +92,16 @@ foreign import unviewRenameCell :: (View RenameCell) -> Json
 foreign import renameCellUuid :: (View RenameCell) -> (View UUID)
 
 foreign import renameCellNewname :: (View RenameCell) -> String
+
+foreign import viewRepositionCell :: Json -> (View RepositionCell)
+
+foreign import unviewRepositionCell :: (View RepositionCell) -> Json
+
+foreign import repositionCellUuid :: (View RepositionCell) -> (View UUID)
+
+foreign import repositionCellX :: (View RepositionCell) -> Int
+
+foreign import repositionCellY :: (View RepositionCell) -> Int
 
 foreign import viewUpdateCell :: Json -> (View UpdateCell)
 
@@ -190,6 +201,8 @@ foreign import cachedOutputCellResult :: (View CachedOutputCell) -> (View Cached
 
 foreign import cachedOutputCellOrder :: (View CachedOutputCell) -> Int
 
+foreign import cachedOutputCellPosition :: (View CachedOutputCell) -> (View Position)
+
 foreign import viewInputCell1 :: Json -> (View InputCell1)
 
 foreign import unviewInputCell1 :: (View InputCell1) -> Json
@@ -203,6 +216,8 @@ foreign import inputCell1Code :: (View InputCell1) -> String
 foreign import inputCell1Order :: (View InputCell1) -> Int
 
 foreign import inputCell1Version :: (View InputCell1) -> (View Version1)
+
+foreign import inputCell1Position :: (View InputCell1) -> (View Position)
 
 foreign import viewResult :: Json -> (View Result)
 
@@ -511,4 +526,13 @@ foreign import caseOpenClosed :: forall r. {
   "Open" :: r,
   "Closed" :: r
   } -> (View OpenClosed) -> r
+
+foreign import viewPosition :: Json -> (View Position)
+
+foreign import unviewPosition :: (View Position) -> Json
+
+foreign import casePosition :: forall r. {
+  "Unpositioned" :: r,
+  "AbsolutePosition" :: Int -> Int -> r
+  } -> (View Position) -> r
 

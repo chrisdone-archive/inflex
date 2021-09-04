@@ -344,6 +344,18 @@ deriving instance Show RenameCell
 -- instance ToJSON RenameCell
 instance FromJSON RenameCell
 
+instance NFData RepositionCell
+deriving instance Generic RepositionCell
+deriving instance Show RepositionCell
+-- instance ToJSON RepositionCell
+instance FromJSON RepositionCell
+
+instance NFData Position
+deriving instance Generic Position
+deriving instance Show Position
+-- instance ToJSON Position
+instance FromJSON Position
+
 instance NFData UpdatePath
 deriving instance Generic UpdatePath
 deriving instance Show UpdatePath
@@ -458,4 +470,4 @@ $(Frisson.deriveAll
    \import Data.Argonaut.Core (Json)\n\
    \import Prelude (class Show)\n\
    \"
-  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed])
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell ,''RepositionCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed, ''Position])

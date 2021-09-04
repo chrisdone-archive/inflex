@@ -82,6 +82,7 @@ data NestedCellError = NestedCellError
 data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
+  | CellReposition RepositionCell
   | CellDelete DeleteCell
   | CellNew NewCell
 
@@ -96,6 +97,12 @@ data DeleteCell = DeleteCell {
 data RenameCell = RenameCell {
   uuid :: UUID,
   newname :: Text
+ }
+
+data RepositionCell = RepositionCell {
+  uuid :: UUID,
+  x :: Int,
+  y :: Int
  }
 
 data UpdateCell = UpdateCell {
@@ -158,6 +165,7 @@ data CachedOutputCell = CachedOutputCell
   , code :: CachedText
   , result :: CachedResult
   , order :: Int
+  , position :: Position
   }
 
 data InputCell1 = InputCell1
@@ -166,7 +174,10 @@ data InputCell1 = InputCell1
   , code :: Text
   , order :: Int
   , version :: Version1
+  , position :: Position
   }
+
+data Position = Unpositioned | AbsolutePosition Int Int
 
 data Result
   = ResultError CellError

@@ -103,6 +103,7 @@ applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
               , order = V.length cells + 1
               , sourceHash = HashNotKnownYet
               , dependencies = mempty
+              , position = Nothing
               }
           inputDocument =
             inputDocument0 {InputDocument.cells = cells <> pure newcell}
@@ -118,6 +119,12 @@ applyUpdate seen update' inputDocument0@InputDocument {cells} setInputDoc =
       pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
     Shared.CellRename rename -> do
       let inputDocument = applyRename rename inputDocument0
+      outputDocument <-
+        forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
+      setInputDoc outputDocument
+      pure (Shared.UpdatedDocument (cellsToOutputDocument seen outputDocument))
+    Shared.CellReposition reposition -> do
+      let inputDocument = applyReposition reposition inputDocument0
       outputDocument <-
         forceTimeout TimedLoadDocument (loadInputDocument inputDocument)
       setInputDoc outputDocument
@@ -271,6 +278,7 @@ getRevisedDocument loginAccountId docId =
                             Nothing -> HashNotKnownYet
                             Just hash -> HashKnown hash
                       , dependencies = mempty -- TODO: Fill this in.
+                      , position = (,) <$> revisionCellX <*> revisionCellY
                       })))
             (E.select
                (E.from
@@ -328,7 +336,7 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument =
     cells <-
       for
         inputDocument
-        (\OutputCell {uuid, name, code, order, msourceHash, dependencies} -> do
+        (\OutputCell {uuid, name, code, order, msourceHash, dependencies, position} -> do
            Entity {entityKey = codeId} <-
              upsert
                Code
@@ -354,6 +362,8 @@ setInputDocument now accountId documentId _oldRevisionId inputDocument =
                , revisionCellCell = cellId
                , revisionCellOrder = order
                , revisionCellMsourceHash = msourceHash
+               , revisionCellX = fmap fst position
+               , revisionCellY = fmap snd position
                }
            pure (uuid, (cellId, dependencies)))
     for_
@@ -534,6 +544,7 @@ insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows InputDocume
                , InputCell.order = V.length cells + 1
                , sourceHash = HashNotKnownYet
                , dependencies = mempty
+               , position = Nothing
                })
       }
   where
@@ -585,5 +596,8 @@ cellsToOutputDocument seen = Shared.OutputDocument . fmap cons
              in if V.elem hash seen
                   then Shared.CachedText hash
                   else Shared.FreshText code hash
+        , position = case position of
+                       Nothing -> Shared.Unpositioned
+                       Just (x,y) -> Shared.AbsolutePosition x y
         , ..
         }

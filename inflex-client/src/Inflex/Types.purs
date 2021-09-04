@@ -2,12 +2,12 @@
 
 module Inflex.Types where
 
-import Data.UUID (UUID)
-import Inflex.Frisson (View)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Inflex.Schema (Result, Text, Hash)
-import Prelude
+import Data.UUID (UUID)
+import Inflex.Frisson (View)
+import Inflex.Schema (Result, Text, Hash, Position)
+import Prelude (class Show)
 
 data OutputCell = OutputCell
   { uuid :: UUID
@@ -17,6 +17,7 @@ data OutputCell = OutputCell
   , result :: View Result
   , resultHash :: Hash
   , order :: Int
+  , position :: View Position
   }
 
 derive instance genericOutputCell :: Generic OutputCell _

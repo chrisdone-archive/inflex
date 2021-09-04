@@ -108,6 +108,7 @@ data NestedCellError = NestedCellError
 data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
+  | CellReposition RepositionCell
   | CellDelete DeleteCell
   | CellNew NewCell
 
@@ -122,6 +123,12 @@ data DeleteCell = DeleteCell {
 data RenameCell = RenameCell {
   uuid :: UUID,
   newname :: Text
+ }
+
+data RepositionCell = RepositionCell {
+  uuid :: UUID,
+  x :: Int,
+  y :: Int
  }
 
 data UpdateCell = UpdateCell {
@@ -184,6 +191,7 @@ data CachedOutputCell = CachedOutputCell
   , code :: CachedText
   , result :: CachedResult
   , order :: Int
+  , position :: Position
   }
 
 data InputCell1 = InputCell1
@@ -192,7 +200,10 @@ data InputCell1 = InputCell1
   , code :: Text
   , order :: Int
   , version :: Version1
+  , position :: Position
   }
+
+data Position = Unpositioned | AbsolutePosition Int Int
 
 data Result
   = ResultError CellError
@@ -585,6 +596,16 @@ derive instance genericRenameCell :: Generic RenameCell _
 instance showRenameCell :: Show RenameCell where show = genericShow
 instance decodeRenameCell :: Decode RenameCell where decode = genericDecode opts
 instance encodeRenameCell :: Encode RenameCell where encode = genericEncode opts
+
+derive instance genericRepositionCell :: Generic RepositionCell _
+instance showRepositionCell :: Show RepositionCell where show = genericShow
+instance decodeRepositionCell :: Decode RepositionCell where decode = genericDecode opts
+instance encodeRepositionCell :: Encode RepositionCell where encode = genericEncode opts
+
+derive instance genericPosition :: Generic Position _
+instance showPosition :: Show Position where show = genericShow
+instance decodePosition :: Decode Position where decode = genericDecode opts
+instance encodePosition :: Encode Position where encode = genericEncode opts
 
 derive instance genericUpdatePath :: Generic UpdatePath _
 instance showUpdatePath :: Show UpdatePath where show = genericShow

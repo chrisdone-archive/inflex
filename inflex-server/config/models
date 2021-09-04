@@ -65,6 +65,8 @@ RevisionCell
   revision RevisionId
   cell CellId
   order Int
+  x Int Maybe
+  y Int Maybe
   msourceHash SHA512 Maybe -- Not provided if the cell is erroneous.
   deriving Show
 

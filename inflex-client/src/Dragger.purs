@@ -19,7 +19,7 @@ foreign import newDragger :: HTMLElement -> Effect Dragger
 
 foreign import attach
    :: HTMLElement -- Mouse actuation point
-   -> HTMLElement -- Drag this
+   -> Int         -- Go N levels up to find the element to move
    -> Dragger     -- Using this dragger
    -> (Int -> Int -> Effect Unit)
    -- ^ Drag is complete, these are the new coordinates relative to the

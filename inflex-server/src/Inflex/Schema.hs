@@ -114,6 +114,7 @@ data NestedCellError = NestedCellError
 data Update
   = CellUpdate UpdateCell
   | CellRename RenameCell
+  | CellReposition RepositionCell
   | CellDelete DeleteCell
   | CellNew NewCell
 
@@ -128,6 +129,12 @@ data DeleteCell = DeleteCell {
 data RenameCell = RenameCell {
   uuid :: UUID,
   newname :: Text
+ }
+
+data RepositionCell = RepositionCell {
+  uuid :: UUID,
+  x :: Int,
+  y :: Int
  }
 
 data UpdateCell = UpdateCell {
@@ -190,6 +197,7 @@ data CachedOutputCell = CachedOutputCell
   , code :: CachedText
   , result :: CachedResult
   , order :: Int
+  , position :: Position
   }
 
 data InputCell1 = InputCell1
@@ -198,7 +206,10 @@ data InputCell1 = InputCell1
   , code :: Text
   , order :: Int
   , version :: Version1
+  , position :: Position
   }
+
+data Position = Unpositioned | AbsolutePosition Int Int
 
 data Result
   = ResultError CellError
@@ -683,6 +694,18 @@ deriving instance Show RenameCell
 -- instance ToJSON RenameCell
 instance FromJSON RenameCell
 
+instance NFData RepositionCell
+deriving instance Generic RepositionCell
+deriving instance Show RepositionCell
+-- instance ToJSON RepositionCell
+instance FromJSON RepositionCell
+
+instance NFData Position
+deriving instance Generic Position
+deriving instance Show Position
+-- instance ToJSON Position
+instance FromJSON Position
+
 instance NFData UpdatePath
 deriving instance Generic UpdatePath
 deriving instance Show UpdatePath
@@ -797,4 +820,4 @@ $(Frisson.deriveAll
    \import Data.Argonaut.Core (Json)\n\
    \import Prelude (class Show)\n\
    \"
-  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed])
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell ,''RepositionCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed, ''Position])

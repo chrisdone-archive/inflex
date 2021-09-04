@@ -4,6 +4,8 @@ module Inflex.Components.Doc
   ( component
   ) where
 
+import Inflex.Frisson
+
 import Control.Monad.State (class MonadState)
 import Data.Array (mapMaybe)
 import Data.Either (Either(..))
@@ -17,6 +19,7 @@ import Data.Symbol (SProxy(..))
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID(..), uuidToString)
+import Dragger as Dragger
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
@@ -25,8 +28,8 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Manage as Manage
 import Inflex.Components.Cell as Cell
-import Inflex.Frisson
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
@@ -60,10 +63,12 @@ data Command
   | DeleteCell UUID
   | UpdatePath UUID Shared.UpdatePath
   | RenameCell UUID String
+  | RepositionCell UUID Int Int
   | Undo
   | Redo
   | ImportCsvStart
   | ChooseCsvFile (View Shared.File)
+  | CanvasCreated (Manage.ElemRef Manage.Element)
 
 type State = {
     cells :: Array OutputCell
@@ -71,6 +76,7 @@ type State = {
   , modal :: Modal
   , seenTexts :: Map Shared.Hash String
   , seenResults :: Map Shared.Hash (View Shared.Result)
+  , dragger :: Maybe Dragger.Dragger
  }
 
 data Modal
@@ -89,7 +95,7 @@ type Output = Unit
 component :: forall q. H.Component HH.HTML q Input Output Aff
 component =
   H.mkComponent
-    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seenResults: mempty, seenTexts: mempty}
+    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seenResults: mempty, seenTexts: mempty, dragger: Nothing}
     , render: \state -> timed "Doc.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -196,31 +202,38 @@ render state =
                  if meta . readonly
                    then " readonly"
                    else ""))
+         , Manage.manage CanvasCreated
          ]
          (map
             (\outputCell@(OutputCell cell) ->
                let uuid = (cell . uuid)
-                in HH.slot
-                     (SProxy :: SProxy "Cell")
-                     (uuidToString (cell . uuid))
-                     Cell.component
-                     (Cell.Input
-                        { cell: outputCell
-                        , cells:
-                            M.delete
-                              uuid
-                              (M.fromFoldable
-                                 (map
-                                    (\cell'@(OutputCell cell'0) ->
-                                       Tuple ((cell'0 . uuid)) cell')
-                                    (state . cells)))
-                        })
-                     (\update0 ->
-                        pure
-                          (case update0 of
-                             Cell.RemoveCell -> DeleteCell uuid
-                             Cell.UpdatePath update' -> UpdatePath uuid update'
-                             Cell.RenameCell name' -> RenameCell uuid name')))
+                in case state . dragger of
+                     Nothing -> HH.text "Pending..."
+                     Just dragger ->
+                       HH.slot
+                         (SProxy :: SProxy "Cell")
+                         (uuidToString (cell . uuid))
+                         Cell.component
+                         (Cell.Input
+                            { cell: outputCell
+                            , cells:
+                                M.delete
+                                  uuid
+                                  (M.fromFoldable
+                                     (map
+                                        (\cell'@(OutputCell cell'0) ->
+                                           Tuple ((cell'0 . uuid)) cell')
+                                        (state . cells)))
+                            , dragger
+                            })
+                         (\update0 ->
+                            pure
+                              (case update0 of
+                                 Cell.RemoveCell -> DeleteCell uuid
+                                 Cell.UpdatePath update' ->
+                                   UpdatePath uuid update'
+                                 Cell.RenameCell name' -> RenameCell uuid name'
+                                 Cell.RepositionCell x y -> RepositionCell uuid x y)))
             (state . cells))
      ] <>
      case state . modal of
@@ -298,6 +311,15 @@ eval :: forall t122 t125 t129 t130 t131.
                                             Unit
 eval =
   case _ of
+    CanvasCreated elemRef ->
+      case elemRef of
+        Manage.Created (element) ->
+          case Manage.fromElement element of
+            Just htmlelement -> do
+              dragger <- H.liftEffect (Dragger.newDragger htmlelement)
+              H.modify_ (\s -> s {dragger=Just dragger})
+            Nothing -> pure unit
+        Manage.Removed _ -> pure unit
     Initialize ->
       case documentId of
         Nothing -> pure unit
@@ -336,6 +358,14 @@ eval =
         update
           (Shared.CellRename
              (Shared.RenameCell {uuid, newname: name'}))
+      case result of
+        Nothing -> pure unit
+        Just cellError -> pure unit
+    RepositionCell uuid x y -> do
+      result <-
+        update
+          (Shared.CellReposition
+             (Shared.RepositionCell {uuid, x, y}))
       case result of
         Nothing -> pure unit
         Just cellError -> pure unit
@@ -563,6 +593,7 @@ consolidateCell seenTexts seenResults cached = do
     , codeHash
     , result
     , resultHash
+    , position: cachedOutputCellPosition cached
     })
 
 toInputCell :: OutputCell -> InputCell1
@@ -573,6 +604,10 @@ toInputCell (OutputCell cell) =
     , code: cell.code
     , order: cell.order
     , version: versionRefl
+    , position: casePosition {
+          "Unpositioned": Shared.Unpositioned,
+          "AbsolutePosition": Shared.AbsolutePosition
+         } (cell.position)
     }
 
 documentId :: Maybe Int

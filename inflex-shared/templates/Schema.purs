@@ -247,6 +247,16 @@ instance showRenameCell :: Show RenameCell where show = genericShow
 instance decodeRenameCell :: Decode RenameCell where decode = genericDecode opts
 instance encodeRenameCell :: Encode RenameCell where encode = genericEncode opts
 
+derive instance genericRepositionCell :: Generic RepositionCell _
+instance showRepositionCell :: Show RepositionCell where show = genericShow
+instance decodeRepositionCell :: Decode RepositionCell where decode = genericDecode opts
+instance encodeRepositionCell :: Encode RepositionCell where encode = genericEncode opts
+
+derive instance genericPosition :: Generic Position _
+instance showPosition :: Show Position where show = genericShow
+instance decodePosition :: Decode Position where decode = genericDecode opts
+instance encodePosition :: Encode Position where encode = genericEncode opts
+
 derive instance genericUpdatePath :: Generic UpdatePath _
 instance showUpdatePath :: Show UpdatePath where show = genericShow
 instance decodeUpdatePath :: Decode UpdatePath where decode = genericDecode opts

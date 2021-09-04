@@ -64,6 +64,7 @@ data OutputCell = OutputCell
   , order :: Int
   , msourceHash :: Maybe SHA512
   , dependencies :: Set Uuid
+  , position :: Maybe (Int,Int)
   }
 
 data InputDocument = InputDocument
@@ -77,6 +78,7 @@ data InputCell = InputCell
   , order :: Int
   , sourceHash :: SourceHash
   , dependencies :: Set Uuid
+  , position :: Maybe (Int,Int)
   }
 
 fromInputDocument1 :: Shared.InputDocument1 -> InputDocument
@@ -85,7 +87,15 @@ fromInputDocument1 Shared.InputDocument1 {..} =
 
 fromInputCell1 :: Shared.InputCell1 -> InputCell
 fromInputCell1 =
-  \Shared.InputCell1 {..} -> InputCell {sourceHash = HashNotKnownYet, dependencies = mempty, ..}
+  \Shared.InputCell1 {..} ->
+    InputCell
+      { sourceHash = HashNotKnownYet
+      , dependencies = mempty
+      , position = case position of
+            Shared.Unpositioned -> Nothing
+            Shared.AbsolutePosition x y -> Just (x,y)
+      , ..
+      }
 
 loadInputDocument ::
      InputDocument
@@ -128,6 +138,7 @@ loadInputDocument (InputDocument {cells}) = do
                       , order
                       , sourceHash
                       , dependencies
+                      , position
                       } ->
              Named
                { uuid = Uuid uuid
@@ -141,6 +152,7 @@ loadInputDocument (InputDocument {cells}) = do
                      then sourceHash
                      else HashNotKnownYet
                , dependencies
+               , position
                })
           (toList cells)
   for_ inputCells (\Named {name, sourceHash} -> glog (CellHash name sourceHash))
@@ -191,7 +203,7 @@ loadInputDocument (InputDocument {cells}) = do
           topo))
   outputCells <-
     RIO.pooledMapConcurrently
-      (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies} -> do
+      (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies, position} -> do
          glog (CellResultOk name (either (const False) (const True) thing))
          case thing of
            Left loadError -> glog (CellError loadError)
@@ -236,6 +248,7 @@ loadInputDocument (InputDocument {cells}) = do
                     Left {} -> Nothing
                     Right EvaledExpression {cell = Cell1 {sourceHash}} ->
                       Just sourceHash
+              , position
               }))
       (unToposorted topo)
   pure

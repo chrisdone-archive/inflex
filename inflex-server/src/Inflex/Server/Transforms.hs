@@ -10,6 +10,7 @@ module Inflex.Server.Transforms
   ( applyRename
   , applyDelete
   , applyUpdateToDocument
+  , applyReposition
   , TransformError(..)
   ) where
 
@@ -46,6 +47,22 @@ applyRename (Shared.RenameCell {uuid = uuid0, newname}) inputDocument1 =
                    if uuid == uuid0
                      then newname
                      else name
+               , ..
+               })
+          (InputDocument.cells inputDocument1)
+    }
+
+applyReposition :: Shared.RepositionCell -> InputDocument -> InputDocument
+applyReposition (Shared.RepositionCell {uuid = uuid0, x, y}) inputDocument1 =
+  inputDocument1
+    { InputDocument.cells =
+        fmap
+          (\InputCell {..} ->
+             InputCell
+               { position =
+                   if uuid == uuid0
+                     then pure (x,y)
+                     else position
                , ..
                })
           (InputDocument.cells inputDocument1)

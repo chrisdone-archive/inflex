@@ -65,8 +65,9 @@ return function(a) {
 switch (a[0]) {
 case 0: return k["CellUpdate"](a[1]);
 case 1: return k["CellRename"](a[1]);
-case 2: return k["CellDelete"](a[1]);
-case 3: return k["CellNew"](a[1]);
+case 2: return k["CellReposition"](a[1]);
+case 3: return k["CellDelete"](a[1]);
+case 4: return k["CellNew"](a[1]);
 default: throw Exception('BUG: case accessor failed');
 }
 }
@@ -92,6 +93,16 @@ exports.unviewRenameCell = function(x){return x};
 exports.renameCellUuid = function(a){return a[0]};
 
 exports.renameCellNewname = function(a){return a[1]};
+
+exports.viewRepositionCell = function(x){return x};
+
+exports.unviewRepositionCell = function(x){return x};
+
+exports.repositionCellUuid = function(a){return a[0]};
+
+exports.repositionCellX = function(a){return a[1]};
+
+exports.repositionCellY = function(a){return a[2]};
 
 exports.viewUpdateCell = function(x){return x};
 
@@ -203,6 +214,8 @@ exports.cachedOutputCellResult = function(a){return a[3]};
 
 exports.cachedOutputCellOrder = function(a){return a[4]};
 
+exports.cachedOutputCellPosition = function(a){return a[5]};
+
 exports.viewInputCell1 = function(x){return x};
 
 exports.unviewInputCell1 = function(x){return x};
@@ -216,6 +229,8 @@ exports.inputCell1Code = function(a){return a[2]};
 exports.inputCell1Order = function(a){return a[3]};
 
 exports.inputCell1Version = function(a){return a[4]};
+
+exports.inputCell1Position = function(a){return a[5]};
 
 exports.viewResult = function(x){return x};
 
@@ -627,6 +642,21 @@ return function(a) {
 switch (a[0]) {
 case 0: return k["Open"];
 case 1: return k["Closed"];
+default: throw Exception('BUG: case accessor failed');
+}
+}
+}
+;
+
+exports.viewPosition = function(x){return x};
+
+exports.unviewPosition = function(x){return x};
+
+exports.casePosition = function(k) {
+return function(a) {
+switch (a[0]) {
+case 0: return k["Unpositioned"];
+case 1: return k["AbsolutePosition"](a[1])(a[2]);
 default: throw Exception('BUG: case accessor failed');
 }
 }
