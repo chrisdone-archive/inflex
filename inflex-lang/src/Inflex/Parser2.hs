@@ -279,18 +279,18 @@ whitespace =
 
 getSourcePos :: Env -> F.Parser e SourcePos
 getSourcePos Env{original} = do
-  pos <- F.getPos
+  pos@(F.Pos offset) <- F.getPos
   let ~(line, column) =
         case F.posLineCols original [pos] of
           [(line', col)] -> (line'+1, col+1)
           _ -> (0, 0)
-   in pure SourcePos {name = "", line, column}
+   in pure SourcePosWithOffset {name = "", line, column,offset}
 
 getSourcePosPrev :: Env -> F.Parser e SourcePos
 getSourcePosPrev Env{original} = do
-  pos <- F.getPos
+  pos@(F.Pos offset) <- F.getPos
   let ~(line, column) =
         case F.posLineCols original [pos] of
           [(line', col)] -> (line'+1, col)
           _ -> (0, 0)
-   in pure SourcePos {name = "", line, column}
+   in pure SourcePosWithOffset {name = "", line, column,offset}

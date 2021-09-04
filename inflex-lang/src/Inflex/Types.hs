@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveLift #-}
@@ -514,11 +515,35 @@ data SourceLocation = SourceLocation
   } deriving (Show, Lift, Eq, Ord)
 
 -- | Position in source code.
-data SourcePos = SourcePos
-  { line :: Int -- ^ Deliberately lazy.
-  , column :: Int -- ^ Deliberately lazy.
-  , name :: FilePath -- ^ Deliberately lazy.
-  } deriving (Show, Lift, Eq, Ord, Generic)
+data SourcePos
+  = SourcePos { line :: Int -- ^ Deliberately lazy.
+              , column :: Int -- ^ Deliberately lazy.
+              , name :: FilePath -- ^ Deliberately lazy.
+               }
+    -- ^ This comes from Lexer.
+  | SourcePosWithOffset { line :: Int -- ^ Deliberately lazy.
+                        , column :: Int -- ^ Deliberately lazy.
+                        , name :: FilePath -- ^ Deliberately lazy.
+                        , offset :: !Int
+                        }
+    -- ^ This comes from Parser2, where it's more expensive to compute
+    -- line/col and we prefer to use offset where possible.
+  deriving (Show, Lift, Generic)
+
+instance Eq SourcePos where
+  (==) (SourcePos x y z) (SourcePos x' y' z') = (x, y, z) == (x', y', z')
+  (==) (SourcePosWithOffset {offset = x}) (SourcePosWithOffset {offset = y}) =
+    x == y
+  (==) SourcePosWithOffset {..} pos = SourcePos {..} == pos
+  (==) pos SourcePosWithOffset {..} = SourcePos {..} == pos
+
+instance Ord SourcePos where
+  compare (SourcePos x y z) (SourcePos x' y' z') =
+    compare (x, y, z) (x', y', z')
+  compare (SourcePosWithOffset {offset = x}) (SourcePosWithOffset {offset = y}) =
+    x `compare` y
+  compare SourcePosWithOffset {..} pos = SourcePos {..} `compare` pos
+  compare pos SourcePosWithOffset {..} = SourcePos {..} `compare` pos
 
 --------------------------------------------------------------------------------
 -- Tree location information
