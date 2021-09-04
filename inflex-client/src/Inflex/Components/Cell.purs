@@ -94,7 +94,8 @@ instance eqCell :: Eq Cell where
   eq (Cell c1) (Cell c2) =
     c1.name == c2.name &&
     c1.codeHash == c2.codeHash &&
-    c1.resultHash == c2.resultHash
+    c1.resultHash == c2.resultHash &&
+    show c1.position == show c2.position
 
 --------------------------------------------------------------------------------
 -- Component
