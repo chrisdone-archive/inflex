@@ -196,9 +196,7 @@ instance Printer SomeNumber where
                DecimalNumber decimal -> printer decimal
 
 instance Printer Decimal where
-  printer decimal =
-    case decimalToFixed decimal of
-      SomeFixed _ f -> displayShow f
+  printer = RIO.display
 
 instance Printer NumericBinOp where
   printer =

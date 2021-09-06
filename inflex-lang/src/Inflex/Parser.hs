@@ -24,6 +24,7 @@ module Inflex.Parser
 import           Control.Applicative ((<|>))
 import           Control.Monad.Reader
 import           Data.Bifunctor
+import           Data.Decimal
 import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.List.NonEmpty (NonEmpty(..))

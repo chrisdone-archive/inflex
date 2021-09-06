@@ -32,6 +32,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
+import           Inflex.Decimal
 import           Inflex.Lexer
 import           Inflex.Parser
 import           Inflex.Schema

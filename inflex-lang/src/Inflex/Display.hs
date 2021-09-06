@@ -22,7 +22,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Inflex.Decimal
 import           Inflex.Instances ()
 import           Inflex.Location
 import           Inflex.Types
@@ -505,11 +504,6 @@ instance Display SomeNumber where
   display = \case
                IntegerNumber i -> display i
                DecimalNumber decimal -> display decimal
-
-instance Display Decimal where
-  display decimal =
-    case decimalToFixed decimal of
-      SomeFixed _ f -> displayShow f
 
 instance Display (Lambda Parsed) where
   display Lambda{param,body} = "(" <> display param <> ":" <> display body <> ")"

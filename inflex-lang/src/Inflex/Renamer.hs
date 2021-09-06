@@ -22,6 +22,7 @@ module Inflex.Renamer
 import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.Decimal
 import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))

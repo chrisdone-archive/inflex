@@ -14,22 +14,23 @@
 
 module Inflex.Types where
 
-import           Control.DeepSeq
-import           Data.Hashable
-import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Map.Strict (Map)
-import           Data.Sequence (Seq)
-import           Data.Set (Set)
-import           Data.String
-import           Data.Text (Text)
-import           Data.UUID (UUID)
-import           Data.Vector (Vector)
-import           Data.Void
-import           FlatParse.Basic as FlatParse
-import           GHC.Generics
-import           Inflex.Types.SHA512
-import           Language.Haskell.TH.Lift
-import           Numeric.Natural
+import Control.DeepSeq
+import Data.Decimal
+import Data.Hashable
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Map.Strict (Map)
+import Data.Sequence (Seq)
+import Data.Set (Set)
+import Data.String
+import Data.Text (Text)
+import Data.UUID (UUID)
+import Data.Vector (Vector)
+import Data.Void
+import FlatParse.Basic as FlatParse
+import GHC.Generics
+import Inflex.Types.SHA512
+import Language.Haskell.TH.Lift
+import Numeric.Natural
 
 --------------------------------------------------------------------------------
 -- AST types
@@ -319,15 +320,8 @@ data Number s = Number
 -- Twitter poll: https://twitter.com/christopherdone/status/1271781700083818496
 data SomeNumber
   = IntegerNumber !Integer -- ^ Any whole number.
-  | DecimalNumber !Decimal
+  | DecimalNumber !Decimal -- ^ Any number with fixed decimal places.
   deriving (Show, Lift, Eq, Ord)
-
--- | Decimal backed by an Integer with N decimal places. Precision is
--- determined at runtime.
-data Decimal = Decimal
-  { places :: !Natural
-  , integer :: !Integer
-  } deriving (Show, Lift, Eq, Ord)
 
 --------------------------------------------------------------------------------
 -- Type system types

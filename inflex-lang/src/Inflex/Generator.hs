@@ -27,6 +27,7 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Validate
 import           Data.Bifunctor
+import           Data.Decimal
 import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M

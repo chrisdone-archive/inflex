@@ -16,6 +16,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import           Data.Char (isAlphaNum)
 import           Data.Coerce
+import           Data.Decimal
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T

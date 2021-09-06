@@ -26,13 +26,15 @@ module Inflex.Stepper
   , stepText
   ) where
 
+import qualified Control.Early (Early(..), early)
 import           Control.Monad.Reader
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Containers.ListUtils
+import           Data.Decimal
+import           Data.Decimal
 import           Data.Early
-import qualified Control.Early (Early(..), early)
 import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List as List
@@ -1160,26 +1162,19 @@ stepDecimalOp ::
   -> Step (Result (Expression Resolved))
 stepDecimalOp asis places numericBinOp left' right' =
   case (left', right') of
-    (LiteralExpression (NumberLiteral Number { number = DecimalNumber (decimalToFixed -> left)
+    (LiteralExpression (NumberLiteral Number { number = DecimalNumber x
                                              , typ
-                                             }), LiteralExpression (NumberLiteral Number {number = DecimalNumber (decimalToFixed -> right)})) -> do
-      case sameFixed
-             left
-             right
-             (\x y -> do
-                result <-
-                  case numericBinOp of
-                    AddOp -> pure (x + y)
-                    SubtractOp -> pure (x - y)
-                    MulitplyOp -> pure (x * y)
-                    DivideOp ->
-                      if y == 0
-                        then Left () -- We stop due to division by zero.
-                        else pure (x / y)
-                pure (fixedToDecimal (SomeFixed places result))) of
-        Nothing -> pure (Errored MismatchingPrecisionsInOp)
-        Just (Left ()) -> pure (Ok asis) -- Division by zero has no answer, so we stop.
-        Just (Right result) ->
+                                             }), LiteralExpression (NumberLiteral Number {number = DecimalNumber y})) -> do
+      case case numericBinOp of
+               AddOp -> pure (x `plus` y)
+               SubtractOp -> pure (x `minus` y)
+               MulitplyOp -> pure (x `multiply` y)
+               DivideOp ->
+                 if y == decimalFromInteger 0 places
+                   then Left () -- We stop due to division by zero.
+                   else pure (x `divide` y) of
+        (Left ()) -> pure (Ok asis) -- Division by zero has no answer, so we stop.
+        (Right result) ->
           pure
             (Ok (LiteralExpression
                 (NumberLiteral
