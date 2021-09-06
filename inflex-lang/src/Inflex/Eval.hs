@@ -250,6 +250,47 @@ evalApplyNF expression =
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->
       evalMap expression function array
+    -- Sum:
+    ApplyFold SumFunction IntegerOpInstance {} array ->
+      evalAtomicFoldInteger V.sum array expression "sum_empty"
+    ApplyFold SumFunction (DecimalOpInstance places _) array ->
+      evalAtomicFoldDecimal places (V.foldl1' plus) array expression "sum_empty"
+    -- Maximum:
+    ApplyFold MaximumFunction IntegerOpInstance {} array ->
+      evalAtomicFoldInteger V.maximum array expression "maximum_empty"
+    ApplyFold MaximumFunction (DecimalOpInstance places _) array ->
+      evalAtomicFoldDecimal
+        places
+        (V.foldl1' max)
+        array
+        expression
+        "maximum_empty"
+    -- Minimum:
+    ApplyFold MinimumFunction IntegerOpInstance {} array ->
+      evalAtomicFoldInteger V.minimum array expression "minimum_empty"
+    ApplyFold MinimumFunction (DecimalOpInstance places _) array ->
+      evalAtomicFoldDecimal
+        places
+        (V.foldl1' min)
+        array
+        expression
+        "minimum_empty"
+    -- Average:
+    ApplyFold1 AverageFunction IntegerOpInstance {} array ->
+      evalAtomicFoldInteger
+        (\vs -> V.sum vs `div` fromIntegral (V.length vs))
+        array
+        expression
+        "average_empty"
+    ApplyFold1 AverageFunction (DecimalOpInstance places _) array ->
+      evalAtomicFoldDecimal
+        places
+        (\vs ->
+           V.foldl1' plus vs `divide`
+           decimalFromInteger (fromIntegral (V.length vs)) places)
+        array
+        expression
+        "average_empty"
     _ -> pure expression
 
 -- TODO:
@@ -263,13 +304,6 @@ evalApplyNF expression =
 -- find
 -- any
 -- all
-
--- folds:
---
--- minimum
--- maximum
--- average
--- sum
 
 --------------------------------------------------------------------------------
 -- Infix
@@ -627,9 +661,34 @@ pattern ApplyFunction2 :: Function -> Expression Resolved -> Expression Resolved
 pattern ApplyFunction2 function argument1 argument2 <-
   ApplyGlobal2 (FunctionGlobal function) argument1 argument2
 
-pattern ApplyFunction3 :: Function -> Expression Resolved -> Expression Resolved -> Expression Resolved -> Expression Resolved
-pattern ApplyFunction3 function argument1 argument2 argument3 <-
-  ApplyExpression Apply{function=ApplyFunction2 function argument1 argument2, argument=argument3}
+pattern ApplyFold :: Function -> InstanceName -> Array Resolved -> Expression Resolved
+pattern ApplyFold function instance' array <-
+ ApplyExpression Apply {
+   argument = ArrayExpression array
+  , function = ApplyExpression Apply {
+      argument = _
+    , function = ApplyExpression Apply {
+        argument = GlobalExpression Global{name=InstanceGlobal instance'}
+      , function = GlobalExpression Global{name=FunctionGlobal function}
+      }
+    }
+  }
+
+pattern ApplyFold1 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
+pattern ApplyFold1 function instance' array <-
+ ApplyExpression Apply {
+   argument = ArrayExpression array
+  , function = ApplyExpression Apply {
+      argument = _fi
+    , function = ApplyExpression Apply {
+        argument = _div
+      , function = ApplyExpression Apply {
+            argument = GlobalExpression Global{name=InstanceGlobal instance'}
+          , function = GlobalExpression Global{name=FunctionGlobal function}
+          }
+      }
+    }
+  }
 
 --------------------------------------------------------------------------------
 -- Beta reduction
@@ -927,10 +986,43 @@ evalAtomicFold ::
   -> (Vector n -> n)
   -> Array Resolved
   -> Expression Resolved
+  -> Text
   -> RIO Eval (Expression Resolved)
-evalAtomicFold reifier reflect reduce (Array {expressions}) expression = do
+evalAtomicFold reifier reflect reduce (Array {expressions}) expression emptyTag = do
   ns <- traverse (fmap reifier . evalExpression) expressions
   pure
-    (if any isNothing ns
-       then expression
-       else reflect (reduce (V.mapMaybe id ns)))
+    (if V.null expressions
+       then variantSigged (TagName emptyTag) (expressionType expression) Nothing
+       else if any isNothing ns
+              then expression
+              else variantSigged
+                     okTagName
+                     (expressionType expression)
+                     (pure (reflect (reduce (V.mapMaybe id ns)))))
+
+evalAtomicFoldInteger ::
+     (Vector Integer -> Integer)
+  -> Array Resolved
+  -> Expression Resolved
+  -> Text
+  -> RIO Eval (Expression Resolved)
+evalAtomicFoldInteger =
+  evalAtomicFold
+    (\case
+       IntegerAtom i _ -> pure i
+       _ -> Nothing)
+    (\i -> IntegerAtom i integerT)
+
+evalAtomicFoldDecimal ::
+     Natural
+  -> (Vector Decimal -> Decimal)
+  -> Array Resolved
+  -> Expression Resolved
+  -> Text
+  -> RIO Eval (Expression Resolved)
+evalAtomicFoldDecimal places =
+  evalAtomicFold
+    (\case
+       DecimalAtom i _ -> pure i
+       _ -> Nothing)
+    (\i -> DecimalAtom i (decimalT places))
