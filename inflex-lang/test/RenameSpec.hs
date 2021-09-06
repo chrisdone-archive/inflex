@@ -9,6 +9,7 @@
 
 module RenameSpec where
 
+import           Data.Decimal
 import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import           Inflex.Instances ()

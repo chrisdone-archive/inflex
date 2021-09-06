@@ -33,7 +33,6 @@ import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Containers.ListUtils
 import           Data.Decimal
-import           Data.Decimal
 import           Data.Early
 import           Data.Foldable
 import           Data.Functor.Identity
@@ -43,7 +42,6 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Vector as V
-import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Derived
 import           Inflex.Printer

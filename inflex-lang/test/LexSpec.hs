@@ -6,6 +6,7 @@
 
 module LexSpec where
 
+import           Data.Decimal
 import qualified Data.Sequence as Seq
 import           Inflex.Lexer
 import           Inflex.Types

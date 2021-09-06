@@ -10,6 +10,7 @@
 module ParseSpec where
 
 import           Data.Bifunctor
+import           Data.Decimal
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Text as T
 import qualified Data.Vector as V

@@ -10,6 +10,7 @@
 module DefaultSpec where
 
 import           Data.Bifunctor
+import           Data.Decimal
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Sequence as Seq

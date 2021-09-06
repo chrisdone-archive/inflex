@@ -7,6 +7,7 @@
 
 module DocumentSpec where
 
+import           Data.Decimal
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Ord
@@ -21,7 +22,7 @@ import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Resolver
 import           Inflex.Solver
-import           Inflex.Stepper hiding (match)
+import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -67,11 +68,12 @@ errors = do
                       , order = 0
                       , code = "x"
                       , sourceHash = HashNotKnownYet
+                      , position = Nothing
                       }
                   ]
               (evalDocument' (evalEnvironment loaded)) (defaultDocument' loaded))
           [ Named
-              {dependencies = Set.fromList [Uuid u1],  uuid = (Uuid u1)
+              {position=Nothing,dependencies = Set.fromList [Uuid u1],  uuid = (Uuid u1)
               , name = "x"
               , thing = Left (CycleError [Uuid u1])
               , order = 0
@@ -87,7 +89,7 @@ errors = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      {dependencies = mempty,  uuid = Uuid u1
+                      {position=Nothing,dependencies = mempty,  uuid = Uuid u1
                       , name = "x"
                       , thing = "@uuid:" <> u2
                       , code = "y"
@@ -97,7 +99,7 @@ errors = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = Set.fromList [Uuid u2],  uuid = (Uuid u1)
+              {position=Nothing,dependencies = Set.fromList [Uuid u2],  uuid = (Uuid u1)
               , name = "x"
               , thing =
                   Left
@@ -116,7 +118,7 @@ errors = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      {dependencies = mempty,  uuid = Uuid u1
+                      {position=Nothing,dependencies = mempty,  uuid = Uuid u1
                       , name = "x"
                       , thing = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
                       , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
@@ -124,7 +126,7 @@ errors = do
                       , sourceHash = HashNotKnownYet
                       }
                   , Named
-                      {dependencies = mempty,  uuid = Uuid u2
+                      {position=Nothing,dependencies = mempty,  uuid = Uuid u2
                       , name = "y"
                       , thing = "1"
                       , code = "1"
@@ -134,7 +136,7 @@ errors = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = Set.fromList [Uuid u2],  uuid = Uuid u1
+              {position=Nothing,dependencies = Set.fromList [Uuid u2],  uuid = Uuid u1
               , name = "x"
               , order = 0
               , code = "@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391(@uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"
@@ -181,7 +183,7 @@ errors = do
                            [])))
               }
           , Named
-              {dependencies = mempty,  uuid = Uuid u2
+              {position=Nothing,dependencies = mempty,  uuid = Uuid u2
               , sourceHash = HashKnown $$("496cc8e18513539a6614899b2d949ea22aef1fc91bc944ceed35467b4c5abc5919c40cad381802c9e9b70be434c049e72070959d99c823399396d0993a340d7b")
               , name = "y"
               , order = 1
@@ -207,7 +209,7 @@ errors = do
     [("x", "{a:3}.z")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
+           {position=Nothing,dependencies = mempty,  uuid = Uuid u1
            , name = "x"
            , order = 0
            , sourceHash = HashNotKnownYet
@@ -283,7 +285,7 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u1
                       , name = "x"
                       , thing = "1"
@@ -293,7 +295,7 @@ success = do
                       }
                   , let code = "@uuid:" <> u1
                      in Named
-                          { dependencies = Set.fromList [Uuid u1]
+                          {position=Nothing, dependencies = Set.fromList [Uuid u1]
                           , uuid = Uuid u2
                           , name = "y"
                           , thing = code
@@ -304,7 +306,7 @@ success = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              { dependencies = mempty
+              {position=Nothing, dependencies = mempty
               , uuid = Uuid u1
               , name = "x"
               , order = 0
@@ -327,7 +329,7 @@ success = do
                              })))
               }
           , Named
-              { dependencies =
+              {position=Nothing, dependencies =
                   Set.fromList [Uuid "85cbaaaa-0c41-4871-a66a-aaaa0a3ef391"]
               , uuid = Uuid u2
               , sourceHash =
@@ -360,7 +362,7 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u1
                       , sourceHash = HashNotKnownYet
                       , name = "x"
@@ -369,7 +371,7 @@ success = do
                       , order = 0
                       }
                   , Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u2
                       , sourceHash = HashNotKnownYet
                       , name = "y"
@@ -380,7 +382,7 @@ success = do
                       , order = 1
                       }
                   , Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u3
                       , sourceHash = HashNotKnownYet
                       , name = "z"
@@ -391,7 +393,7 @@ success = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              { dependencies =
+              {position=Nothing, dependencies =
                   Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
               , uuid = Uuid u1
               , sourceHash =
@@ -417,7 +419,7 @@ success = do
                              })))
               }
           , Named
-              { dependencies =
+              {position=Nothing, dependencies =
                   Set.fromList [Uuid "12cbcc37-0c41-4871-a66a-31390a3ef666"]
               , uuid = Uuid u2
               , sourceHash =
@@ -443,7 +445,7 @@ success = do
                              })))
               }
           , Named
-              { dependencies = mempty
+              {position=Nothing, dependencies = mempty
               , uuid = Uuid u3
               , sourceHash =
                   HashKnown $$("28ef94662cf6bf410f6a5b8a207a89c914d300fd804a44442637eca15a88df1af4d77407a8c211db0bcf237fcf221b274b69fb449a629cd12acc1ce8dda66fed")
@@ -475,7 +477,7 @@ success = do
           (do loaded <-
                 loadDocument'
                   [ Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u1
                       , sourceHash = HashNotKnownYet
                       , name = "double"
@@ -484,7 +486,7 @@ success = do
                       , order = 0
                       }
                   , Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u2
                       , sourceHash = HashNotKnownYet
                       , name = "a"
@@ -493,7 +495,7 @@ success = do
                       , order = 1
                       }
                   , Named
-                      { dependencies = mempty
+                      {position=Nothing, dependencies = mempty
                       , uuid = Uuid u3
                       , sourceHash = HashNotKnownYet
                       , name = "b"
@@ -505,7 +507,7 @@ success = do
                   ]
               evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              { dependencies = mempty
+              {position=Nothing, dependencies = mempty
               , uuid = Uuid u1
               , sourceHash =
                   HashKnown $$("81cf95480a9cfab96a11cbe687a56a38af3b018ded75aaf1c7933baf2ee4e291f39aacc454f124171d5e7293ba0f3778cf37d7742e0606b784f729e4009f5686")
@@ -964,7 +966,7 @@ success = do
                           }))
               }
           , Named
-              { dependencies =
+              {position=Nothing, dependencies =
                   Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
               , uuid = Uuid u2
               , sourceHash =
@@ -989,7 +991,7 @@ success = do
                              })))
               }
           , Named
-              { dependencies =
+              {position=Nothing, dependencies =
                   Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
               , uuid = Uuid u3
               , sourceHash =
@@ -1041,7 +1043,7 @@ records = do
     [("x", "{a:3*2}")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
+           {position=Nothing,dependencies = mempty,  uuid = Uuid u1
            , sourceHash = HashKnown $$("b3ee6b4afdc8e62a0b4e3b30c59132c0b5d6cb72cf8280becc96bf2d07181e756c7a5276933891de0de96f04f68059828089597588ef0669bd6ff3b51aff2b15")
            , name = "x"
            , order = 0
@@ -1112,7 +1114,7 @@ records = do
     ]
     (\[u1, u2] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("c03d7e305d4ebcc94cc810a45e79f3c6d95e4fba91a0ac4afca17ebe3d61c42a8939fadffddf59e17dd9c8075dc6ca95cb9371f4a892fc068244d983d8c749c5")
@@ -1181,7 +1183,7 @@ records = do
                        }))
            }
        , Named
-           { dependencies =
+           {position=Nothing, dependencies =
                Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
            , uuid = Uuid u2
            , sourceHash =
@@ -1215,7 +1217,7 @@ records = do
     ]
     (\[u1, u2] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("8a08f41e772aad71028d7fabc55261c43a68af8e756ec887305a85ad3bb47bb33412793579411130cf34426b4aa2135e4cd915e57214cbb4fb3273521a851a35")
@@ -1327,7 +1329,7 @@ records = do
                        }))
            }
        , Named
-           { dependencies =
+           {position=Nothing, dependencies =
                Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
            , uuid = Uuid u2
            , sourceHash =
@@ -1367,7 +1369,7 @@ records = do
     ]
     (\[u1, u2] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("99dfe6586d94f0c9264c8d8c5cdba1eff050940d76e1e0e3cead4bd02ef2c84d6485792e02526328e33cba7cde1a3d6f975943947dd758bd12745bbd1ba88d6b")
@@ -1482,7 +1484,7 @@ records = do
                        }))
            }
        , Named
-           { dependencies =
+           {position=Nothing, dependencies =
                Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"]
            , uuid = Uuid u2
            , sourceHash =
@@ -1617,7 +1619,7 @@ records = do
                               }))
                   })
         in [ Named
-               {dependencies = mempty,  uuid = Uuid u1
+               {position=Nothing,dependencies = mempty,  uuid = Uuid u1
                , sourceHash = HashKnown $$("8a08f41e772aad71028d7fabc55261c43a68af8e756ec887305a85ad3bb47bb33412793579411130cf34426b4aa2135e4cd915e57214cbb4fb3273521a851a35")
                , name = "x"
                , order = 0
@@ -1625,7 +1627,7 @@ records = do
                , thing = Right record
                }
            , Named
-               {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
+               {position=Nothing,dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
                , sourceHash = HashKnown $$("3fae5144234757c308da78aee3358417042870e7306914a99eabf535b1ae3fdc26bbcf8e6ba31c67579daf25d91fe70998d58b57b255c9b7c6685e7f1ce4bb96")
                , name = "y"
                , order = 1
@@ -1638,7 +1640,7 @@ records = do
     [("x", "{a:1}.a")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("8d1c99250adf37964a3d85bac79d7eca856bc89b2ddae025b5f36f875e08185458eff8dabc4d35ab4e7d89f48deef1aae6615f37c481ba9500e0cca9c08226a2")
@@ -1674,7 +1676,7 @@ records = do
     [("x", "({a:{b:2}}.a).b")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("b534f402e5b8308635a60211984249c272c131e96c2d8ccedd67acff4a42b3555b6ddc0988d1c57fe5a061195fb2e655d06c2638df7295bf758ffdff4a909f8f")
@@ -1720,7 +1722,7 @@ records = do
     [("x", "{a:3,b:2}.a * {x:1,y:2}.y")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("1a1cbd8626272a46060d49c63ab803ef9d4a471a0746f3a110eefb912d669df7c2b2b7ef8bc9cc6713e0617db5acfec52c98fa35fedb4092d0f46fd82242f6fb")
@@ -1754,7 +1756,7 @@ records = do
     [("x", "{a:3.1,b:2}.a * {x:1,y:2}.y")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("caf4c09bedce9a0e104917cff2857e0854b7303fb37ed8571f1c2a720f30a83fc219042ae500b71569096acd69965c4ccb10fcc7cf53fd715568ae8ccf3bcbba")
@@ -1815,7 +1817,7 @@ records = do
     [("x", "{a:3.1,b:2}.a * {x:1,y:2.51}.y")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("3c7010946744873af91f97276c86614321f43cf1589fdd6d87814d82d801aa74a016ad7dd5c7468841d148d1a0c2f8b134e71fc8b512abd613139d70b793248a")
@@ -1877,7 +1879,7 @@ records = do
     [("x", "[1.0,2*3]")]
     (\[u1] ->
        [ Named
-           { dependencies = mempty
+           {position=Nothing, dependencies = mempty
            , uuid = Uuid u1
            , sourceHash =
                HashKnown $$("07fea6cc46f28f88ce0bcff56a56309e4c933598a55088478d1aa6f28ad1e17d7aa3017cc45694dea4cd8b76898832f6d03576d48f39a4c3cd67a4efdb41276b")
@@ -1975,7 +1977,7 @@ mapfunc =
     [("x", "(@prim:array_map(x:x*2))([3])")]
     (\[u1] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
+           {position=Nothing,dependencies = mempty,  uuid = Uuid u1
            , sourceHash = HashKnown $$("0d6bf11f785382417c095da37c0a9ef582ce210789af2e6d890957077ff74ad26852ddd560df767759438f8b3fe12f077326b16a9f8bcda408af0792fc260257")
            , name = "x"
            , order = 0
@@ -2027,7 +2029,7 @@ table_map_defaulting =
     ]
     (\[u1, u2] ->
        [ Named
-           {dependencies = mempty,  uuid = Uuid u1
+           {position=Nothing,dependencies = mempty,  uuid = Uuid u1
            , sourceHash = HashKnown $$("ceb16ec7295de1dfee5b07a2ca2e16b720f53bf4e51883a09d7772dfd3c14beb0257a0660194e052e65fe0b6e85f759f9ce8f91319275cbbfeba3a9f3616660f")
            , name = "t"
            , order = 0
@@ -2268,7 +2270,7 @@ table_map_defaulting =
                        }))
            }
        , Named
-           {dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
+           {position=Nothing,dependencies = Set.fromList [Uuid "85cbcc37-0c41-4871-a66a-31390a3ef391"],  uuid = Uuid u2
            , sourceHash = HashKnown $$("95f7e58a79f26392d5a20f2bd5f3aaf83e6fe991585e3c5d3c3da553505c8a4324378ab4892752468560e04ae2c147e37b36c7b21d4d505f81cb011e2e72f910")
            , name = "k"
            , order = 1
@@ -2324,7 +2326,7 @@ error_while_evaluating_with_annotation =
         let _loaded =
               loadDocument'
                 [ Named
-                    {dependencies = mempty,  uuid = Uuid u1
+                    {position=Nothing,dependencies = mempty,  uuid = Uuid u1
                     , sourceHash = HashNotKnownYet
                     , name = "x"
                     , thing = "193 :: Decimal 2"
@@ -2332,7 +2334,7 @@ error_while_evaluating_with_annotation =
                     , order = 0
                     }
                 , Named
-                    {dependencies = mempty,  uuid = Uuid u2
+                    {position=Nothing,dependencies = mempty,  uuid = Uuid u2
                     , sourceHash = HashNotKnownYet
                     , name = "z"
                     , thing = "x+2"
@@ -2351,7 +2353,7 @@ duplicate_empty_names_ok =
         loaded <-
           loadDocument'
             [ Named
-                {dependencies = mempty,  uuid = Uuid u1
+                {position=Nothing,dependencies = mempty,  uuid = Uuid u1
                 , sourceHash = HashNotKnownYet
                 , name = ""
                 , thing = "193"
@@ -2359,7 +2361,7 @@ duplicate_empty_names_ok =
                 , order = 0
                 }
             , Named
-                {dependencies = mempty,  uuid = Uuid u2
+                {position=Nothing,dependencies = mempty,  uuid = Uuid u2
                 , sourceHash = HashNotKnownYet
                 , name = ""
                 , thing = "2+3"
@@ -2370,7 +2372,7 @@ duplicate_empty_names_ok =
         shouldReturn
           (evalDocument' (evalEnvironment loaded) (defaultDocument' loaded))
           [ Named
-              {dependencies = mempty,  uuid = Uuid u1
+              {position=Nothing,dependencies = mempty,  uuid = Uuid u1
               , sourceHash = HashKnown $$("9f3369ce5041e354f3607cae9467e3b1359780d3097dff8dad5fb17879facf914c76a60cbc775d9099511ffdfe51600e33ab3aceae0b546d3bcecbe1b7d4ec88")
               , name = ""
               , order = 0
@@ -2391,7 +2393,7 @@ duplicate_empty_names_ok =
                              })))
               }
           ,  Named
-               {dependencies = mempty,  uuid = Uuid u2
+               {position=Nothing,dependencies = mempty,  uuid = Uuid u2
                , sourceHash = HashKnown $$("acfaa6e22875ce6400223bb1d09105c297ecb53668761d3074aebd7071d86e8eebf5c415cc278debb6b64b85b74b494f160613e3af009ca2455c7997935b3868")
                , name = ""
                , order = 1
@@ -2512,7 +2514,7 @@ eval_it_with desc xs result next io =
                   (zipWith
                      (\i (uuid, (name, thing)) ->
                         Named
-                          {dependencies = mempty,  uuid = Uuid uuid
+                          {position=Nothing,dependencies = mempty,  uuid = Uuid uuid
                           , name
                           , thing
                           , code = thing
@@ -2550,7 +2552,7 @@ eval_it_match desc xs should next io =
           loadDocument'
             (zipWith
                (\i (uuid, (name, thing)) ->
-                  Named {dependencies = mempty, uuid = Uuid uuid, name, thing, code = thing, order = i, sourceHash = HashNotKnownYet})
+                  Named {position=Nothing,dependencies = mempty, uuid = Uuid uuid, name, thing, code = thing, order = i, sourceHash = HashNotKnownYet})
                [0 ..]
                xs')
         res <-
