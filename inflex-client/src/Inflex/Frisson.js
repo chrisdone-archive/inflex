@@ -216,6 +216,8 @@ exports.cachedOutputCellOrder = function(a){return a[4]};
 
 exports.cachedOutputCellPosition = function(a){return a[5]};
 
+exports.cachedOutputCellDependencies = function(a){return a[6]};
+
 exports.viewInputCell1 = function(x){return x};
 
 exports.unviewInputCell1 = function(x){return x};

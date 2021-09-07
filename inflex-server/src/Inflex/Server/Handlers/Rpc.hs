@@ -14,6 +14,7 @@ import           Criterion.Measurement
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as L
 import           Data.Char
+import           Data.Coerce
 import qualified Data.Csv as Csv
 import           Data.Foldable
 import           Data.HashMap.Strict (HashMap)
@@ -596,8 +597,11 @@ cellsToOutputDocument seen = Shared.OutputDocument . fmap cons
              in if V.elem hash seen
                   then Shared.CachedText hash
                   else Shared.FreshText code hash
-        , position = case position of
-                       Nothing -> Shared.Unpositioned
-                       Just (x,y) -> Shared.AbsolutePosition x y
+        , position =
+            case position of
+              Nothing -> Shared.Unpositioned
+              Just (x, y) -> Shared.AbsolutePosition x y
+        , dependencies =
+            fmap (Shared.UUID . coerce) (V.fromList (toList dependencies))
         , ..
         }

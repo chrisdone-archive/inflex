@@ -203,6 +203,8 @@ foreign import cachedOutputCellOrder :: (View CachedOutputCell) -> Int
 
 foreign import cachedOutputCellPosition :: (View CachedOutputCell) -> (View Position)
 
+foreign import cachedOutputCellDependencies :: (View CachedOutputCell) -> (Array (View UUID))
+
 foreign import viewInputCell1 :: Json -> (View InputCell1)
 
 foreign import unviewInputCell1 :: (View InputCell1) -> Json

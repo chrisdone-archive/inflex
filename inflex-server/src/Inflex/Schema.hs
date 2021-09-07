@@ -198,6 +198,7 @@ data CachedOutputCell = CachedOutputCell
   , result :: CachedResult
   , order :: Int
   , position :: Position
+  , dependencies :: Vector UUID
   }
 
 data InputCell1 = InputCell1
