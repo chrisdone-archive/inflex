@@ -185,7 +185,7 @@ loadInputDocument (InputDocument {cells}) = do
     timed
       TimedStepper
       (RIO.runRIO
-         StepReader
+         Eval{glogfunc = mempty, globals = evalEnvironment1 loaded}
          (RIO.timeout
             (1000 * milliseconds)
             (evalDocument1' evalCache (evalEnvironment1 loaded) defaulted)))?
@@ -265,7 +265,7 @@ evalDocument1' ::
      HashMap SHA512 EvaledExpression
   -> RIO.Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
-  -> RIO.RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
+  -> RIO.RIO Eval (Toposorted (Named (Either LoadError EvaledExpression)))
 evalDocument1' cache env cells = do
   !v <- evalDocument1 cache env cells
   pure v
