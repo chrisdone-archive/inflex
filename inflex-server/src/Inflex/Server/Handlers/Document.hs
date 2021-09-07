@@ -123,6 +123,7 @@ prims =
   , object ["name" .= "array_sort", "display" .= "sort"]
   , object ["name" .= "array_concat", "display" .= "concat"]
   , object ["name" .= "array_find", "display" .= "find"]
+  , object ["name" .= "not", "display" .= "not"]
   , object ["name" .= "array_any", "display" .= "any"]
   , object ["name" .= "array_all", "display" .= "all"]
   , object ["name" .= "from_ok", "display" .= "from_ok"]

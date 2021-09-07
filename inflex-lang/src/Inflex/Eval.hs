@@ -237,8 +237,14 @@ evalApplyNF expression =
     -- Derived:
     ApplyFunction1 NullFunction argument ->
       apply1 nullFunction argument (expressionType expression)
+    ApplyFunction1 NotFunction argument ->
+      apply1 notFunction argument (expressionType expression)
     ApplyFunction2 FromOkFunction default' argument ->
       apply2 from_okFunction default' argument (expressionType expression)
+    ApplyFunction2 AnyFunction p array ->
+      apply2 anyFunction p array (expressionType expression)
+    ApplyFunction2 AllFunction p array ->
+      apply2 allFunction p array (expressionType expression)
     -- Primitives:
     ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
       evalLength fromInteger' array (expressionType expression)
@@ -295,17 +301,6 @@ evalApplyNF expression =
         expression
         "average_empty"
     _ -> pure expression
-
--- TODO:
---
--- Missing cases:
---
--- concat
---
--- lookups:
---
--- any
--- all
 
 --------------------------------------------------------------------------------
 -- Infix
@@ -1061,11 +1056,19 @@ evalFind predicate (Array {expressions}) expression = do
   pure
     (if seenHole
        then expression
-       else case V.mapMaybe id expressions' V.!? 0 of
-              Nothing ->
-                variantSigged
-                  (TagName "find_empty")
-                  (expressionType expression)
-                  Nothing
-              Just thing ->
-                variantSigged okTagName (expressionType expression) (pure thing))
+       else if V.null expressions
+              then variantSigged
+                     (TagName "find_empty")
+                     (expressionType expression)
+                     Nothing
+              else case V.mapMaybe id expressions' V.!? 0 of
+                     Nothing ->
+                       variantSigged
+                         (TagName "find_failed")
+                         (expressionType expression)
+                         Nothing
+                     Just thing ->
+                       variantSigged
+                         okTagName
+                         (expressionType expression)
+                         (pure thing))

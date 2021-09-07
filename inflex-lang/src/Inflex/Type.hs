@@ -272,6 +272,7 @@ functionScheme location =
         (ArrayType a .-> maybeType ["sum_empty"] location a)
     LengthFunction -> poly [frominteger b] (ArrayType a .-> b)
     NullFunction -> mono (ArrayType a .-> boolT)
+    NotFunction -> mono (boolT .-> boolT)
     AverageFunction ->
       poly
         [addable a, divisible a, frominteger a]

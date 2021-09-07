@@ -559,6 +559,7 @@ instance Display Function where
       MapFunction -> "array_map"
       FromOkFunction -> "from_ok"
       VegaFunction -> "vega"
+      NotFunction -> "not"
       FilterFunction -> "array_filter"
       DistinctFunction -> "array_distinct"
       SortFunction -> "array_sort"

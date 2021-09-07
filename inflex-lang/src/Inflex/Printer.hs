@@ -248,4 +248,5 @@ instance Printer Function where
     FindFunction -> "find"
     AllFunction -> "all"
     AnyFunction -> "any"
+    NotFunction -> "not"
     NullFunction -> "null"

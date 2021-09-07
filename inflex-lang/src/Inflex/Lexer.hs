@@ -328,6 +328,7 @@ prims =
     , ("array_any", AnyFunction)
     , ("array_all", AllFunction)
     , ("from_ok", FromOkFunction)
+    , ("not", NotFunction)
     ]
 
 $(makePrisms ''Token)
