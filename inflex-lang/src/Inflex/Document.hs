@@ -60,7 +60,6 @@ import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Types
-import qualified Inflex.Types.Eval as Eval
 import           Inflex.Types.Filler
 import           Inflex.Types.SHA512
 import           Optics.Lens
