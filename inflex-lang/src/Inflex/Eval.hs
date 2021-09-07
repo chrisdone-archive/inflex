@@ -250,7 +250,7 @@ evalApplyNF expression =
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->
       evalMap expression function array
-    -- Lookups
+    -- Lookups:
     ApplyFunction2 FindFunction function (ArrayExpression array) ->
       evalFind function array expression
     -- Sum:
@@ -304,7 +304,6 @@ evalApplyNF expression =
 --
 -- lookups:
 --
--- find
 -- any
 -- all
 
