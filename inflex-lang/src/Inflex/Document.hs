@@ -59,7 +59,6 @@ import qualified Inflex.Parser2 as Parser2
 import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
-import           Inflex.Stepper
 import           Inflex.Types
 import qualified Inflex.Types.Eval as Eval
 import           Inflex.Types.Filler
@@ -225,7 +224,7 @@ defaultDocument1 =
 evalDocument ::
      Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell))
-  -> RIO StepReader (Toposorted (Named (Either LoadError (Expression Resolved))))
+  -> RIO Eval.Eval (Toposorted (Named (Either LoadError (Expression Resolved))))
 evalDocument env =
   RIO.pooledMapConcurrently
     (traverse
@@ -242,7 +241,7 @@ evalDocument1 ::
      HashMap SHA512 EvaledExpression
   -> Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
-  -> RIO StepReader (Toposorted (Named (Either LoadError EvaledExpression)))
+  -> RIO Eval.Eval (Toposorted (Named (Either LoadError EvaledExpression)))
 evalDocument1 cache env =
   RIO.pooledMapConcurrently
     (traverse

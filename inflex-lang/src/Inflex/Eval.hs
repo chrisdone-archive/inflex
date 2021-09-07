@@ -16,6 +16,7 @@ module Inflex.Eval
   , evalTextDefaulted
   , evalTextRepl
   , evalDefaulted
+  , DefaultEvalError(..)
   ) where
 
 import           Data.Bifunctor
@@ -246,6 +247,8 @@ evalApplyNF expression =
     ApplyFunction2 AllFunction p array ->
       apply2 allFunction p array (expressionType expression)
     -- Primitives:
+    ApplyFunction1 ConcatFunction (ArrayExpression array) ->
+      evalConcat array expression
     ApplyFunction2 LengthFunction fromInteger' (ArrayExpression array) ->
       evalLength fromInteger' array (expressionType expression)
     ApplyFunction2 SortFunction _comparator (ArrayExpression array) ->
@@ -260,14 +263,14 @@ evalApplyNF expression =
     ApplyFunction2 FindFunction function (ArrayExpression array) ->
       evalFind function array expression
     -- Sum:
-    ApplyFold SumFunction IntegerOpInstance {} array ->
+    ApplyFold1 SumFunction IntegerOpInstance {} array ->
       evalAtomicFoldInteger V.sum array expression "sum_empty"
-    ApplyFold SumFunction (DecimalOpInstance places _) array ->
+    ApplyFold1 SumFunction (DecimalOpInstance places _) array ->
       evalAtomicFoldDecimal places (V.foldl1' plus) array expression "sum_empty"
     -- Maximum:
-    ApplyFold MaximumFunction IntegerOpInstance {} array ->
+    ApplyFold0 MaximumFunction CompareIntegerInstance{} array ->
       evalAtomicFoldInteger V.maximum array expression "maximum_empty"
-    ApplyFold MaximumFunction (DecimalOpInstance places _) array ->
+    ApplyFold0 MaximumFunction (CompareDecimalInstance places) array ->
       evalAtomicFoldDecimal
         places
         (V.foldl1' max)
@@ -275,9 +278,9 @@ evalApplyNF expression =
         expression
         "maximum_empty"
     -- Minimum:
-    ApplyFold MinimumFunction IntegerOpInstance {} array ->
+    ApplyFold0 MinimumFunction CompareIntegerInstance {} array ->
       evalAtomicFoldInteger V.minimum array expression "minimum_empty"
-    ApplyFold MinimumFunction (DecimalOpInstance places _) array ->
+    ApplyFold0 MinimumFunction (CompareDecimalInstance places) array ->
       evalAtomicFoldDecimal
         places
         (V.foldl1' min)
@@ -285,13 +288,13 @@ evalApplyNF expression =
         expression
         "minimum_empty"
     -- Average:
-    ApplyFold1 AverageFunction IntegerOpInstance {} array ->
+    ApplyFold2 AverageFunction IntegerOpInstance {} array ->
       evalAtomicFoldInteger
         (\vs -> V.sum vs `div` fromIntegral (V.length vs))
         array
         expression
         "average_empty"
-    ApplyFold1 AverageFunction (DecimalOpInstance places _) array ->
+    ApplyFold2 AverageFunction (DecimalOpInstance places _) array ->
       evalAtomicFoldDecimal
         places
         (\vs ->
@@ -658,8 +661,18 @@ pattern ApplyFunction2 :: Function -> Expression Resolved -> Expression Resolved
 pattern ApplyFunction2 function argument1 argument2 <-
   ApplyGlobal2 (FunctionGlobal function) argument1 argument2
 
-pattern ApplyFold :: Function -> InstanceName -> Array Resolved -> Expression Resolved
-pattern ApplyFold function instance' array <-
+pattern ApplyFold0 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
+pattern ApplyFold0 function instance' array <-
+ ApplyExpression Apply {
+   argument = ArrayExpression array
+  , function = ApplyExpression Apply {
+      argument = GlobalExpression Global{name=InstanceGlobal instance'}
+     , function = GlobalExpression Global{name=FunctionGlobal function}
+     }
+  }
+
+pattern ApplyFold1 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
+pattern ApplyFold1 function instance' array <-
  ApplyExpression Apply {
    argument = ArrayExpression array
   , function = ApplyExpression Apply {
@@ -671,8 +684,8 @@ pattern ApplyFold function instance' array <-
     }
   }
 
-pattern ApplyFold1 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
-pattern ApplyFold1 function instance' array <-
+pattern ApplyFold2 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
+pattern ApplyFold2 function instance' array <-
  ApplyExpression Apply {
    argument = ArrayExpression array
   , function = ApplyExpression Apply {
@@ -1072,3 +1085,23 @@ evalFind predicate (Array {expressions}) expression = do
                          okTagName
                          (expressionType expression)
                          (pure thing))
+
+evalConcat :: Array Resolved -> Expression Resolved -> RIO Eval (Expression Resolved)
+evalConcat Array {expressions, ..} expression = do
+  stripped <-
+    traverse
+      (\case
+         ArrayExpression Array{expressions=xs} -> pure (Just xs)
+         _ -> pure Nothing)
+      expressions
+  if V.any isNothing stripped
+    then pure expression
+    else pure
+           (ArrayExpression
+              Array
+                { location = SteppedCursor
+                , form = Evaluated
+                , expressions = V.concatMap id (V.mapMaybe id stripped)
+                , typ = expressionType expression
+                , ..
+                })

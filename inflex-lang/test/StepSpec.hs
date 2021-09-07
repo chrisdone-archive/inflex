@@ -11,7 +11,7 @@ import           Data.Fixed
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Inflex.Display ()
-import           Inflex.Stepper
+import           Inflex.Eval
 import           Inflex.Types
 import qualified Match as Match
 import qualified RIO
@@ -19,16 +19,26 @@ import           RIO (textDisplay)
 import           Test.Hspec
 import           Test.QuickCheck
 
-stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
-stepTextly text' = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text'))
+-- stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
+-- stepTextly text' = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text'))
 
-stepDefaultedTextly :: Text -> IO (Either (DefaultStepError ()) Text)
+stepDefaultedTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepDefaultedTextly text' =
-  RIO.runRIO StepReader (fmap (fmap textDisplay) (stepTextDefaulted mempty mempty "" text'))
+  RIO.runRIO
+    Eval {glogfunc = mempty, globals = mempty}
+    (fmap (fmap textDisplay) (evalTextDefaulted mempty "" text'))
 
-stepDefaulted' :: Text -> IO (Either (DefaultStepError ()) (Expression Resolved))
+stepTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
+stepTextly text' =
+  RIO.runRIO
+    Eval {glogfunc = mempty, globals = mempty}
+    (fmap (fmap textDisplay) (evalTextDefaulted mempty "" text'))
+
+stepDefaulted' :: Text -> IO (Either (DefaultEvalError ()) (Expression Resolved))
 stepDefaulted' text' =
-  RIO.runRIO StepReader (stepTextDefaulted mempty mempty "" text')
+  RIO.runRIO
+    Eval {glogfunc = mempty, globals = mempty}
+    (evalTextDefaulted mempty "" text')
 
 spec :: SpecWith ()
 spec = do
@@ -280,7 +290,7 @@ functions2 = do
           "@prim:array_all(_, [1])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(_, [1])")
-             (Right "@prim:array_all(_, [1])"))
+             (Right "case @prim:array_find(:@prim:not(_($0)), [1]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
         it
           "@prim:array_all(_, [])"
           (shouldReturn
@@ -290,12 +300,12 @@ functions2 = do
           "@prim:array_all(r:r=2, _)"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,_)")
-             (Right "@prim:array_all(:($0 = @prim:from_integer(2)), _)"))
+             (Right "case @prim:array_find(:@prim:not(:($0 = @prim:from_integer(2))($0)), _) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,_])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,_])")
-             (Right "@prim:array_all(:($0 = @prim:from_integer(2)), [2, 2, _])"))
+             (Right "case @prim:array_find(:@prim:not(:($0 = @prim:from_integer(2))($0)), [2, 2, _]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,2])"
           (shouldReturn
@@ -675,14 +685,14 @@ regression =
                                                  [ Field
                                                      { name =
                                                          FieldName
-                                                           { unFieldName =
-                                                               "Amount"
-                                                           }
+                                                           {unFieldName = "x"}
                                                      }
                                                  , Field
                                                      { name =
                                                          FieldName
-                                                           {unFieldName = "x"}
+                                                           { unFieldName =
+                                                               "Amount"
+                                                           }
                                                      }
                                                  ]
                                              })))

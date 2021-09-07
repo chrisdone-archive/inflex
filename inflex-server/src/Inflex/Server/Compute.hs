@@ -42,7 +42,7 @@ import           Inflex.Location
 import           Inflex.Renamer
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
-import           Inflex.Stepper
+import           Inflex.Eval
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Filler

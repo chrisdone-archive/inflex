@@ -19,10 +19,10 @@ import           Data.UUID.V4
 import qualified Data.Vector as V
 import           Inflex.Defaulter
 import           Inflex.Document
+import           Inflex.Eval
 import           Inflex.Instances ()
 import           Inflex.Resolver
 import           Inflex.Solver
-import           Inflex.Stepper
 import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -45,7 +45,7 @@ evalDocument' env m = do
   doc <- m
   fmap
     (sortBy (comparing order) . unToposorted)
-    (RIO.runRIO StepReader (evalDocument env doc))
+    (RIO.runRIO Eval {glogfunc=mempty,globals=env} (evalDocument env doc))
 
 spec :: Spec
 spec = do
