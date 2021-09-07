@@ -250,6 +250,9 @@ evalApplyNF expression =
       evalFilter expression predicate array
     ApplyFunction2 MapFunction function (ArrayExpression array) ->
       evalMap expression function array
+    -- Lookups
+    ApplyFunction2 FindFunction function (ArrayExpression array) ->
+      evalFind function array expression
     -- Sum:
     ApplyFold SumFunction IntegerOpInstance {} array ->
       evalAtomicFoldInteger V.sum array expression "sum_empty"
@@ -892,10 +895,10 @@ evalFilter expression predicate (Array {expressions}) = do
                    }))
          case bool of
            BoolAtom True -> pure (Just arrayItem')
-           HoleExpression {} -> do
+           BoolAtom False -> pure Nothing
+           _ -> do
              RIO.writeSomeRef seenHoleRef True
-             pure Nothing
-           _ -> pure Nothing)
+             pure Nothing)
       expressions
   seenHole <- RIO.readSomeRef seenHoleRef
   pure
@@ -1026,3 +1029,44 @@ evalAtomicFoldDecimal places =
        DecimalAtom i _ -> pure i
        _ -> Nothing)
     (\i -> DecimalAtom i (decimalT places))
+
+evalFind ::
+     Expression Resolved
+  -> Array Resolved
+  -> Expression Resolved
+  -> RIO Eval (Expression Resolved)
+evalFind predicate (Array {expressions}) expression = do
+  seenHoleRef <- RIO.newSomeRef False
+  expressions' <-
+    traverse
+      (\arrayItem -> do
+         arrayItem' <- evalExpression arrayItem
+         bool <-
+           evalExpression
+             (ApplyExpression
+                (Apply
+                   { function = predicate
+                   , argument = arrayItem'
+                   , location = BuiltIn
+                   , typ = typeOutput (expressionType predicate)
+                   , style = EvalApply
+                   }))
+         case bool of
+           BoolAtom True -> pure (Just arrayItem')
+           BoolAtom False -> pure Nothing
+           _ -> do
+             RIO.writeSomeRef seenHoleRef True
+             pure Nothing)
+      expressions
+  seenHole <- RIO.readSomeRef seenHoleRef
+  pure
+    (if seenHole
+       then expression
+       else case V.mapMaybe id expressions' V.!? 0 of
+              Nothing ->
+                variantSigged
+                  (TagName "find_empty")
+                  (expressionType expression)
+                  Nothing
+              Just thing ->
+                variantSigged okTagName (expressionType expression) (pure thing))
