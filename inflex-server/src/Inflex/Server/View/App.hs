@@ -5,16 +5,18 @@
 
 module Inflex.Server.View.App where
 
-import Control.Monad.Reader
-import Inflex.Server.App
-import Inflex.Server.Types
-import Lucid
-import Yesod.Lucid
+import           Control.Monad.Reader
+import           Data.Text (Text)
+import           Inflex.Server.App
+import           Inflex.Server.Types
+import           Lucid
+import           Yesod.Lucid
 
-appTemplate :: SessionState -> Lucid App () -> Lucid App ()
-appTemplate _state body = do
+appTemplate :: Text ->SessionState -> Lucid App () -> Lucid App ()
+appTemplate css _state body = do
   doctype_
   url <- ask
+
   html_
     [lang_ "en"]
     (do head_
@@ -27,6 +29,5 @@ appTemplate _state body = do
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
               link_ [rel_ "icon", type_ "image/png", href_ (url (StaticR img_favicon_png))]
-              link_ [rel_ "stylesheet", type_ "text/css", href_ (url AppCssR)]
-              link_ [rel_ "stylesheet", type_ "text/css", href_ (url CellCssR)])
-        body_ [] body)
+              style_ css)
+        body_ [] (body))

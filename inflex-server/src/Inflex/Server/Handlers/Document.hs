@@ -27,9 +27,16 @@ module Inflex.Server.Handlers.Document where
 --   , getViewDocumentR
 --   ) where
 
+import           Shakespearean
+import           Text.Blaze.Renderer.Utf8
+import           Text.Julius
+import           Text.Lucius
+import           Text.Markdown
+import           Yesod hiding (Html, Field, lookupSession, toHtml)
 import           Control.Monad.Reader
 import           Data.Aeson
 import           Data.Text (Text)
+import qualified Data.Text.Lazy as LT
 import           Database.Persist.Sql
 import           GA
 import           Inflex.Server.App
@@ -39,6 +46,8 @@ import           Inflex.Server.View.App
 import           Lucid
 import           Lucid.Base
 import           RIO (glog)
+import           Sendfile
+import           Shakespearean
 import           Yesod hiding (Html)
 import           Yesod.Lucid
 
@@ -50,15 +59,20 @@ data Meta = Meta
   }
 
 getSandboxR :: Handler (Html ())
-getSandboxR =
+getSandboxR = do
+  css1 <- $(luciusFileFrom "inflex-server/templates/app.lucius")
+  css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
   htmlWithUrl
     (appTemplate
+       (LT.toStrict (renderCss css1 <> renderCss css2))
        NoSessionState
        (do documentMeta Meta {readonly = False, source = Sandbox}
            documentScripts))
 
 getAppEditorR :: DocumentSlug -> Handler (Html ())
-getAppEditorR slug =
+getAppEditorR slug = do
+  css1 <- $(luciusFileFrom "inflex-server/templates/app.lucius")
+  css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
   withLogin
     (\_ state@(LoginState {loginAccountId}) -> do
        submitGA
@@ -77,7 +91,7 @@ getAppEditorR slug =
                 glog OpenDocument
                 pure (documentId)
        htmlWithUrl
-         (appTemplate
+         (appTemplate ((LT.toStrict (renderCss css1 <> renderCss css2)))
             (Registered state)
             (do documentMeta
                   Meta
@@ -132,6 +146,25 @@ prims =
 documentScripts :: Lucid App ()
 documentScripts = do
   url <- ask
+  div_
+    [class_ "wrapper"]
+    (do div_
+          [class_ "navbar"]
+          (do a_ [class_ "logo"] (pure ())
+              pure ())
+        div_
+          [class_ "canvas"]
+          (div_
+             [class_ "loading-scripts"]
+             (div_
+                [class_ "lds-ripple"]
+                (do div_ (pure ())
+                    div_ (pure ())))))
   script_ [type_ "text/javascript", src_ (url (StaticR js_vega_all_js))] ""
   script_ [type_ "text/javascript", src_ (url (StaticR js_codemirror_js))] ""
-  script_ [type_ "text/javascript", src_ (url (StaticR inflex_client_app_js))] ""
+  script_
+    [type_ "text/javascript", src_ (url (StaticR inflex_client_app_js))]
+    ""
+  script_
+    [type_ "text/javascript"]
+    "document.body.getElementsByClassName('wrapper')[0].remove()"

@@ -12,20 +12,10 @@
 module Inflex.Server.Handlers.Docs where
 
 import           Control.Monad.Reader
-import           Data.Foldable
-import           Data.Function
-import           Data.List
-import qualified Data.List.NonEmpty as NE
-import           Data.Maybe
-import           Data.Text (Text)
 import qualified Data.Text.Lazy as LT
-import           Data.Time
 import           Inflex.Server.App
 import           Inflex.Server.Session
-import           Inflex.Server.Types.Article
-import           Inflex.Server.Types.Blog
 import           Lucid hiding (for_)
-import           Lucid.Base
 import           Sendfile
 import           Shakespearean
 import           Text.Blaze.Renderer.Utf8
