@@ -579,19 +579,7 @@ instance NFData InputDocument1
 deriving instance Generic InputDocument1
 deriving instance Show InputDocument1
 -- instance ToJSON InputDocument1
-instance FromJSON InputDocument1 where
-  parseJSON =
-    withObject
-      "InputDocument1"
-      (\o -> do
-         cells <- o .: "cells" <|> fmap migrateV1 (o .: "cells")
-         pure InputDocument1 {cells})
-    where
-      migrateV1 :: Vector InputCell -> Vector InputCell1
-      migrateV1 =
-        V.imap
-          (\order InputCell {..} ->
-             InputCell1 {version = versionRefl, order, ..})
+instance FromJSON InputDocument1
 
 instance NFData InputCell1
 deriving instance Generic InputCell1
