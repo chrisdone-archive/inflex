@@ -34,7 +34,7 @@ import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument
 import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||),not)
+import Prelude
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -205,7 +205,7 @@ render state =
                    else ""))
          , Manage.manage CanvasCreated
          ]
-         (if not state.loaded
+         (if not (state.loaded) && not (meta.sandbox)
           then
           [HH.div
             [HP.class_ (HH.ClassName "loading-scripts")]
