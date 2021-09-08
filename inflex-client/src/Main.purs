@@ -20,6 +20,7 @@
 
 module Main where
 
+import Effect.Class (liftEffect)
 import Prelude
 
 import Effect (Effect)
@@ -34,4 +35,7 @@ main :: Effect Unit
 main =
   HA.runHalogenAff
     (do body <- HA.awaitBody
+        liftEffect swap
         runUI Doc.component unit body)
+
+foreign import swap :: Effect Unit

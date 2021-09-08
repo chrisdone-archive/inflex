@@ -165,6 +165,3 @@ documentScripts = do
   script_
     [type_ "text/javascript", src_ (url (StaticR inflex_client_app_js))]
     ""
-  script_
-    [type_ "text/javascript"]
-    "document.body.getElementsByClassName('wrapper')[0].remove()"
