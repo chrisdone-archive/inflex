@@ -46,6 +46,11 @@
   }
   .cell-header {
     display: flex;
+
+    .dragger {
+      padding: 5px 0px 5px 5px;
+      cursor: grab
+    }
   }
   .error-message {
     background: #a04a4a;
