@@ -132,6 +132,6 @@ prims =
 documentScripts :: Lucid App ()
 documentScripts = do
   url <- ask
-  script_ [type_ "text/javascript", src_ (url VegaJsR)] ""
-  script_ [type_ "text/javascript", src_ (url CodemirrorJsR)] ""
-  script_ [type_ "text/javascript", src_ (url AppJsR)] ""
+  script_ [type_ "text/javascript", src_ (url (StaticR js_vega_all_js))] ""
+  script_ [type_ "text/javascript", src_ (url (StaticR js_codemirror_js))] ""
+  script_ [type_ "text/javascript", src_ (url (StaticR inflex_client_app_js))] ""

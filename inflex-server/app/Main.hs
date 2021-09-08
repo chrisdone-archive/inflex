@@ -103,6 +103,7 @@ main = do
                           , appConfig = config
                           , appLoadCache = loadedRef
                           , appEvalCache = evaledRef
+                          , appStatic = app_static
                           })
                  let runMyWarp thisPort =
                        Warp.runSettings

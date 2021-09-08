@@ -41,7 +41,7 @@ getIntroR = do
   css1 <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
   terms <- liftIO $(openFileFromT "docs/intro.md")
   htmlWithUrl
     (html_ $ do
@@ -54,7 +54,7 @@ getIntroR = do
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
            , name_ "viewport"
            ]
-         link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+         link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
          style_ (LT.toStrict (renderCss css1 <> renderCss css2))
        body_ [class_ "article-page"] $ do
          div_ [class_ "navbar"] $

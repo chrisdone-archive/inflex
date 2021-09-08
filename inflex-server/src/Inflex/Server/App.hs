@@ -52,9 +52,11 @@ import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
 import           RIO hiding (Handler, preview)
 import           RIO.Warp
 import           RIO.Yesod
+import           Static
 import           Stripe
 import           Yesod hiding (Html, Field, fileName)
 import qualified Yesod.Core.Types as Yesod
+import           Yesod.EmbeddedStatic
 import           Yesod.Lucid
 
 --------------------------------------------------------------------------------
@@ -66,6 +68,7 @@ data App = App
   , appLogFunc :: GLogFunc AppMsg
   , appLoadCache :: IORef (HashMap SHA512 LoadedExpression)
   , appEvalCache :: IORef (HashMap SHA512 EvaledExpression)
+  , appStatic :: EmbeddedStatic
   }
 
 -- | App log message.
@@ -139,6 +142,7 @@ liftedTimed timed' m = do
 --------------------------------------------------------------------------------
 -- TH-based derivings
 
+$(makeStatic)
 $(makePrisms ''AppMsg)
 $(makeLensesFor [("appLogFunc","appLogFuncLens")] ''App)
 $(share
@@ -159,6 +163,7 @@ instance Yesod App where
   messageLoggerSource App {appLogFunc} =
     yesodLoggerSource (contramap YesodMsg appLogFunc)
   fileUpload _ _ = FileUploadDisk Network.Wai.Parse.tempFileBackEnd
+  addStaticContent = embedStaticContent appStatic StaticR Right
 
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage

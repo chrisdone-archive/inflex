@@ -40,7 +40,7 @@ getTermsR = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
   terms <- liftIO $(openFileFromT "legal/terms.md")
   htmlWithUrl
     (html_ $ do
@@ -53,7 +53,7 @@ getTermsR = do
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
            , name_ "viewport"
            ]
-         link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+         link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
          style_ (LT.toStrict (renderCss css))
        body_ [class_ "article-page"] $ do
          div_ [class_ "navbar"] $
@@ -90,7 +90,7 @@ getPrivacyR = do
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
-  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
   privacy <- liftIO $(openFileFromT "legal/privacy-policy.md")
   htmlWithUrl
     (html_ $ do
@@ -103,7 +103,7 @@ getPrivacyR = do
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
            , name_ "viewport"
            ]
-         link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+         link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
          style_ (LT.toStrict (renderCss css))
        body_ [class_ "article-page"] $ do
          div_ [class_ "navbar"] $

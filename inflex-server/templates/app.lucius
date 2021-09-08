@@ -53,7 +53,7 @@ body {
 
   .logo {
     display: block;
-    background: url(@{LogoR}) no-repeat center;
+    background: url(@{StaticR svg_inflex_logo_svg}) no-repeat center;
     height: 40px;
     margin: 5px;
     width: 100px;

@@ -24,8 +24,6 @@ module Inflex.Server.Handlers.Shop
   , getShopAccountR
   , getHealthR
   , getHomeR
-  , getPreviewR
-  , getFaviconR
   , getShopCssR
   , postEarlyAccessRequestR
   , getEarlyAccessRequestsR
@@ -63,7 +61,7 @@ getHomeR = do
       css1 <- $(luciusFileFrom "inflex-server/templates/home.lucius")
       css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
       js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
-      logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+      logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
       htmlWithUrl
         (do doctype_
             url <- ask
@@ -77,7 +75,7 @@ getHomeR = do
                       "width=device-width, initial-scale=1, shrink-to-fit=no"
                   , name_ "viewport"
                   ]
-                link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+                link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
                 style_ (LT.toStrict (renderCss css1 <> renderCss css2))
               body_ [] $ do
                 div_ [class_ "navbar"] $
@@ -129,7 +127,7 @@ getHomeR = do
                             button_ [class_ "button tagline-action"] "Register")
                     div_
                       [class_ "hero-pic"]
-                      (do img_ [class_ "preview-pic", src_ (url PreviewR)])
+                      (do img_ [class_ "preview-pic", src_ (url (StaticR img_preview_png))])
                 div_ [class_ "tour tour-light"] $ do
                   tour
                   div_ [class_ "margin-wrapper"] $ do
@@ -165,7 +163,7 @@ postEarlyAccessRequestR = do
                 }))
     Nothing -> redirect HomeR
   css <- $(luciusFileFrom "inflex-server/templates/home.lucius")
-  logo <- liftIO $(openFileFromBS "inflex-server/svg/inflex-logo.svg")
+  logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -177,7 +175,7 @@ postEarlyAccessRequestR = do
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
            , name_ "viewport"
            ]
-         link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
+         link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
          style_ (LT.toStrict (renderCss css))
        body_ [] $ do
          div_ [class_ "navbar"] $
@@ -244,12 +242,6 @@ getHealthR = do
 
 --------------------------------------------------------------------------------
 -- Statics
-
-getFaviconR :: Handler TypedContent
-getFaviconR = $(sendFileFrom "image/png" "inflex-server/img/favicon.png")
-
-getPreviewR :: Handler TypedContent
-getPreviewR = $(sendFileFrom "image/png" "inflex-server/img/preview.png")
 
 getShopCssR :: Handler Css
 getShopCssR = $(luciusFileFrom "inflex-server/templates/shop.lucius")

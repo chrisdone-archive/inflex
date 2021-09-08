@@ -1,14 +1,12 @@
+-- Static files
+/static StaticR EmbeddedStatic appStatic
+
 -- Infra
 /health HealthR GET
 
 -- Stripe
 /api/v1/stripe StripeR POST
 /api/rpc/#Text AppRpcR POST
-
--- General
-/favicon.png FaviconR GET
-/preview.png PreviewR GET
-/logo.svg LogoR GET
 
 -- Shop
 / HomeR GET
@@ -17,9 +15,6 @@
 /register/checkout/cancel CheckoutCancelR GET
 /register/checkout/waiting CheckoutWaitingR GET
 /shop/css ShopCssR GET
-
-/early-access-request EarlyAccessRequestR POST
-/export/early-access-requests EarlyAccessRequestsR GET
 
 -- Blog
 /blog/#BlogEntryName BlogEntryR GET
@@ -47,9 +42,6 @@
 /dashboard/rename/#DocumentId RenameDocumentR POST
 /try SandboxR GET
 /editor/#DocumentSlug AppEditorR GET
-/app/js AppJsR GET
-/app/vega VegaJsR GET
-/app/codemirror CodemirrorJsR GET
 /app/css AppCssR GET
 /file/upload UploadFileR POST
 
