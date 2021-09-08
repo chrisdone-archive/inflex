@@ -233,7 +233,7 @@ render (State { cell: Cell {name, code, result, type', position}
         [HP.class_ (HH.ClassName "cell")]
         [ HH.div
             [HP.class_ (HH.ClassName "cell-header")]
-            [ HH.div [Manage.manage DragElementAvailable] [HH.text "✋"],
+            [ HH.div [Manage.manage DragElementAvailable, HP.class_ (HH.ClassName "dragger"), HP.title "Drag the cell around with this"] [HH.text "✋"],
               HH.slot
                 (SProxy :: SProxy "declname")
                 unit
