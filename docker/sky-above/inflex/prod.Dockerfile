@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/sky-above/inflex/patch:366627531
+FROM registry.gitlab.com/sky-above/inflex/patch:366887100
 
 COPY . /inflex
 WORKDIR /inflex
