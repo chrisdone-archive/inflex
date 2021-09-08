@@ -4,7 +4,6 @@ variables:
 stages:
   - env
   - build
-  - deploy
 
 workflow:
   rules:
@@ -39,11 +38,3 @@ prod:
     - time docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
     - time docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
     - time docker push "$IMAGE"
-
-# deploy-prod:
-#   stage: deploy
-#   image: registry.gitlab.com/sky-above/inflex/deploy:2020-09-14
-#   only:
-#     variables:
-#       - '$CI_COMMIT_MESSAGE =~ /[deploy-prod]$/'
-#   script: [] # TOOD:
