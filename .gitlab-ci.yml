@@ -16,7 +16,7 @@ patch:
   image: docker:stable
   only:
     variables:
-      - '$CI_COMMIT_MESSAGE =~ /[patch]$/'
+      - "$CI_COMMIT_MESSAGE =~ /[patch]$/"
   services:
     - docker:dind
   script:
@@ -32,7 +32,7 @@ prod:
     - docker:dind
   only:
     variables:
-      - '$CI_COMMIT_MESSAGE =~ /[prod]$/'
+      - "$CI_COMMIT_MESSAGE =~ /[prod]$/"
   script:
     - sed -i.bak "s/git@gitlab.com:/https:\/\/gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com\//" stack.yaml
     - IMAGE="${CI_REGISTRY_IMAGE}/prod:${CI_PIPELINE_ID}"
