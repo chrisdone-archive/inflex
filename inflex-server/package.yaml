@@ -36,6 +36,7 @@ dependencies:
 - async
 - early
 - yesod-core
+- yesod-static
 - profunctors
 - contravariant
 - rio
