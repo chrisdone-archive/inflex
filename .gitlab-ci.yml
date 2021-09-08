@@ -13,9 +13,10 @@ workflow:
 patch:
   stage: env
   image: docker:stable
-  only:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /[patch]$/
+  # only:
+  #   variables:
+  #     - $CI_COMMIT_MESSAGE =~ /[patch]$/
+  when: manual
   services:
     - docker:dind
   script:
@@ -29,9 +30,10 @@ prod:
   image: docker:stable
   services:
     - docker:dind
-  only:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /[prod]$/
+  when: manual
+  # only:
+  #   variables:
+  #     - $CI_COMMIT_MESSAGE =~ /[prod]$/
   script:
     - sed -i.bak "s/git@gitlab.com:/https:\/\/gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com\//" stack.yaml
     - IMAGE="${CI_REGISTRY_IMAGE}/prod:${CI_PIPELINE_ID}"
