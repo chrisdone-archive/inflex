@@ -34,7 +34,7 @@ import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument
 import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
-import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||))
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, pure, unit, (<>), (||),not)
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -77,6 +77,7 @@ type State = {
   , seenTexts :: Map Shared.Hash String
   , seenResults :: Map Shared.Hash (View Shared.Result)
   , dragger :: Maybe Dragger.Dragger
+  , loaded :: Boolean
  }
 
 data Modal
@@ -95,7 +96,7 @@ type Output = Unit
 component :: forall q. H.Component HH.HTML q Input Output Aff
 component =
   H.mkComponent
-    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seenResults: mempty, seenTexts: mempty, dragger: Nothing}
+    { initialState: const {cells: mempty, dragUUID: Nothing, modal: NoModal, seenResults: mempty, seenTexts: mempty, dragger: Nothing, loaded: false}
     , render: \state -> timed "Doc.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -204,7 +205,16 @@ render state =
                    else ""))
          , Manage.manage CanvasCreated
          ]
-         (map
+         (if not state.loaded
+          then
+          [HH.div
+            [HP.class_ (HH.ClassName "loading-scripts")]
+            [HH.div
+               [HP.class_ (HH.ClassName "lds-ripple")]
+               [HH.div [] []
+               ,HH.div [] []]]]
+          else
+          map
             (\outputCell@(OutputCell cell) ->
                let uuid = (cell . uuid)
                 in case state . dragger of
@@ -532,6 +542,7 @@ setOutputDocument doc = do
          (\s ->
             s
               { cells = cells
+              , loaded = true
               , modal = NoModal
               -- Here:We store the cells we've seen. It's important that
               -- this is the only place where it's updated, as it serves as
