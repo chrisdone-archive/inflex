@@ -78,13 +78,6 @@ getHomeR = do
                   , name_ "viewport"
                   ]
                 link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
-                script_
-                  [ async_ ""
-                  , defer_ ""
-                  , makeAttribute "data-domain" "inflex.io"
-                  , src_ "https://plausible.inflex.io/js/index.js"
-                  ]
-                  ("" :: Text)
                 style_ (LT.toStrict (renderCss css1 <> renderCss css2))
               body_ [] $ do
                 div_ [class_ "navbar"] $
@@ -185,13 +178,6 @@ postEarlyAccessRequestR = do
            , name_ "viewport"
            ]
          link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
-         script_
-           [ async_ ""
-           , defer_ ""
-           , makeAttribute "data-domain" "inflex.io"
-           , src_ "https://plausible.inflex.io/js/index.js"
-           ]
-           ("" :: Text)
          style_ (LT.toStrict (renderCss css))
        body_ [] $ do
          div_ [class_ "navbar"] $

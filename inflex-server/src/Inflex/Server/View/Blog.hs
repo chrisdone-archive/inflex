@@ -22,13 +22,6 @@ blogTemplate hasLoginCookie' body = do
     (do head_
           (do link_ [rel_ "shortcut icon", href_ "#"]
               title_ "Inflex"
-              script_
-                [ async_ ""
-                , defer_ ""
-                , makeAttribute "data-domain" "inflex.io"
-                , src_ "https://plausible.inflex.io/js/index.js"
-                ]
-                ("" :: Text)
               meta_ [name_ "charset", content_ "utf-8"]
               meta_
                 [ name_ "viewport"

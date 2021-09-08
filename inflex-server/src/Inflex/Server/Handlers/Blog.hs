@@ -58,13 +58,6 @@ getBlogR = do
            , name_ "viewport"
            ]
          link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
-         script_
-           [ async_ ""
-           , defer_ ""
-           , makeAttribute "data-domain" "inflex.io"
-           , src_ "https://plausible.inflex.io/js/index.js"
-           ]
-           ("" :: Text)
          style_ (LT.toStrict (renderCss css))
        body_ [class_ "blog-page"] $ do
          div_ [class_ "navbar"] $
@@ -147,13 +140,6 @@ getBlogEntryR entryName = do
            , name_ "viewport"
            ]
          link_ [href_ (url FaviconR), type_ "image/png", rel_ "icon"]
-         script_
-           [ async_ ""
-           , defer_ ""
-           , makeAttribute "data-domain" "inflex.io"
-           , src_ "https://plausible.inflex.io/js/index.js"
-           ]
-           ("" :: Text)
          style_ (LT.toStrict (renderCss css))
        body_ [class_ "article-page"] $ do
          div_ [class_ "navbar"] $

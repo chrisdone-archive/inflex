@@ -23,21 +23,14 @@ shopTemplate state body = do
     (do head_
           (do link_ [rel_ "shortcut icon", href_ "#"]
               title_ "Inflex"
-              script_
-                [ async_ ""
-                , defer_ ""
-                , makeAttribute "data-domain" "inflex.io"
-                , src_ "https://plausible.inflex.io/js/index.js"
-                ]
-                ("" :: Text)
               meta_ [name_ "charset", content_ "utf-8"]
               meta_
                 [ name_ "viewport"
                 , content_
                     "width=device-width, initial-scale=1, shrink-to-fit=no"
                 ]
-              link_ [rel_ "icon", type_ "image/png", href_ (url FaviconR)]
-              link_ [rel_ "stylesheet", type_ "text/css", href_ (url ShopCssR)])
+              link_ [rel_ "icon", type_ "image/png", href_ (url (StaticR img_favicon_png))]
+              link_ [rel_ "stylesheet", type_ "text/css", href_ (url (StaticR css_shop_css))])
         body_
           []
           (do div_
