@@ -46,7 +46,7 @@ access:
 
 `myrecord.name`
 
-Try calling one call `person` with `{name: "Charlie"}` in it. Then in
+Try calling one cell `person` with `{name: "Charlie"}` in it. Then in
 another cell, you can write `person.name`.
 
 ## Variants
