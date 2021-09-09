@@ -56,15 +56,14 @@ kube-update:
   script:
   - sed -E "s/\/prod:[0-9]+$/\/prod:$CI_PIPELINE_ID/" kube/inflex-server.yaml -i
   - git add kube/inflex-server.yaml
-  - git commit -m "Update kube/inflex-server.yaml to $CI_PIPELINE_ID"
+  - git commit -m "Update kube/inflex-server.yaml to $CI_PIPELINE_ID [kube-apply]"
   - git push "https://gitlab-ci-token:$GITLAB_PUSH_TOKEN@gitlab.com/sky-above/inflex.git" HEAD:$CI_COMMIT_BRANCH
 
 kube-apply:
   stage: deploy
-  when: manual
-  # only:
-  #   variables:
-  #     - $CI_COMMIT_MESSAGE =~ /\[kube-apply]/
+  only:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[kube-apply]/
   image: ubuntu
 
   before_script:
