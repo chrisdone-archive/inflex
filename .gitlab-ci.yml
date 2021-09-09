@@ -92,7 +92,7 @@ kube-update:
   - sed -E "s/\/prod:[0-9]+$/\/prod:$CI_PIPELINE_ID/" kube/inflex-server.yaml -i
   - git add kube/inflex-server.yaml
   - git commit -m "Update kube/inflex-server.yaml to $CI_PIPELINE_ID"
-  - git push origin master
+  - git push origin HEAD:$CI_COMMIT_BRANCH
 
 kube-apply:
   stage: deploy
