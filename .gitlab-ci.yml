@@ -42,7 +42,6 @@ build-prod:
 
 kube-update:
   stage: deploy
-  when: manual
   only:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[prod]/
