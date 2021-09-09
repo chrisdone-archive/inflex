@@ -1,7 +1,8 @@
 Article{
     title="Bibliography",
     description = "A list of materials, inspirations, competitors, papers that influenced the design of Inflex",
-    content = ""
+    content = "",
+    date = 2021-09-09
 }
 
 # Bibliography
