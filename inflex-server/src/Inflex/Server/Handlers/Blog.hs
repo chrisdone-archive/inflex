@@ -17,6 +17,7 @@ import           Data.Function
 import           Data.List
 import qualified Data.List.NonEmpty as NE
 import           Data.Maybe
+import           Data.Ord
 import           Data.Text (Text)
 import qualified Data.Text.Lazy as LT
 import           Data.Time
@@ -57,7 +58,11 @@ getBlogR = do
            [ content_ "width=device-width, initial-scale=1, shrink-to-fit=no"
            , name_ "viewport"
            ]
-         link_ [href_ (url (StaticR img_favicon_png)), type_ "image/png", rel_ "icon"]
+         link_
+           [ href_ (url (StaticR img_favicon_png))
+           , type_ "image/png"
+           , rel_ "icon"
+           ]
          style_ (LT.toStrict (renderCss css))
        body_ [class_ "blog-page"] $ do
          div_ [class_ "navbar"] $
@@ -83,7 +88,7 @@ getBlogR = do
              div_
                [class_ "years"]
                (for_
-                  (NE.groupBy (on (==) byYear) (sortOn byYear articles))
+                  (NE.groupBy (on (==) byYear) (reverse (sortOn byYear articles)))
                   (\articles' -> do
                      h1_
                        (let (_, Article {date}) = NE.head articles'
