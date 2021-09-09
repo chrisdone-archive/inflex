@@ -101,6 +101,14 @@ foo {some:"123",thing:567}
 
 Which can be handy especially for named arguments.
 
+A nicer way to call functions is using dot syntax:
+
+```haskell
+[1,2,3].filter(x:x>2).sum()
+```
+
+Any built in function or cell with a function in it can be called in this way.
+
 ## Available functions
 
 There is a limited list so far:
