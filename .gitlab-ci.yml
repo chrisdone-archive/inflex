@@ -13,10 +13,10 @@ workflow:
 patch:
   stage: env
   image: docker:stable
-  # only:
-  #   variables:
-  #     - $CI_COMMIT_MESSAGE =~ /[patch]$/
-  when: manual
+  only:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /[patch]/
+  # when: manual
   services:
     - docker:dind
   script:
