@@ -15,7 +15,7 @@ Article {
 * [Duet](https://chrisdone.com/toys/duet-delta/)
 * [PureScript](https://www.purescript.org/)
 * [Unison](https://www.unisonweb.org/)
-* [Type class vs the world](https://www.youtube.com/watch?v=hIZxTQP1ifo)
+* [Type classes vs the world](https://www.youtube.com/watch?v=hIZxTQP1ifo)
 * [Simple made easy](https://www.youtube.com/watch?v=oytL881p-nQ)
 
 ## Reading list
