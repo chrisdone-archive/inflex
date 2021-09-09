@@ -83,5 +83,5 @@ kube-apply:
     - chmod 644 ~/.ssh/known_hosts
 
   script:
-  - scp kube/* root@inflex.io:kube/
-  - ssh root@inflex.io:kube ./kubectl apply -f kube
+  - scp kube/* rancher@46.101.49.42:kube/
+  - ssh rancher@46.101.49.42:kube ./kubectl apply -f kube
