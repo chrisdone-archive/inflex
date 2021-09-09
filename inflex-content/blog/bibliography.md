@@ -12,6 +12,7 @@ Article{
 * Behaviors of Reflex https://qfpl.io/posts/reflex/basics/behaviors/
 * Ray Panko’s work on spreadsheets and bugs https://www.researchgate.net/profile/Ray-Panko
 * Pain We Forgot http://lighttable.com/2014/05/16/pain-we-forgot/
+* Haskell https://www.haskell.org/
 * Duet https://chrisdone.com/toys/duet-delta/
 * PureScript https://www.purescript.org/
 * Unison https://www.unisonweb.org/
