@@ -14,6 +14,11 @@ Consulted
 
 * Stepping OCaml https://arxiv.org/abs/1906.11422
 
+Similar research projects
+
+* Mesh http://mesh-spreadsheet.com/
+
+
 Vaguely similar market products
 
 * Mito https://trymito.io/launch
@@ -21,3 +26,4 @@ Vaguely similar market products
 * Blockpad https://blockpad.net/
 * CubeWeaver https://cubeweaver.com/
 * Livebook https://github.com/livebook-dev/livebook
+* Coda https://coda.io/welcome
