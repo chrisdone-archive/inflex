@@ -112,7 +112,7 @@ getHomeR = do
                   div_ [class_ "margin-wrapper"] $ do
                     div_ [class_ "tagline"] $ do
                       h1_ "It's time to go off grid"
-                      h2_ "Online spreadsheets re-invented"
+                      h2_ "A new reactive digital workspace"
                       form_
                         [action_ (url EnterDetailsR), method_ "get"]
                             {-div_
