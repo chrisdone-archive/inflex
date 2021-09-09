@@ -5,7 +5,7 @@ Article {
  summary = "A working document of references to inspirations, research, thanks, credits, competition"
 }
 
-## Direct influence
+## Direct influences
 
 * [Polymorphic variants](https://caml.inria.fr/pub/papers/garrigue-polymorphic_variants-ml98.pdf)
 * [Behaviors of Reflex](https://qfpl.io/posts/reflex/basics/behaviors/)
