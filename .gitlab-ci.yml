@@ -81,7 +81,7 @@ kube-apply:
     ## with your own domain name. You can copy and repeat that command if you have
     ## more than one server to connect to.
     ##
-    - ssh-keyscan inflex.io >> ~/.ssh/known_hosts
+    - ssh-keyscan 46.101.49.42 >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
 
   script:
