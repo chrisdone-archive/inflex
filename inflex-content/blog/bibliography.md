@@ -1,8 +1,8 @@
-Article{
-    title="Bibliography",
-    summary = "A list of materials, inspirations, competitors, papers that influenced the design of Inflex",
-    content = "",
-    date = 2021-09-09
+Article {
+ title = "Bibliography",
+ date = 2021-09-08,
+ content = "",
+ summary = "A working document of references to inspirations, research, thanks, credits, competition"
 }
 
 # Bibliography
