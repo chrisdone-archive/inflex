@@ -36,8 +36,6 @@ Article{
 
 ## Vaguely similar market products
 
-We’ve done our research.
-
 * Mito https://trymito.io/launch
 * Bamboo https://bamboolib.8080labs.com/
 * Blockpad https://blockpad.net/
