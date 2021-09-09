@@ -40,12 +40,66 @@ prod:
     - time docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
     - time docker push "$IMAGE"
 
+kube-update:
+  stage: deploy
+  when: manual
+  only:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[kube-update]/
+      - $CI_COMMIT_MESSAGE =~ /\[prod]/
+  image: ubuntu
+
+  before_script:
+    ##
+    ## Install ssh-agent if not already installed, it is required by Docker.
+    ## (change apt-get to yum if you use an RPM-based image)
+    ##
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+
+    ##
+    ## Run ssh-agent (inside the build environment)
+    ##
+    - eval $(ssh-agent -s)
+
+    ##
+    ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+    ## We're using tr to fix line endings which makes ed25519 keys work
+    ## without extra base64 encoding.
+    ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+    ##
+    - echo "$SSH_PRIVATE_KEY" > keyfile.txt
+    - chmod 700 keyfile.txt
+    - echo "$SSH_KEY_PASS" | ssh-add keyfile.txt
+
+    ##
+    ## Create the SSH directory and give it the right permissions
+    ##
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    ##
+    ## Use ssh-keyscan to scan the keys of your private server. Replace gitlab.com
+    ## with your own domain name. You can copy and repeat that command if you have
+    ## more than one server to connect to.
+    ##
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+    - git config --global user.email "gitlab@inflex.io"
+    - git config --global user.name "GitLab runner"
+
+  script:
+  - sed -E "s/\/prod:[0-9]+$/\/prod:$CI_PIPELINE_ID/" kube/inflex-server.yaml -i
+  - git add kube/inflex-server.yaml
+  - git commit -m "Update kube/inflex-server.yaml to $CI_PIPELINE_ID"
+  - git push origin master
+
 kube-apply:
   stage: deploy
   when: manual
-  # only:
-  #   variables:
-  #     - $CI_COMMIT_MESSAGE =~ /\[deploy]/
+  only:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[kube-apply]/
   image: ubuntu
 
   before_script:
