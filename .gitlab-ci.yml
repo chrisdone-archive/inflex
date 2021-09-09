@@ -86,4 +86,4 @@ kube-apply:
 
   script:
   - scp kube/* rancher@46.101.49.42:kube/
-  - ssh rancher@46.101.49.42:kube ./kubectl apply -f kube
+  - ssh rancher@46.101.49.42 ./kubectl apply -f kube
