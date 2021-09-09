@@ -21,6 +21,9 @@ Article {
 * [Haxcel](https://www.semanticscholar.org/paper/Haxcel-A-spreadsheet-interface-to-Haskell-written-Malmström/739998d4b2cd3b389f1593f20ca326f0025b3a32?p2df)
 * [Streaming spreadsheets](http://hirzels.com/martin/papers/ecoop14-activesheets.pdf)
 * [Smalltalk spreadsheet](http://www.bitsavers.org/pdf/xerox/xsis/XSIS_Smalltalk_Products_Apr87.pdf)
+* [Implementing VisiCalc](http://rmf.vc/implementingvisicalc) -
+  some things in Inflex coincidentally match VisiCalc's original
+  design: @func for functions, fixed precision numbers
 
 ## Consulted
 
