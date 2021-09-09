@@ -36,9 +36,12 @@ build-prod:
   script:
     - sed -i.bak "s/git@gitlab.com:/https:\/\/gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com\//" stack.yaml
     - IMAGE="${CI_REGISTRY_IMAGE}/prod:${CI_PIPELINE_ID}"
-    - time docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
-    - time docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
-    - time docker push "$IMAGE"
+    - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
+    - date
+    - docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t "$IMAGE"
+    - date
+    - docker push "$IMAGE"
+    - date
 
 kube-update:
   stage: deploy

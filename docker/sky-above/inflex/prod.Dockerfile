@@ -5,18 +5,18 @@ WORKDIR /inflex
 
 # RUN mv /psc-package-output /inflex/inflex-client/output
 
-RUN stack build inflex-shared
+RUN date; stack build inflex-shared
 
 WORKDIR /inflex/inflex-client
 
-RUN stack build \
+RUN date; stack build \
     purescript \
     inflex-client \
     --exec ./bundle-full.sh
 
 WORKDIR /inflex/inflex-server
 
-RUN stack build \
+RUN date; stack build \
     inflex-server \
     --flag inflex-server:postgresql \
     --flag inflex-server:release \
@@ -26,5 +26,7 @@ RUN stack build \
 FROM registry.gitlab.com/sky-above/inflex/runtime:2020-09-13
 
 COPY --from=0 /bin/inflex-server /bin/inflex-server
+
+RUN date
 
 CMD ["/bin/inflex-server"]
