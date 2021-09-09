@@ -43,10 +43,10 @@ prod:
 kube-update:
   stage: deploy
   when: manual
-  only:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[kube-update]/
-      - $CI_COMMIT_MESSAGE =~ /\[prod]/
+  # only:
+  #   variables:
+  #     - $CI_COMMIT_MESSAGE =~ /\[kube-update]/
+  #     - $CI_COMMIT_MESSAGE =~ /\[prod]/
   image: ubuntu
 
   before_script:
