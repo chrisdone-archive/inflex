@@ -7,6 +7,7 @@ Article {
 
 ## Direct influences
 
+* [Why do we need modules at all?](http://erlang.org/pipermail/erlang-questions/2011-May/058768.html)
 * [Polymorphic variants](https://caml.inria.fr/pub/papers/garrigue-polymorphic_variants-ml98.pdf)
 * [Behaviors of Reflex](https://qfpl.io/posts/reflex/basics/behaviors/)
 * [Ray Panko’s work on spreadsheets and bugs](https://www.researchgate.net/profile/Ray-Panko)
