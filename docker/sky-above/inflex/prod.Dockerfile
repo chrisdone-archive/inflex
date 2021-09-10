@@ -1,9 +1,7 @@
 FROM registry.gitlab.com/sky-above/inflex/patch:368354428
 
-# Make sure we reset
-RUN rm -rf /inflex
-
-COPY . /inflex
+COPY . /inflex-new
+RUN cp -ra /inflex-new/* /inflex/
 WORKDIR /inflex
 
 RUN date; stack build inflex-shared
