@@ -15,9 +15,10 @@ Article {
 * [Duet](https://chrisdone.com/toys/duet-delta/)
 * [PureScript](https://www.purescript.org/)
 * [Unison](https://www.unisonweb.org/)
+* [Clojure](https://clojure.org/)
 * [Type classes vs the world](https://www.youtube.com/watch?v=hIZxTQP1ifo)
 * [Simple made easy](https://www.youtube.com/watch?v=oytL881p-nQ)
-* [Spec-ulation](https://m.youtube.com/watch?v=oyLBGkS5ICk) 
+* [Spec-ulation](https://m.youtube.com/watch?v=oyLBGkS5ICk) (specifically, dependencies)
 
 ## Reading list
 
