@@ -3,22 +3,21 @@ FROM registry.gitlab.com/sky-above/inflex/base:2020-09-13@sha256:45dfc53d2bfb392
 COPY . /inflex
 WORKDIR /inflex
 
-# WORKDIR /inflex/inflex-client
+COPY . /inflex
+WORKDIR /inflex
 
-# RUN stack exec -- psc-package build --only-dependencies && \
-#     cp -r output/ /psc-package-output
+RUN date; stack build inflex-shared
+
+WORKDIR /inflex/inflex-client
+
+RUN date; stack build \
+    purescript \
+    inflex-client \
+    --exec ./bundle-full.sh
 
 WORKDIR /inflex/inflex-server
 
-# RUN stack build \
-#     --only-snapshot \
-#     --flag inflex-server:postgresql \
-#     --flag inflex-server:release \
-#     --test \
-#     --no-run-tests
-
-RUN stack build \
+RUN date; stack build \
+    inflex-server \
     --flag inflex-server:postgresql \
-    --flag inflex-server:release \
-    --test \
-    --no-run-tests
+    --flag inflex-server:release
