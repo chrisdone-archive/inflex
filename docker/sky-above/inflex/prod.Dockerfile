@@ -1,7 +1,6 @@
-FROM registry.gitlab.com/sky-above/inflex/patch:368354428
+FROM registry.gitlab.com/sky-above/inflex/patch:366887100
 
-COPY . /inflex-new
-RUN cp -ra /inflex-new/* /inflex/
+COPY . /inflex
 WORKDIR /inflex
 
 RUN date; stack build inflex-shared
