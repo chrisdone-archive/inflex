@@ -10,8 +10,14 @@ WORKDIR /inflex
 
 WORKDIR /inflex/inflex-server
 
+# RUN stack build \
+#     --only-snapshot \
+#     --flag inflex-server:postgresql \
+#     --flag inflex-server:release \
+#     --test \
+#     --no-run-tests
+
 RUN stack build \
-    --only-snapshot \
     --flag inflex-server:postgresql \
     --flag inflex-server:release \
     --test \
