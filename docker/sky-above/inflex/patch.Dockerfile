@@ -3,9 +3,6 @@ FROM registry.gitlab.com/sky-above/inflex/base:2020-09-13@sha256:45dfc53d2bfb392
 COPY . /inflex
 WORKDIR /inflex
 
-COPY . /inflex
-WORKDIR /inflex
-
 RUN date; stack build inflex-shared
 
 WORKDIR /inflex/inflex-client
