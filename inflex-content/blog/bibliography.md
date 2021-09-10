@@ -17,6 +17,7 @@ Article {
 * [Unison](https://www.unisonweb.org/)
 * [Type classes vs the world](https://www.youtube.com/watch?v=hIZxTQP1ifo)
 * [Simple made easy](https://www.youtube.com/watch?v=oytL881p-nQ)
+* [Spec-ulation](https://m.youtube.com/watch?v=oyLBGkS5ICk) 
 
 ## Reading list
 
