@@ -1,5 +1,8 @@
 FROM registry.gitlab.com/sky-above/inflex/patch:368354428
 
+# Make sure we reset
+RUN rm -rf /inflex
+
 COPY . /inflex
 WORKDIR /inflex
 
