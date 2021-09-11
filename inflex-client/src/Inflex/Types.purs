@@ -18,6 +18,7 @@ data OutputCell = OutputCell
   , resultHash :: Hash
   , order :: Int
   , position :: View Position
+  , dependencies :: Array UUID
   }
 
 derive instance genericOutputCell :: Generic OutputCell _

@@ -1,7 +1,7 @@
 exports.newDragger = function(element){
   return function(){
     if (element._dragger) {
-      console.debug('already a dragger, ignoring');
+      // console.debug('already a dragger, ignoring');
       return element._dragger;
     } else {
       var dragger = {
@@ -37,7 +37,7 @@ exports.newDragger = function(element){
 
       function drag(e) {
         if (dragger.active) {
-          console.log('initialX: %o, initialY: %o', dragger.initialX, dragger.initialY);
+          // console.log('initialX: %o, initialY: %o', dragger.initialX, dragger.initialY);
 
           e.preventDefault();
 
@@ -60,7 +60,7 @@ exports.newDragger = function(element){
         el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
       }
 
-      console.log('new dragger: %o', dragger);
+      // console.log('new dragger: %o', dragger);
       return dragger;
     }
   }
@@ -71,20 +71,20 @@ exports.attach = function(actuator){
     return function(dragger){
       return function(tellme){
         return function(){
-          console.log('dragger: %o', dragger);
+          // console.log('dragger: %o', dragger);
           var dragme = actuator;
           for (var i = 0; i < levels; i++) {
             dragme = dragme.parentNode;
           }
           if (dragme._draggable) {
-            console.debug('already draggable, ignoring');
+            // console.debug('already draggable, ignoring');
             return {};
           } else {
             dragme._draggable = true;
             actuator.addEventListener("mousedown", dragStart, false);
             actuator.addEventListener("touchstart", dragStart, false);
             function dragStart(e){
-              console.log('mousedown');
+              // console.log('mousedown');
               if (e.type === "touchstart") {
                 dragger.initialX = e.touches[0].clientX - dragger.xOffset;
                 dragger.initialY = e.touches[0].clientY - dragger.yOffset;
@@ -93,7 +93,7 @@ exports.attach = function(actuator){
                 dragger.initialY = e.clientY - dragger.yOffset;
               }
               if (e.target === actuator) {
-                console.log('starting a drag');
+                // console.log('starting a drag');
                 dragger.active = true;
                 dragger.dragme = dragme;
                 dragger.tellme = tellme;

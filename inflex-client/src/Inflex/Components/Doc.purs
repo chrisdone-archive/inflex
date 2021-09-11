@@ -4,12 +4,11 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Halogen.Svg as S
-import Halogen.VDom.Types as VD
 import Inflex.Frisson
+import Prelude
 
 import Control.Monad.State (class MonadState)
-import Data.Array (mapMaybe)
+import Data.Array (mapMaybe, concatMap)
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
@@ -22,22 +21,24 @@ import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID(..), uuidToString)
 import Dragger as Dragger
+import Connector as Connector
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (error)
 import Halogen as H
-import Halogen.HTML.Core as HC
 import Halogen.HTML as HH
+import Halogen.HTML.Core as HC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Manage as Manage
+import Halogen.Svg as S
+import Halogen.VDom.Types as VD
 import Inflex.Components.Cell as Cell
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
-import Prelude
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -208,7 +209,7 @@ render state =
                    else ""))
          , Manage.manage CanvasCreated
          ]
-         ([svg] <>
+         ([svg (state.cells)] <>
           if not (state.loaded) && not (meta.sandbox)
           then
           [HH.div
@@ -330,11 +331,12 @@ eval =
         Manage.Created (element) ->
           case Manage.fromElement element of
             Just htmlelement -> do
+              H.liftEffect (Connector.newConnector htmlelement)
               dragger <- H.liftEffect (Dragger.newDragger htmlelement)
               H.modify_ (\s -> s {dragger=Just dragger})
             Nothing -> pure unit
         Manage.Removed _ -> pure unit
-    Initialize ->
+    Initialize -> do
       case documentId of
         Nothing -> pure unit
         Just docId -> do
@@ -609,6 +611,7 @@ consolidateCell seenTexts seenResults cached = do
     , result
     , resultHash
     , position: cachedOutputCellPosition cached
+    , dependencies: map (\uuid -> UUID (unUUID uuid)) (cachedOutputCellDependencies cached)
     })
 
 toInputCell :: OutputCell -> InputCell1
@@ -634,48 +637,43 @@ undoDisabled = meta.readonly || isNothing documentId
 --------------------------------------------------------------------------------
 -- SVG
 
-svg =
+svg cells =
   S.elem
     "svg"
-    [ S.attr "width" "100%"
-    , S.attr "height" "100%"
-    ]
-    [ S.elem
-        "defs"
-        []
-        [ S.elem
-            "marker"
-            [ S.attr "id" "arrowhead"
-            , S.attr "markerWidth" "10"
-            , S.attr "markerHeight" "7"
-            , S.attr "refX" "0"
-            , S.attr "refY" "3.5"
-            , S.attr "orient" "auto"
-            ]
-            [S.elem "polygon" [S.attr "points" "0 0, 10 3.5, 0 7"] []]
-        ]
-    , S.elem
-        "line"
-        [ S.attr "x1" "0"
-        , S.attr "y1" "50"
-        , S.attr "x2" "250"
-                , S.attr "y2" "50"
-        , S.attr "stroke" "#000"
-        , S.attr "stroke-width" "8"
-        , S.attr "marker-end" "url(#arrowhead)"
-        ]
-        []
-    ]
-
-{-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 100">
-  <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7"
-    refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" />
-    </marker>
-  </defs>
-  <line x1="0" y1="50" x2="250" y2="50" stroke="#000"
-  stroke-width="8" marker-end="url(#arrowhead)" />
-</svg>
--}
+    [S.attr "width" "100%", S.attr "height" "100%"]
+    ([ S.elem
+         "defs"
+         []
+         [ S.elem
+             "marker"
+             [ S.attr "id" "arrowhead"
+             , S.attr "markerWidth" "10"
+             , S.attr "markerHeight" "10"
+             , S.attr "refX" "10"
+             , S.attr "refY" "3.5"
+             , S.attr "orient" "auto"
+             , S.attr "fill" "#959da7"
+             ]
+             [S.elem "polygon" [S.attr "points" "0 0, 10 3.5, 0 7"] []]
+         ]
+     ] <>
+     concatMap
+       (\(OutputCell cell) ->
+          map
+            (\dep ->
+               S.elem
+                 "line"
+                 [ S.attr "x1" "0"
+                 , S.attr "y1" "0"
+                 , S.attr "x2" "0"
+                 , S.attr "y2" "0"
+                 , S.attr "stroke" "#959da7"
+                 , S.attr "stroke-width" "2"
+                 , S.attr "marker-end" "url(#arrowhead)"
+                 , S.attr "data-from_id" ("cell-" <> uuidToString dep)
+                 , S.attr "data-to_id" ("cell-" <> uuidToString (cell . uuid))
+                 , S.attr "class" "connector-arrow"
+                 ]
+                 [])
+            (cell . dependencies))
+       cells)

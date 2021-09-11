@@ -109,6 +109,15 @@ body {
   align-content: flex-start
 }
 
+.canvas > svg {
+  position: absolute;
+  z-index: 0;
+}
+
+.cell-wrapper {
+  z-index: 1;
+}
+
 /********************************************************************************
  * CSV import
  */
