@@ -12,6 +12,7 @@ extra-source-files:
 - config/*
 - templates/*.lucius
 - templates/*.julius
+- ../inflex-content/blog/*.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
