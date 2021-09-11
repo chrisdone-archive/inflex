@@ -4,6 +4,8 @@ module Inflex.Components.Doc
   ( component
   ) where
 
+import Halogen.Svg as S
+import Halogen.VDom.Types as VD
 import Inflex.Frisson
 
 import Control.Monad.State (class MonadState)
@@ -25,6 +27,7 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (error)
 import Halogen as H
+import Halogen.HTML.Core as HC
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -205,7 +208,8 @@ render state =
                    else ""))
          , Manage.manage CanvasCreated
          ]
-         (if not (state.loaded) && not (meta.sandbox)
+         ([svg] <>
+          if not (state.loaded) && not (meta.sandbox)
           then
           [HH.div
             [HP.class_ (HH.ClassName "loading-scripts")]
@@ -626,3 +630,52 @@ documentId = toMaybe (meta . documentId)
 
 undoDisabled :: Boolean
 undoDisabled = meta.readonly || isNothing documentId
+
+--------------------------------------------------------------------------------
+-- SVG
+
+svg =
+  S.elem
+    "svg"
+    [ S.attr "width" "100%"
+    , S.attr "height" "100%"
+    ]
+    [ S.elem
+        "defs"
+        []
+        [ S.elem
+            "marker"
+            [ S.attr "id" "arrowhead"
+            , S.attr "markerWidth" "10"
+            , S.attr "markerHeight" "7"
+            , S.attr "refX" "0"
+            , S.attr "refY" "3.5"
+            , S.attr "orient" "auto"
+            ]
+            [S.elem "polygon" [S.attr "points" "0 0, 10 3.5, 0 7"] []]
+        ]
+    , S.elem
+        "line"
+        [ S.attr "x1" "0"
+        , S.attr "y1" "50"
+        , S.attr "x2" "250"
+                , S.attr "y2" "50"
+        , S.attr "stroke" "#000"
+        , S.attr "stroke-width" "8"
+        , S.attr "marker-end" "url(#arrowhead)"
+        ]
+        []
+    ]
+
+{-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 100">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7"
+    refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  <line x1="0" y1="50" x2="250" y2="50" stroke="#000"
+  stroke-width="8" marker-end="url(#arrowhead)" />
+</svg>
+-}
