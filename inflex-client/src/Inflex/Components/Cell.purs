@@ -14,7 +14,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.UUID (UUID)
+import Data.UUID (UUID(..))
 import Dragger as Dragger
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
@@ -85,6 +85,7 @@ data Cell = Cell
   , resultHash :: Shared.Hash
   , type' :: Maybe (View Shared.TypeOf)
   , position :: View Shared.Position
+  , uuid :: UUID
   }
 
 derive instance genericCell :: Generic Cell _
@@ -135,6 +136,7 @@ outputCellToCell (OutputCell cell) =
         }
         (cell.result)
     , position: cell.position
+    , uuid: cell.uuid
     }
 
 --------------------------------------------------------------------------------
@@ -219,11 +221,12 @@ render :: forall keys q m. MonadAff m =>
        -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
-render (State { cell: Cell {name, code, result, type', position}
+render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid}
               , cells
               }) =
   HH.div
     [HP.class_ (HH.ClassName "cell-wrapper")
+    ,HP.attr (AttrName "id") ("cell-" <> uuid)
     ,HP.attr (AttrName "style") (casePosition {
                                     "Unpositioned": "",
                                     "AbsolutePosition": \x y ->
