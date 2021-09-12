@@ -8,6 +8,7 @@ module Dragger
 
 import Effect
 import Prelude (Unit, class Show)
+import Connector (Connector)
 import Web.HTML.HTMLElement (HTMLElement)
 
 foreign import data Dragger :: Type
@@ -15,7 +16,10 @@ foreign import data Dragger :: Type
 instance showDragger :: Show Dragger where
   show _ = "Dragger"
 
-foreign import newDragger :: HTMLElement -> Effect Dragger
+foreign import newDragger
+  :: HTMLElement
+  -> Connector   -- Inform this connector
+  -> Effect Dragger
 
 foreign import attach
    :: HTMLElement -- Mouse actuation point
