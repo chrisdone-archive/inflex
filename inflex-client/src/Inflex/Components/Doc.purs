@@ -331,8 +331,8 @@ eval =
         Manage.Created (element) ->
           case Manage.fromElement element of
             Just htmlelement -> do
-              H.liftEffect (Connector.newConnector htmlelement)
-              dragger <- H.liftEffect (Dragger.newDragger htmlelement)
+              connector <- H.liftEffect (Connector.newConnector htmlelement)
+              dragger <- H.liftEffect (Dragger.newDragger htmlelement connector)
               H.modify_ (\s -> s {dragger=Just dragger})
             Nothing -> pure unit
         Manage.Removed _ -> pure unit

@@ -5,7 +5,7 @@ exports.newConnector = function(element){
       return element._connector;
     } else {
       element._connector = true;
-      setInterval(function(){
+      function trigger(){
         window.requestAnimationFrame(function(){
           var box = element.getBoundingClientRect();
           var basex = box.left;
@@ -39,8 +39,14 @@ exports.newConnector = function(element){
             arrows[i].x2.baseVal.value = -basex + targetx;
             arrows[i].y2.baseVal.value = -basey + targety;
           }
-        });
+        })
+      }
+      setInterval(function(){
+        trigger();
       }, 1000);
+      return {
+        trigger: trigger
+      };
     }
   }
 }
