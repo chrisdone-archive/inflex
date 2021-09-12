@@ -362,7 +362,6 @@
   }
 
   .ellipsis-button {
-    visibility: hidden;
     position: absolute;
     background: #9fb6c8;
     top: -0.5em;
@@ -371,9 +370,7 @@
     width: 1em;
     transform: rotate(45deg);
   }
-  .editor-boundary-wrap:hover > .ellipsis-button {
-    visibility: visible;
-  }
+
   .ellipsis-button:hover {
     background: #15263b;
     cursor: pointer;
@@ -591,6 +588,18 @@
     background: #e9eef2;
     border-radius: 3px;
     color: #555;
+  }
+
+}
+
+/* Primary input mechanism system can
+       hover over elements with ease */
+@media (hover: hover) {
+  .ellipsis-button {
+    visibility: hidden;
+  }
+  .editor-boundary-wrap:hover > .ellipsis-button {
+    visibility: visible;
   }
 
 }
