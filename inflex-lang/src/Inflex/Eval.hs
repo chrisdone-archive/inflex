@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -19,6 +20,7 @@ module Inflex.Eval
   , DefaultEvalError(..)
   ) where
 
+import           Control.Monad
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy.Builder as SB
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -26,6 +28,7 @@ import           Data.Containers.ListUtils
 import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List as List
+import           Data.List.Extra
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -36,14 +39,16 @@ import           GHC.Natural
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Derived
-import           Inflex.Printer
+import           Inflex.Display ()
 import           Inflex.Renamer (patternParam)
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types as Array (Array(..))
 import           Inflex.Types.Eval
+import           Inflex.Types.Optics
 import           Inflex.Variants
 import           Lexx
+import           Optics (set, (%), element, Is, Optic, A_Setter)
 import qualified RIO
 import           RIO (RIO, glog)
 
@@ -52,13 +57,26 @@ import           RIO (RIO, glog)
 -- Entry points
 
 evalTextRepl :: Bool -> Text -> IO ()
-evalTextRepl loud text   = do
+evalTextRepl loud text = do
+  lastRef <- RIO.newSomeRef ""
   output <-
     RIO.runRIO
       Eval
         { glogfunc =
             if loud
-              then RIO.mkGLogFunc (\stack msg -> print stack >> prettyWrite msg)
+              then RIO.mkGLogFunc
+                     (\stack msg ->
+                        case msg of
+                          EvalStep e -> do
+                            prev <- RIO.readSomeRef lastRef
+                            let cur =
+                                  SB.toLazyByteString
+                                    (RIO.getUtf8Builder (RIO.display e))
+                            unless
+                              (prev == cur)
+                              (do L8.putStrLn cur
+                                  RIO.writeSomeRef lastRef cur)
+                          _ -> print stack >> prettyWrite msg)
               else mempty
         , globals = mempty
         }
@@ -67,7 +85,7 @@ evalTextRepl loud text   = do
     Left e -> print (e :: DefaultEvalError ())
     Right e -> do
       putStrLn "=>"
-      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
+      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (RIO.display e)))
 
 evalTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))
@@ -80,53 +98,64 @@ evalTextDefaulted schemes fp text = do
       DefaulterReader
       (fmap (first DefaulterErrored) (defaultText schemes fp text))
   case result of
-    Right Cell{defaulted} -> fmap Right (evalExpression defaulted)
+    Right Cell {defaulted} -> fmap Right (evalExpression id defaulted)
     Left e -> pure (Left e)
 
 evalDefaulted ::
      Cell
   -> RIO Eval (Either (DefaultEvalError e) (Expression Resolved))
 evalDefaulted Cell{defaulted} = do
-  fmap Right (evalExpression defaulted)
+  fmap Right (evalExpression id defaulted)
 
 --------------------------------------------------------------------------------
 -- Expression evaluator
 
-evalExpression :: Expression Resolved -> RIO Eval (Expression Resolved)
-evalExpression expression = do
-  glog (EvalStep expression)
-  case expression of
+evalExpression ::
+     (Expression Resolved -> Expression Resolved)
+  -> Expression Resolved
+  -> RIO Eval (Expression Resolved)
+evalExpression build expression = do
+  glog (EvalStep (build expression))
+  result <- case expression of
     -- Self-evaluating forms:
     LiteralExpression {} -> pure expression
     LambdaExpression {} -> pure expression
     VariableExpression {} -> pure expression
     HoleExpression {} -> pure expression
     -- Data structures:
-    RecordExpression record -> evalRecord record
-    ArrayExpression array -> evalArray array
-    VariantExpression variant -> evalVariant variant
+    RecordExpression record -> evalRecord build record
+    ArrayExpression array -> evalArray build array
+    VariantExpression variant -> evalVariant build variant
     -- Globals:
-    GlobalExpression global -> evalGlobal global
+    GlobalExpression global -> evalGlobal build global
     -- Apply:
-    ApplyExpression apply -> evalApply apply
-    InfixExpression infix' -> evalInfix infix'
+    ApplyExpression apply -> evalApply build apply
+    InfixExpression infix' -> evalInfix build infix'
     -- Special forms:
-    IfExpression if' -> evalIf if'
-    CaseExpression case' -> evalCase case'
-    PropExpression prop -> evalProp prop
+    IfExpression if' -> evalIf build if'
+    CaseExpression case' -> evalCase build case'
+    PropExpression prop -> evalProp build prop
     -- Disabled forms:
     BoundaryExpression {} -> pure expression
     EarlyExpression {} -> pure expression
     LetExpression {} -> pure expression
+  glog (EvalStep (build result))
+  pure result
 
 --------------------------------------------------------------------------------
 -- Case matching
 
-evalCase :: Case Resolved -> RIO Eval (Expression Resolved)
-evalCase Case {..} = do
-  scrutinee' <- evalExpression scrutinee
+evalCase ::
+     (Expression Resolved -> Expression Resolved)
+  -> Case Resolved
+  -> RIO Eval (Expression Resolved)
+evalCase build case'@Case {..} = do
+  scrutinee' <-
+    evalExpression
+      (build . CaseExpression . setFlipped caseScrutineeL case')
+      scrutinee
   case listToMaybe (mapMaybe (match scrutinee') (toList alternatives)) of
-    Just e -> evalExpression e
+    Just e -> evalExpression build e
     Nothing ->
       pure
         (CaseExpression
@@ -153,59 +182,93 @@ match scrutinee Alternative {..} =
 --------------------------------------------------------------------------------
 -- Data structures
 
-evalProp :: Prop Resolved -> RIO Eval (Expression Resolved)
-evalProp prop@Prop {..} = do
-  expression' <- evalExpression expression
+evalProp ::
+     (Expression Resolved -> Expression Resolved)
+  -> Prop Resolved
+  -> RIO Eval (Expression Resolved)
+evalProp build prop@Prop {..} = do
+  expression' <-
+    evalExpression
+      (build . PropExpression . setFlipped propExpressionL prop)
+      expression
   case expression' of
     RecordExpression Record {fields} ->
       case find (\FieldE {name = name'} -> name' == name) fields of
         Nothing -> pure expression0
-        Just FieldE {expression = v} -> evalExpression v
+        Just FieldE {expression = v} -> evalExpression build v
     _ -> pure expression0
   where
     expression0 = PropExpression prop
 
-evalRecord :: Record Resolved -> RIO Eval (Expression Resolved)
-evalRecord Record {..} = do
-  fields' <-
-    traverse
-      (\FieldE {expression, name} -> do
-         e' <- evalExpression expression
-         pure (FieldE {location = SteppedCursor, expression = e', ..}))
-      fields
+evalRecord ::
+     (Expression Resolved -> Expression Resolved)
+  -> Record Resolved
+  -> RIO Eval (Expression Resolved)
+evalRecord build record0@Record {..} = do
+  (_, fields') <-
+    mapAccumM
+      (\record (i, FieldE {expression, name}) -> do
+         e' <-
+           evalExpression
+             (build .
+              RecordExpression .
+              setFlipped (recordFieldsL % element i % fieldEExpressionL) record)
+             expression
+         let field' = FieldE {location = SteppedCursor, expression = e', ..}
+         pure (set (recordFieldsL % element i) field' record, field'))
+      record0
+      (zip [0 ..] fields)
   pure (RecordExpression (Record {fields = fields', ..}))
 
-evalArray :: Array Resolved -> RIO Eval (Expression Resolved)
-evalArray array@Array {..} =
+evalArray ::
+     (Expression Resolved -> Expression Resolved)
+  -> Array Resolved
+  -> RIO Eval (Expression Resolved)
+evalArray build array0@Array {..} =
   case form of
-    Evaluated -> pure (ArrayExpression array)
+    Evaluated -> pure (ArrayExpression array0)
     Unevaluated -> do
-      expressions' <- traverse evalExpression expressions
+      (_, expressions') <-
+        mapAccumM
+          (\array (i, expression) -> do
+             e' <-
+               evalExpression
+                 (build .
+                  ArrayExpression .
+                  setFlipped (arrayExpressionsL % element i) array)
+                 expression
+             pure (set (arrayExpressionsL % element i) e' array, e'))
+          array0
+          (V.indexed expressions)
       pure
         (ArrayExpression
-           Array
-             { expressions = expressions'
-             , form = Evaluated
-             , ..
-             })
+           Array {expressions = expressions', form = Evaluated, ..})
 
-evalVariant :: Variant Resolved -> RIO Eval (Expression Resolved)
-evalVariant Variant {..} = do
-  argument' <- traverse evalExpression argument
-  pure
-    (VariantExpression
-       Variant {argument = argument', ..})
+evalVariant ::
+     (Expression Resolved -> Expression Resolved)
+  -> Variant Resolved
+  -> RIO Eval (Expression Resolved)
+evalVariant build variant@Variant {..} = do
+  argument' <-
+    traverse
+      (evalExpression
+         (build . VariantExpression . setFlipped variantArgumentL variant . pure))
+      argument
+  pure (VariantExpression Variant {argument = argument', ..})
 
 --------------------------------------------------------------------------------
 -- Globals
 
-evalGlobal :: Global Resolved -> RIO Eval (Expression Resolved)
-evalGlobal global@Global {name} = do
+evalGlobal ::
+     (Expression Resolved -> Expression Resolved)
+  -> Global Resolved
+  -> RIO Eval (Expression Resolved)
+evalGlobal build global@Global {name} = do
   Eval {globals} <- RIO.ask
   case name of
     HashGlobal hash ->
       case M.lookup hash globals of
-        Just expression -> evalExpression expression
+        Just expression -> evalExpression build expression
         Nothing -> do
           glog (GlobalMissing global)
           pure (GlobalExpression global)
@@ -215,14 +278,25 @@ evalGlobal global@Global {name} = do
 -- Apply
 
 -- | Try to apply a lambda, otherwise apply primitive functions.
-evalApply :: Apply Resolved -> RIO Eval (Expression Resolved)
-evalApply Apply {function, argument, ..} = do
-  function' <- evalExpression function
-  argument' <- evalExpression argument
+evalApply ::
+     (Expression Resolved -> Expression Resolved)
+  -> Apply Resolved
+  -> RIO Eval (Expression Resolved)
+evalApply build apply@Apply {function, argument, ..} = do
+  function' <-
+    evalExpression
+      (build . ApplyExpression . setFlipped applyFunctionL apply)
+      function
+  argument' <-
+    evalExpression
+      (build .
+       ApplyExpression .
+       setFlipped applyArgumentL (setFlipped applyFunctionL apply function'))
+      argument
   case function' of
     LambdaExpression Lambda {body} -> do
       body' <- betaReduce body argument'
-      evalExpression body'
+      evalExpression build body'
     _ ->
       evalApplyNF
         (ApplyExpression Apply {function = function', argument = argument', ..})
@@ -308,11 +382,18 @@ evalApplyNF expression =
 --------------------------------------------------------------------------------
 -- Infix
 
-evalInfix :: Infix Resolved -> RIO Eval (Expression Resolved)
-evalInfix Infix {..} = do
-  global' <- evalExpression global
-  left' <- evalExpression left
-  right' <- evalExpression right
+evalInfix ::
+     (Expression Resolved -> Expression Resolved)
+  -> Infix Resolved
+  -> RIO Eval (Expression Resolved)
+evalInfix build infix0@Infix {..} = do
+  global' <- ignore (evalExpression id global)
+  let updateLeft = setFlipped infixLeftL infix0
+  left' <- evalExpression (build . InfixExpression . updateLeft) left
+  right' <-
+    evalExpression
+      (build . InfixExpression . setFlipped infixRightL (updateLeft left'))
+      right
   let expression =
         InfixExpression
           Infix
@@ -476,14 +557,20 @@ evalDecimalOp expression places numericBinOp left' right' =
 --------------------------------------------------------------------------------
 -- Special forms
 
-evalIf :: If Resolved -> RIO Eval (Expression Resolved)
-evalIf If {..} = do
-  condition' <- evalExpression condition
+evalIf ::
+     (Expression Resolved -> Expression Resolved)
+  -> If Resolved
+  -> RIO Eval (Expression Resolved)
+evalIf build if'@If {..} = do
+  condition' <-
+    evalExpression
+      (build . IfExpression . setFlipped ifConditionL if')
+      condition
   case condition' of
     BoolAtom bool ->
       if bool
-        then evalExpression consequent
-        else evalExpression alternative
+        then evalExpression build consequent
+        else evalExpression build alternative
     _ ->
       pure
         (IfExpression If {condition = condition', location = SteppedCursor, ..})
@@ -498,13 +585,8 @@ apply1 ::
   -> RIO Eval (Expression Resolved)
 apply1 function argument typ =
   evalApply
-    Apply
-      { location = BuiltIn
-      , function
-      , argument
-      , typ
-      , style = EvalApply
-      }
+    id
+    Apply {location = BuiltIn, function, argument, typ, style = EvalApply}
 
 apply2 ::
      Expression Resolved
@@ -514,6 +596,7 @@ apply2 ::
   -> RIO Eval (Expression Resolved)
 apply2 function argument1 argument2 typ =
   evalApply
+    id
     Apply
       { location = BuiltIn
       , function =
@@ -526,8 +609,7 @@ apply2 function argument1 argument2 typ =
               , style = EvalApply
               }
       , typ
-      , argument =
-          argument2
+      , argument = argument2
       , style = EvalApply
       }
 
@@ -889,19 +971,18 @@ evalFilter expression predicate (Array {expressions}) = do
   expressions' <-
     traverse
       (\arrayItem -> do
-         arrayItem' <- evalExpression arrayItem
          bool <-
-           evalExpression
+           evalExpression id
              (ApplyExpression
                 (Apply
                    { function = predicate
-                   , argument = arrayItem'
+                   , argument = arrayItem
                    , location = BuiltIn
                    , typ = typeOutput (expressionType predicate)
                    , style = EvalApply
                    }))
          case bool of
-           BoolAtom True -> pure (Just arrayItem')
+           BoolAtom True -> pure (Just arrayItem)
            BoolAtom False -> pure Nothing
            _ -> do
              RIO.writeSomeRef seenHoleRef True
@@ -928,12 +1009,12 @@ evalMap expression func (Array {expressions}) = do
   expressions' <-
     traverse
       (\arrayItem -> do
-         arrayItem' <- evalExpression arrayItem
          evalExpression
+           id
            (ApplyExpression
               (Apply
                  { function = func
-                 , argument = arrayItem'
+                 , argument = arrayItem
                  , location = BuiltIn
                  , typ = typeOutput (expressionType func)
                  , style = EvalApply
@@ -953,7 +1034,7 @@ evalSort ::
   -> Array Resolved
   -> RIO Eval (Expression Resolved)
 evalSort expression list@Array {expressions} = do
-  expressions' <- traverse (fmap reify . evalExpression) (toList expressions)
+  expressions' <- traverse (fmap reify . evalExpression id) (toList expressions)
   pure
     (if any
           (\case
@@ -974,7 +1055,7 @@ evalDistinct ::
   -> Array Resolved
   -> RIO Eval (Expression Resolved)
 evalDistinct expression list@Array {expressions} = do
-  expressions' <- traverse (fmap reify . evalExpression) (toList expressions)
+  expressions' <- traverse (fmap reify . evalExpression id) (toList expressions)
   pure
     (if any
           (\case
@@ -999,7 +1080,7 @@ evalAtomicFold ::
   -> Text
   -> RIO Eval (Expression Resolved)
 evalAtomicFold reifier reflect reduce (Array {expressions}) expression emptyTag = do
-  ns <- traverse (fmap reifier . evalExpression) expressions
+  ns <- traverse (fmap reifier . evalExpression id) expressions
   pure
     (if V.null expressions
        then variantSigged (TagName emptyTag) (expressionType expression) Nothing
@@ -1047,19 +1128,18 @@ evalFind predicate (Array {expressions}) expression = do
   expressions' <-
     traverse
       (\arrayItem -> do
-         arrayItem' <- evalExpression arrayItem
          bool <-
-           evalExpression
+           evalExpression id
              (ApplyExpression
                 (Apply
                    { function = predicate
-                   , argument = arrayItem'
+                   , argument = arrayItem
                    , location = BuiltIn
                    , typ = typeOutput (expressionType predicate)
                    , style = EvalApply
                    }))
          case bool of
-           BoolAtom True -> pure (Just arrayItem')
+           BoolAtom True -> pure (Just arrayItem)
            BoolAtom False -> pure Nothing
            _ -> do
              RIO.writeSomeRef seenHoleRef True
@@ -1105,3 +1185,10 @@ evalConcat Array {expressions, ..} expression = do
                 , typ = expressionType expression
                 , ..
                 })
+
+-- | Just a flipped version of set.
+setFlipped :: Is k A_Setter => Optic k is s t a b -> s -> b -> t
+setFlipped l v s = set l s v
+
+ignore :: RIO Eval a -> RIO Eval a
+ignore = RIO.local (\Eval {..} -> Eval {glogfunc = mempty, ..})

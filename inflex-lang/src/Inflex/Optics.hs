@@ -18,7 +18,7 @@ inflexRules names =
                    (OccName
                       (downcaseFst tn <> upcaseFst (nameBase' name) <> "L"))
                    NameS))
-       | elem (nameBase' name) (map nameBase' names)
+       | elem (nameBase' name) (map nameBase' names) || null names
        ])
     lensRules
   where
