@@ -584,7 +584,7 @@ apply1 ::
   -> Type Generalised
   -> RIO Eval (Expression Resolved)
 apply1 function argument typ =
-  evalApply
+  ignore $ evalApply
     id
     Apply {location = BuiltIn, function, argument, typ, style = EvalApply}
 
@@ -595,7 +595,7 @@ apply2 ::
   -> Type Generalised
   -> RIO Eval (Expression Resolved)
 apply2 function argument1 argument2 typ =
-  evalApply
+  ignore $ evalApply
     id
     Apply
       { location = BuiltIn
