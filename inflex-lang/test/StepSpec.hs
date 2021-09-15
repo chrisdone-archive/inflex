@@ -300,12 +300,12 @@ functions2 = do
           "@prim:array_all(r:r=2, _)"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,_)")
-             (Right "case @prim:array_find(:@prim:not(:($0 = @prim:from_integer(2))($0)), _) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
+             (Right "case @prim:array_find(:@prim:not(:($0 = 2)($0)), _) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,_])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,_])")
-             (Right "case @prim:array_find(:@prim:not(:($0 = @prim:from_integer(2))($0)), [2, 2, _]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
+             (Right "case @prim:array_find(:@prim:not(:($0 = 2)($0)), [2, 2, _]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok(_): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,2])"
           (shouldReturn
