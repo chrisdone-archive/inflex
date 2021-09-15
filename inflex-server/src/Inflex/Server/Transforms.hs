@@ -18,7 +18,7 @@ import           Data.Bifunctor
 import           Data.Text (Text)
 import qualified Data.Vector as V
 import           Inflex.Server.Compute
-import           Inflex.Display ()
+import           Inflex.Printer
 import           Inflex.Parser
 import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
 import qualified Inflex.Server.Compute as InputCell (InputCell(..))
@@ -26,7 +26,6 @@ import qualified Inflex.Schema as Shared
 import           Inflex.Types
 import qualified Inflex.Types as Field (Field(..))
 import qualified Inflex.Types as FieldE (FieldE(..))
-import           RIO (textDisplay)
 
 data TransformError
   = TransformedParseError LexParseError
@@ -112,7 +111,7 @@ addNewFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 addNewFieldInCode path0 name code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> textDisplay (go path0 expr)
+    Right expr -> printerText (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -166,7 +165,7 @@ renameFieldInCode :: Shared.DataPath -> FieldName -> FieldName -> Text -> Text
 renameFieldInCode path0 from to' code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> textDisplay (go path0 expr)
+    Right expr -> printerText (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -224,7 +223,7 @@ deleteFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 deleteFieldInCode path0 name0 code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> textDisplay (go path0 expr)
+    Right expr -> printerText (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -375,7 +374,7 @@ mapPath path0 mapping code =
     Left err -> Left (OriginalSourceNotParsing path0 err code)
     Right expr -> do
       expr' <- go path0 expr
-      pure (textDisplay expr')
+      pure (printerText expr')
   where
     go ::
          Shared.DataPath

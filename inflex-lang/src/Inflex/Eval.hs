@@ -39,7 +39,7 @@ import           GHC.Natural
 import           Inflex.Decimal
 import           Inflex.Defaulter
 import           Inflex.Derived
-import           Inflex.Display ()
+import           Inflex.Printer
 import           Inflex.Renamer (patternParam)
 import           Inflex.Type
 import           Inflex.Types
@@ -71,7 +71,7 @@ evalTextRepl loud text = do
                             prev <- RIO.readSomeRef lastRef
                             let cur =
                                   SB.toLazyByteString
-                                    (RIO.getUtf8Builder (RIO.display e))
+                                    (RIO.getUtf8Builder (printer e))
                             unless
                               (prev == cur)
                               (do L8.putStrLn cur
@@ -85,7 +85,7 @@ evalTextRepl loud text = do
     Left e -> print (e :: DefaultEvalError ())
     Right e -> do
       putStrLn "=>"
-      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (RIO.display e)))
+      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
 
 evalTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))

@@ -10,29 +10,28 @@ module StepSpec where
 import           Data.Fixed
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Inflex.Display ()
 import           Inflex.Eval
+import           Inflex.Printer
 import           Inflex.Types
 import qualified Match as Match
 import qualified RIO
-import           RIO (textDisplay)
 import           Test.Hspec
 import           Test.QuickCheck
 
 -- stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
--- stepTextly text' = RIO.runRIO StepReader (fmap (fmap textDisplay) (stepText mempty mempty "" text'))
+-- stepTextly text' = RIO.runRIO StepReader (fmap (fmap printerText) (stepText mempty mempty "" text'))
 
 stepDefaultedTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepDefaultedTextly text' =
   RIO.runRIO
     Eval {glogfunc = mempty, globals = mempty}
-    (fmap (fmap textDisplay) (evalTextDefaulted mempty "" text'))
+    (fmap (fmap printerText) (evalTextDefaulted mempty "" text'))
 
 stepTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepTextly text' =
   RIO.runRIO
     Eval {glogfunc = mempty, globals = mempty}
-    (fmap (fmap textDisplay) (evalTextDefaulted mempty "" text'))
+    (fmap (fmap printerText) (evalTextDefaulted mempty "" text'))
 
 stepDefaulted' :: Text -> IO (Either (DefaultEvalError ()) (Expression Resolved))
 stepDefaulted' text' =

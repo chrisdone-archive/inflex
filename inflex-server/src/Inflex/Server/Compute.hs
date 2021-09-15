@@ -35,7 +35,7 @@ import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
-import           Inflex.Display ()
+import           Inflex.Printer
 import           Inflex.Document
 import           Inflex.Instances ()
 import           Inflex.Location
@@ -364,7 +364,7 @@ toTree mappings original final =
       Shared.VegaTree2
         Shared.versionRefl
         Shared.NoOriginalSource
-        (RIO.textDisplay argument)
+        (printerText argument)
     VariantExpression Variant {tag = TagName tag, argument} ->
       Shared.VariantTree2
         Shared.versionRefl
@@ -380,7 +380,7 @@ toTree mappings original final =
       Shared.MiscTree2
         Shared.versionRefl
         (originalSource id True)
-        (RIO.textDisplay expression)
+        (printerText expression)
   where
     inRecord :: Maybe (Expression Parsed) -> Maybe [FieldE Parsed]
     inRecord =
@@ -422,13 +422,13 @@ toTree mappings original final =
       | Just {} <- check e =
         case e of
           Just expression
-            | atomic -> Shared.OriginalSource (RIO.textDisplay expression)
+            | atomic -> Shared.OriginalSource (printerText expression)
             | Just sourceLocation <-
                -- FIXME: This lookup is highly expensive due to
                -- calculating positions. Fix this issue.
                M.lookup (expressionLocation final) mappings
             , sourceLocation == expressionLocation expression ->
-              Shared.OriginalSource (RIO.textDisplay expression)
+              Shared.OriginalSource (printerText expression)
           _ -> Shared.NoOriginalSource
       | otherwise = Shared.NoOriginalSource
 

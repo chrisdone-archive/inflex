@@ -57,7 +57,6 @@ dependencies:
 - optics
 - validation
 - persistent-postgresql
-- persistent-sqlite
 - base >= 4.7 && < 5
 - yesod
 - warp
@@ -126,14 +125,13 @@ library:
   when:
   - condition: flag(release)
     then:
-      source-dirs: src/release
+      source-dirs:
+      - src/release
+      - src/postgresql
     else:
-      source-dirs: src/debug
-  - condition: flag(postgresql)
-    then:
-      source-dirs: src/postgresql
-    else:
-      source-dirs: src/sqlite
+      source-dirs:
+      - src/debug
+      - src/postgresql
 
 executables:
   inflex-server:

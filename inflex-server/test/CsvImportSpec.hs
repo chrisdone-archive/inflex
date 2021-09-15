@@ -6,9 +6,9 @@ module CsvImportSpec where
 import           Data.Bifunctor
 import qualified Data.ByteString.Lazy as L
 import           Data.Text (Text)
-import           Inflex.Display ()
 import           Inflex.NormalFormCheck
 import           Inflex.Parser
+import           Inflex.Printer
 import           Inflex.Schema
 import           Inflex.Server.Csv
 import           Inflex.Types
@@ -477,7 +477,7 @@ parsed' =
 checkPrintedGuessed :: L.ByteString -> Either () (Expression Resolved)
 checkPrintedGuessed bs = do
   arr <- guessAndParseArray bs
-  case parseText "printed" (RIO.textDisplay arr) of
+  case parseText "printed" (printerText arr) of
     Left {} -> Left ()
     Right ast ->
       case resolveParsed ast of
@@ -487,7 +487,7 @@ checkPrintedGuessed bs = do
 printGuessed :: L.ByteString -> Either () Text
 printGuessed bs = do
   arr <- guessAndParseArray bs
-  pure (RIO.textDisplay arr)
+  pure (printerText arr)
 
 guessAndParseArray :: L.ByteString -> Either () (Array Parsed)
 guessAndParseArray bs = do
