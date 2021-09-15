@@ -298,7 +298,7 @@ evalApply build apply@Apply {function, argument, ..} = do
       body' <- betaReduce body argument'
       evalExpression build body'
     _ ->
-      evalApplyNF
+      ignore $ evalApplyNF
         (ApplyExpression Apply {function = function', argument = argument', ..})
 
 -- | Apply after the function and argument are reduced to normal form.
