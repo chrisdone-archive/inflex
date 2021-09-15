@@ -19,6 +19,7 @@ import Data.Decimal
 import Data.Hashable
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (Map)
+import Data.Proxy
 import Data.Sequence (Seq)
 import Data.Set (Set)
 import Data.String
@@ -676,6 +677,26 @@ data Solved
 data Generalised
 data Polymorphic
 data Resolved
+
+--------------------------------------------------------------------------------
+-- Stage reflection
+
+class Stage s where
+  reflectStage :: Proxy s -> StageR s
+
+data StageR s where
+  StageResolved :: StageR Resolved
+  StageRenamed :: StageR Renamed
+  StageParsed :: StageR Parsed
+
+instance Stage Resolved where
+  reflectStage _ = StageResolved
+
+instance Stage Renamed where
+  reflectStage _ = StageRenamed
+
+instance Stage Parsed where
+  reflectStage _ = StageParsed
 
 --------------------------------------------------------------------------------
 -- Families
