@@ -137,9 +137,14 @@ unifyEqualityConstraint equalityConstraint@EqualityConstraint { type1
     (RowType x, RowType y) -> unifyRows x y
     (RecordType r1, RecordType r2) -> unifyRecords r1 r2
     (VariantType r1, VariantType r2) -> unifyRecords r1 r2
+    (RecursiveType a, RecursiveType b) ->
+      unifyEqualityConstraint
+        EqualityConstraint {location, type1 = a, type2 = b}
     (ArrayType a, ArrayType b) ->
       unifyEqualityConstraint
         EqualityConstraint {location, type1 = a, type2 = b}
+    (DeBruijnType i, DeBruijnType j)
+      | i == j -> pure (Right mempty)
     _ -> pure (Left (TypeMismatch equalityConstraint))
 
 unifyTypeApplications ::

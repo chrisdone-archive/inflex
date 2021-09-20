@@ -736,10 +736,14 @@ fineGrained = do
         it
           "Integer ~ Integer"
           (shouldReturn (unifyConstraints' [_Integer .~ _Integer]) (pure []))
-        it "a ~ b" (shouldReturn (unifyConstraints' [a .~ b]) (pure [a' .+-> b]))
+        it
+          "a ~ b"
+          (shouldReturn (unifyConstraints' [a .~ b]) (pure [a' .+-> b]))
         it
           "a ~ Integer"
-          (shouldReturn (unifyConstraints' [a .~ _Integer]) (pure [a' .+-> _Integer]))
+          (shouldReturn
+             (unifyConstraints' [a .~ _Integer])
+             (pure [a' .+-> _Integer]))
         it
           "F a b ~ F Text a"
           (shouldReturn
@@ -766,10 +770,23 @@ fineGrained = do
              (unifyAndSubstitute'
                 [t .~ _F a a, _F a a .~ _F (_Option b) (_Option _Integer)]
                 t)
-             (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer))))))
+             (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer)))))
+        it
+          "mu a. a ~ mu b. b"
+          (shouldReturn (unifyConstraints' [_Rec _0 .~ _Rec _0]) (pure []))
+        it
+          "mu self. F self Integer ~ mu self. F self Integer"
+          (shouldReturn
+             (unifyConstraints' [_Rec (_F _0 _Integer) .~ _Rec (_F _0 _Integer)])
+             (pure [])))
   describe
     "Failing"
     (do it
+          "mu self. F self Integer ~ mu self. F self Integer"
+          (shouldReturn
+             (unifyConstraints' [_Rec (_F _0 _Integer) .~ (_F _0 _Integer)])
+             (Left (TypeMismatch (_Rec (_F _0 _Integer) .~ _F _0 _Integer))))
+        it
           "Occurs check: F a b ~ a"
           (shouldReturn
              (unifyConstraints' [_F a b .~ a])
@@ -787,7 +804,8 @@ fineGrained = do
         it
           "Type mismatch: F a a ~ F (Option Text) (Option Integer)"
           (shouldReturn
-             (unifyConstraints' [_F a a .~ _F (_Option _Text) (_Option _Integer)])
+             (unifyConstraints'
+                [_F a a .~ _F (_Option _Text) (_Option _Integer)])
              (Left (TypeMismatch (_Text .~ _Integer)))))
 
 --------------------------------------------------------------------------------
@@ -828,6 +846,12 @@ c = VariableType c'
 
 --------------------------------------------------------------------------------
 -- Type constructors
+
+_Rec :: Type Generated -> Type Generated
+_Rec = RecursiveType
+
+_0 :: Type Generated
+_0 = DeBruijnType 0
 
 _Integer :: Type Generated
 _Integer =
