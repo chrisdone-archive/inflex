@@ -137,6 +137,8 @@ constraintsTypeVariablesGeneric constraints =
     typeVariables =
       \case
         FreshType {} -> mempty
+        RecursiveType t -> typeVariables t
+        DeBruijnType {} -> mempty
         RecordType t -> typeVariables t
         VariantType t -> typeVariables t
         ArrayType t -> typeVariables t

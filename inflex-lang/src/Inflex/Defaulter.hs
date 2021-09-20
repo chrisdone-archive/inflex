@@ -234,6 +234,8 @@ defaultableTypeVariables Scheme {typ} = typeVariables typ
         RecordType t -> typeVariables t
         VariantType t -> typeVariables t
         ArrayType t -> typeVariables t
+        RecursiveType t -> typeVariables t
+        DeBruijnType {} -> mempty
         VariableType typeVariable -> Set.singleton typeVariable
         ApplyType TypeApplication {function, argument} ->
           case function of
@@ -270,6 +272,8 @@ substituteType substitutions = go
         RecordType t -> RecordType (go t)
         VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
+        RecursiveType t ->  RecursiveType (go t)
+        DeBruijnType i -> (DeBruijnType i)
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType

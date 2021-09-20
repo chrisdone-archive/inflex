@@ -22,6 +22,8 @@ typeKind =
     VariantType {} -> TypeKind
     ArrayType {} -> TypeKind
     FreshType{} -> TypeKind
+    RecursiveType x -> typeKind x
+    DeBruijnType {} -> DeBruijnKind
 
 typeVariableKind :: TypeVariable s -> Kind
 typeVariableKind TypeVariable {kind} = kind

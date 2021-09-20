@@ -295,6 +295,8 @@ occursIn typeVariable =
     ConstantType {} -> False
     RecordType x -> occursIn typeVariable x
     VariantType x -> occursIn typeVariable x
+    RecursiveType typ -> occursIn typeVariable typ
+    DeBruijnType {} -> False
     ArrayType x -> occursIn typeVariable x
     RowType TypeRow{typeVariable=mtypeVariable, fields} ->
       maybe False (occursIn typeVariable . VariableType) mtypeVariable ||
@@ -312,6 +314,8 @@ substituteType substitutions = go
         RecordType t -> RecordType (go t)
         VariantType t -> VariantType (go t)
         ArrayType t -> ArrayType (go t)
+        RecursiveType typ -> RecursiveType (go typ)
+        DeBruijnType i -> DeBruijnType i
         typ@ConstantType {} -> typ
         ApplyType TypeApplication {function, argument, ..} ->
           ApplyType
@@ -357,6 +361,8 @@ solveType substitutions = go . substituteType substitutions
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
         VariantType t -> VariantType (go t)
+        RecursiveType typ -> RecursiveType (go typ)
+        DeBruijnType i -> DeBruijnType i
         ArrayType t -> ArrayType (go t)
         VariableType TypeVariable {..} -> VariableType TypeVariable {..}
         ApplyType TypeApplication {function, argument, ..} ->
@@ -625,6 +631,8 @@ freezeSubstitutions = do
         case typ of
           FreshType v -> absurd v
           RecordType t -> fmap RecordType (go t)
+          RecursiveType t -> fmap RecursiveType (go t)
+          DeBruijnType i -> pure (DeBruijnType i)
           VariantType t -> fmap VariantType (go t)
           ArrayType t -> fmap ArrayType (go t)
           ConstantType {} -> pure typ

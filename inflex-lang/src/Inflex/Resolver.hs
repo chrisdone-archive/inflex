@@ -529,6 +529,8 @@ constrainPolymorphic defaulteds = go
       \case
         FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
+        RecursiveType t -> fmap RecursiveType (go t)
+        DeBruijnType i -> pure (DeBruijnType i)
         VariantType t -> fmap VariantType (go t)
         ArrayType t -> fmap ArrayType (go t)
         VariableType typeVariable ->

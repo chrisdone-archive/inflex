@@ -107,6 +107,8 @@ toPolymorphic =
         FreshType v -> absurd v
         RecordType t -> fmap RecordType (go t)
         VariantType t -> fmap VariantType (go t)
+        RecursiveType t -> fmap RecursiveType (go t)
+        DeBruijnType i -> pure (DeBruijnType i)
         ArrayType t -> fmap ArrayType (go t)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
@@ -157,6 +159,8 @@ generaliseType substitutions = go
         FreshType v -> absurd v
         RecordType t -> RecordType (go t)
         VariantType t -> VariantType (go t)
+        RecursiveType t -> RecursiveType (go t)
+        DeBruijnType i -> (DeBruijnType i)
         ArrayType t -> ArrayType (go t)
         VariableType typeVariable@TypeVariable {..} ->
           case M.lookup typeVariable substitutions of
