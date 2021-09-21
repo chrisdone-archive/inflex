@@ -708,8 +708,8 @@ variantParser = do
          else pure Nothing
   pure Variant {tag = TagName name, location, typ = Nothing, argument}
 
--- wrapEarly :: Parser (Expression Parsed) -> Parser (Expression Parsed)
--- wrapEarly p = do
+-- wrapFold :: Parser (Expression Parsed) -> Parser (Expression Parsed)
+-- wrapFold p = do
 --   v <- p
 --   early <-
 --     fmap
@@ -718,8 +718,8 @@ variantParser = do
 --     pure False
 --   pure
 --     (if early
---        then EarlyExpression
---               Early
+--        then FoldExpression
+--               Fold
 --                 { location = expressionLocation v -- TODO:
 --                 , typ = Nothing
 --                 , expression = v

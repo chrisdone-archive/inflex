@@ -391,10 +391,10 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     PropExpression prop ->
       PropExpression (propSolve substitutions prop)
-    EarlyExpression early' ->
-      EarlyExpression (earlySolve substitutions early')
-    BoundaryExpression boundary' ->
-      BoundaryExpression (boundarySolve substitutions boundary')
+    FoldExpression fold' ->
+      FoldExpression (foldSolve substitutions fold')
+    UnfoldExpression unfold' ->
+      UnfoldExpression (unfoldSolve substitutions unfold')
     HoleExpression hole ->
       HoleExpression (holeSolve substitutions hole)
     ArrayExpression array ->
@@ -437,17 +437,17 @@ propSolve substitutions Prop {..} =
     , ..
     }
 
-earlySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Early Generated -> Early Solved
-earlySolve substitutions Early {..} =
-  Early
+foldSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Fold Generated -> Fold Solved
+foldSolve substitutions Fold {..} =
+  Fold
     { expression = expressionSolve substitutions expression
     , typ = solveType substitutions typ
     , ..
     }
 
-boundarySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Boundary Generated -> Boundary Solved
-boundarySolve substitutions Boundary {..} =
-  Boundary
+unfoldSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Unfold Generated -> Unfold Solved
+unfoldSolve substitutions Unfold {..} =
+  Unfold
     { expression = expressionSolve substitutions expression
     , typ = solveType substitutions typ
     , ..

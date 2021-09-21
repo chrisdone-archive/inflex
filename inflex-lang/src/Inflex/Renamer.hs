@@ -39,7 +39,7 @@ import           Inflex.Types as Alternative (Alternative(..))
 import           Inflex.Types as Bind (Bind(..))
 import           Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Renamer
-import           Optics
+import           Optics hiding (Fold)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -67,7 +67,7 @@ renameParsed expression =
    in fmap
         (\thing ->
            IsRenamed
-             { thing = addBoundaryImplicitly thing
+             { thing = addUnfoldImplicitly thing
              , mappings
              , unresolvedGlobals
              , unresolvedUuids
@@ -87,8 +87,8 @@ renameExpression env =
     VariantExpression variant -> fmap VariantExpression (renameVariant env variant)
     LetExpression let' -> fmap LetExpression (renameLet env let')
     CaseExpression case' -> fmap CaseExpression (renameCase env case')
-    EarlyExpression early' -> fmap EarlyExpression (renameEarly env early')
-    BoundaryExpression boundary' -> fmap BoundaryExpression (renameBoundary env boundary')
+    FoldExpression fold' -> fmap FoldExpression (renameFold env fold')
+    UnfoldExpression unfold' -> fmap UnfoldExpression (renameUnfold env unfold')
     IfExpression if' -> fmap IfExpression (renameIf env if')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
@@ -168,7 +168,7 @@ renameLambda env@Env {cursor} Lambda {..} = do
   typ' <- renameSignature env typ
   pure
     Lambda
-      { body = addBoundaryImplicitly body'
+      { body = addUnfoldImplicitly body'
       , location = final
       , param = param'
       , typ = typ'
@@ -265,26 +265,26 @@ renameCase env@Env {cursor} Case {..} = do
       , ..
       }
 
-renameEarly :: Env -> Early Parsed -> Renamer (Early Renamed)
-renameEarly env@Env {cursor} Early {..} = do
+renameFold :: Env -> Fold Parsed -> Renamer (Fold Renamed)
+renameFold env@Env {cursor} Fold {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
   typ' <- renameSignature env typ
   expression' <- renameExpression env expression
   pure
-    Early
+    Fold
       { location = final
       , typ = typ'
       , expression = expression'
       , ..
       }
 
-renameBoundary :: Env -> Boundary Parsed -> Renamer (Boundary Renamed)
-renameBoundary env@Env {cursor} Boundary {..} = do
+renameUnfold :: Env -> Unfold Parsed -> Renamer (Unfold Renamed)
+renameUnfold env@Env {cursor} Unfold {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
   typ' <- renameSignature env typ
   expression' <- renameExpression env expression
   pure
-    Boundary
+    Unfold
       { location = final
       , typ = typ'
       , expression = expression'
@@ -576,16 +576,16 @@ finalizeCursor cursor finalCursor loc = do
   where final = cursor finalCursor
 
 --------------------------------------------------------------------------------
--- Early returns
+-- Fold returns
 
-addBoundaryImplicitly :: Expression Renamed -> Expression Renamed
-addBoundaryImplicitly e =
-  if returnsEarly e
-    then BoundaryExpression
-           Boundary {expression = e, location = BuiltIn, typ = Nothing}
+addUnfoldImplicitly :: Expression Renamed -> Expression Renamed
+addUnfoldImplicitly e =
+  if returnsFold e
+    then UnfoldExpression
+           Unfold {expression = e, location = BuiltIn, typ = Nothing}
     else e
 
--- When generating types, on an early `e?`, where e :: Maybe t, then `e? :: t` if composite, such as
+-- When generating types, on an fold `e?`, where e :: Maybe t, then `e? :: t` if composite, such as
 --
 -- e? + x
 --
@@ -599,30 +599,30 @@ addBoundaryImplicitly e =
 --
 -- We stop as far as lambdas.
 
-returnsEarly :: Expression s -> Bool
-returnsEarly =
+returnsFold :: Expression s -> Bool
+returnsFold =
   \case
-    EarlyExpression {} -> True
-    -- These are transitive early returnable:
+    FoldExpression {} -> True
+    -- These are transitive fold returnable:
     ApplyExpression Apply {function, argument} ->
-      returnsEarly function || returnsEarly argument
-    PropExpression Prop {expression} -> returnsEarly expression
+      returnsFold function || returnsFold argument
+    PropExpression Prop {expression} -> returnsFold expression
     InfixExpression Infix {left, right} ->
-      returnsEarly left || returnsEarly right
+      returnsFold left || returnsFold right
     RecordExpression Record {fields} ->
-      any (returnsEarly . Field.expression) fields
-    ArrayExpression Array {expressions} -> any returnsEarly expressions
+      any (returnsFold . Field.expression) fields
+    ArrayExpression Array {expressions} -> any returnsFold expressions
     IfExpression If {condition, consequent, alternative} ->
-      returnsEarly consequent ||
-      returnsEarly condition || returnsEarly alternative
+      returnsFold consequent ||
+      returnsFold condition || returnsFold alternative
     CaseExpression Case {scrutinee, alternatives} ->
-      returnsEarly scrutinee ||
-      any (returnsEarly . Alternative.expression) alternatives
+      returnsFold scrutinee ||
+      any (returnsFold . Alternative.expression) alternatives
     LetExpression Let {binds, body} ->
-      returnsEarly body || any (returnsEarly . Bind.value) binds
-    -- Lambda and Early is the ceiling:
+      returnsFold body || any (returnsFold . Bind.value) binds
+    -- Lambda and Fold is the ceiling:
     LambdaExpression {} -> False
-    BoundaryExpression {} -> False
+    UnfoldExpression {} -> False
     -- These are constant/literals or non-composites:
     LiteralExpression {} -> False
     VariableExpression {} -> False

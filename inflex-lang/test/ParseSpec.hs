@@ -1737,16 +1737,6 @@ implicitcalls =
                                , typ = Nothing
                                }))|])))
 
-_early :: SpecWith ()
-_early =
-  describe
-    "Early"
-    (it
-       "x.y? > 0"
-       (shouldBe
-          (parseText "" "x.y? > 0")
-          (Right (InfixExpression (Infix {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 9, name = ""}}, global = Global {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 9, name = ""}}, name = ParsedTextName ">", scheme = ParsedScheme}, left = EarlyExpression (Early {location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}, typ = Nothing, expression = PropExpression (Prop {expression = VariableExpression (Variable {location = SourceLocation {start = SourcePos {line = 1, column = 1, name = ""}, end = SourcePos {line = 1, column = 2, name = ""}}, name = "x", typ = Nothing}), name = FieldName {unFieldName = "y"}, typ = Nothing, location = SourceLocation {start = SourcePos {line = 1, column = 2, name = ""}, end = SourcePos {line = 1, column = 3, name = ""}}})}), right = LiteralExpression (NumberLiteral (Number {location = SourceLocation {start = SourcePos {line = 1, column = 8, name = ""}, end = SourcePos {line = 1, column = 9, name = ""}}, number = IntegerNumber 0, typ = Nothing})), typ = Nothing})))))
-
 parser2 :: Spec
 parser2 =
   describe

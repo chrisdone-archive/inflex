@@ -177,8 +177,8 @@ expressionGenerate =
     HoleExpression {} -> Left NotNormalForm
     IfExpression {} -> Left NotNormalForm
     CaseExpression {} -> Left NotNormalForm
-    EarlyExpression {} -> Left NotNormalForm
-    BoundaryExpression {} -> Left NotNormalForm
+    FoldExpression {} -> Left NotNormalForm
+    UnfoldExpression {} -> Left NotNormalForm
 
 recordGenerate ::
      Record Parsed -> Either NormalFormCheckProblem (InsOrdHashMap FieldName T)

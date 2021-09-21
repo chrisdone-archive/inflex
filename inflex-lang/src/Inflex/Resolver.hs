@@ -107,10 +107,10 @@ expressionResolver nesting =
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
       fmap PropExpression (propResolver nesting prop)
-    EarlyExpression early ->
-      fmap EarlyExpression (earlyResolver nesting early)
-    BoundaryExpression boundary ->
-      fmap BoundaryExpression (boundaryResolver nesting boundary)
+    FoldExpression fold' ->
+      fmap FoldExpression (foldResolver nesting fold')
+    UnfoldExpression unfold ->
+      fmap UnfoldExpression (unfoldResolver nesting unfold)
     ArrayExpression array ->
       fmap ArrayExpression (arrayResolver nesting array)
     VariantExpression variant ->
@@ -210,15 +210,15 @@ propResolver nesting Prop {..} = do
   expression' <- expressionResolver nesting expression
   pure Prop {expression = expression', ..}
 
-earlyResolver :: DeBrujinNesting -> Early Generalised -> Resolve (Early Resolved)
-earlyResolver nesting Early {..} = do
+foldResolver :: DeBrujinNesting -> Fold Generalised -> Resolve (Fold Resolved)
+foldResolver nesting Fold {..} = do
   expression' <- expressionResolver nesting expression
-  pure Early {expression = expression', ..}
+  pure Fold {expression = expression', ..}
 
-boundaryResolver :: DeBrujinNesting -> Boundary Generalised -> Resolve (Boundary Resolved)
-boundaryResolver nesting Boundary {..} = do
+unfoldResolver :: DeBrujinNesting -> Unfold Generalised -> Resolve (Unfold Resolved)
+unfoldResolver nesting Unfold {..} = do
   expression' <- expressionResolver nesting expression
-  pure Boundary {expression = expression', ..}
+  pure Unfold {expression = expression', ..}
 
 arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved)
 arrayResolver nesting Array {..} = do
@@ -564,8 +564,8 @@ expressionCollect =
   \case
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
-    EarlyExpression early -> earlyCollect early
-    BoundaryExpression boundary -> boundaryCollect boundary
+    FoldExpression fold' -> foldCollect fold'
+    UnfoldExpression unfold -> unfoldCollect unfold
     HoleExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
     VariantExpression variant -> variantCollect variant
@@ -593,11 +593,11 @@ recordCollect Record {..} =
 propCollect :: Prop Generalised -> Set (ClassConstraint Generalised)
 propCollect Prop {..} = expressionCollect expression
 
-earlyCollect :: Early Generalised -> Set (ClassConstraint Generalised)
-earlyCollect Early {..} = expressionCollect expression
+foldCollect :: Fold Generalised -> Set (ClassConstraint Generalised)
+foldCollect Fold {..} = expressionCollect expression
 
-boundaryCollect :: Boundary Generalised -> Set (ClassConstraint Generalised)
-boundaryCollect Boundary {..} = expressionCollect expression
+unfoldCollect :: Unfold Generalised -> Set (ClassConstraint Generalised)
+unfoldCollect Unfold {..} = expressionCollect expression
 
 arrayCollect :: Array Generalised -> Set (ClassConstraint Generalised)
 arrayCollect Array {..} = foldMap expressionCollect expressions

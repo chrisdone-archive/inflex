@@ -136,8 +136,8 @@ evalExpression build expression = do
     CaseExpression case' -> evalCase build case'
     PropExpression prop -> evalProp build prop
     -- Disabled forms:
-    BoundaryExpression {} -> pure expression
-    EarlyExpression {} -> pure expression
+    UnfoldExpression {} -> pure expression
+    FoldExpression {} -> pure expression
     LetExpression {} -> pure expression
   glog (EvalStep (build result))
   pure result
@@ -836,12 +836,12 @@ betaReduce body0 arg = go 0 body0
         PropExpression Prop {..} -> do
           expression' <- go deBrujinNesting expression
           pure (PropExpression Prop {expression = expression', ..})
-        EarlyExpression Early {..} -> do
+        FoldExpression Fold {..} -> do
           expression' <- go deBrujinNesting expression
-          pure (EarlyExpression Early {expression = expression', ..})
-        BoundaryExpression Boundary {..} -> do
+          pure (FoldExpression Fold {expression = expression', ..})
+        UnfoldExpression Unfold {..} -> do
           expression' <- go deBrujinNesting expression
-          pure (BoundaryExpression Boundary {expression = expression', ..})
+          pure (UnfoldExpression Unfold {expression = expression', ..})
         ArrayExpression Array {..} -> do
           expressions' <- traverse (go deBrujinNesting) expressions
           pure (ArrayExpression Array {expressions = expressions', ..})

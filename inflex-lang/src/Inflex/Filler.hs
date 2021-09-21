@@ -27,8 +27,8 @@ expressionFill globals =
   \case
     RecordExpression record -> fmap RecordExpression (recordFill globals record)
     CaseExpression case' -> fmap CaseExpression (caseFill globals case')
-    EarlyExpression early' -> fmap EarlyExpression (earlyFill globals early')
-    BoundaryExpression boundary' -> fmap BoundaryExpression (boundaryFill globals boundary')
+    FoldExpression fold' -> fmap FoldExpression (foldFill globals fold')
+    UnfoldExpression unfold' -> fmap UnfoldExpression (unfoldFill globals unfold')
     IfExpression if' -> fmap IfExpression (ifFill globals if')
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
@@ -76,15 +76,15 @@ caseFill globals Case {..} = do
   alternatives' <- traverse (alternativeFill globals) alternatives
   pure Case {alternatives = alternatives', scrutinee = scrutinee', ..}
 
-earlyFill :: FillerEnv e -> Early Renamed -> Filler e (Early Filled)
-earlyFill globals Early {..} = do
+foldFill :: FillerEnv e -> Fold Renamed -> Filler e (Fold Filled)
+foldFill globals Fold {..} = do
   expression' <- expressionFill globals expression
-  pure Early {expression = expression', ..}
+  pure Fold {expression = expression', ..}
 
-boundaryFill :: FillerEnv e -> Boundary Renamed -> Filler e (Boundary Filled)
-boundaryFill globals Boundary {..} = do
+unfoldFill :: FillerEnv e -> Unfold Renamed -> Filler e (Unfold Filled)
+unfoldFill globals Unfold {..} = do
   expression' <- expressionFill globals expression
-  pure Boundary {expression = expression', ..}
+  pure Unfold {expression = expression', ..}
 
 alternativeFill ::
      FillerEnv e

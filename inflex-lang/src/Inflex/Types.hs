@@ -50,16 +50,16 @@ data Expression s where
   VariantExpression :: !(Variant s) -> Expression s
   IfExpression :: !(If s) -> Expression s
   CaseExpression :: !(Case s) -> Expression s
-  EarlyExpression :: !(Early s) -> Expression s
-  BoundaryExpression :: !(Boundary s) -> Expression s
+  FoldExpression :: !(Fold s) -> Expression s
+  UnfoldExpression :: !(Unfold s) -> Expression s
 
-data Boundary s = Boundary
+data Unfold s = Unfold
   { location :: !(StagedLocation s)
   , typ :: !(StagedType s)
   , expression :: Expression s
   }
 
-data Early s = Early
+data Fold s = Fold
   { location :: !(StagedLocation s)
   , typ :: !(StagedType s)
   , expression :: Expression s
@@ -446,8 +446,8 @@ data TypeVariablePrefix
   | FreshPrefix
   | RowUnifyPrefix
   | SolverGeneratedPrefix TypeVariablePrefix
-  | EarlyPrefix
-  | BoundaryPrefix
+  | FoldPrefix
+  | UnfoldPrefix
   deriving (Show, Lift, Eq, Ord, Generic)
 instance Hashable TypeVariablePrefix
 

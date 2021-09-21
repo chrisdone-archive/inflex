@@ -74,8 +74,8 @@ instance Stage s => Printer (Expression s) where
       LetExpression let' -> printer let'
       IfExpression if' -> printer if'
       CaseExpression case' -> printer case'
-      BoundaryExpression {} -> error "boundary"
-      EarlyExpression {} -> error "early"
+      UnfoldExpression {} -> error "unfold"
+      FoldExpression {} -> error "fold"
       InfixExpression infix' -> printer infix'
 
 instance Stage s =>  Printer (Case s) where
@@ -83,11 +83,11 @@ instance Stage s =>  Printer (Case s) where
     mconcat (intersperse ", " (map printer (toList alternatives)))
     <> "}"
 
-instance Stage s =>  Printer (Early s) where
-  printer Early{..} = printer expression <> "?"
+instance Stage s =>  Printer (Fold s) where
+  printer Fold{..} = printer expression <> "?"
 
-instance Stage s =>  Printer (Boundary s) where
-  printer Boundary{..} = "early { " <> printer expression <> " }"
+instance Stage s =>  Printer (Unfold s) where
+  printer Unfold{..} = "fold { " <> printer expression <> " }"
 
 instance Stage s =>  Printer (If s) where
   printer If {..} =

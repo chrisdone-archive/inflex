@@ -38,7 +38,7 @@ expressionType :: Expression s -> StagedType s
 expressionType =
   \case
     CaseExpression case' -> caseType case'
-    EarlyExpression early' -> earlyType early'
+    FoldExpression fold' -> foldType fold'
     IfExpression if' -> ifType if'
     LiteralExpression literal -> literalType literal
     ArrayExpression array -> arrayType array
@@ -52,10 +52,10 @@ expressionType =
     PropExpression prop -> propType prop
     HoleExpression hole -> holeType hole
     VariantExpression variant -> variantType variant
-    BoundaryExpression e -> boundaryType e
+    UnfoldExpression e -> unfoldType e
 
-boundaryType :: Boundary s -> StagedType s
-boundaryType Boundary{typ} = typ
+unfoldType :: Unfold s -> StagedType s
+unfoldType Unfold{typ} = typ
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
@@ -66,8 +66,8 @@ ifType If {typ} = typ
 caseType :: Case s -> StagedType s
 caseType Case {typ} = typ
 
-earlyType :: Early s -> StagedType s
-earlyType Early {typ} = typ
+foldType :: Fold s -> StagedType s
+foldType Fold {typ} = typ
 
 arrayType :: Array s -> StagedType s
 arrayType Array {typ} = typ

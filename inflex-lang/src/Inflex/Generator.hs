@@ -47,7 +47,7 @@ import qualified Inflex.Types as Bind (Bind(..))
 import qualified Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
-import           Optics
+import           Optics hiding (Fold)
 
 --------------------------------------------------------------------------------
 -- Top-level
@@ -119,10 +119,10 @@ expressionGenerator =
       fmap LetExpression (letGenerator let')
     CaseExpression case' ->
       fmap CaseExpression (caseGenerator case')
-    EarlyExpression early' ->
-      fmap EarlyExpression (earlyGenerator early')
-    BoundaryExpression boundary' ->
-      fmap BoundaryExpression (boundaryGenerator boundary')
+    FoldExpression fold' ->
+      fmap FoldExpression (foldGenerator fold')
+    UnfoldExpression unfold' ->
+      fmap UnfoldExpression (unfoldGenerator unfold')
     IfExpression if' ->
       fmap IfExpression (ifGenerator if')
     InfixExpression infix' ->
@@ -190,11 +190,11 @@ caseGenerator Case {..} = do
       , ..
       }
 
-earlyGenerator :: Early Filled -> Generate e (Early Generated)
-earlyGenerator Early {..} = do
+foldGenerator :: Fold Filled -> Generate e (Fold Generated)
+foldGenerator Fold {..} = do
   expression' <- expressionGenerator expression
-  rowVariable <- generateTypeVariable location EarlyPrefix RowKind
-  innerType <- generateVariableType location EarlyPrefix TypeKind
+  rowVariable <- generateTypeVariable location FoldPrefix RowKind
+  innerType <- generateVariableType location FoldPrefix TypeKind
   let outerType = expressionType expression'
   addEqualityConstraint
     EqualityConstraint
@@ -202,14 +202,14 @@ earlyGenerator Early {..} = do
       , type1 = outerType
       , type2 = okishType location rowVariable innerType
       }
-  pure Early {expression = expression', typ = innerType, ..}
+  pure Fold {expression = expression', typ = innerType, ..}
 
-boundaryGenerator :: Boundary Filled -> Generate e (Boundary Generated)
-boundaryGenerator Boundary {..} = do
+unfoldGenerator :: Unfold Filled -> Generate e (Unfold Generated)
+unfoldGenerator Unfold {..} = do
   expression' <- expressionGenerator expression
-  rowVariable <- generateTypeVariable location BoundaryPrefix RowKind
+  rowVariable <- generateTypeVariable location UnfoldPrefix RowKind
   pure
-    Boundary
+    Unfold
       { expression = expression'
       , typ = okishType location rowVariable (expressionType expression')
       , ..
