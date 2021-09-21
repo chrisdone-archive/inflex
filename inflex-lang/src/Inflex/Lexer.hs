@@ -113,6 +113,8 @@ data Token
   | QuestionToken
   | GlobalToken !ParsedGlobal
   | BarToken
+  | FoldToken
+  | UnfoldToken
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -183,6 +185,8 @@ tokenLexer =
               case txt of
                 "from_integer" -> pure (GlobalToken ParsedFromInteger)
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
+                "isorecursive_fold" -> pure FoldToken
+                "isorecursive_unfold" -> pure UnfoldToken
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
