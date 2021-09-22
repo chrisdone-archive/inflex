@@ -342,7 +342,7 @@ arrayGenerator Array {..} = do
   pure Array {typ = ArrayType elementVariable, expressions = expressions', ..}
 
 variantGenerator :: Variant Filled -> Generate e (Variant Generated)
-variantGenerator Variant {..} = do
+variantGenerator Variant {typ = mtyp, ..} = do
   rowVariable <- generateTypeVariable location VariantRowVarPrefix RowKind
   argument' <- traverse expressionGenerator argument
   let rowType =
@@ -358,7 +358,14 @@ variantGenerator Variant {..} = do
                     }
                 ]
             }
-  pure Variant {typ = VariantType rowType, argument = argument', ..}
+      typ = VariantType rowType
+  for
+    mtyp
+    (\ty0 -> do
+       ty <- renamedToGenerated ty0
+       addEqualityConstraint
+         EqualityConstraint {location, type1 = ty, type2 = typ})
+  pure Variant {typ, argument = argument', ..}
 
 literalGenerator :: Literal Filled -> Generate e (Literal Generated)
 literalGenerator =

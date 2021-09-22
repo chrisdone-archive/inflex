@@ -720,25 +720,8 @@ variantParser = do
            token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
            pure (pure e)
          else pure Nothing
-  pure Variant {tag = TagName name, location, typ = Nothing, argument}
-
--- wrapFold :: Parser (Expression Parsed) -> Parser (Expression Parsed)
--- wrapFold p = do
---   v <- p
---   early <-
---     fmap
---       (const True)
---       (token_ (ExpectedToken QuestionToken) (preview _QuestionToken)) <>
---     pure False
---   pure
---     (if early
---        then FoldExpression
---               Fold
---                 { location = expressionLocation v -- TODO:
---                 , typ = Nothing
---                 , expression = v
---                 }
---        else v)
+  typ <- optionalSignatureParser
+  pure Variant {tag = TagName name, location, typ, argument}
 
 holeParser :: Parser (Hole Parsed)
 holeParser = do
