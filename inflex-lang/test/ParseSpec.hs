@@ -24,7 +24,7 @@ import           Test.Hspec
 
 spec :: Spec
 spec = do
-
+  fold
   strings
   variants
   sigs
@@ -1871,3 +1871,24 @@ dotcalls = do
                      , typ = Nothing
                      , style = DotApply
                      }))|]))
+
+fold :: Spec
+fold =
+  describe
+    "fold/unfold"
+    (do it
+          "fold"
+          (shouldSatisfy
+             (parseText "" "@prim:fold(\"hi\")")
+             $(match
+                 [|Right
+                     (FoldExpression
+                        (Fold {expression = LiteralExpression (TextLiteral _)}))|]))
+        it
+          "unfold"
+          (shouldSatisfy
+             (parseText "" "@prim:unfold(\"hi\")")
+             $(match
+                 [|Right
+                     (UnfoldExpression
+                        (Unfold {expression = LiteralExpression (TextLiteral _)}))|])))

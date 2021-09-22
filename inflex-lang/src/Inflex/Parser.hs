@@ -66,6 +66,7 @@ data ParseError
   | ExpectedParam
   | ExpectedVariable
   | ExpectedVariant
+  | ExpectedFold
   | ExpectedHole
   | ExpectedBar
   | ExpectedGlobal
@@ -338,7 +339,8 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [ dotFuncParser
+       [ foldParser
+       , dotFuncParser
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
@@ -419,13 +421,24 @@ arrayParser = do
 
 propLhsParser :: Parser (Expression Parsed)
 propLhsParser =
-  (VariantExpression <$> variantParser) <>
-  (RecordExpression <$> recordParser) <> (ArrayExpression <$> arrayParser) <>
+  (VariantExpression <$> variantParser) <> (RecordExpression <$> recordParser) <>
+  (ArrayExpression <$> arrayParser) <>
   (HoleExpression <$> holeParser) <>
   applyParser <>
   (VariableExpression <$> variableParser) <>
   (GlobalExpression <$> globalParser) <>
   parensParser
+
+foldParser :: Parser (Expression Parsed)
+foldParser = do
+  Located {thing, location} <-
+    token ExpectedFold (fmap (const FoldToken) . preview _FoldToken) <>
+    token ExpectedFold (fmap (const UnfoldToken) . preview _UnfoldToken)
+  expression <- parensParser
+  pure
+    (case thing of
+       FoldToken -> FoldExpression (Fold {location, typ = Nothing, expression})
+       _ -> UnfoldExpression (Unfold {location, typ = Nothing, expression}))
 
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do

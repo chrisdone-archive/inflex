@@ -48,6 +48,8 @@ module Inflex.Lexer
   , _HashToken
   , _GlobalToken
   , _BarToken
+  , _UnfoldToken
+  , _FoldToken
   , lexTextPlusUUIDs
   ) where
 
@@ -185,8 +187,8 @@ tokenLexer =
               case txt of
                 "from_integer" -> pure (GlobalToken ParsedFromInteger)
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
-                "isorecursive_fold" -> pure FoldToken
-                "isorecursive_unfold" -> pure UnfoldToken
+                "fold" -> pure FoldToken
+                "unfold" -> pure UnfoldToken
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
