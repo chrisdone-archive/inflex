@@ -49,11 +49,11 @@ parseBytes bs =
              (T.decodeUtf8 remaining) of
         Left {} -> Left Failed
         Right msig ->
-          pure
-            (case a of
-               ArrayExpression array -> ArrayExpression array {typ = msig}
-               -- Above: We optionally support type signatures for arrays.
-               _ -> a)
+          case a of
+            ArrayExpression array -> Right (ArrayExpression array {typ = msig})
+            -- Above: We only parse arrays with the fast parser,
+            -- and the signature is required.
+            _ -> Left Failed
     F.Fail -> Left Failed
     F.Err e -> Left e
 
