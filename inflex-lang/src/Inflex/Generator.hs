@@ -193,27 +193,20 @@ caseGenerator Case {..} = do
 foldGenerator :: Fold Filled -> Generate e (Fold Generated)
 foldGenerator Fold {..} = do
   expression' <- expressionGenerator expression
-  rowVariable <- generateTypeVariable location FoldPrefix RowKind
   innerType <- generateVariableType location FoldPrefix TypeKind
-  let outerType = expressionType expression'
-  addEqualityConstraint
-    EqualityConstraint
-      { location
-      , type1 = outerType
-      , type2 = okishType location rowVariable innerType
-      }
-  pure Fold {expression = expression', typ = innerType, ..}
+  pure Fold {expression = expression', typ = RecursiveType innerType, ..}
 
 unfoldGenerator :: Unfold Filled -> Generate e (Unfold Generated)
 unfoldGenerator Unfold {..} = do
   expression' <- expressionGenerator expression
-  rowVariable <- generateTypeVariable location UnfoldPrefix RowKind
-  pure
-    Unfold
-      { expression = expression'
-      , typ = okishType location rowVariable (expressionType expression')
-      , ..
+  innerType <- generateVariableType location UnfoldPrefix TypeKind
+  addEqualityConstraint
+    EqualityConstraint
+      { location
+      , type1 = expressionType expression'
+      , type2 = RecursiveType innerType
       }
+  pure Unfold {expression = expression', typ = innerType, ..}
 
 patternType :: Pattern Generated -> Generate e (Type Generated)
 patternType =
