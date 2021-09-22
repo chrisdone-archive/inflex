@@ -74,8 +74,8 @@ instance Stage s => Printer (Expression s) where
       LetExpression let' -> printer let'
       IfExpression if' -> printer if'
       CaseExpression case' -> printer case'
-      UnfoldExpression {} -> error "unfold"
-      FoldExpression {} -> error "fold"
+      UnfoldExpression {} ->  "TODO: unfold" -- TODO:
+      FoldExpression {} ->  "TODO: fold" -- TODO:
       InfixExpression infix' -> printer infix'
 
 instance Stage s =>  Printer (Case s) where

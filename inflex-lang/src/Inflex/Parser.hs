@@ -73,6 +73,7 @@ data ParseError
   | ExpectedDecimal
   | ExpectedText
   | ExpectedDecimalType
+  | ExpectedRec
   | ExpectedIntegerType
   | ExpectedSignature
   | ExpectedEndOfInput
@@ -436,10 +437,11 @@ foldParser = do
     token ExpectedFold (fmap (const FoldToken) . preview _FoldToken) <>
     token ExpectedFold (fmap (const UnfoldToken) . preview _UnfoldToken)
   expression <- parensParser
+  typ <- optionalSignatureParser
   pure
     (case thing of
-       FoldToken -> FoldExpression (Fold {location, typ = Nothing, expression})
-       _ -> UnfoldExpression (Unfold {location, typ = Nothing, expression}))
+       FoldToken -> FoldExpression (Fold {location, typ, expression})
+       _ -> UnfoldExpression (Unfold {location, typ, expression}))
 
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
@@ -758,12 +760,22 @@ paramParser = do
   pure Param {name = thing, location, typ = Nothing}
 
 typeParser :: Parser (Type Parsed)
-typeParser = do
-  functionType <> decimalType <> integerType <> parensType <> arrayType <>
-    freshType <>
-    recordType <>
-    variantType
+typeParser =
+  recType <> functionType <> decimalType <> integerType <> parensType <>
+  arrayType <>
+  freshType <>
+  recordType <>
+  variantType
   where
+    recType = do
+      token_
+        ExpectedRec
+        (\case
+           CamelCaseToken "rec" -> pure ()
+           _ -> Nothing)
+      token_ ExpectedPeriod (preview _PeriodToken)
+      typ <- typeParser
+      pure (RecursiveType typ)
     freshType = do
       Located {location} <- token ExpectedHole (preview _HoleToken)
       pure (FreshType location)
