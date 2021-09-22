@@ -347,6 +347,7 @@ operatorlessExpressionParser =
        , applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
+       , LambdaExpression <$> typedLambdaParser
        , HoleExpression <$> holeParser
        , VariableExpression <$> variableParser
        , GlobalExpression <$> globalParser
@@ -755,6 +756,18 @@ lambdaParser = do
   pure
     Lambda
       {location = SourceLocation {start, end}, body, typ = Nothing, param = param}
+
+typedLambdaParser :: Parser (Lambda Parsed)
+typedLambdaParser = do
+  token_ (ExpectedToken OpenRoundToken) (preview _OpenRoundToken)
+  param <- paramParser
+  token_ (ExpectedToken ColonToken) (preview _ColonToken)
+  body <- expressionParser
+  token_ (ExpectedToken CloseRoundToken) (preview _CloseRoundToken)
+  typ <- optionalSignatureParser
+  let SourceLocation {start} = paramLocation param
+      SourceLocation {end} = expressionLocation body
+  pure Lambda {location = SourceLocation {start, end}, body, typ, param = param}
 
 paramParser :: Parser (Param Parsed)
 paramParser = do
