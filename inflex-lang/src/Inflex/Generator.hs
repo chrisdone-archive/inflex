@@ -396,33 +396,35 @@ someNumberType location =
           }
 
 lambdaGenerator :: Lambda Filled -> Generate e (Lambda Generated)
-lambdaGenerator Lambda {typ = _, ..} = do
+lambdaGenerator Lambda {typ = mtyp, ..} = do
   param' <- paramGenerator param
-  body' <- local (over envScopeL (LambdaBinding param' :)) (expressionGenerator body)
+  body' <-
+    local (over envScopeL (LambdaBinding param' :)) (expressionGenerator body)
   let outputType = expressionType body'
-  pure
-    Lambda
-      { typ =
-          ApplyType
-            TypeApplication
-              { function =
-                  ApplyType
-                    TypeApplication
-                      { function =
-                          ConstantType
-                            (TypeConstant {name = FunctionTypeName, location})
-                      , argument = paramType param'
-                      , location
-                      , kind = FunKind TypeKind TypeKind
-                      }
-              , argument = outputType
-              , location
-              , kind = TypeKind
-              }
-      , body = body'
-      , param = param'
-      , ..
-      }
+  let typ =
+        ApplyType
+          TypeApplication
+            { function =
+                ApplyType
+                  TypeApplication
+                    { function =
+                        ConstantType
+                          (TypeConstant {name = FunctionTypeName, location})
+                    , argument = paramType param'
+                    , location
+                    , kind = FunKind TypeKind TypeKind
+                    }
+            , argument = outputType
+            , location
+            , kind = TypeKind
+            }
+  for
+    mtyp
+    (\ty0 -> do
+       ty <- renamedToGenerated ty0
+       addEqualityConstraint
+         EqualityConstraint {location, type1 = ty, type2 = typ})
+  pure Lambda {typ, body = body', param = param', ..}
 
 letGenerator :: Let Filled -> Generate e (Let Generated)
 letGenerator Let {typ = _, ..} = do
