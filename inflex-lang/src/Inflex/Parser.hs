@@ -340,8 +340,7 @@ operatorlessExpressionParser :: Parser (Expression Parsed)
 operatorlessExpressionParser =
   fold1
     (NE.fromList
-       [ foldParser
-       , dotFuncParser
+       [ dotFuncParser
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
        , LetExpression <$> letParser
@@ -430,18 +429,6 @@ propLhsParser =
   (VariableExpression <$> variableParser) <>
   (GlobalExpression <$> globalParser) <>
   parensParser
-
-foldParser :: Parser (Expression Parsed)
-foldParser = do
-  Located {thing, location} <-
-    token ExpectedFold (fmap (const FoldToken) . preview _FoldToken) <>
-    token ExpectedFold (fmap (const UnfoldToken) . preview _UnfoldToken)
-  expression <- parensParser
-  typ <- optionalSignatureParser
-  pure
-    (case thing of
-       FoldToken -> FoldExpression (Fold {location, typ, expression})
-       _ -> UnfoldExpression (Unfold {location, typ, expression}))
 
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
