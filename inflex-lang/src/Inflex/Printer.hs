@@ -139,11 +139,7 @@ instance Stage s => Printer (Alternative s) where
     case reflectStage @s of
       StageResolved ->
         case pattern' of
-          ParamPattern _param ->
-            "_" -- TODO: need to resolve from mappings.
-             <>
-            ": " <>
-            printer expression
+          ParamPattern param -> printer param <> ": " <> printer expression
           VariantPattern variant ->
             printer variant <> ": " <> printer expression
       StageParsed ->
@@ -159,7 +155,7 @@ instance Stage s => Printer (VariantP s) where
         printer tag <>
         (case argument of
            Nothing -> mempty
-           Just _param -> "(_)" -- TODO: need to resolve from mappings.)
+           Just param -> "(" <> printer param <> ")"
          )
       StageParsed ->
         printer tag <>
@@ -235,11 +231,19 @@ instance Stage s => Printer (Lambda s) where
       StageResolved ->
         case location of
           ImplicitArgumentFor {} -> printer body
-          _ -> ":" <> printer body
+          _ -> "(" <> printer param <> ":" <> printer body <> ")"
       StageParsed -> "(" <> printer param <> ":" <> printer body <> ")"
 
 instance Printer (Param Parsed) where
   printer Param{name} = printer name
+
+instance Printer (Param Resolved) where
+  printer Param {location} =
+    Print $ do
+      PrinterConfig {nameMappings} <- ask
+      case M.lookup location nameMappings of
+        Nothing -> pure "$"
+        Just text -> runPrint (printer text)
 
 instance Stage s => Printer (Variable s) where
   printer Variable {name, location} =

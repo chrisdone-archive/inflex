@@ -484,7 +484,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
     Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
-      finalizeCursorForName cursor ExpressionCursor name
+      finalizeCursorForName final name
       deBrujinIndex <-
         case binding of
           LambdaBinding {} -> pure (DeBrujinIndex (DeBrujinNesting index))
@@ -508,8 +508,9 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam env@Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
-  finalizeCursorForName cursor ExpressionCursor name
+  finalizeCursorForName final name
   typ' <- renameSignature env typ
+
   pure Param {name = (), location = final, typ = typ'}
 
 renameSignature :: Env -> Maybe (Type Parsed) -> Renamer (Maybe (Type Renamed))
@@ -578,11 +579,9 @@ finalizeCursor cursor finalCursor loc = do
   pure final
   where final = cursor finalCursor
 
-finalizeCursorForName :: CursorBuilder -> Cursor -> Text -> Renamer ()
-finalizeCursorForName cursor finalCursor text = do
+finalizeCursorForName :: Cursor -> Text -> Renamer ()
+finalizeCursorForName final text = do
   modify (over _4 (M.insert final text))
-  where
-    final = cursor finalCursor
 
 --------------------------------------------------------------------------------
 -- Fold returns

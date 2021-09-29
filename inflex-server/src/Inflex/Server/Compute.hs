@@ -274,7 +274,7 @@ evalDocument1' cache env cells = do
 
 toTree ::
      (Map Cursor SourceLocation)
-  -> (Map Cursor SourceLocation)
+  -> (Map Cursor Text)
   -> Maybe (Expression Parsed)
   -> Expression Resolved
   -> Shared.Tree2
