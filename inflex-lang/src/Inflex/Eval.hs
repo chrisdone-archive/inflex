@@ -71,7 +71,10 @@ evalTextRepl loud text = do
                             prev <- RIO.readSomeRef lastRef
                             let cur =
                                   SB.toLazyByteString
-                                    (RIO.getUtf8Builder (printer e))
+                                    (RIO.getUtf8Builder
+                                       (runPrinter
+                                          emptyPrinterConfig
+                                          (printer e)))
                             unless
                               (prev == cur)
                               (do L8.putStrLn cur
@@ -85,7 +88,10 @@ evalTextRepl loud text = do
     Left e -> print (e :: DefaultEvalError ())
     Right e -> do
       putStrLn "=>"
-      L8.putStrLn (SB.toLazyByteString (RIO.getUtf8Builder (printer e)))
+      L8.putStrLn
+        (SB.toLazyByteString
+           (RIO.getUtf8Builder
+              (runPrinter emptyPrinterConfig (printer e))))
 
 evalTextDefaulted ::
      Map Hash (Either e (Scheme Polymorphic))

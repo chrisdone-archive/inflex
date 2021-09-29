@@ -17,4 +17,4 @@ compile src = do
   result <- runIO (RIO.runRIO ResolveReader (resolveText mempty "Derived" src))
   case result of
     Left (err :: GeneraliseResolveError ()) -> error (show err)
-    Right IsResolved {thing} -> tracePrinter thing (lift thing)
+    Right IsResolved {thing} -> tracePrinter emptyPrinterConfig thing (lift thing)

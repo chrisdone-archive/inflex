@@ -111,7 +111,7 @@ addNewFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 addNewFieldInCode path0 name code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> printerText (go path0 expr)
+    Right expr -> printerText emptyPrinterConfig  (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -165,7 +165,7 @@ renameFieldInCode :: Shared.DataPath -> FieldName -> FieldName -> Text -> Text
 renameFieldInCode path0 from to' code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> printerText (go path0 expr)
+    Right expr -> printerText emptyPrinterConfig  (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -223,7 +223,7 @@ deleteFieldInCode :: Shared.DataPath -> FieldName -> Text -> Text
 deleteFieldInCode path0 name0 code =
   case parseText "" code of
     Left {} -> code
-    Right expr -> printerText (go path0 expr)
+    Right expr -> printerText emptyPrinterConfig  (go path0 expr)
   where
     go :: Shared.DataPath -> Expression Parsed -> Expression Parsed
     go path =
@@ -374,7 +374,7 @@ mapPath path0 mapping code =
     Left err -> Left (OriginalSourceNotParsing path0 err code)
     Right expr -> do
       expr' <- go path0 expr
-      pure (printerText expr')
+      pure (printerText emptyPrinterConfig  expr')
   where
     go ::
          Shared.DataPath

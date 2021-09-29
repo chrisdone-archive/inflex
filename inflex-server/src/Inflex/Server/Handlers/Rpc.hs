@@ -542,7 +542,7 @@ insertImportedCsv csvImportSpec Shared.File {name, id = fileId} rows InputDocume
                { uuid = Shared.UUID (UUID.toText uuid)
                  -- TODO: We can include many more chars here.
                , name = T.filter okChar name <> T.pack (show (fileId :: Int))
-               , code = printerText (rowsToArray csvImportSpec rows)
+               , code = printerText emptyPrinterConfig (rowsToArray csvImportSpec rows)
                , InputCell.order = V.length cells + 1
                , sourceHash = HashNotKnownYet
                , dependencies = mempty

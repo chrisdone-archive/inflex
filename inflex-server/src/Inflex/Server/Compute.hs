@@ -364,7 +364,7 @@ toTree mappings original final =
       Shared.VegaTree2
         Shared.versionRefl
         Shared.NoOriginalSource
-        (printerText argument)
+        (printerText emptyPrinterConfig argument)
     VariantExpression Variant {tag = TagName tag, argument} ->
       Shared.VariantTree2
         Shared.versionRefl
@@ -380,7 +380,7 @@ toTree mappings original final =
       Shared.MiscTree2
         Shared.versionRefl
         (originalSource id True)
-        (printerText expression)
+        (printerText emptyPrinterConfig  expression)
   where
     inRecord :: Maybe (Expression Parsed) -> Maybe [FieldE Parsed]
     inRecord =
@@ -422,13 +422,13 @@ toTree mappings original final =
       | Just {} <- check e =
         case e of
           Just expression
-            | atomic -> Shared.OriginalSource (printerText expression)
+            | atomic -> Shared.OriginalSource (printerText emptyPrinterConfig  expression)
             | Just sourceLocation <-
                -- FIXME: This lookup is highly expensive due to
                -- calculating positions. Fix this issue.
                M.lookup (expressionLocation final) mappings
             , sourceLocation == expressionLocation expression ->
-              Shared.OriginalSource (printerText expression)
+              Shared.OriginalSource (printerText emptyPrinterConfig expression)
           _ -> Shared.NoOriginalSource
       | otherwise = Shared.NoOriginalSource
 

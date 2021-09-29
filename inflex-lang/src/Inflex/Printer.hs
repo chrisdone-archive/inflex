@@ -14,10 +14,13 @@
 module Inflex.Printer
   ( tracePrinter
   , Printer
+  , emptyPrinterConfig
   , printer
   , printerText
+  , runPrinter
   ) where
 
+import           Control.Monad.Reader
 import           Data.Aeson (encode)
 import qualified Data.ByteString.Builder as SB
 import qualified Data.ByteString.Lazy as L
@@ -26,6 +29,8 @@ import           Data.Char (isAlphaNum)
 import           Data.Coerce
 import           Data.Foldable
 import           Data.List
+import           Data.Map.Strict (Map)
+import           Data.String
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -38,22 +43,54 @@ import           Inflex.Types
 import           Inflex.Types.SHA512
 import qualified RIO
 
-{-# INLINE tracePrinter #-}
-tracePrinter :: Printer a1 => a1 -> a2 -> a2
-tracePrinter e = trace (L8.unpack (SB.toLazyByteString (RIO.getUtf8Builder (printer e))))
+emptyPrinterConfig :: PrinterConfig
+emptyPrinterConfig = PrinterConfig {nameMappings = mempty}
 
-printerText :: Printer a => a -> Text
-printerText =
-  T.decodeUtf8 . L.toStrict . SB.toLazyByteString . RIO.getUtf8Builder . printer
+{-# INLINE tracePrinter #-}
+tracePrinter :: Printer a1 => PrinterConfig -> a1 -> a2 -> a2
+tracePrinter cfg e =
+  trace
+    (L8.unpack
+       (SB.toLazyByteString (RIO.getUtf8Builder (runPrinter cfg (printer e)))))
+
+printerText :: Printer a => PrinterConfig -> a -> Text
+printerText cfg =
+  T.decodeUtf8 .
+  L.toStrict .
+  SB.toLazyByteString . RIO.getUtf8Builder . runPrinter cfg . printer
+
+instance Semigroup Print where
+  (<>) x y = Print ((<>) <$> runPrint x <*> runPrint y)
+
+instance Monoid Print where
+  mempty = Print (pure mempty)
+  mappend = (<>)
+
+instance IsString Print where
+  fromString = Print . pure . fromString
+
+data PrinterConfig = PrinterConfig
+  { nameMappings :: Map Cursor SourceLocation
+  }
+
+data Print = Print
+  { runPrint :: Reader PrinterConfig RIO.Utf8Builder
+  }
+
+runPrinter :: PrinterConfig -> Print -> RIO.Utf8Builder
+runPrinter cf (Print x) = runReader x cf
+
+printShow :: Show a => a -> Print
+printShow = Print . pure . RIO.displayShow
 
 class Printer a where
-  printer :: a -> RIO.Utf8Builder
+  printer :: a -> Print
 
 instance Printer Text where
-  printer = RIO.display
+  printer = Print . pure . RIO.display
 
 instance Printer Integer where
-  printer = RIO.display
+  printer = Print . pure  . RIO.display
 
 -- TODO: Handle scope and retain original names, if provided.
 -- TODO: Avoid unneeded parens.
@@ -74,14 +111,15 @@ instance Stage s => Printer (Expression s) where
       LetExpression let' -> printer let'
       IfExpression if' -> printer if'
       CaseExpression case' -> printer case'
-      UnfoldExpression {} ->  "TODO: unfold" -- TODO:
-      FoldExpression {} ->  "TODO: fold" -- TODO:
+      UnfoldExpression {} ->  Print (pure "TODO: unfold") -- TODO:
+      FoldExpression {} ->  Print (pure "TODO: fold") -- TODO:
       InfixExpression infix' -> printer infix'
 
-instance Stage s =>  Printer (Case s) where
-  printer Case{..} = "case " <> printer scrutinee <> " {" <>
-    mconcat (intersperse ", " (map printer (toList alternatives)))
-    <> "}"
+instance Stage s => Printer (Case s) where
+  printer Case {..} =
+    "case " <> printer scrutinee <> " {" <>
+    (mconcat . intersperse ", ") (map printer (toList alternatives)) <>
+    "}"
 
 instance Stage s =>  Printer (Fold s) where
   printer Fold{..} = printer expression <> "?"
@@ -205,7 +243,7 @@ instance Stage s => Printer (Variable s) where
   printer Variable {name} =
     case reflectStage @s of
       StageResolved ->
-        "$" <> RIO.displayShow (coerce (deBrujinIndexNesting name) :: Int)
+        "$" <> printShow (coerce (deBrujinIndexNesting name) :: Int)
       StageParsed -> printer name
 
 instance Stage s =>  Printer (Global s) where
@@ -217,7 +255,7 @@ instance Stage s =>  Printer (Global s) where
 instance Printer (GlobalRef s) where
   printer =
     \case
-      HashGlobal (Hash hash) -> "#" <> RIO.displayShow hash
+      HashGlobal (Hash hash) -> "#" <> printShow hash
       FromIntegerGlobal -> "@prim:from_integer"
       FromDecimalGlobal -> "fromDecimal"
       EqualGlobal equality ->
@@ -258,26 +296,29 @@ instance Stage s => Printer (Apply s) where
                   _ -> printerApplyResolved apply
       StageParsed -> printerApply printer apply
 
-printText :: Text -> RIO.Utf8Builder
+printText :: Text -> Print
 printText t =
-  RIO.displayBytesUtf8 (T.encodeUtf8 ("\"" <> T.replace "\"" "\"\"" t <> "\""))
+  Print
+    (pure
+       (RIO.displayBytesUtf8
+          (T.encodeUtf8 ("\"" <> T.replace "\"" "\"\"" t <> "\""))))
 
 instance Printer InstanceName where
   printer =
     \case
       EqualIntegerInstance -> "<Equal Integer>"
       EqualTextInstance -> "<Equal Text>"
-      EqualDecimalInstance n -> "<Equal (Decimal " <> RIO.displayShow n <> ")>"
+      EqualDecimalInstance n -> "<Equal (Decimal " <> printShow n <> ")>"
       CompareIntegerInstance -> "<Compare Integer>"
       CompareTextInstance -> "<Compare Text>"
-      CompareDecimalInstance n -> "<Compare (Decimal " <> RIO.displayShow n <> ")>"
+      CompareDecimalInstance n -> "<Compare (Decimal " <> printShow n <> ")>"
       FromIntegerIntegerInstance -> "<FromInteger Integer>"
       FromIntegerDecimalInstance {} -> "<FromInteger Decimal>"
       FromDecimalDecimalInstance FromDecimalInstance { supersetPlaces
                                                      , subsetPlaces
                                                      } ->
-        "<FromDecimal " <> RIO.displayShow supersetPlaces <> " (Decimal " <>
-        RIO.displayShow subsetPlaces <>
+        "<FromDecimal " <> printShow supersetPlaces <> " (Decimal " <>
+        printShow subsetPlaces <>
         ")>"
       IntegerOpInstance op -> "<(" <> printer op <> ") @ Integer>"
       DecimalOpInstance nat op ->
@@ -285,7 +326,7 @@ instance Printer InstanceName where
         printer (fromIntegral nat :: Integer) <>
         ")>"
 
-addColumnsIfNeeded :: Printer a => Vector e -> Maybe a -> RIO.Utf8Builder -> RIO.Utf8Builder
+addColumnsIfNeeded :: Printer a => Vector e -> Maybe a -> Print -> Print
 addColumnsIfNeeded expressions typ inner =
   case typ of
     Just t | V.null expressions -> inner <> " :: " <> printer t
@@ -322,7 +363,7 @@ instance Printer (Type Parsed) where
         "Text" -- TODO: change to @prim:text-type)
       ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
                                 , argument = ConstantType TypeConstant {name = NatTypeName n}
-                                } -> "Decimal " <> RIO.displayShow n
+                                } -> "Decimal " <> printShow n
       _ -> "_"
 
 -- TODO: Make much more robust.
@@ -330,7 +371,7 @@ instance Printer FieldName where
   printer (FieldName t) =
     if True -- Applying this for graph support. TODO: remove it.
             || T.any (not . printableNameChar) t
-      then RIO.displayBytesUtf8 (L.toStrict (encode t))
+      then Print (pure (RIO.displayBytesUtf8 (L.toStrict (encode t))))
       else printer t
 
 printableNameChar :: Char -> Bool
@@ -340,7 +381,7 @@ printableNameChar c = isAlphaNum c
 instance Printer SomeNumber where
   printer = \case
                IntegerNumber i -> printer i
-               DecimalNumber decimal -> RIO.display decimal
+               DecimalNumber decimal -> Print (pure (RIO.display decimal))
 
 instance Printer IncompleteGlobalRef where
   printer =
@@ -390,14 +431,14 @@ instance Printer NumericBinOp where
       SubtractOp -> "-"
       DivideOp -> "/"
 
-printerApply :: (Expression s -> RIO.Utf8Builder) -> Apply s -> RIO.Utf8Builder
+printerApply :: (Expression s -> Print) -> Apply s -> Print
 printerApply printer' apply =
   printer' function <> "(" <>
   mconcat (intersperse ", " (map printer' arguments)) <>
   ")"
   where (function, arguments) = uncurryApplies apply
 
-printerApplyResolved :: Apply Resolved -> RIO.Utf8Builder
+printerApplyResolved :: Apply Resolved -> Print
 printerApplyResolved apply =
   printer function <> "(" <>
   mconcat (intersperse ", " (map printer arguments)) <>
