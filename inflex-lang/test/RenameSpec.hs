@@ -27,6 +27,7 @@ spec = do
           (Right
              (IsRenamed
                 { unresolvedGlobals = mempty
+                , nameMappings = mempty
                 , unresolvedUuids = mempty
                 , thing =
                     LiteralExpression
@@ -60,62 +61,70 @@ spec = do
                 }))
         shouldSatisfy
           (renameText "" "123.2 :: Integer")
-          $(match [|Right
-                      (IsRenamed
-                         { unresolvedGlobals = mempty
-                         , unresolvedUuids = mempty
-                         , thing =
-                             ApplyExpression
-                               (Apply
-                                  { location = BuiltIn
-                                  , function =
-                                      GlobalExpression
-                                        (Global
-                                           { location = BuiltIn
-                                           , name = ExactGlobalRef FromDecimalGlobal
-                                           , scheme = RenamedScheme
-                                           })
-                                  , argument =
-                                      LiteralExpression
-                                        (NumberLiteral
-                                           (Number
-                                              { location = ExpressionCursor
-                                              , number =
-                                                  DecimalNumber
-                                                    (Decimal {places = 1, integer = 1232})
-                                              , typ =
-                                                  Just
-                                                    (ConstantType
-                                                       (TypeConstant
-                                                          { location =
-                                                              SignatureCursor TypeCursor
-                                                          , name = IntegerTypeName
-                                                          }))
-                                              }))
-                                  , typ =
-                                      Just
-                                        (ConstantType
-                                           (TypeConstant
-                                              { location = SignatureCursor TypeCursor
-                                              , name = IntegerTypeName
-                                              }))
-                                  })
-                         , mappings =
-                             M.fromList
-                               [ ( ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 1, name = ""}
-                                     , end = SourcePos {line = 1, column = 6, name = ""}
-                                     })
-                               , ( SignatureCursor TypeCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 10, name = ""}
-                                     , end = SourcePos {line = 1, column = 17, name = ""}
-                                     })
-                               ]
-                         })|]))
+          $(match
+              [|Right
+                  (IsRenamed
+                     { unresolvedGlobals = mempty
+                     , unresolvedUuids = mempty
+                     , thing =
+                         ApplyExpression
+                           (Apply
+                              { location = BuiltIn
+                              , function =
+                                  GlobalExpression
+                                    (Global
+                                       { location = BuiltIn
+                                       , name = ExactGlobalRef FromDecimalGlobal
+                                       , scheme = RenamedScheme
+                                       })
+                              , argument =
+                                  LiteralExpression
+                                    (NumberLiteral
+                                       (Number
+                                          { location = ExpressionCursor
+                                          , number =
+                                              DecimalNumber
+                                                (Decimal
+                                                   {places = 1, integer = 1232})
+                                          , typ =
+                                              Just
+                                                (ConstantType
+                                                   (TypeConstant
+                                                      { location =
+                                                          SignatureCursor
+                                                            TypeCursor
+                                                      , name = IntegerTypeName
+                                                      }))
+                                          }))
+                              , typ =
+                                  Just
+                                    (ConstantType
+                                       (TypeConstant
+                                          { location =
+                                              SignatureCursor TypeCursor
+                                          , name = IntegerTypeName
+                                          }))
+                              })
+                     , mappings =
+                         M.fromList
+                           [ ( ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 1, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 6, name = ""}
+                                 })
+                           , ( SignatureCursor TypeCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 10, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 17, name = ""}
+                                 })
+                           ]
+                     })|]))
   describe
     "Globals"
     (do it
@@ -131,6 +140,7 @@ spec = do
                             , name = UnresolvedGlobalText "missing"
                             , scheme = RenamedScheme
                             })
+                   , nameMappings = mempty
                    , mappings =
                        M.fromList
                          [ ( ExpressionCursor
@@ -158,6 +168,7 @@ spec = do
                             , name = UnresolvedGlobalText "fromInteger"
                             , scheme = RenamedScheme
                             })
+                   , nameMappings = mempty
                    , mappings =
                        M.fromList
                          [ ( ExpressionCursor
@@ -185,6 +196,7 @@ spec = do
                             , name = UnresolvedGlobalText "fromDecimal"
                             , scheme = RenamedScheme
                             })
+                   , nameMappings = mempty
                    , mappings =
                        M.fromList
                          [ ( ExpressionCursor
@@ -232,6 +244,14 @@ spec = do
                                   }))
                       , typ = Nothing
                       })
+             , nameMappings =
+                 M.fromList
+                   [ ( ExpressionCursor
+                     , SourceLocation
+                         { start = SourcePos {line = 1, column = 1, name = ""}
+                         , end = SourcePos {line = 1, column = 2, name = ""}
+                         })
+                   ]
              , mappings =
                  M.fromList
                    [ ( ExpressionCursor
@@ -262,345 +282,403 @@ spec = do
     "Apply: debrujin 0 and 0"
     (do shouldSatisfy
           (renameText "" "(x:(y:y)(x))(123::Integer)")
-          $(match [|Right
-                      (IsRenamed
-                         { thing =
-                             ApplyExpression
-                               (Apply
-                                  { location = ExpressionCursor
-                                  , function =
-                                      LambdaExpression
-                                        (Lambda
-                                           { location = ApplyFuncCursor ExpressionCursor
-                                           , param =
-                                               Param
-                                                 { location =
-                                                     ApplyFuncCursor LambdaParamCursor
-                                                 , name = ()
-                                                 , typ = Nothing
-                                                 }
-                                           , body =
-                                               ApplyExpression
-                                                 (Apply
-                                                    { location =
-                                                        ApplyFuncCursor
-                                                          (LambdaBodyCursor
-                                                             ExpressionCursor)
-                                                    , function =
-                                                        LambdaExpression
-                                                          (Lambda
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   (LambdaBodyCursor
-                                                                      (ApplyFuncCursor
-                                                                         ExpressionCursor))
-                                                             , param =
-                                                                 Param
-                                                                   { location =
-                                                                       ApplyFuncCursor
-                                                                         (LambdaBodyCursor
-                                                                            (ApplyFuncCursor
-                                                                               LambdaParamCursor))
-                                                                   , name = ()
-                                                                   , typ = Nothing
-                                                                   }
-                                                             , body =
-                                                                 VariableExpression
-                                                                   (Variable
-                                                                      { location =
-                                                                          ApplyFuncCursor
-                                                                            (LambdaBodyCursor
-                                                                               (ApplyFuncCursor
-                                                                                  (LambdaBodyCursor
-                                                                                     ExpressionCursor)))
-                                                                      , name =
-                                                                          DeBrujinIndex
-                                                                            (DeBrujinNesting
-                                                                               0)
-                                                                      , typ = Nothing
-                                                                      })
-                                                             , typ = Nothing
-                                                             })
-                                                    , argument =
-                                                        VariableExpression
-                                                          (Variable
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   (LambdaBodyCursor
-                                                                      (ApplyArgCursor
-                                                                         ExpressionCursor))
-                                                             , name =
-                                                                 DeBrujinIndex
-                                                                   (DeBrujinNesting 0)
-                                                             , typ = Nothing
-                                                             })
-                                                    , typ = Nothing
-                                                    })
-                                           , typ = Nothing
-                                           })
-                                  , argument =
-                                      LiteralExpression
-                                        (NumberLiteral
-                                           (Number
-                                              { location =
-                                                  ApplyArgCursor ExpressionCursor
-                                              , number = IntegerNumber 123
-                                              , typ =
-                                                  Just
-                                                    (ConstantType
-                                                       (TypeConstant
-                                                          { location =
-                                                              ApplyArgCursor
-                                                                (SignatureCursor
-                                                                   TypeCursor)
-                                                          , name = IntegerTypeName
-                                                          }))
-                                              }))
-                                  , typ = Nothing
-                                  })
-                         , mappings =
-                             M.fromList
-                               [ ( ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 14, name = ""}
-                                     , end = SourcePos {line = 1, column = 17, name = ""}
-                                     })
-                               , ( ApplyFuncCursor ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 2, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 10, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor (ApplyFuncCursor ExpressionCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 5, name = ""}
-                                     , end = SourcePos {line = 1, column = 8, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor
-                                        (ApplyFuncCursor
-                                           (LambdaBodyCursor ExpressionCursor)))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 7, name = ""}
-                                     , end = SourcePos {line = 1, column = 8, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor
-                                        (ApplyFuncCursor LambdaParamCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 5, name = ""}
-                                     , end = SourcePos {line = 1, column = 6, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor (ApplyArgCursor ExpressionCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 10, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor LambdaParamCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 2, name = ""}
-                                     , end = SourcePos {line = 1, column = 3, name = ""}
-                                     })
-                               , ( ApplyArgCursor ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 14, name = ""}
-                                     , end = SourcePos {line = 1, column = 17, name = ""}
-                                     })
-                               , ( ApplyArgCursor (SignatureCursor TypeCursor)
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 19, name = ""}
-                                     , end = SourcePos {line = 1, column = 26, name = ""}
-                                     })
-                               ]
-                         , unresolvedUuids = mempty
-                         , unresolvedGlobals = mempty
-                         })|]))
+          $(match
+              [|Right
+                  (IsRenamed
+                     { thing =
+                         ApplyExpression
+                           (Apply
+                              { location = ExpressionCursor
+                              , function =
+                                  LambdaExpression
+                                    (Lambda
+                                       { location =
+                                           ApplyFuncCursor ExpressionCursor
+                                       , param =
+                                           Param
+                                             { location =
+                                                 ApplyFuncCursor
+                                                   LambdaParamCursor
+                                             , name = ()
+                                             , typ = Nothing
+                                             }
+                                       , body =
+                                           ApplyExpression
+                                             (Apply
+                                                { location =
+                                                    ApplyFuncCursor
+                                                      (LambdaBodyCursor
+                                                         ExpressionCursor)
+                                                , function =
+                                                    LambdaExpression
+                                                      (Lambda
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  (ApplyFuncCursor
+                                                                     ExpressionCursor))
+                                                         , param =
+                                                             Param
+                                                               { location =
+                                                                   ApplyFuncCursor
+                                                                     (LambdaBodyCursor
+                                                                        (ApplyFuncCursor
+                                                                           LambdaParamCursor))
+                                                               , name = ()
+                                                               , typ = Nothing
+                                                               }
+                                                         , body =
+                                                             VariableExpression
+                                                               (Variable
+                                                                  { location =
+                                                                      ApplyFuncCursor
+                                                                        (LambdaBodyCursor
+                                                                           (ApplyFuncCursor
+                                                                              (LambdaBodyCursor
+                                                                                 ExpressionCursor)))
+                                                                  , name =
+                                                                      DeBrujinIndex
+                                                                        (DeBrujinNesting
+                                                                           0)
+                                                                  , typ =
+                                                                      Nothing
+                                                                  })
+                                                         , typ = Nothing
+                                                         })
+                                                , argument =
+                                                    VariableExpression
+                                                      (Variable
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  (ApplyArgCursor
+                                                                     ExpressionCursor))
+                                                         , name =
+                                                             DeBrujinIndex
+                                                               (DeBrujinNesting
+                                                                  0)
+                                                         , typ = Nothing
+                                                         })
+                                                , typ = Nothing
+                                                })
+                                       , typ = Nothing
+                                       })
+                              , argument =
+                                  LiteralExpression
+                                    (NumberLiteral
+                                       (Number
+                                          { location =
+                                              ApplyArgCursor ExpressionCursor
+                                          , number = IntegerNumber 123
+                                          , typ =
+                                              Just
+                                                (ConstantType
+                                                   (TypeConstant
+                                                      { location =
+                                                          ApplyArgCursor
+                                                            (SignatureCursor
+                                                               TypeCursor)
+                                                      , name = IntegerTypeName
+                                                      }))
+                                          }))
+                              , typ = Nothing
+                              })
+                     , mappings =
+                         M.fromList
+                           [ ( ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 14, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 17, name = ""}
+                                 })
+                           , ( ApplyFuncCursor ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 2, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor ExpressionCursor)
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 10, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor ExpressionCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 5, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 8, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor
+                                       (LambdaBodyCursor ExpressionCursor)))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 7, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 8, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor LambdaParamCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 5, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 6, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyArgCursor ExpressionCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 10, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor LambdaParamCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 2, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 3, name = ""}
+                                 })
+                           , ( ApplyArgCursor ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 14, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 17, name = ""}
+                                 })
+                           , ( ApplyArgCursor (SignatureCursor TypeCursor)
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 19, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 26, name = ""}
+                                 })
+                           ]
+                     , unresolvedUuids = mempty
+                     , unresolvedGlobals = mempty
+                     })|]))
   it
     "Apply: debrujin 0 and 1"
     (do shouldSatisfy
           (renameText "" "(x:(y:x)(x))(123::Integer)")
-          $(match [|Right
-                      (IsRenamed
-                         { thing =
-                             ApplyExpression
-                               (Apply
-                                  { location = ExpressionCursor
-                                  , function =
-                                      LambdaExpression
-                                        (Lambda
-                                           { location = ApplyFuncCursor ExpressionCursor
-                                           , param =
-                                               Param
-                                                 { location =
-                                                     ApplyFuncCursor LambdaParamCursor
-                                                 , name = ()
-                                                 , typ = Nothing
-                                                 }
-                                           , body =
-                                               ApplyExpression
-                                                 (Apply
-                                                    { location =
-                                                        ApplyFuncCursor
-                                                          (LambdaBodyCursor
-                                                             ExpressionCursor)
-                                                    , function =
-                                                        LambdaExpression
-                                                          (Lambda
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   (LambdaBodyCursor
-                                                                      (ApplyFuncCursor
-                                                                         ExpressionCursor))
-                                                             , param =
-                                                                 Param
-                                                                   { location =
-                                                                       ApplyFuncCursor
-                                                                         (LambdaBodyCursor
-                                                                            (ApplyFuncCursor
-                                                                               LambdaParamCursor))
-                                                                   , name = ()
-                                                                   , typ = Nothing
-                                                                   }
-                                                             , body =
-                                                                 VariableExpression
-                                                                   (Variable
-                                                                      { location =
-                                                                          ApplyFuncCursor
-                                                                            (LambdaBodyCursor
-                                                                               (ApplyFuncCursor
-                                                                                  (LambdaBodyCursor
-                                                                                     ExpressionCursor)))
-                                                                      , name =
-                                                                          DeBrujinIndex
-                                                                            (DeBrujinNesting
-                                                                               1)
-                                                                      , typ = Nothing
-                                                                      })
-                                                             , typ = Nothing
-                                                             })
-                                                    , argument =
-                                                        VariableExpression
-                                                          (Variable
-                                                             { location =
-                                                                 ApplyFuncCursor
-                                                                   (LambdaBodyCursor
-                                                                      (ApplyArgCursor
-                                                                         ExpressionCursor))
-                                                             , name =
-                                                                 DeBrujinIndex
-                                                                   (DeBrujinNesting 0)
-                                                             , typ = Nothing
-                                                             })
-                                                    , typ = Nothing
-                                                    })
-                                           , typ = Nothing
-                                           })
-                                  , argument =
-                                      LiteralExpression
-                                        (NumberLiteral
-                                           (Number
-                                              { location =
-                                                  ApplyArgCursor ExpressionCursor
-                                              , number = IntegerNumber 123
-                                              , typ =
-                                                  Just
-                                                    (ConstantType
-                                                       (TypeConstant
-                                                          { location =
-                                                              ApplyArgCursor
-                                                                (SignatureCursor
-                                                                   TypeCursor)
-                                                          , name = IntegerTypeName
-                                                          }))
-                                              }))
-                                  , typ = Nothing
-                                  })
-                         , mappings =
-                             M.fromList
-                               [ ( ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 14, name = ""}
-                                     , end = SourcePos {line = 1, column = 17, name = ""}
-                                     })
-                               , ( ApplyFuncCursor ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 2, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor (LambdaBodyCursor ExpressionCursor)
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 10, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor (ApplyFuncCursor ExpressionCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 5, name = ""}
-                                     , end = SourcePos {line = 1, column = 8, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor
-                                        (ApplyFuncCursor
-                                           (LambdaBodyCursor ExpressionCursor)))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 7, name = ""}
-                                     , end = SourcePos {line = 1, column = 8, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor
-                                        (ApplyFuncCursor LambdaParamCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 5, name = ""}
-                                     , end = SourcePos {line = 1, column = 6, name = ""}
-                                     })
-                               , ( ApplyFuncCursor
-                                     (LambdaBodyCursor (ApplyArgCursor ExpressionCursor))
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 10, name = ""}
-                                     , end = SourcePos {line = 1, column = 11, name = ""}
-                                     })
-                               , ( ApplyFuncCursor LambdaParamCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 2, name = ""}
-                                     , end = SourcePos {line = 1, column = 3, name = ""}
-                                     })
-                               , ( ApplyArgCursor ExpressionCursor
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 14, name = ""}
-                                     , end = SourcePos {line = 1, column = 17, name = ""}
-                                     })
-                               , ( ApplyArgCursor (SignatureCursor TypeCursor)
-                                 , SourceLocation
-                                     { start =
-                                         SourcePos {line = 1, column = 19, name = ""}
-                                     , end = SourcePos {line = 1, column = 26, name = ""}
-                                     })
-                               ]
-                         , unresolvedUuids = mempty
-                         , unresolvedGlobals = mempty
-                         })|]))
+          $(match
+              [|Right
+                  (IsRenamed
+                     { thing =
+                         ApplyExpression
+                           (Apply
+                              { location = ExpressionCursor
+                              , function =
+                                  LambdaExpression
+                                    (Lambda
+                                       { location =
+                                           ApplyFuncCursor ExpressionCursor
+                                       , param =
+                                           Param
+                                             { location =
+                                                 ApplyFuncCursor
+                                                   LambdaParamCursor
+                                             , name = ()
+                                             , typ = Nothing
+                                             }
+                                       , body =
+                                           ApplyExpression
+                                             (Apply
+                                                { location =
+                                                    ApplyFuncCursor
+                                                      (LambdaBodyCursor
+                                                         ExpressionCursor)
+                                                , function =
+                                                    LambdaExpression
+                                                      (Lambda
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  (ApplyFuncCursor
+                                                                     ExpressionCursor))
+                                                         , param =
+                                                             Param
+                                                               { location =
+                                                                   ApplyFuncCursor
+                                                                     (LambdaBodyCursor
+                                                                        (ApplyFuncCursor
+                                                                           LambdaParamCursor))
+                                                               , name = ()
+                                                               , typ = Nothing
+                                                               }
+                                                         , body =
+                                                             VariableExpression
+                                                               (Variable
+                                                                  { location =
+                                                                      ApplyFuncCursor
+                                                                        (LambdaBodyCursor
+                                                                           (ApplyFuncCursor
+                                                                              (LambdaBodyCursor
+                                                                                 ExpressionCursor)))
+                                                                  , name =
+                                                                      DeBrujinIndex
+                                                                        (DeBrujinNesting
+                                                                           1)
+                                                                  , typ =
+                                                                      Nothing
+                                                                  })
+                                                         , typ = Nothing
+                                                         })
+                                                , argument =
+                                                    VariableExpression
+                                                      (Variable
+                                                         { location =
+                                                             ApplyFuncCursor
+                                                               (LambdaBodyCursor
+                                                                  (ApplyArgCursor
+                                                                     ExpressionCursor))
+                                                         , name =
+                                                             DeBrujinIndex
+                                                               (DeBrujinNesting
+                                                                  0)
+                                                         , typ = Nothing
+                                                         })
+                                                , typ = Nothing
+                                                })
+                                       , typ = Nothing
+                                       })
+                              , argument =
+                                  LiteralExpression
+                                    (NumberLiteral
+                                       (Number
+                                          { location =
+                                              ApplyArgCursor ExpressionCursor
+                                          , number = IntegerNumber 123
+                                          , typ =
+                                              Just
+                                                (ConstantType
+                                                   (TypeConstant
+                                                      { location =
+                                                          ApplyArgCursor
+                                                            (SignatureCursor
+                                                               TypeCursor)
+                                                      , name = IntegerTypeName
+                                                      }))
+                                          }))
+                              , typ = Nothing
+                              })
+                     , mappings =
+                         M.fromList
+                           [ ( ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 14, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 17, name = ""}
+                                 })
+                           , ( ApplyFuncCursor ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 2, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor ExpressionCursor)
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 10, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor ExpressionCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 5, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 8, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor
+                                       (LambdaBodyCursor ExpressionCursor)))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 7, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 8, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyFuncCursor LambdaParamCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 5, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 6, name = ""}
+                                 })
+                           , ( ApplyFuncCursor
+                                 (LambdaBodyCursor
+                                    (ApplyArgCursor ExpressionCursor))
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 10, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 11, name = ""}
+                                 })
+                           , ( ApplyFuncCursor LambdaParamCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos {line = 1, column = 2, name = ""}
+                                 , end =
+                                     SourcePos {line = 1, column = 3, name = ""}
+                                 })
+                           , ( ApplyArgCursor ExpressionCursor
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 14, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 17, name = ""}
+                                 })
+                           , ( ApplyArgCursor (SignatureCursor TypeCursor)
+                             , SourceLocation
+                                 { start =
+                                     SourcePos
+                                       {line = 1, column = 19, name = ""}
+                                 , end =
+                                     SourcePos
+                                       {line = 1, column = 26, name = ""}
+                                 })
+                           ]
+                     , unresolvedUuids = mempty
+                     , unresolvedGlobals = mempty
+                     })|]))

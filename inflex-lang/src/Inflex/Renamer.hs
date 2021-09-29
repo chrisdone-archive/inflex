@@ -56,7 +56,7 @@ renameParsed ::
      Expression Parsed
   -> Either (NonEmpty RenameError) (IsRenamed (Expression Renamed))
 renameParsed expression =
-  let (result, (mappings, unresolvedGlobals, unresolvedUuids)) =
+  let (result, (mappings, unresolvedGlobals, unresolvedUuids, nameMappings)) =
         runState
           (runValidateT
              (runRenamer
@@ -71,6 +71,7 @@ renameParsed expression =
              , mappings
              , unresolvedGlobals
              , unresolvedUuids
+             , nameMappings
              }) result
 
 --------------------------------------------------------------------------------
@@ -483,6 +484,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
     Just (index, binding) -> do
       final <- finalizeCursor cursor ExpressionCursor location
       typ' <- renameSignature env typ
+      finalizeCursorForName cursor ExpressionCursor location
       deBrujinIndex <-
         case binding of
           LambdaBinding {} -> pure (DeBrujinIndex (DeBrujinNesting index))
@@ -506,6 +508,7 @@ renameVariable env@Env {scope, cursor, globals} variable@Variable { name
 renameParam :: Env -> Param Parsed -> Renamer (Param Renamed)
 renameParam env@Env{cursor} Param {..} = do
   final <- finalizeCursor cursor LambdaParamCursor location
+  finalizeCursorForName cursor ExpressionCursor location
   typ' <- renameSignature env typ
   pure Param {name = (), location = final, typ = typ'}
 
@@ -574,6 +577,12 @@ finalizeCursor cursor finalCursor loc = do
   modify (over _1 (M.insert final loc))
   pure final
   where final = cursor finalCursor
+
+finalizeCursorForName :: CursorBuilder -> Cursor -> StagedLocation Parsed -> Renamer ()
+finalizeCursorForName cursor finalCursor loc = do
+  modify (over _4 (M.insert final loc))
+  where
+    final = cursor finalCursor
 
 --------------------------------------------------------------------------------
 -- Fold returns
