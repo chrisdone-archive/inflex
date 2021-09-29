@@ -37,10 +37,10 @@ newtype Renamer a = Renamer
   { runRenamer :: ValidateT (NonEmpty RenameError) (State ( Map Cursor SourceLocation
                                                           , Set Text
                                                           , Set Uuid
-                                                          , Map Cursor SourceLocation)) a
+                                                          , Map Cursor Text)) a
   } deriving ( Functor
              , Applicative
-             , MonadState (Map Cursor SourceLocation, Set Text, Set Uuid, Map Cursor SourceLocation)
+             , MonadState (Map Cursor SourceLocation, Set Text, Set Uuid, Map Cursor Text)
              , Monad
              )
 
@@ -60,7 +60,7 @@ data Env = Env
 data IsRenamed a = IsRenamed
   { thing :: a
   , mappings :: Map Cursor SourceLocation
-  , nameMappings :: Map Cursor SourceLocation
+  , nameMappings :: Map Cursor Text
     -- ^ Mappings, subset of `mappings', just for names.
   , unresolvedGlobals :: Set Text
   , unresolvedUuids :: Set Uuid

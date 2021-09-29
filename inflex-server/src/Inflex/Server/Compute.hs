@@ -185,7 +185,7 @@ loadInputDocument (InputDocument {cells}) = do
     timed
       TimedStepper
       (RIO.runRIO
-         Eval{glogfunc = mempty, globals = evalEnvironment1 loaded}
+         Eval {glogfunc = mempty, globals = evalEnvironment1 loaded}
          (RIO.timeout
             (1000 * milliseconds)
             (evalDocument1' evalCache (evalEnvironment1 loaded) defaulted)))?
@@ -203,7 +203,14 @@ loadInputDocument (InputDocument {cells}) = do
           topo))
   outputCells <-
     RIO.pooledMapConcurrently
-      (\Named {uuid = Uuid uuid, name, thing, order, code, dependencies, position} -> do
+      (\Named { uuid = Uuid uuid
+              , name
+              , thing
+              , order
+              , code
+              , dependencies
+              , position
+              } -> do
          glog (CellResultOk name (either (const False) (const True) thing))
          case thing of
            Left loadError -> glog (CellError loadError)
@@ -211,26 +218,21 @@ loadInputDocument (InputDocument {cells}) = do
          let result =
                either
                  (Shared.ResultError . toCellError)
-                 (\EvaledExpression {cell = Cell1 {parsed, mappings, scheme}, ..} ->
+                 (\EvaledExpression { cell = Cell1 { parsed
+                                                   , mappings
+                                                   , scheme
+                                                   , nameMappings
+                                                   }
+                                    , ..
+                                    } ->
                     Shared.ResultOk
                       (Shared.ResultTree
                          { tree =
-                             case parsed
-                                  -- A temporary
-                                  -- specialization to
-                                  -- display lambdas in a
-                                  -- cell as the original
-                                  -- code. But, later,
-                                  -- toTree will render
-                                  -- lambdas structurally.
-                                  of
-                               LambdaExpression {} ->
-                                 Shared.MiscTree2
-                                   Shared.versionRefl
-                                   (Shared.OriginalSource code)
-                                   code
-                               _ ->
-                                 toTree mappings (pure parsed) resultExpression
+                             toTree
+                               mappings
+                               nameMappings
+                               (pure parsed)
+                               resultExpression
                          , typ = typeOf (schemeType scheme)
                          }))
                  thing
@@ -272,10 +274,11 @@ evalDocument1' cache env cells = do
 
 toTree ::
      (Map Cursor SourceLocation)
+  -> (Map Cursor SourceLocation)
   -> Maybe (Expression Parsed)
   -> Expression Resolved
   -> Shared.Tree2
-toTree mappings original final =
+toTree mappings nameMappings original final =
   case final of
     ArrayExpression Array {typ, expressions} -- Recognize a table.
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
@@ -313,7 +316,7 @@ toTree mappings original final =
                                                 "TODO: Serious bug if this occurs. FIXME.")
                                              (\(fieldIndex, expression) ->
                                                 toTree
-                                                  mappings
+                                                  mappings nameMappings
                                                   (fmap
                                                      (\FieldE {expression = e} ->
                                                         e)
@@ -335,7 +338,7 @@ toTree mappings original final =
         (let originalArray = inArray original
           in V.imap
                (\i expression ->
-                  toTree mappings (atIndex i originalArray) expression)
+                  toTree mappings nameMappings (atIndex i originalArray) expression)
                expressions)
     RecordExpression Record {fields} ->
       Shared.RecordTree2
@@ -349,7 +352,7 @@ toTree mappings original final =
                     , version = Shared.versionRefl
                     , value =
                         toTree
-                          mappings
+                          mappings nameMappings
                           (fmap
                              (\FieldE {expression = e} -> e)
                              (atNth i originalRecord))
@@ -373,14 +376,14 @@ toTree mappings original final =
         (case argument of
            Just arg ->
              Shared.VariantArgument
-               (toTree mappings (join (inVariant original)) arg)
+               (toTree mappings nameMappings (join (inVariant original)) arg)
            Nothing -> Shared.NoVariantArgument)
     HoleExpression {} -> Shared.HoleTree (originalSource id True)
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
         (originalSource id True)
-        (printerText emptyPrinterConfig  expression)
+        (printerText PrinterConfig {nameMappings} expression)
   where
     inRecord :: Maybe (Expression Parsed) -> Maybe [FieldE Parsed]
     inRecord =

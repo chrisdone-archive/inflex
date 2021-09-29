@@ -14,6 +14,7 @@
 module Inflex.Printer
   ( tracePrinter
   , Printer
+  , PrinterConfig(..)
   , emptyPrinterConfig
   , printer
   , printerText
@@ -30,6 +31,7 @@ import           Data.Coerce
 import           Data.Foldable
 import           Data.List
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.String
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -70,7 +72,7 @@ instance IsString Print where
   fromString = Print . pure . fromString
 
 data PrinterConfig = PrinterConfig
-  { nameMappings :: Map Cursor SourceLocation
+  { nameMappings :: Map Cursor Text
   }
 
 data Print = Print
@@ -240,10 +242,16 @@ instance Printer (Param Parsed) where
   printer Param{name} = printer name
 
 instance Stage s => Printer (Variable s) where
-  printer Variable {name} =
+  printer Variable {name, location} =
     case reflectStage @s of
       StageResolved ->
-        "$" <> printShow (coerce (deBrujinIndexNesting name) :: Int)
+        Print $ do
+          PrinterConfig {nameMappings} <- ask
+          case M.lookup location nameMappings of
+            Nothing ->
+              runPrint
+                ("$" <> printShow (coerce (deBrujinIndexNesting name) :: Int))
+            Just text -> runPrint (printer text)
       StageParsed -> printer name
 
 instance Stage s =>  Printer (Global s) where

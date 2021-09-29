@@ -247,10 +247,7 @@ spec = do
              , nameMappings =
                  M.fromList
                    [ ( ExpressionCursor
-                     , SourceLocation
-                         { start = SourcePos {line = 1, column = 1, name = ""}
-                         , end = SourcePos {line = 1, column = 2, name = ""}
-                         })
+                     , "x")
                    ]
              , mappings =
                  M.fromList

@@ -25,13 +25,13 @@ stepDefaultedTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepDefaultedTextly text' =
   RIO.runRIO
     Eval {glogfunc = mempty, globals = mempty}
-    (fmap (fmap printerText) (evalTextDefaulted mempty "" text'))
+    (fmap (fmap (printerText emptyPrinterConfig)) (evalTextDefaulted mempty "" text'))
 
 stepTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepTextly text' =
   RIO.runRIO
     Eval {glogfunc = mempty, globals = mempty}
-    (fmap (fmap printerText) (evalTextDefaulted mempty "" text'))
+    (fmap (fmap (printerText emptyPrinterConfig)) (evalTextDefaulted mempty "" text'))
 
 stepDefaulted' :: Text -> IO (Either (DefaultEvalError ()) (Expression Resolved))
 stepDefaulted' text' =

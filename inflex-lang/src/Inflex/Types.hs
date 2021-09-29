@@ -204,6 +204,7 @@ data Cell1 = Cell1
   , defaultedClassConstraints :: !(Seq (Default Polymorphic))
   , ambiguousClassConstraints :: !(Seq (ClassConstraint Polymorphic))
   , sourceHash :: !SHA512
+  , nameMappings :: !(Map Cursor Text)
   }
 
 -- | A defaulted class constraint. Contains the original and defaulted

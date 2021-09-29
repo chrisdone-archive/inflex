@@ -101,6 +101,7 @@ data LoadedExpression = LoadedExpression
   , uuids :: Set Uuid
     -- ^ UUIDs that we depend on.
   , mappings :: !(Map Cursor SourceLocation)
+  , nameMappings :: !(Map Cursor Text)
   }
 
 data EvaledExpression = EvaledExpression
@@ -379,6 +380,7 @@ dependentLoadDocument =
                       , parsedExpression
                       , sourceHash = makeSourceHash uuids
                       , mappings
+                      , nameMappings = mempty -- The fast parser doesn't parse names.
                       })
              Right (LexedWithUuids tokens uuids) -> do
                glog (UsedLexerWithUUIDs name)
@@ -390,11 +392,12 @@ dependentLoadDocument =
                          (parsed, )
                          (first RenamerErrors (renameParsed parsed)) of
                  Left e -> pure (Left (RenameLoadError e))
-                 Right (parsedExpression, renamed) -> do
+                 Right (parsedExpression, renamed@IsRenamed{nameMappings}) -> do
                    isResolved <-
                      resolveRenamedCell hashedCells nameHashes renamed
                    pure
-                     (do resolvedExpression@IsResolved {mappings} <- isResolved
+                     (do resolvedExpression@IsResolved {mappings} <-
+                           isResolved
                          pure
                            LoadedExpression
                              { uuids
@@ -402,9 +405,11 @@ dependentLoadDocument =
                              , parsedExpression
                              , sourceHash = makeSourceHash uuids
                              , mappings
+                             , nameMappings
                              })
              Right (Renamed renamed@IsRenamed { unresolvedUuids = uuids
                                               , mappings
+                                              , nameMappings
                                               } parsedExpression) -> do
                glog (UsedFullLexParseRenameCodePath name)
                isResolved <- resolveRenamedCell hashedCells nameHashes renamed
@@ -417,6 +422,7 @@ dependentLoadDocument =
                          , parsedExpression
                          , sourceHash = makeSourceHash uuids
                          , mappings
+                         , nameMappings
                          }))
           result
       let nameHashes' =
