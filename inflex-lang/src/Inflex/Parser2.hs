@@ -48,12 +48,13 @@ parseBytes bs =
              -- Didn't feel like re-implementing this parser.
              (T.decodeUtf8 remaining) of
         Left {} -> Left Failed
-        Right msig ->
-          case a of
-            ArrayExpression array -> Right (ArrayExpression array {typ = msig})
+        Right msig
+          | Just {} <- msig
+          , ArrayExpression array <- a ->
+            Right (ArrayExpression array {typ = msig})
             -- Above: We only parse arrays with the fast parser,
             -- and the signature is required.
-            _ -> Left Failed
+          | otherwise -> pure a
     F.Fail -> Left Failed
     F.Err e -> Left e
 
