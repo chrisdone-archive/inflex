@@ -73,6 +73,9 @@ instance IsString Print where
 
 data PrinterConfig = PrinterConfig
   { nameMappings :: Map Cursor Text
+  -- TODO: Add whether parens are needed, then add two combinators:
+  -- 1. A `parens' combinator that'll add parens if needed, where the default is true.
+  -- 2. A `naked` combinator that'll say that parens aren't needed in certain cases.
   }
 
 data Print = Print
