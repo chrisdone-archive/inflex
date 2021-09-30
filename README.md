@@ -142,3 +142,5 @@ Get these details from lastpass Note 'inflex azure gitlab service principal' .
 View grafana
 
     kubectl port-forward prometheus-deployment-5ccfc968dc-bk484 3000
+
+..
