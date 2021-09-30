@@ -497,10 +497,14 @@ dotFuncParser = do
                       , typ = Nothing
                       , style = DotApply
                       }))
-            Right (name, _) ->
-              pure
+            Right (name, _) -> do
+              -- TODO: This will create a bad parse. Fix it with a lookahead for (, { and [.
+              finishApplyParser
                 (PropExpression
-                   (Prop {typ = Nothing, expression = argument, ..}))
+                   (Prop {typ = Nothing, expression = argument, ..})) <>
+                pure
+                  (PropExpression
+                     (Prop {typ = Nothing, expression = argument, ..}))
         continue <-
           fmap (const True) (token_ ExpectedPeriod (preview _PeriodToken)) <>
           pure False

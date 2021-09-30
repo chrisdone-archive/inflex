@@ -246,7 +246,7 @@ spec = do
                       })
              , nameMappings =
                  M.fromList
-                   [ ( ExpressionCursor
+                   [ ( LambdaParamCursor
                      , "x")
                    ]
              , mappings =
