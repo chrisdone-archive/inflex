@@ -145,68 +145,66 @@ getAppDashboardR =
                                                    (diffUTCTime
                                                       documentCreated
                                                       now'))))))
-                      when
-                        False
-                        (do h1_ "Files"
-                            p_
-                              "You can upload CSV files so that they can be used in your documents."
-                            p_
-                              (small_
-                                 (do "At the moment, the maximum file size is "
-                                     toHtml
-                                       (bytesShorthand
-                                          (maxUploadSizeBytes config))))
-                            form_
-                              [ action_ (url UploadFileR)
-                              , method_ "post"
-                              , id_ "file-upload-form"
-                              , enctype_ "multipart/form-data"
-                              ]
-                              (do input_
-                                    [ type_ "file"
-                                    , id_ "file-input"
-                                    , accept_ "text/csv"
-                                    , style_ "display:none"
-                                    , name_ "file"
-                                    ]
-                                  button_
-                                    [class_ "new-document", id_ "file-select"]
-                                    "Upload File")
-                            if null files
-                              then p_ "No files yet."
-                              else div_
-                                     [class_ "documents"]
-                                     (forM_
-                                        files
-                                        (\(Entity _fileId File {..}) ->
-                                           div_
-                                             [class_ "document"]
-                                             (do div_
-                                                   [class_ "document-header"]
-                                                   (do p_
-                                                         [ class_
-                                                             "document-title"
-                                                         ]
-                                                         (a_ (toHtml fileName)))
-                                                 p_
-                                                   [class_ "file-size"]
-                                                   (do "Size: "
-                                                       toHtml
-                                                         (bytesShorthand
-                                                            fileBytes))
-                                                 p_
-                                                   [ class_ "document-date"
-                                                   , title_
-                                                       (T.pack
-                                                          (show fileCreated))
-                                                   ]
-                                                   (toHtml
-                                                      (Formatting.format
-                                                         (Formatting.Time.diff
-                                                            True)
-                                                         (diffUTCTime
-                                                            fileCreated
-                                                            now')))))))))))
+                      do h1_ "Files"
+                         p_
+                           "You can upload CSV files so that they can be used in your documents."
+                         p_
+                           (small_
+                              (do "At the moment, the maximum file size is "
+                                  toHtml
+                                    (bytesShorthand
+                                       (maxUploadSizeBytes config))))
+                         form_
+                           [ action_ (url UploadFileR)
+                           , method_ "post"
+                           , id_ "file-upload-form"
+                           , enctype_ "multipart/form-data"
+                           ]
+                           (do input_
+                                 [ type_ "file"
+                                 , id_ "file-input"
+                                 , accept_ "text/csv"
+                                 , style_ "display:none"
+                                 , name_ "file"
+                                 ]
+                               button_
+                                 [class_ "new-document", id_ "file-select"]
+                                 "Upload File")
+                         if null files
+                           then p_ "No files yet."
+                           else div_
+                                  [class_ "documents"]
+                                  (forM_
+                                     files
+                                     (\(Entity _fileId File {..}) ->
+                                        div_
+                                          [class_ "document"]
+                                          (do div_
+                                                [class_ "document-header"]
+                                                (do p_
+                                                      [ class_
+                                                          "document-title"
+                                                      ]
+                                                      (a_ (toHtml fileName)))
+                                              p_
+                                                [class_ "file-size"]
+                                                (do "Size: "
+                                                    toHtml
+                                                      (bytesShorthand
+                                                         fileBytes))
+                                              p_
+                                                [ class_ "document-date"
+                                                , title_
+                                                    (T.pack
+                                                       (show fileCreated))
+                                                ]
+                                                (toHtml
+                                                   (Formatting.format
+                                                      (Formatting.Time.diff
+                                                         True)
+                                                      (diffUTCTime
+                                                         fileCreated
+                                                         now'))))))))))
 
 postAppDashboardR :: Handler (Html ())
 postAppDashboardR = pure (pure ())

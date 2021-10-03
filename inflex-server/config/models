@@ -131,4 +131,5 @@ File
   hash Sha256
   bytes Word64
   mime Text
+  content ByteString
   deriving Show

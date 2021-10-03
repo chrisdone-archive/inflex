@@ -9,6 +9,7 @@ import Prelude
 
 import Control.Monad.State (class MonadState)
 import Data.Array (mapMaybe, concatMap)
+import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
@@ -187,7 +188,8 @@ render state =
                  [HH.text "Import"]
              , if meta . sandbox
                  then HH.text ""
-                 else HH.form
+                 else HH.text ""
+                      {-HH.form
                         [ HP.action (meta . logout)
                         , HP.method HP.POST
                         , if meta . loggedin
@@ -197,7 +199,7 @@ render state =
                         [ HH.button
                             [HP.class_ (HH.ClassName "logout full-button")]
                             [HH.text "Logout"]
-                        ]
+                        ]-}
              ]
          ]
      , HH.div
@@ -293,18 +295,22 @@ renderCsvWizard wizard =
     CsvChooseFile files ->
       HH.div
         [HP.class_ (HH.ClassName "csv-import")]
-        [ HH.h1 [] [HH.text "Choose a CSV file that you uploaded"]
-        , HH.ul
-            [HP.class_ (HH.ClassName "csv-files")]
-            (map
-               (\file ->
-                  HH.li
-                    [ HP.class_ (HH.ClassName "csv-file")
-                    , HE.onClick (\_ -> pure (ChooseCsvFile file))
-                    ]
-                    [HH.text (fileName file)])
-               files)
-        ]
+        (if Array.null files
+            then [ HH.h1 [] [HH.text "CSV upload"]
+                 , HH.p [] [HH.text "Upload a file in your dashboard and you can choose it here."]
+                 ]
+            else [ HH.h1 [] [HH.text "Choose a CSV file that you uploaded"]
+                 , HH.ul
+                     [HP.class_ (HH.ClassName "csv-files")]
+                     (map
+                        (\file ->
+                           HH.li
+                             [ HP.class_ (HH.ClassName "csv-file")
+                             , HE.onClick (\_ -> pure (ChooseCsvFile file))
+                             ]
+                             [HH.text (fileName file)])
+                        files)
+                 ])
 
 --------------------------------------------------------------------------------
 -- Eval

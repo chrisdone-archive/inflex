@@ -26,17 +26,17 @@ import           Yesod
 -- Latest migration
 
 latestVersion :: Int
-latestVersion = 11
+latestVersion = 12
 
 migrateToLatest :: MonadIO m => ReaderT SqlBackend m ()
 migrateToLatest  = run [s|
-
 INSERT INTO schema_versions VALUES (1);
 
--- mutations
-
-ALTER TABLE "revision_cell" ADD COLUMN "x" INT8 NULL;
-ALTER TABLE "revision_cell" ADD COLUMN "y" INT8 NULL;
+DROP TABLE file;
+CREATE TABLE "file"("id" SERIAL8  PRIMARY KEY UNIQUE,"account" INT8 NOT NULL,"name" VARCHAR NOT NULL,"created" TIMESTAMP WITH TIME ZONE NOT NULL,"hash" BYTEA NOT NULL,"bytes" INT8 NOT NULL,"mime" VARCHAR NOT NULL,"content" BYTEA NOT NULL);
+ALTER TABLE "file" ADD CONSTRAINT "file_account_fkey" FOREIGN KEY("account") REFERENCES "account"("id");
+-- requires PG-12.8, that's what the server supports. my local desktop version is 10
+ALTER TABLE file SET (toast_tuple_target=128);
 
 |]
 
@@ -76,7 +76,7 @@ manualMigration _stripeConfig _x
              liftIO $
                putStrLn
                  ("Migrating from " ++
-                  show version ++ " to " ++ show version ++ " ...")
+                  show version ++ " to " ++ show latestVersion ++ " ...")
              migrateToLatest
              liftIO $ putStrLn "Done!"
            else error ("At mysterious schema version: " ++ show version)

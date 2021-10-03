@@ -438,9 +438,8 @@ rpcCsvGuessSchema file@Shared.File {id = fileId} = do
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash}) -> do
-           bytes <- readFileFromHash fileHash
-           pure (case guessCsvSchema file bytes of
+         Just (Entity _ File {fileHash, fileContent}) -> do
+           pure (case guessCsvSchema file (L.fromStrict fileContent) of
                    Left err -> Shared.GuessCassavaFailure err
                    Right (schema, _rows) -> Shared.CsvGuessed schema))
 
@@ -459,9 +458,8 @@ rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash}) -> do
-           bytes <- readFileFromHash fileHash
-           case Csv.decodeByName bytes of
+         Just (Entity _ File {fileHash, fileContent}) -> do
+           case Csv.decodeByName (L.fromStrict  fileContent) of
              Left _err -> pure (Shared.CsvColumnFailures mempty)
              Right (_headers, _rows :: Vector (HashMap Text Text)) ->
                pure Shared.CsvParsesHappily)
@@ -482,9 +480,8 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash}) -> do
-           bytes <- readFileFromHash fileHash
-           case Csv.decodeByName bytes of
+         Just (Entity _ File {fileHash, fileContent}) -> do
+           case Csv.decodeByName (L.fromStrict  fileContent) of
              Left err ->
                error
                  ("Unexpected CSV parse fail; the schema should have \

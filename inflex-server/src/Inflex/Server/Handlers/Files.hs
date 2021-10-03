@@ -7,7 +7,7 @@
 
 module Inflex.Server.Handlers.Files
   ( postUploadFileR
-  , readFileFromHash
+  -- , readFileFromHash
   ) where
 
 import qualified Data.ByteString.Lazy as L
@@ -30,6 +30,8 @@ import           Path
 import           Yesod
 import           Yesod.Core.Types as Yesod
 
+-- TODO: file upload limit
+
 postUploadFileR :: Handler ()
 postUploadFileR =
   withLogin
@@ -38,10 +40,7 @@ postUploadFileR =
        if fileContentType fileInfo == "text/csv"
          then do
            !(hash, bytes, len) <- hashFile fileInfo
-           !casfilename <- parseRelFile (sha256AsHexString hash)
            !dir <- fmap (uploadsDir . appConfig) getYesod
-           let casPath = toFilePath (dir </> casfilename)
-           liftIO (S.writeFile casPath bytes)
            now <- liftIO getCurrentTime
            runDB
              (insert_
@@ -52,6 +51,7 @@ postUploadFileR =
                   , fileBytes = fromIntegral len -- TODO: fromIntegral bad
                   , fileHash = hash
                   , fileMime = fileContentType fileInfo
+                  , fileContent = bytes
                   })
            redirect AppDashboardR
          else invalidArgs ["invalid file type, should be csv"])
@@ -77,16 +77,16 @@ hashFile fileInfo =
                    liftIO (modifyIORef' lenref (+ S.length chunk)) *> pure chunk)
         !compressed <-
           runConduitRes
-            (fileSourceRaw fileInfo .| countBytes .| gzip .|
+            (fileSourceRaw fileInfo .| countBytes .| -- gzip .|
              fmap L.toStrict CB.sinkLbs)
         len <- readIORef lenref
         pure (sha256ByteString compressed, compressed, len))
 
-readFileFromHash :: Sha256 -> Handler L.ByteString
-readFileFromHash hash = do
-  dir <- fmap (uploadsDir . appConfig) getYesod
-  casfilename <- parseRelFile (sha256AsHexString hash)
-  let casPath = toFilePath (dir </> casfilename)
-  lbs <- liftIO (runConduitRes (CB.sourceFile casPath .| ungzip .| CB.sinkLbs))
-  -- liftIO (print lbs)
-  pure lbs
+-- readFileFromHash :: Sha256 -> Handler L.ByteString
+-- readFileFromHash hash = do
+--   dir <- fmap (uploadsDir . appConfig) getYesod
+--   casfilename <- parseRelFile (sha256AsHexString hash)
+--   let casPath = toFilePath (dir </> casfilename)
+--   lbs <- liftIO (runConduitRes (CB.sourceFile casPath .| ungzip .| CB.sinkLbs))
+--   -- liftIO (print lbs)
+--   pure lbs
