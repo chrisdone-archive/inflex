@@ -144,3 +144,49 @@ View grafana
     kubectl port-forward prometheus-deployment-5ccfc968dc-bk484 3000
 
 ..
+
+
+# Local push to prod
+
+Switch to a pristine copy of inflex, e.g. ../inflex-copy and git pull:
+
+```
+cd ../inflex-copy
+git pull
+```
+
+Login:
+
+```
+docker logout registry.gitlab.com
+docker login registry.gitlab.com
+chrisdone-skyabove
+```
+
+Update patch if needed:
+
+    docker image build . -f docker/sky-above/inflex/patch.Dockerfile -t registry.gitlab.com/sky-above/inflex/patch:2021-10-03
+
+Copy the patch name to prod.Dockerfile.
+
+Build prod with a commi name:
+
+    docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t registry.gitlab.com/sky-above/inflex/prod:$(git rev-parse --verify HEAD)
+
+Switch back to `inflex/` real repo.
+
+Update the `inflex-server.yaml` file with the output of
+
+    git rev-parse --verify HEAD
+
+Copy it to the prod:
+
+    scp kube/* do-inflex-prod:kube/
+
+Apply it:
+
+    ssh do-inflex-prod ./kubectl apply -f kube
+
+Observe success:
+
+    ssh do-inflex-prod ./kubectl --namespace ingress-nginx get pods -w
