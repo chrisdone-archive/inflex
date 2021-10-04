@@ -190,3 +190,25 @@ Apply it:
 Observe success:
 
     ssh do-inflex-prod ./kubectl --namespace ingress-nginx get pods -w
+
+# Emacs
+
+``` lisp
+(prodigy-define-service
+  :name "inflex-kube-forward"
+  :tags '(ssh-tunnel)
+  :tunnel (list
+           :localport  "38161"
+           :tunnel-ip  "127.0.0.1"
+           :tunnel-port  "38161"
+           :host  "do-inflex-prod"))
+
+(prodigy-define-service
+  :name "inflex-pg-forward"
+  :tags '(ssh-tunnel)
+  :tunnel (list
+           :localport  "54322"
+           :tunnel-ip  "private-inflex-prod-do-user-7291156-0.b.db.ondigitalocean.com"
+           :tunnel-port  "25060"
+           :host  "do-inflex-prod"))
+```
