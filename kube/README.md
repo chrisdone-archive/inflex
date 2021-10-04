@@ -19,16 +19,16 @@ chris@precision:~/Work/skyabove/inflex/fly
 
 # Update secret
 
-kubectl delete secret inflex-server-config --namespace ingress-basic
-kubectl create secret generic inflex-server-config --from-file=$HOME/Work/skyabove/inflex/live/config.yml --namespace ingress-basic
+kubectl delete secret inflex-server-config --namespace ingress-nginx
+kubectl create secret generic inflex-server-config --from-file=$HOME/Work/skyabove/inflex/live/config.yml --namespace ingress-nginx
 
 # Redeploy
 
-kubectl apply -f kube/inflex-server.yaml --namespace ingress-basic
+kubectl apply -f kube/inflex-server.yaml --namespace ingress-nginx
 
 # Setup grafana
 
-kubectl create deployment grafana --image=docker.io/grafana/grafana:7.3.5 --namespace ingress-basic
+kubectl create deployment grafana --image=docker.io/grafana/grafana:7.3.5 --namespace ingress-nginx
 
 # Prometheus
 
