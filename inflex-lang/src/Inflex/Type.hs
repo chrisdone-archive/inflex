@@ -313,10 +313,12 @@ functionScheme location =
          maybeType ["any_empty"] location boolT)
     FromOkFunction -> mono (b .-> okishType BuiltIn c b .-> b)
     ScanFunction -> mono (a .-> (a .-> e .-> a) .-> ArrayType e .-> ArrayType a)
+    ReduceFunction -> mono (a .-> (a .-> e .-> a) .-> ArrayType e .-> a)
     AccumFunction ->
       mono
         (a .->
-         (record [("state", a), ("item", e)] .-> record [("state", a), ("item", d)]) .->
+         (record [("state", a), ("item", e)] .->
+          record [("state", a), ("item", d)]) .->
          ArrayType e .->
          record [("state", a), ("items", ArrayType d)])
   where
@@ -336,16 +338,17 @@ functionScheme location =
     d = typeVariable 3
     e = typeVariable 4
     record fs =
-      RecordType (RowType
-         TypeRow
-           { location = BuiltIn
-           , fields =
-               map
-                 (\(name, typ) ->
-                    Field {name = FieldName name, typ, location = BuiltIn})
-                 fs
-           , typeVariable = Nothing
-           })
+      RecordType
+        (RowType
+           TypeRow
+             { location = BuiltIn
+             , fields =
+                 map
+                   (\(name, typ) ->
+                      Field {name = FieldName name, typ, location = BuiltIn})
+                   fs
+             , typeVariable = Nothing
+             })
     typeVariable index = VariableType (typeVariable' index TypeKind)
     typeVariable' index k =
       TypeVariable {location = (), prefix = (), index = index, kind = k}

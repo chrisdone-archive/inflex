@@ -431,6 +431,7 @@ instance Printer Function where
       SumFunction -> "array_sum"
       AccumFunction -> "array_accum"
       ScanFunction -> "array_scan"
+      ReduceFunction -> "array_reduce"
       MinimumFunction -> "array_minimum"
       MaximumFunction -> "array_maximum"
       AverageFunction -> "array_average"

@@ -664,6 +664,7 @@ data Function
   | NotFunction
   | AccumFunction
   | ScanFunction
+  | ReduceFunction
   -- TODO:
   | AndFunction
   | OrFunction

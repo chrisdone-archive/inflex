@@ -137,6 +137,7 @@ prims =
   , object ["name" .= "array_sort", "display" .= "sort"]
   , object ["name" .= "array_accum", "display" .= "accum"]
   , object ["name" .= "array_scan", "display" .= "scan"]
+  , object ["name" .= "array_reduce", "display" .= "reduce"]
   , object ["name" .= "array_concat", "display" .= "concat"]
   , object ["name" .= "array_find", "display" .= "find"]
   , object ["name" .= "not", "display" .= "not"]

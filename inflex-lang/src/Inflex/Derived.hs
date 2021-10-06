@@ -45,3 +45,12 @@ scanFunction =
       \     nil, \
       \     step: { item: cons(step.state,step.item), state: cons(step.state,step.item) }\
       \  ).items")
+
+reduceFunction :: Expression Resolved
+reduceFunction =
+  $(compile
+      "nil: cons: list: \
+      \  list.@prim:array_accum(\
+      \     nil, \
+      \     step: { item: cons(step.state,step.item), state: cons(step.state,step.item) }\
+      \  ).state")

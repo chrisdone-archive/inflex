@@ -353,6 +353,14 @@ evalApplyNF expression =
         cons
         (ArrayExpression array)
         (expressionType expression)
+    -- Reduce:
+    ApplyFunction3 ReduceFunction nil cons (ArrayExpression array) ->
+      apply3
+        reduceFunction
+        nil
+        cons
+        (ArrayExpression array)
+        (expressionType expression)
     -- Sum:
     ApplyFold1 SumFunction IntegerOpInstance {} array ->
       evalAtomicFoldInteger V.sum array expression "sum_empty"

@@ -335,6 +335,7 @@ prims =
     , ("array_all", AllFunction)
     , ("array_accum", AccumFunction)
     , ("array_scan", ScanFunction)
+    , ("array_reduce", ReduceFunction)
     , ("from_ok", FromOkFunction)
     , ("not", NotFunction)
     ]
