@@ -173,6 +173,10 @@ Build prod with a commi name:
 
     docker image build . -f docker/sky-above/inflex/prod.Dockerfile -t registry.gitlab.com/sky-above/inflex/prod:$(git rev-parse --verify HEAD)
 
+Push the image to the registry:
+
+    docker push registry.gitlab.com/sky-above/inflex/prod:$(git rev-parse --verify HEAD)
+
 Switch back to `inflex/` real repo.
 
 Update the `inflex-server.yaml` file with the output of
