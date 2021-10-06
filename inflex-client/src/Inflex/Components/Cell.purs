@@ -58,6 +58,7 @@ data State = State
   { cell :: Cell
   , cells:: Map UUID (OutputCell)
   , dragger :: Dragger.Dragger
+  , deleted :: Boolean
   }
 
 data Command
@@ -106,7 +107,7 @@ component =
   H.mkComponent
     { initialState:
         (\(Input {cell, cells, dragger}) ->
-           State {cell: outputCellToCell cell, cells, dragger})
+           State {cell: outputCellToCell cell, cells, dragger,deleted:false})
     , render: \state -> timed "Cell.render" (\_ -> render state)
     , eval:
         H.mkEval
@@ -182,16 +183,17 @@ eval =
         Manage.Created (element) ->
           case Manage.fromElement element of
             Just htmlelement -> do
-              State{dragger} <- H.get
+              State {dragger} <- H.get
               void
-               (H.subscribe
-                  (Src.effectEventSource
-                     (\emitter -> do
-                        Dragger.attach htmlelement
-                                       3
-                                       dragger
-                                       (\x y -> Src.emit emitter (TriggerRepositionCell x y))
-                        pure mempty)))
+                (H.subscribe
+                   (Src.effectEventSource
+                      (\emitter -> do
+                         Dragger.attach
+                           htmlelement
+                           3
+                           dragger
+                           (\x y -> Src.emit emitter (TriggerRepositionCell x y))
+                         pure mempty)))
             Nothing -> pure unit
         Manage.Removed _ -> pure unit
     TriggerUpdatePath update -> do
@@ -211,7 +213,9 @@ eval =
           H.modify_ (\(State s) -> State (s {cells = cells, dragger = dragger}))
           _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
           pure unit
-    DeleteCell -> H.raise RemoveCell
+    DeleteCell -> do
+      H.modify_ (\(State s) -> State (s {deleted = true}))
+      H.raise RemoveCell
 
 --------------------------------------------------------------------------------
 -- Render
@@ -223,7 +227,10 @@ render :: forall keys q m. MonadAff m =>
                   Command
 render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid}
               , cells
-              }) =
+              , deleted
+              })
+  | deleted = HH.text ""
+  | otherwise =
   HH.div
     [HP.class_ (HH.ClassName "cell-wrapper")
     ,HP.attr (AttrName "id") ("cell-" <> uuid)
