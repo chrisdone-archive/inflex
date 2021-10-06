@@ -429,6 +429,8 @@ instance Printer Function where
       AndFunction -> "array_and"
       OrFunction -> "array_or"
       SumFunction -> "array_sum"
+      AccumFunction -> "array_accum"
+      ScanFunction -> "array_scan"
       MinimumFunction -> "array_minimum"
       MaximumFunction -> "array_maximum"
       AverageFunction -> "array_average"

@@ -662,6 +662,8 @@ data Function
   | FromOkFunction
   | ConcatFunction
   | NotFunction
+  | AccumFunction
+  | ScanFunction
   -- TODO:
   | AndFunction
   | OrFunction

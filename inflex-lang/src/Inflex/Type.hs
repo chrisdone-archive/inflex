@@ -26,6 +26,15 @@ typeOutput =
                               } -> typeOutput output
     t -> t
 
+-- One layer function output.
+funOutput1 :: Type s -> Type s
+funOutput1 =
+  \case
+    ApplyType TypeApplication { function = ApplyType TypeApplication {function = ConstantType TypeConstant {name = FunctionTypeName}}
+                              , argument = output
+                              } -> output
+    t -> t
+
 typeInput :: Type s -> Type s
 typeInput =
   \case
@@ -303,6 +312,13 @@ functionScheme location =
         ((a .-> boolT) .-> ArrayType a .->
          maybeType ["any_empty"] location boolT)
     FromOkFunction -> mono (b .-> okishType BuiltIn c b .-> b)
+    ScanFunction -> mono (a .-> (a .-> e .-> e) .-> ArrayType a .-> e)
+    AccumFunction ->
+      mono
+        (a .->
+         (record [("state", a), ("item", e)] .-> record [("state", a), ("item", d)]) .->
+         ArrayType e .->
+         record [("state", a), ("items", ArrayType d)])
   where
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
@@ -317,6 +333,19 @@ functionScheme location =
     c = typeVariable' 2 RowKind
     a = typeVariable 0
     b = typeVariable 1
+    d = typeVariable 3
+    e = typeVariable 4
+    record fs =
+      RecordType (RowType
+         TypeRow
+           { location = BuiltIn
+           , fields =
+               map
+                 (\(name, typ) ->
+                    Field {name = FieldName name, typ, location = BuiltIn})
+                 fs
+           , typeVariable = Nothing
+           })
     typeVariable index = VariableType (typeVariable' index TypeKind)
     typeVariable' index k =
       TypeVariable {location = (), prefix = (), index = index, kind = k}

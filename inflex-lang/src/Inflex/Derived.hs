@@ -36,3 +36,12 @@ allFunction =
       \    #find_failed: #ok(#true), \
       \    #ok(v): #ok(#false) \
       \ }")
+
+scanFunction :: Expression Resolved
+scanFunction =
+  $(compile
+      "nil: cons: list: \
+      \  list.@prim:array_accum(\
+      \     nil, \
+      \     step: { item: cons(step.state,step.item), state: cons(step.state,step.item) }\
+      \  ).items")

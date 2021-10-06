@@ -342,13 +342,24 @@ evalApplyNF expression =
     -- Lookups:
     ApplyFunction2 FindFunction function (ArrayExpression array) ->
       evalFind function array expression
+    -- Accum:
+    ApplyFunction3 AccumFunction nil cons (ArrayExpression array) ->
+      evalAccum nil cons array expression
+    -- Scan:
+    ApplyFunction3 ScanFunction nil cons (ArrayExpression array) ->
+      apply3
+        scanFunction
+        nil
+        cons
+        (ArrayExpression array)
+        (expressionType expression)
     -- Sum:
     ApplyFold1 SumFunction IntegerOpInstance {} array ->
       evalAtomicFoldInteger V.sum array expression "sum_empty"
     ApplyFold1 SumFunction (DecimalOpInstance places _) array ->
       evalAtomicFoldDecimal places (V.foldl1' plus) array expression "sum_empty"
     -- Maximum:
-    ApplyFold0 MaximumFunction CompareIntegerInstance{} array ->
+    ApplyFold0 MaximumFunction CompareIntegerInstance {} array ->
       evalAtomicFoldInteger V.maximum array expression "maximum_empty"
     ApplyFold0 MaximumFunction (CompareDecimalInstance places) array ->
       evalAtomicFoldDecimal
@@ -619,6 +630,41 @@ apply2 function argument1 argument2 typ =
       , style = EvalApply
       }
 
+apply3 ::
+     Expression Resolved
+  -> Expression Resolved
+  -> Expression Resolved
+  -> Expression Resolved
+  -> Type Generalised
+  -> RIO Eval (Expression Resolved)
+apply3 function argument1 argument2 argument3 typ =
+  ignore $
+  evalApply
+    id
+    Apply
+      { location = BuiltIn
+      , function =
+          ApplyExpression
+            Apply
+              { function =
+                  ApplyExpression
+                    Apply
+                      { function
+                      , typ -- TODO:
+                      , argument = argument1
+                      , location = BuiltIn
+                      , style = EvalApply
+                      }
+              , typ -- TODO:
+              , argument = argument2
+              , location = BuiltIn
+              , style = EvalApply
+              }
+      , typ
+      , argument = argument3
+      , style = EvalApply
+      }
+
 --------------------------------------------------------------------------------
 -- Reification/reflection
 
@@ -748,6 +794,13 @@ pattern ApplyFunction1 function argument1 <-
 pattern ApplyFunction2 :: Function -> Expression Resolved -> Expression Resolved -> Expression Resolved
 pattern ApplyFunction2 function argument1 argument2 <-
   ApplyGlobal2 (FunctionGlobal function) argument1 argument2
+
+pattern ApplyFunction3 :: Function -> Expression Resolved -> Expression Resolved -> Expression Resolved -> Expression Resolved
+pattern ApplyFunction3 function argument1 argument2 argument3 <-
+  ApplyExpression Apply {
+     function = ApplyGlobal2 (FunctionGlobal function) argument1 argument2
+   , argument = argument3
+   }
 
 pattern ApplyFold0 :: Function -> InstanceName -> Array Resolved -> Expression Resolved
 pattern ApplyFold0 function instance' array <-
@@ -1191,6 +1244,110 @@ evalConcat Array {expressions, ..} expression = do
                 , typ = expressionType expression
                 , ..
                 })
+
+evalAccum ::
+     Expression Resolved
+  -> Expression Resolved
+  -> Array Resolved
+  -> Expression Resolved
+  -> RIO Eval (Expression Resolved)
+evalAccum nil cons Array {expressions} expression = do
+  let loop accum0 elements0 i =
+        case expressions V.!? i of
+          Nothing ->
+            pure
+              (RecordExpression
+                 Record
+                   { fields =
+                       [ FieldE
+                           { expression =
+                               ArrayExpression
+                                 Array
+                                   { expressions =
+                                       V.fromList (reverse elements0)
+                                   , location = SteppedCursor
+                                   , typ =
+                                       case expressionType expression of
+                                         RecordType (RowType TypeRow {fields = fs})
+                                           | Just Field {typ} <-
+                                              find
+                                                (\Field {name} ->
+                                                   name == "items")
+                                                fs -> typ
+                                         _ ->
+                                           error
+                                             "BUG: this should always be present."
+                                   , form = Evaluated
+                                   }
+                           , name = FieldName "items"
+                           , location = SteppedCursor
+                           }
+                       , FieldE
+                           { expression = accum0
+                           , name = FieldName "state"
+                           , location = SteppedCursor
+                           }
+                       ]
+                   , location = SteppedCursor
+                   , typ = expressionType expression
+                   })
+          Just element' -> do
+            result <-
+              evalExpression
+                id
+                (ApplyExpression
+                   (Apply
+                      { function = cons
+                      , argument =
+                          RecordExpression
+                            Record
+                              { fields =
+                                  [ FieldE
+                                      { expression = element'
+                                      , name = FieldName "item"
+                                      , location = SteppedCursor
+                                      }
+                                  , FieldE
+                                      { expression = accum0
+                                      , name = FieldName "state"
+                                      , location = SteppedCursor
+                                      }
+                                  ]
+                              , location = SteppedCursor
+                              , typ =
+                                  RecordType
+                                    (RowType
+                                       TypeRow
+                                         { location = BuiltIn
+                                         , typeVariable = Nothing
+                                         , fields =
+                                             [ Field
+                                                 { typ = expressionType element'
+                                                 , name = FieldName "item"
+                                                 , location = SteppedCursor
+                                                 }
+                                             , Field
+                                                 { typ = expressionType accum0
+                                                 , name = FieldName "state"
+                                                 , location = SteppedCursor
+                                                 }
+                                             ]
+                                         })
+                              }
+                      , location = SteppedCursor
+                      , typ = typeOutput (expressionType cons)
+                      , style = EvalApply
+                      }))
+            case result of
+              RecordExpression Record {fields} ->
+                case (,) <$> find (\FieldE {name} -> name == "state") fields <*>
+                     find (\FieldE {name} -> name == "item") fields of
+                  Nothing -> pure expression
+                  Just (FieldE {expression = accum'}, FieldE {expression = element''}) ->
+                    loop accum' (element'' : elements0) (i + 1)
+              -- Implies a hole is present.
+              _ -> pure expression
+  loop nil [] (0 :: Int)
 
 -- | Just a flipped version of set.
 setFlipped :: Is k A_Setter => Optic k is s t a b -> s -> b -> t
