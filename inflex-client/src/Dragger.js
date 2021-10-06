@@ -24,8 +24,8 @@ exports.newDragger = function(element){
             var rect = dragger.dragme.getBoundingClientRect();
             var parent_rec = element.getBoundingClientRect();
 
-            let left = Math.round(rect.left-parent_rec.left);
-            let top = Math.round(rect.top-parent_rec.top);
+            let left = Math.round((rect.left+element.scrollLeft)-parent_rec.left);
+            let top = Math.round((rect.top+element.scrollTop)-parent_rec.top);
 
             dragger.tellme(left)(top)();
 
