@@ -211,7 +211,8 @@ render state =
                    else ""))
          , Manage.manage CanvasCreated
          ]
-         ([svg (state.cells)] <>
+         (-- Commenting out arrows for now
+          -- [svg (state.cells)] <>
           if not (state.loaded) && not (meta.sandbox)
           then
           [HH.div
