@@ -1,5 +1,5 @@
 exports.swap = function(){
   setTimeout(function(){
-    document.body.getElementsByClassName('wrapper')[0].remove();
+    document.body.getElementsByClassName('wrapper-substitute')[0].remove();
   });
 };

@@ -147,7 +147,7 @@ documentScripts :: Lucid App ()
 documentScripts = do
   url <- ask
   div_
-    [class_ "wrapper"]
+    [class_ "wrapper wrapper-substitute"]
     (do div_
           [class_ "navbar"]
           (do a_ [class_ "logo"] (pure ())
