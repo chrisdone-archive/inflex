@@ -312,7 +312,7 @@ functionScheme location =
         ((a .-> boolT) .-> ArrayType a .->
          maybeType ["any_empty"] location boolT)
     FromOkFunction -> mono (b .-> okishType BuiltIn c b .-> b)
-    ScanFunction -> mono (a .-> (a .-> e .-> e) .-> ArrayType a .-> e)
+    ScanFunction -> mono (a .-> (a .-> e .-> a) .-> ArrayType e .-> a)
     AccumFunction ->
       mono
         (a .->
