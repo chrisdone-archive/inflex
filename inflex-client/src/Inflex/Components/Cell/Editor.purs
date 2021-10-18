@@ -1134,7 +1134,19 @@ renderArrayEditor type' originalSource path cells offset editors =
                  [])
                  ]
              ]
-        else []
+        else [ HH.tr
+                 []
+                 [ HH.td
+                     [HP.class_ (HH.ClassName "add-row")]
+                     [
+                     ]
+                 -- Copy/paste of the above. You can factor it out.
+                 , HH.td [HP.class_ (HH.ClassName "bottom-blank")]
+                     (if len>1 then [HH.text ((if len>pageSize then show (1+offset) <> "-" <> show (min (offset+pageSize) len) <> " of " else "") <>
+                        show (len) <> " rows")] else
+                 [])
+                 ]
+             ]
     len = Array.length editors
 
 --------------------------------------------------------------------------------
