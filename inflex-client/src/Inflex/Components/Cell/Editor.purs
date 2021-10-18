@@ -649,7 +649,7 @@ renderTableEditor type0 originalSource offset path cells columns rows =
              "SomeRow": tableRow (rowType type') hasOriginalSource' columns path cells i
             ,"HoleRow": tableRowHole (rowType type') hasOriginalSource' columns path cells i
            }) rows <>
-           if hasOriginalSource' then addNewRow else [])
+           if hasOriginalSource' then addNewRow else [HH.tr[][HH.td[HP.class_ (HH.ClassName "add-row")][],stats]])
       ]
   ]
   where
@@ -690,7 +690,11 @@ renderTableEditor type0 originalSource offset path cells columns rows =
                   ]
                   [HH.text "+"]
               ]
-          , HH.td
+          , stats
+          ]
+      ]
+    stats =
+        HH.td
               [ HP.class_ (HH.ClassName "bottom-blank")
               , HP.colSpan
                   (Array.length columns + 1 +
@@ -701,10 +705,7 @@ renderTableEditor type0 originalSource offset path cells columns rows =
               (if len>1 then [HH.text ((if len>pageSize then show (1+offset) <> "-" <> show (min (offset+pageSize) len) <> " of " else "") <>
                         show (len) <> " rows")] else
                  [])
-          ]
-      ]
-      where
-        disabled = Array.null columns
+    disabled = Array.null columns
     fieldset = Set.fromFoldable columns
     len = Array.length rows
 
