@@ -854,7 +854,7 @@ rowNumber editable rowIndex path =
         [ HH.div
             [HP.class_ (HH.ClassName "row-number-text")]
             [HH.text (show (rowIndex + 1))]
-        , if editable
+        , if false -- editable
              then HH.button
                     [ HP.class_ (HH.ClassName "remove-row-button")
                     , HE.onClick
