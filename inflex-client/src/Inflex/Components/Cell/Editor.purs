@@ -854,25 +854,30 @@ rowNumber editable rowIndex path =
         [ HH.div
             [HP.class_ (HH.ClassName "row-number-text")]
             [HH.text (show (rowIndex + 1))]
+        , HH.div
+            [HP.class_ (HH.ClassName "row-number-incdec")]
+            [ HH.div [HP.class_ (HH.ClassName "inc")] []
+            , HH.div [HP.class_ (HH.ClassName "dec")] []
+            ]
         , if editable
-             then HH.button
-                    [ HP.class_ (HH.ClassName "remove-row-button")
-                    , HE.onClick
-                        (\e ->
-                           pure
-                             (PreventDefault
-                                (Event' (toEvent e))
-                                (TriggerUpdatePath
-                                   (Shared.UpdatePath
-                                      { path: path Shared.DataHere
-                                      , update:
-                                          Shared.RemoveUpdate
-                                            (Shared.Removal
-                                               {index: rowIndex})
-                                      }))))
-                    ]
-                    [HH.text "×"]
-             else HH.text ""
+            then HH.button
+                   [ HP.class_ (HH.ClassName "remove-row-button")
+                   , HE.onClick
+                       (\e ->
+                          pure
+                            (PreventDefault
+                               (Event' (toEvent e))
+                               (TriggerUpdatePath
+                                  (Shared.UpdatePath
+                                     { path: path Shared.DataHere
+                                     , update:
+                                         Shared.RemoveUpdate
+                                           (Shared.Removal
+                                              {index: rowIndex})
+                                     }))))
+                   ]
+                   [HH.text "×"]
+            else HH.text ""
         ]
     ]
 

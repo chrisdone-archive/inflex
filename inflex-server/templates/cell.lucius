@@ -251,9 +251,6 @@
       }
     }
     .table-body {
-
-
-
       .add-row {
         position: relative;
         width: 1.5em;
@@ -297,7 +294,7 @@
         border-top: 1px solid #dadeea;
         background: #e9eef2;
         padding: 4px;
-        text-align: center
+        text-align: center;
       }
       .table-empty {
         border-top: 1px solid #dadeea;
@@ -602,4 +599,33 @@
     visibility: visible;
   }
 
+}
+
+.row-number-incdec {
+  padding: 0 5px ;
+  .inc {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #777;
+    cursor: pointer;
+  }
+  .dec {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #777;
+    cursor: pointer;
+    margin-top: 5px;
+  }
+  .inc:hover, .dec:hover {
+    border-top-color: black;
+    border-bottom-color: black;
+  }
+}
+
+.row-number-incdec + .remove-row-button {
+  margin-left: 0;
 }
