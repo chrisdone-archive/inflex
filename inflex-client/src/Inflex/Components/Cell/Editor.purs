@@ -661,7 +661,7 @@ renderTableEditor ::
 renderTableEditor editing type0 originalSource offset path cells columns rows =
   [ listMenu editing path
   , HH.table
-      [HP.class_ (HH.ClassName "table")]
+      [HP.class_ (HH.ClassName ("table " <> if hasOriginalSource' then "" else "not-editable"))]
       [ tableHeading originalSource path columns emptyTable
       , HH.tbody
           [HP.class_ (HH.ClassName "table-body"), HE.onWheel (\e -> Just (PreventDefault
@@ -1081,7 +1081,7 @@ renderArrayEditor ::
 renderArrayEditor editing type' originalSource path cells offset editors =
   [ listMenu editing path,
   HH.table
-    [HP.class_ (HH.ClassName "array")]
+    [HP.class_ (HH.ClassName ("array " <> if hasOriginalSource' then "" else "not-editable"))]
     [HH.tbody [HP.class_ (HH.ClassName "array-body"),
     HE.onWheel (\e -> Just (PreventDefault
                                                                    (Event' (Wheel.toEvent e))

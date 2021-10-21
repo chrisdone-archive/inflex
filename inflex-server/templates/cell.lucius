@@ -631,3 +631,8 @@ button.menu-button {
   background: #7b9dda !important;
   cursor: pointer;
 }
+
+.not-editable .row-number:hover {
+  cursor: default;
+  background: #e9eef2 !important;
+}
