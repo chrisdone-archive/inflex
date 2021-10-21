@@ -119,7 +119,7 @@ data PathUpdate
   = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
-  | RemoveUpdate Removal
+  | RemoveUpdate Removals
     -- ^ Remove an element from the container given by index.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
@@ -127,7 +127,7 @@ data PathUpdate
 
 data Code = Code { text :: Text }
 
-data Removal = Removal { index :: Int }
+data Removals = Removals { indices :: Vector Int }
 
 data NewField = NewField { name :: Text }
 

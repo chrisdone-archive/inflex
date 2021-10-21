@@ -145,7 +145,7 @@ data PathUpdate
   = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
-  | RemoveUpdate Removal
+  | RemoveUpdate Removals
     -- ^ Remove an element from the container given by index.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
@@ -153,7 +153,7 @@ data PathUpdate
 
 data Code = Code { text :: Text }
 
-data Removal = Removal { index :: Int }
+data Removals = Removals { indices :: Vector Int }
 
 data NewField = NewField { name :: Text }
 
@@ -618,10 +618,10 @@ instance showPathUpdate :: Show PathUpdate where show = genericShow
 instance decodePathUpdate :: Decode PathUpdate where decode = genericDecode opts
 instance encodePathUpdate :: Encode PathUpdate where encode = genericEncode opts
 
-derive instance genericRemoval :: Generic Removal _
-instance showRemoval :: Show Removal where show = genericShow
-instance decodeRemoval :: Decode Removal where decode = genericDecode opts
-instance encodeRemoval :: Encode Removal where encode = genericEncode opts
+derive instance genericRemovals :: Generic Removals _
+instance showRemovals :: Show Removals where show = genericShow
+instance decodeRemovals :: Decode Removals where decode = genericDecode opts
+instance encodeRemovals :: Encode Removals where encode = genericEncode opts
 
 derive instance genericCode :: Generic Code _
 instance showCode :: Show Code where show = genericShow

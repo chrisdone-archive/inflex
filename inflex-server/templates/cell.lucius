@@ -563,6 +563,10 @@
     }
   }
 
+      .row-editing > td {
+        background: #7b9dda !important;
+      }
+
   .array:hover {
     .remove-column-button {
       opacity: 1;
@@ -602,4 +606,28 @@
     visibility: visible;
   }
 
+}
+
+.table-edit-menu {
+    position: absolute;
+    background: #fff;
+    padding: 5px;
+    border-radius: 5px;
+    margin-left: 30px;
+    margin-top: 10px;
+    z-index: 01;
+}
+
+button.menu-button {
+    color: #fff;
+    background: #15263b;
+    border: 0;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.row-number:hover {
+  background: #7b9dda !important;
+  cursor: pointer;
 }

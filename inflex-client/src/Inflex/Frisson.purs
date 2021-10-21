@@ -127,7 +127,7 @@ foreign import casePathUpdate :: forall r. {
   "NewFieldUpdate" :: (View NewField) -> r,
   "RenameFieldUpdate" :: (View RenameField) -> r,
   "DeleteFieldUpdate" :: (View DeleteField) -> r,
-  "RemoveUpdate" :: (View Removal) -> r,
+  "RemoveUpdate" :: (View Removals) -> r,
   "AddToEndUpdate" :: r,
   "CodeUpdate" :: (View Code) -> r
   } -> (View PathUpdate) -> r
@@ -138,11 +138,11 @@ foreign import unviewCode :: (View Code) -> Json
 
 foreign import codeText :: (View Code) -> String
 
-foreign import viewRemoval :: Json -> (View Removal)
+foreign import viewRemovals :: Json -> (View Removals)
 
-foreign import unviewRemoval :: (View Removal) -> Json
+foreign import unviewRemovals :: (View Removals) -> Json
 
-foreign import removalIndex :: (View Removal) -> Int
+foreign import removalsIndices :: (View Removals) -> (Array Int)
 
 foreign import viewNewField :: Json -> (View NewField)
 

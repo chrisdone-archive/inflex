@@ -151,7 +151,7 @@ data PathUpdate
   = NewFieldUpdate NewField
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
-  | RemoveUpdate Removal
+  | RemoveUpdate Removals
     -- ^ Remove an element from the container given by index.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
@@ -159,7 +159,7 @@ data PathUpdate
 
 data Code = Code { text :: Text }
 
-data Removal = Removal { index :: Int }
+data Removals = Removals { indices :: Vector Int }
 
 data NewField = NewField { name :: Text }
 
@@ -707,11 +707,11 @@ deriving instance Show PathUpdate
 -- instance ToJSON PathUpdate
 instance FromJSON PathUpdate
 
-instance NFData Removal
-deriving instance Generic Removal
-deriving instance Show Removal
--- instance ToJSON Removal
-instance FromJSON Removal
+instance NFData Removals
+deriving instance Generic Removals
+deriving instance Show Removals
+-- instance ToJSON Removals
+instance FromJSON Removals
 
 instance NFData Code
 deriving instance Generic Code
@@ -809,4 +809,4 @@ $(Frisson.deriveAll
    \import Data.Argonaut.Core (Json)\n\
    \import Prelude (class Show)\n\
    \"
-  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell ,''RepositionCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removal,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed, ''Position])
+  [''UUID,''Version1,''Version2,''RefreshDocument,''UpdateDocument,''UpdateSandbox,''UpdateResult,''NestedCellError,''Update,''NewCell,''DeleteCell,''RenameCell ,''RepositionCell,''UpdateCell,''UpdatePath,''PathUpdate,''Code,''Removals,''NewField,''RenameField,''DeleteField,''DataPath,''OutputDocument,''InputDocument1,''CachedOutputCell,''InputCell1,''Result,''Tree2,''VariantArgument,''MaybeRow,''Row,''Field2,''OriginalSource,''CellError,''FillError,''FileQuery,''FilesOutput,''File,''CsvCheckStatus,''CsvImportFinal,''CsvColumnProblem,''CsvGuess,''CsvImportSpec,''CsvColumn,''ColumnAction,''ImportColumn,''CsvColumnType,''Optionality,''InputDocument,''InputCell,''Tree1,''Field1,''DocumentId,''ResultTree,''Hash,''CachedText,''CachedResult, ''TypeOf, ''NamedType, ''OpenClosed, ''Position])

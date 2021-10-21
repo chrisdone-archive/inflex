@@ -16,13 +16,14 @@ module Inflex.Server.Transforms
 
 import           Data.Bifunctor
 import           Data.Text (Text)
+import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Inflex.Server.Compute
-import           Inflex.Printer
 import           Inflex.Parser
-import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
-import qualified Inflex.Server.Compute as InputCell (InputCell(..))
+import           Inflex.Printer
 import qualified Inflex.Schema as Shared
+import           Inflex.Server.Compute
+import qualified Inflex.Server.Compute as InputCell (InputCell(..))
+import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
 import           Inflex.Types
 import qualified Inflex.Types as Field (Field(..))
 import qualified Inflex.Types as FieldE (FieldE(..))
@@ -96,8 +97,8 @@ applyUpdateToDocument Shared.UpdateCell {uuid, update} =
         _ -> mapUuidPath uuid path (MapExpression (setParsed code))
     Shared.AddToEndUpdate ->
       mapUuidPath uuid path (MapArray (pure . addArrayItem))
-    Shared.RemoveUpdate (Shared.Removal {index}) ->
-      mapUuidPath uuid path (MapArray (pure . removeArrayItem index))
+    Shared.RemoveUpdate (Shared.Removals {indices}) ->
+      mapUuidPath uuid path (MapArray (pure . removeArrayItems indices))
   where
     Shared.UpdatePath {path, update = cmd} = update
 
@@ -321,11 +322,11 @@ addArrayItem array@Array {location, expressions, typ}
           expressions <> pure (HoleExpression Hole {location, typ = Nothing})
       }
 
-removeArrayItem :: Int -> Array Parsed -> Array Parsed
-removeArrayItem idx array@Array {expressions} =
+removeArrayItems :: Vector Int -> Array Parsed -> Array Parsed
+removeArrayItems idxs array@Array {expressions} =
   array
     { expressions =
-        V.ifilter (\i _ -> i /= idx) expressions
+        V.ifilter (\i _ -> V.notElem i idxs) expressions
     }
 
 --------------------------------------------------------------------------------

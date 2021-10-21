@@ -145,11 +145,11 @@ exports.unviewCode = function(x){return x};
 
 exports.codeText = function(x){return x};
 
-exports.viewRemoval = function(x){return x};
+exports.viewRemovals = function(x){return x};
 
-exports.unviewRemoval = function(x){return x};
+exports.unviewRemovals = function(x){return x};
 
-exports.removalIndex = function(x){return x};
+exports.removalsIndices = function(x){return x};
 
 exports.viewNewField = function(x){return x};
 

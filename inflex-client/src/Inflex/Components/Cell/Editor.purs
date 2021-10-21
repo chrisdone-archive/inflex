@@ -9,7 +9,7 @@ module Inflex.Components.Cell.Editor
   , component) where
 
 
-import Data.Int
+-- import Data.Int
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
 import Data.Array (mapWithIndex)
@@ -41,7 +41,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), negate)
+import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), negate, (/=))
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -68,6 +68,15 @@ data State = State
   , tableOffset :: Int
   , rowCount :: Int
   , type' :: Maybe (View Shared.TypeOf)
+  , tableMode :: TableMode
+  }
+
+data TableMode
+  = NormalMode
+  | EditingRows Editing
+
+data Editing = Editing
+  { rows :: Array Int -- Row index 0-based.
   }
 
 data Command
@@ -87,6 +96,7 @@ data Command
   | ScrollIntegral Int Shared.DataPath Event'
   | ScrollToBottom
   | VariantDropdownChanged Shared.DataPath Event'
+  | AddRowForEditing Int
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)
@@ -161,6 +171,7 @@ component =
              , tableOffset: 0
              , rowCount: getRowCount editor
              , type'
+             , tableMode: NormalMode
              })
     , render
     , eval:
@@ -236,6 +247,11 @@ eval cmd = do
 eval' :: forall i t45 t48. MonadAff t45 => Command -> H.HalogenM State t48 (Slots i) Output t45 Unit
 eval' =
   case _ of
+    AddRowForEditing i ->
+       H.modify_ (\(State s) -> State (s {tableMode = case s.tableMode of
+                                              NormalMode -> EditingRows (Editing{rows:[i]})
+                                              EditingRows (Editing{rows}) ->
+                                                EditingRows (Editing{rows: if Array.elem i rows then Array.filter (_ /= i) rows else rows <> [i]})}))
     ScrollIntegral i path (Event' event) -> do
        delta <- H.liftEffect (getDeltaY event)
        eval' (TriggerUpdatePath
@@ -302,6 +318,7 @@ eval' =
            , tableOffset: state.tableOffset
            , rowCount: getRowCount editor
            , type'
+           , tableMode: NormalMode
            })
     ScrollTable (Event' e) -> do
       delta <- H.liftEffect (getDeltaY e)
@@ -346,7 +363,7 @@ foreign import printText :: String -> String
 -- Render main component
 
 render :: forall a. MonadAff a => State -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-render (State {display, code, editor, path, cellError, cells, tableOffset, type'}) =
+render (State {display, code, editor, path, cellError, cells, tableOffset, type',tableMode}) =
   case display of
     DisplayCode -> wrapper (renderControl <> errorDisplay)
     DisplayEditor ->
@@ -354,8 +371,11 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
         then wrapper (renderControl)
         else wrapper (case editor of
                         Left msg -> [renderError msg]
-                        Right e -> renderEditor type' tableOffset path cells e)
+                        Right e -> renderEditor editing type' tableOffset path cells e)
   where
+    editing = case tableMode of
+       NormalMode -> []
+       EditingRows (Editing{rows}) -> rows
     renderControl =
       [ HH.slot
           (SProxy :: SProxy "code")
@@ -450,22 +470,23 @@ blank code editor =
 
 renderEditor ::
      forall a. MonadAff a
-  => Maybe (View Shared.TypeOf)
+  => Array Int -> Maybe (View Shared.TypeOf)
   -> Int
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> View Shared.Tree2
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderEditor type' offset path cells =
+renderEditor editing type' offset path cells =
   caseTree2 {
     "MiscTree2":       \v _originalSource t ->
-      [HH.div [HP.class_ (HH.ClassName "misc"),
-          HE.onWheel (\e -> case fromString t  of
-                              Nothing -> Nothing
-                              Just i -> Just (PreventDefault
-                                  (Event' (Wheel.toEvent e))
-                                  (ScrollIntegral i
-                                                  (path Shared.DataHere) (Event' (Wheel.toEvent e)))))
+      [HH.div [HP.class_ (HH.ClassName "misc")
+          -- Commenting out clever scrolling trick for now
+          -- HE.onWheel (\e -> case fromString t  of
+          --                     Nothing -> Nothing
+          --                     Just i -> Just (PreventDefault
+          --                         (Event' (Wheel.toEvent e))
+          --                         (ScrollIntegral i
+          --                                         (path Shared.DataHere) (Event' (Wheel.toEvent e)))))
        ] [HH.text t]],
     "TextTree2":       \v originalSource t ->
       [renderTextEditor originalSource path t],
@@ -474,11 +495,11 @@ renderEditor type' offset path cells =
     "VariantTree2":    \v originalSource tag arg ->
       [renderVariantEditor type' originalSource path cells tag arg],
     "ArrayTree2":      \v originalSource editors ->
-      [renderArrayEditor type' originalSource path cells offset editors],
+      renderArrayEditor editing type' originalSource path cells offset editors,
     "RecordTree2":     \v originalSource fields ->
       [renderRecordEditor (rowType type') originalSource path cells fields],
     "TableTreeMaybe2": \v originalSource columns rows ->
-      renderTableEditor type' originalSource offset path cells columns rows,
+      renderTableEditor editing type' originalSource offset path cells columns rows,
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
     "HoleTree": \originalSource ->
       -- if hasOriginalSource originalSource then
@@ -628,7 +649,8 @@ pageSize = 10
 
 renderTableEditor ::
      forall a. MonadAff a
-  => Maybe (View Shared.TypeOf)
+  => Array Int
+  -> Maybe (View Shared.TypeOf)
   -> View Shared.OriginalSource
   -> Int
   -> (Shared.DataPath -> Shared.DataPath)
@@ -636,8 +658,9 @@ renderTableEditor ::
   -> Array String
   -> Array (View Shared.MaybeRow)
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
-renderTableEditor type0 originalSource offset path cells columns rows =
-  [ HH.table
+renderTableEditor editing type0 originalSource offset path cells columns rows =
+  [ listMenu editing path
+  , HH.table
       [HP.class_ (HH.ClassName "table")]
       [ tableHeading originalSource path columns emptyTable
       , HH.tbody
@@ -646,8 +669,8 @@ renderTableEditor type0 originalSource offset path cells columns rows =
                                                                    (ScrollTable (Event' (Wheel.toEvent e)))))]
           (bodyGuide hasOriginalSource' emptyTable emptyRows <>
            mapWithIndexNarrow offset pageSize (\i -> caseMaybeRow {
-             "SomeRow": tableRow (rowType type') hasOriginalSource' columns path cells i
-            ,"HoleRow": tableRowHole (rowType type') hasOriginalSource' columns path cells i
+             "SomeRow": tableRow editing (rowType type') hasOriginalSource' columns path cells i
+            ,"HoleRow": tableRowHole editing (rowType type') hasOriginalSource' columns path cells i
            }) rows <>
            if hasOriginalSource' then addNewRow else [HH.tr[][HH.td[HP.class_ (HH.ClassName "add-row")][],stats]])
       ]
@@ -726,15 +749,15 @@ originateFromField columns key code =
 
 tableRowHole ::
      forall a. MonadAff a
-  => Maybe (Array (View Shared.NamedType)) -> Boolean -> Array String
+  => Array Int -> Maybe (Array (View Shared.NamedType)) -> Boolean -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
   -> Int
   -> View Shared.Tree2
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRowHole types editable columns path cells rowIndex editor' =
+tableRowHole editing types editable columns path cells rowIndex editor' =
   HH.tr
-    []
+    [HP.class_ (HH.ClassName (if Array.elem rowIndex editing then "row row-editing" else "row"))]
     ([rowNumber editable rowIndex path] <>
      map
        (\key ->
@@ -787,7 +810,7 @@ tableRowHole types editable columns path cells rowIndex editor' =
 
 tableRow ::
      forall a. MonadAff a
-  => Maybe (Array (View Shared.NamedType))
+  => Array Int -> Maybe (Array (View Shared.NamedType))
   -> Boolean
   -> Array String
   -> (Shared.DataPath -> Shared.DataPath)
@@ -795,9 +818,9 @@ tableRow ::
   -> Int
   -> View Shared.Row
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-tableRow types editable columns path cells rowIndex row =
+tableRow editing types editable columns path cells rowIndex row =
   HH.tr
-    []
+    [HP.class_ (HH.ClassName (if Array.elem rowIndex editing then "row row-editing" else "row"))]
     ([rowNumber editable rowIndex path] <>
      Array.mapWithIndex
        (\idx editor' ->
@@ -849,33 +872,44 @@ tableRow types editable columns path cells rowIndex row =
 rowNumber :: forall t19. Boolean -> Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t19 Command
 rowNumber editable rowIndex path =
   HH.td
-    [HP.class_ (HH.ClassName "row-number")]
+    [ HP.class_ (HH.ClassName ("row-number"))
+    , HE.onClick
+        (\e ->
+           if editable
+             then pure
+                    (PreventDefault
+                       (Event' (toEvent e))
+                       (AddRowForEditing rowIndex))
+             else Nothing)
+    ]
     [ HH.div
         [HP.class_ (HH.ClassName "row-number-div")]
         [ HH.div
             [HP.class_ (HH.ClassName "row-number-text")]
             [HH.text (show (rowIndex + 1))]
-        , if editable
-             then HH.button
-                    [ HP.class_ (HH.ClassName "remove-row-button")
-                    , HE.onClick
-                        (\e ->
-                           pure
-                             (PreventDefault
-                                (Event' (toEvent e))
-                                (TriggerUpdatePath
-                                   (Shared.UpdatePath
-                                      { path: path Shared.DataHere
-                                      , update:
-                                          Shared.RemoveUpdate
-                                            (Shared.Removal
-                                               {index: rowIndex})
-                                      }))))
-                    ]
-                    [HH.text "×"]
-             else HH.text ""
         ]
     ]
+
+listMenu :: forall t196. Array Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t196 Command
+listMenu editing path = case editing of
+      [] -> HH.text ""
+      _  -> HH.div [HP.class_ (HH.ClassName "table-edit-menu")]
+               [HH.button [HP.class_ (HH.ClassName "menu-button")
+             , HE.onClick
+                                     (\e ->
+                                        pure
+                                          (PreventDefault
+                                             (Event' (toEvent e))
+                                             (TriggerUpdatePath
+                                                (Shared.UpdatePath
+                                                   { path: path Shared.DataHere
+                                                   , update:
+                                                       Shared.RemoveUpdate
+                                                         (Shared.Removals
+                                                            {indices: editing})
+                                      }))))
+
+                          ] [HH.text "Delete"]]
 
 bodyGuide :: forall t651 t652. Boolean -> Boolean -> Boolean -> Array (HH.HTML t652 t651)
 bodyGuide hasOriginalSource' emptyTable emptyRows =
@@ -1038,20 +1072,21 @@ generateColumnName prefix columns = iterate 1
 
 renderArrayEditor ::
      forall a. MonadAff a
-  => Maybe ( (View Shared.TypeOf)) ->
+  => Array Int -> Maybe ( (View Shared.TypeOf)) ->
      View Shared.OriginalSource -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
      -> Int
   -> Array (View Shared.Tree2)
-  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderArrayEditor type' originalSource path cells offset editors =
+  -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
+renderArrayEditor editing type' originalSource path cells offset editors =
+  [ listMenu editing path,
   HH.table
     [HP.class_ (HH.ClassName "array")]
     [HH.tbody [HP.class_ (HH.ClassName "array-body"),
     HE.onWheel (\e -> Just (PreventDefault
                                                                    (Event' (Wheel.toEvent e))
                                                                    (ScrollTable (Event' (Wheel.toEvent e)))))
-    ] (body <> addNewRow)]
+    ] (body <> addNewRow)]]
   where
     body =
       case editors of
@@ -1071,7 +1106,7 @@ renderArrayEditor type' originalSource path cells offset editors =
         (\i editor' ->
            let childPath = path <<< Shared.DataElemOf i
             in HH.tr
-                 []
+                 [HP.class_ (HH.ClassName (if Array.elem i editing then "row row-editing" else "row"))]
                  [ rowNumber hasOriginalSource' i path
                  , HH.td
                      [HP.class_ (HH.ClassName "array-datum-value")]
