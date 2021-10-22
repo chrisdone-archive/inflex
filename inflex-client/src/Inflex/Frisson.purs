@@ -128,6 +128,7 @@ foreign import casePathUpdate :: forall r. {
   "RenameFieldUpdate" :: (View RenameField) -> r,
   "DeleteFieldUpdate" :: (View DeleteField) -> r,
   "RemoveUpdate" :: (View Removals) -> r,
+  "MoveUpdate" :: (View Removals) -> Int -> r,
   "AddToEndUpdate" :: r,
   "CodeUpdate" :: (View Code) -> r
   } -> (View PathUpdate) -> r

@@ -891,25 +891,66 @@ rowNumber editable rowIndex path =
     ]
 
 listMenu :: forall t196. Array Int -> (Shared.DataPath -> Shared.DataPath) -> HH.HTML t196 Command
-listMenu editing path = case editing of
-      [] -> HH.text ""
-      _  -> HH.div [HP.class_ (HH.ClassName "table-edit-menu")]
-               [HH.button [HP.class_ (HH.ClassName "menu-button")
-             , HE.onClick
-                                     (\e ->
-                                        pure
-                                          (PreventDefault
-                                             (Event' (toEvent e))
-                                             (TriggerUpdatePath
-                                                (Shared.UpdatePath
-                                                   { path: path Shared.DataHere
-                                                   , update:
-                                                       Shared.RemoveUpdate
-                                                         (Shared.Removals
-                                                            {indices: editing})
-                                      }))))
-
-                          ] [HH.text "Delete"]]
+listMenu editing path =
+  case editing of
+    [] -> HH.text ""
+    _ ->
+      HH.div
+        [HP.class_ (HH.ClassName "table-edit-menu")]
+        [ HH.button
+            [ HP.class_ (HH.ClassName "menu-button")
+            , HE.onClick
+                (\e ->
+                   pure
+                     (PreventDefault
+                        (Event' (toEvent e))
+                        (TriggerUpdatePath
+                           (Shared.UpdatePath
+                              { path: path Shared.DataHere
+                              , update:
+                                  Shared.RemoveUpdate
+                                    (Shared.Removals
+                                       {indices: editing})
+                              }))))
+            ]
+            [HH.text "Delete"]
+        , HH.button
+            [ HP.class_ (HH.ClassName "menu-button")
+            , HE.onClick
+                (\e ->
+                   pure
+                     (PreventDefault
+                        (Event' (toEvent e))
+                        (TriggerUpdatePath
+                           (Shared.UpdatePath
+                              { path: path Shared.DataHere
+                              , update:
+                                  Shared.MoveUpdate
+                                    (Shared.Removals
+                                       {indices: editing})
+                                    (-1)
+                              }))))
+            ]
+            [HH.text "Up"]
+        , HH.button
+            [ HP.class_ (HH.ClassName "menu-button")
+            , HE.onClick
+                (\e ->
+                   pure
+                     (PreventDefault
+                        (Event' (toEvent e))
+                        (TriggerUpdatePath
+                           (Shared.UpdatePath
+                              { path: path Shared.DataHere
+                              , update:
+                                  Shared.MoveUpdate
+                                    (Shared.Removals
+                                       {indices: editing})
+                                    1
+                              }))))
+            ]
+            [HH.text "Down"]
+        ]
 
 bodyGuide :: forall t651 t652. Boolean -> Boolean -> Boolean -> Array (HH.HTML t652 t651)
 bodyGuide hasOriginalSource' emptyTable emptyRows =

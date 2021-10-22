@@ -146,7 +146,9 @@ data PathUpdate
   | RenameFieldUpdate RenameField
   | DeleteFieldUpdate DeleteField
   | RemoveUpdate Removals
-    -- ^ Remove an element from the container given by index.
+    -- ^ Remove elements from the container given by indices.
+  | MoveUpdate Removals Int
+    -- ^ Move an element around container given by indices.
   | AddToEndUpdate
     -- ^ I.e. add a blank element at the end the container.
   | CodeUpdate Code

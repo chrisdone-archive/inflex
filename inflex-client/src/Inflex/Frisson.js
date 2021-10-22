@@ -131,8 +131,9 @@ case 0: return k["NewFieldUpdate"](a[1]);
 case 1: return k["RenameFieldUpdate"](a[1]);
 case 2: return k["DeleteFieldUpdate"](a[1]);
 case 3: return k["RemoveUpdate"](a[1]);
-case 4: return k["AddToEndUpdate"];
-case 5: return k["CodeUpdate"](a[1]);
+case 4: return k["MoveUpdate"](a[1])(a[2]);
+case 5: return k["AddToEndUpdate"];
+case 6: return k["CodeUpdate"](a[1]);
 default: throw Exception('BUG: case accessor failed');
 }
 }

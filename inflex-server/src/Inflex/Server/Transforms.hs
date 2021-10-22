@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -18,6 +19,7 @@ import           Data.Bifunctor
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
+import qualified Data.Vector.Move as V
 import           Inflex.Parser
 import           Inflex.Printer
 import qualified Inflex.Schema as Shared
@@ -99,6 +101,8 @@ applyUpdateToDocument Shared.UpdateCell {uuid, update} =
       mapUuidPath uuid path (MapArray (pure . addArrayItem))
     Shared.RemoveUpdate (Shared.Removals {indices}) ->
       mapUuidPath uuid path (MapArray (pure . removeArrayItems indices))
+    Shared.MoveUpdate (Shared.Removals {indices}) change ->
+      mapUuidPath uuid path (MapArray (pure . moveArrayItems indices change))
   where
     Shared.UpdatePath {path, update = cmd} = update
 
@@ -328,6 +332,10 @@ removeArrayItems idxs array@Array {expressions} =
     { expressions =
         V.ifilter (\i _ -> V.notElem i idxs) expressions
     }
+
+moveArrayItems :: Vector Int -> Int -> Array Parsed -> Array Parsed
+moveArrayItems idxs change array@Array {expressions} =
+  array {expressions = V.moveElements idxs change expressions}
 
 --------------------------------------------------------------------------------
 -- Generic walkers
