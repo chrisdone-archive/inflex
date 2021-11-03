@@ -12,8 +12,7 @@ scrape_configs:
   - role: pod
     namespaces:
       names:
-        - ingress-nginx # My particular namespace. I think this is required.
-                        # I don't remember now. TODO: Update on whether this is required.
+        - ingress-nginx # My particular namespace.  This IS REQUIRED.
 
 # Interesting bit:
 
