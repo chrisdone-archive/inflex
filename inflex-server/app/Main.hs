@@ -6,6 +6,7 @@
 module Main (main) where
 
 import qualified Buffering
+import           Control.Concurrent
 import           Control.Concurrent (killThread)
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -20,6 +21,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import           Data.Time
 import           Data.Yaml
+import           GHC.Stats
 import           GitInfo (gitHash)
 import           Inflex.Backend
 import           Inflex.Migrate
@@ -37,6 +39,7 @@ import           System.Environment
 import qualified System.Metrics.Prometheus.Concurrent.Registry as Prometheus.Registry
 import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
 import qualified System.Metrics.Prometheus.Metric.Counter as Counter
+import qualified System.Metrics.Prometheus.Metric.Gauge as Gauge
 import           System.Posix.Signals
 -- import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram
 import           Yesod hiding (Html)
@@ -144,7 +147,7 @@ withDBPool config cont = do
           runReaderT (glog (DatabaseLog loc lsrc llevel lstr)) e))
 
 makeAppLogFunc :: Prometheus.Registry.Registry -> IO (GLogFunc AppMsg)
-makeAppLogFunc registry = do
+makeAppLogFunc registry
   {-let bucketsSeconds =
         [ms / 1000 | ms <- [5, 10, 20, 30, 40, 50, 60, 70, 80, 90]]-}
   -- documentLoaded <-
@@ -155,6 +158,32 @@ makeAppLogFunc registry = do
   --     mempty
   --     bucketsSeconds
   --     registry
+ = do
+  gcsCounter <- Prometheus.Registry.registerCounter "rts_gcs" mempty registry
+  allocated_bytesCounter <-
+    Prometheus.Registry.registerCounter "rts_allocated_bytes" mempty registry
+  max_mem_in_use_bytesGauge <-
+    Prometheus.Registry.registerGauge
+      "rts_max_mem_in_use_bytes"
+      mempty
+      registry
+  gc_elapsed_nsCounter <-
+    Prometheus.Registry.registerCounter "rts_gc_elapsed_ns" mempty registry
+  elapsed_nsCounter <-
+    Prometheus.Registry.registerCounter "rts_elapsed_ns" mempty registry
+  enabled <- getRTSStatsEnabled
+  when
+    enabled
+    (void
+       (forkIO
+          (forever
+             (do stats <- getRTSStats
+                 Counter.add (fromIntegral (gcs stats)) gcsCounter
+                 Counter.add (fromIntegral (allocated_bytes stats)) allocated_bytesCounter
+                 Gauge.set (fromIntegral (max_mem_in_use_bytes stats)) max_mem_in_use_bytesGauge
+                 Counter.add (fromIntegral (gc_elapsed_ns stats)) gc_elapsed_nsCounter
+                 Counter.add (fromIntegral (elapsed_ns stats)) elapsed_nsCounter
+                 RIO.threadDelay (1000 * 1000 * 60)))))
   timeoutExceeded <-
     Prometheus.Registry.registerCounter "inflex_TimeoutExceeded" mempty registry
   -- documentRefreshed <-
@@ -201,7 +230,7 @@ makeAppLogFunc registry = do
             ServerMsg msg -> do
               prettyWrite msg
               case msg of
-                TimeoutExceeded{} -> Counter.inc timeoutExceeded
+                TimeoutExceeded {} -> Counter.inc timeoutExceeded
                 UpdateTransformError -> Counter.inc updateTransformError
                 CellErrorInNestedPlace -> Counter.inc cellErrorInNestedPlace
                 OpenDocument -> Counter.inc openDocument
@@ -213,7 +242,7 @@ makeAppLogFunc registry = do
                 CellResultOk {} -> pure ()
                 Timed {} -> pure ()
                 LoadDocumentMsg {} -> pure ()
-                CellError{} -> pure ()
+                CellError {} -> pure ()
                 CellHash {} -> pure ()
                 CellSharedResult {} -> pure ()
             YesodMsg msg -> when False (prettyWrite msg)
