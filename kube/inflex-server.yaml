@@ -26,6 +26,8 @@ spec:
       containers:
       - name: inflex-server
         image: registry.gitlab.com/sky-above/inflex/prod:023032d8700cffda3722fe94adeae6504991b682
+        command: ["inflex-server"]
+        args: ["+RTS","-Iw60"]
         env:
           - name: PORT
             value: "80"
@@ -36,8 +38,6 @@ spec:
         - name: config-yml
           mountPath: "/etc/inflex/"
           readOnly: true
-        - name: uploads-storage
-          mountPath: "/data/uploads/"
         readinessProbe:
           httpGet:
             path: "/health"
@@ -49,7 +49,7 @@ spec:
             path: "/health"
             port: 80
           initialDelaySeconds: 15
-          periodSeconds: 30
+          periodSeconds: 60
         ports:
           - containerPort: 80
             name: nginx-port
