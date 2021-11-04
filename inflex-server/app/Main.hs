@@ -118,10 +118,16 @@ main = do
                          (Prometheus.prometheusApp
                             ["metrics"]
                             (Prometheus.Registry.sample registry)))
-                      (runMyWarp
-                         port
-                         (addServerHeader
-                            (gzip def {gzipFiles = GzipCompress} app)))))))
+                      (concurrently_
+                         -- Reset cache every 5 minutes. Arbitrary.
+                         (forever
+                            (do RIO.threadDelay (1000 * 1000 * 60 * 5)
+                                writeIORef loadedRef mempty
+                                writeIORef evaledRef mempty))
+                         (runMyWarp
+                            port
+                            (addServerHeader
+                               (gzip def {gzipFiles = GzipCompress} app))))))))
     (S8.putStrLn "Server shutdown: OK")
   where
     warpSettings parentGLogFunc =
