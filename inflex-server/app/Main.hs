@@ -168,6 +168,8 @@ makeAppLogFunc registry
   gcsCounter <- Prometheus.Registry.registerCounter "rts_gcs" mempty registry
   allocated_bytesCounter <-
     Prometheus.Registry.registerCounter "rts_allocated_bytes" mempty registry
+  max_live_bytesCounter <-
+    Prometheus.Registry.registerGauge "rts_max_live_bytes" mempty registry
   max_mem_in_use_bytesGauge <-
     Prometheus.Registry.registerGauge
       "rts_max_mem_in_use_bytes"
@@ -187,6 +189,7 @@ makeAppLogFunc registry
                  Counter.add (fromIntegral (gcs stats)) gcsCounter
                  Counter.add (fromIntegral (allocated_bytes stats)) allocated_bytesCounter
                  Gauge.set (fromIntegral (max_mem_in_use_bytes stats)) max_mem_in_use_bytesGauge
+                 Gauge.set (fromIntegral (max_live_bytes stats)) max_live_bytesCounter
                  Counter.add (fromIntegral (gc_elapsed_ns stats)) gc_elapsed_nsCounter
                  Counter.add (fromIntegral (elapsed_ns stats)) elapsed_nsCounter
                  RIO.threadDelay (1000 * 1000 * 60)))))
