@@ -62,6 +62,7 @@ getSandboxR :: Handler (Html ())
 getSandboxR = do
   css1 <- $(luciusFileFrom "inflex-server/templates/app.lucius")
   css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
+  glog (AnalyticsMsg VisitTry)
   htmlWithUrl
     (appTemplate
        (LT.toStrict (renderCss css1 <> renderCss css2))

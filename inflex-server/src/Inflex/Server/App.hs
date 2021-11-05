@@ -106,6 +106,7 @@ data AnalyticsMsg
   | VisitRegistrationForm
   | VisitStripe
   | VisitCancelledStripe
+  | VisitTry
   deriving (Show, Enum, Bounded, Eq, Ord)
 
 data Timed
