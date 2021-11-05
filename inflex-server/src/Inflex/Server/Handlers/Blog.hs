@@ -27,6 +27,8 @@ import           Inflex.Server.Types.Article
 import           Inflex.Server.Types.Blog
 import           Lucid hiding (for_)
 import           Lucid.Base
+import qualified RIO
+import           RIO (RIO, glog, GLogFunc, HasGLogFunc(..))
 import           Sendfile
 import           Shakespearean
 import           Text.Blaze.Renderer.Utf8
@@ -47,6 +49,7 @@ getBlogR = do
       (traverse
          (\entryName -> fmap (entryName, ) (getArticleByEntryName entryName))
          (reverse [minBound .. maxBound]))
+  glog (AnalyticsMsg VisitBlog)
   htmlWithUrl
     (html_ $ do
        url <- ask
@@ -124,6 +127,7 @@ getBlogR = do
 
 getBlogEntryR :: BlogEntryName -> Handler (Html ())
 getBlogEntryR entryName = do
+  glog (AnalyticsMsg VisitBlog)
   hasLoginCookie' <- hasLoginCookie
   css <- $(luciusFileFrom "inflex-server/templates/blog.lucius")
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")

@@ -95,7 +95,18 @@ data ServerMsg
   | LoadDocumentMsg DocumentMsg
   | CellSharedResult Result
   | CellHash Text SourceHash
+  | ResettingCache
+  | AnalyticsMsg AnalyticsMsg
   deriving (Show)
+
+data AnalyticsMsg
+  = VisitHome
+  | VisitBlog
+  | VisitDocs
+  | VisitRegistrationForm
+  | VisitStripe
+  | VisitCancelledStripe
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data Timed
   = TimedLoadDocument

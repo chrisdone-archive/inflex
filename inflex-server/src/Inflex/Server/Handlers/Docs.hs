@@ -16,6 +16,8 @@ import qualified Data.Text.Lazy as LT
 import           Inflex.Server.App
 import           Inflex.Server.Session
 import           Lucid hiding (for_)
+import qualified RIO
+import           RIO (RIO, glog, GLogFunc, HasGLogFunc(..))
 import           Sendfile
 import           Shakespearean
 import           Text.Blaze.Renderer.Utf8
@@ -33,6 +35,7 @@ getIntroR = do
   js' <- $(juliusFileFrom "inflex-server/templates/blog.julius")
   logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
   terms <- liftIO $(openFileFromT "docs/intro.md")
+  glog (AnalyticsMsg VisitDocs)
   htmlWithUrl
     (html_ $ do
        url <- ask

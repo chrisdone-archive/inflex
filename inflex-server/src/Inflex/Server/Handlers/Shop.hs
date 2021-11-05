@@ -41,6 +41,8 @@ import           Inflex.Server.Types
 import           Inflex.Server.View.Tour (tour)
 import           Lucid hiding (step_, section_)
 import           Lucid.Base
+import qualified RIO
+import           RIO (RIO, glog, GLogFunc, HasGLogFunc(..))
 import           Sendfile
 import           Shakespearean
 import           Text.Julius
@@ -62,6 +64,7 @@ getHomeR = do
       css2 <- $(luciusFileFrom "inflex-server/templates/cell.lucius")
       js' <- $(juliusFileFrom "inflex-server/templates/home.julius")
       logo <- liftIO $(openFileFromBS "inflex-server/static/svg/inflex-logo.svg")
+      glog (AnalyticsMsg VisitHome)
       htmlWithUrl
         (do doctype_
             url <- ask

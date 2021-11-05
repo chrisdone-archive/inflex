@@ -36,6 +36,8 @@ import           Inflex.Server.Types
 import           Inflex.Server.View.Shop
 import           Lucid
 import           Optics
+import qualified RIO
+import           RIO (RIO, glog, GLogFunc, HasGLogFunc(..))
 import           Stripe
 import           Yesod hiding (Html, Field, toHtml)
 import           Yesod.Forge
@@ -103,6 +105,7 @@ handleEnterDetailsR :: Handler (Html ())
 handleEnterDetailsR = withRegistrationState _EnterDetails go
   where
     go state sessionId mRegistrationDetails = do
+      glog (AnalyticsMsg VisitRegistrationForm)
       submission <-
         generateForm
           (verifiedRegisterForm (Forge.maybeDefault mRegistrationDetails))
@@ -168,6 +171,7 @@ getCheckoutCreateR = withRegistrationState _CreateCheckout go
       case result of
         Left err -> error (show err) -- TODO: handle this properly.
         Right CreateSessionResponse {id=checkoutSessionId} -> do
+          glog (AnalyticsMsg VisitStripe)
           runDB
             (updateSession
                sessionId
@@ -214,6 +218,7 @@ getCheckoutCancelR = withRegistrationState _WaitingForStripe go
         (updateSession
            sessionId
            (Unregistered (EnterDetails (pure registrationDetails))))
+      glog (AnalyticsMsg VisitCancelledStripe)
       htmlWithUrl
         (shopTemplate
            state

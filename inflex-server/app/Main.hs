@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -15,6 +16,8 @@ import           Criterion.Measurement
 import qualified Data.ByteString.Char8 as S8
 import           Data.Functor.Contravariant
 import qualified Data.List as List
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import           Data.Pool
 import           Data.String
 import qualified Data.Text.Encoding as T
@@ -121,7 +124,8 @@ main = do
                       (concurrently_
                          -- Reset cache every 5 minutes. Arbitrary.
                          (forever
-                            (do RIO.threadDelay (1000 * 1000 * 60 * 5)
+                            (do RIO.runRIO logFunc (glog (ServerMsg ResettingCache))
+                                RIO.threadDelay (1000 * 1000 * 60 * 5)
                                 writeIORef loadedRef mempty
                                 writeIORef evaledRef mempty))
                          (runMyWarp
@@ -171,10 +175,7 @@ makeAppLogFunc registry
   max_live_bytesCounter <-
     Prometheus.Registry.registerGauge "rts_max_live_bytes" mempty registry
   max_mem_in_use_bytesGauge <-
-    Prometheus.Registry.registerGauge
-      "rts_max_mem_in_use_bytes"
-      mempty
-      registry
+    Prometheus.Registry.registerGauge "rts_max_mem_in_use_bytes" mempty registry
   gc_elapsed_nsCounter <-
     Prometheus.Registry.registerCounter "rts_gc_elapsed_ns" mempty registry
   elapsed_nsCounter <-
@@ -187,14 +188,25 @@ makeAppLogFunc registry
           (forever
              (do stats <- getRTSStats
                  Counter.add (fromIntegral (gcs stats)) gcsCounter
-                 Counter.add (fromIntegral (allocated_bytes stats)) allocated_bytesCounter
-                 Gauge.set (fromIntegral (max_mem_in_use_bytes stats)) max_mem_in_use_bytesGauge
-                 Gauge.set (fromIntegral (max_live_bytes stats)) max_live_bytesCounter
-                 Counter.add (fromIntegral (gc_elapsed_ns stats)) gc_elapsed_nsCounter
+                 Counter.add
+                   (fromIntegral (allocated_bytes stats))
+                   allocated_bytesCounter
+                 Gauge.set
+                   (fromIntegral (max_mem_in_use_bytes stats))
+                   max_mem_in_use_bytesGauge
+                 Gauge.set
+                   (fromIntegral (max_live_bytes stats))
+                   max_live_bytesCounter
+                 Counter.add
+                   (fromIntegral (gc_elapsed_ns stats))
+                   gc_elapsed_nsCounter
                  Counter.add (fromIntegral (elapsed_ns stats)) elapsed_nsCounter
                  RIO.threadDelay (1000 * 1000 * 60)))))
   timeoutExceeded <-
-    Prometheus.Registry.registerCounter "inflex_TimeoutExceeded" mempty registry
+    Prometheus.Registry.registerCounter
+      "inflex_TimeoutExceeded_total"
+      mempty
+      registry
   -- documentRefreshed <-
   --   Prometheus.Registry.registerCounter
   --     "inflex_DocumentRefreshed"
@@ -208,7 +220,7 @@ makeAppLogFunc registry
   --     registry
   updateTransformError <-
     Prometheus.Registry.registerCounter
-      "inflex_UpdateTransformError"
+      "inflex_UpdateTransformError_total"
       mempty
       registry
   -- cellUpdated <-
@@ -221,17 +233,45 @@ makeAppLogFunc registry
   --     registry
   cellErrorInNestedPlace <-
     Prometheus.Registry.registerCounter
-      "inflex_CellErrorInNestedPlace"
+      "inflex_CellErrorInNestedPlace_total"
       mempty
       registry
   openDocument <-
-    Prometheus.Registry.registerCounter "inflex_OpenDocument" mempty registry
+    Prometheus.Registry.registerCounter
+      "inflex_OpenDocument_total"
+      mempty
+      registry
   createDocument <-
-    Prometheus.Registry.registerCounter "inflex_CreateDocument" mempty registry
+    Prometheus.Registry.registerCounter
+      "inflex_CreateDocument_total"
+      mempty
+      registry
   deleteDocument <-
-    Prometheus.Registry.registerCounter "inflex_DeleteDocument" mempty registry
+    Prometheus.Registry.registerCounter
+      "inflex_DeleteDocument_total"
+      mempty
+      registry
   renameDocument <-
-    Prometheus.Registry.registerCounter "inflex_RenameDocument" mempty registry
+    Prometheus.Registry.registerCounter
+      "inflex_RenameDocument_total"
+      mempty
+      registry
+  resettingCache <-
+    Prometheus.Registry.registerCounter
+      "inflex_ResettingCache_total"
+      mempty
+      registry
+  visitCounters <-
+    fmap M.fromList $
+    forM
+      [minBound .. maxBound]
+      (\visitType ->
+         fmap
+           (visitType, )
+           (Prometheus.Registry.registerCounter
+              (fromString ("inflex_AnalyticsMsg_" ++ show visitType ++ "_total"))
+              mempty
+              registry))
   pure
     (mkGLogFunc
        (\_callStack ->
@@ -246,9 +286,14 @@ makeAppLogFunc registry
                 CreateDocument -> Counter.inc createDocument
                 DeleteDocument -> Counter.inc deleteDocument
                 RenameDocument -> Counter.inc renameDocument
+                ResettingCache -> Counter.inc resettingCache
                 StripeCreateCustomerFailed {} -> pure ()
                 SubscriptionUpdated {} -> pure ()
                 CellResultOk {} -> pure ()
+                AnalyticsMsg visit ->
+                  case M.lookup visit visitCounters of
+                    Nothing -> pure ()
+                    Just counter -> Counter.inc counter
                 Timed {} -> pure ()
                 LoadDocumentMsg {} -> pure ()
                 CellError {} -> pure ()
