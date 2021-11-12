@@ -18,9 +18,6 @@ import qualified RIO
 import           Test.Hspec
 import           Test.QuickCheck
 
--- stepTextly :: Text -> IO (Either (ResolveStepError ()) Text)
--- stepTextly text' = RIO.runRIO StepReader (fmap (fmap printerText) (stepText mempty mempty "" text'))
-
 stepDefaultedTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
 stepDefaultedTextly text' =
   RIO.runRIO
@@ -160,7 +157,6 @@ spec = do
   it
     "@prim:from_ok(0,#oops) + 1"
     (shouldReturn (stepDefaultedTextly "@prim:from_ok(0,#oops) + 1") (Right "1"))
-  {-early-}
   regression
 
 equality :: SpecWith ()
@@ -573,51 +569,6 @@ case' =
              (stepDefaultedTextly
                 "case 2>4 { #true: \"early\", #false: case 2=2 { #true: \"ok\", #false: \"nope\" } }")
              (Right "\"ok\"")))
-
-_early :: Spec
-_early =
-  describe
-    "Early"
-    (do it
-          "(#ok({x:1}))?.x + _"
-          (shouldReturn
-             (stepDefaultedTextly "(#ok({x:1}))?.x + _")
-             (Right "#ok((1 + _))"))
-        it
-          "(#ok({x:1}))?.x + 2"
-          (shouldReturn
-             (stepDefaultedTextly "(#ok({x:1}))?.x + 2")
-             (Right "#ok(3)"))
-        it
-          "#none? + 1"
-          (shouldReturn
-             (stepDefaultedTextly "#none? + 1 + #wibble?")
-             (Right "#none"))
-        it
-          "#ok(3)? + 1"
-          (shouldReturn
-             (stepDefaultedTextly "#ok(3)? + 1")
-             (Right "#ok(4)"))
-        it
-          "#ok(3)? + 1 + #ok(4)?"
-          (shouldReturn
-             (stepDefaultedTextly "#ok(3)? + 1 + #ok(4)?")
-             (Right "#ok(8)"))
-        it
-          "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3"
-          (shouldReturn
-             (stepDefaultedTextly "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3")
-             (Right "#ok(66)"))
-        it
-          "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?"
-          (shouldReturn
-             (stepDefaultedTextly "@prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?")
-             (Right "#oops"))
-        it
-          "case (x: @prim:array_@prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }"
-          (shouldReturn
-             (stepDefaultedTextly "case (x: @prim:array_find(x:x>5,[5,2,63,1,3])? + 3 + #oops?)({}) { #oops: 1, #ok(n): n, #none: 0 }")
-             (Right "1")))
 
 regression :: SpecWith ()
 regression =
