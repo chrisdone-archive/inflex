@@ -73,6 +73,7 @@ Article {
 * [Patera](https://patera.io/)
 * [Visor](https://www.visor.us/)
 * [AirTable](https://airtable.com/)
+* [Lido](https://www.lido.app/)
 
 ## Dead products
 
