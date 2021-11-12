@@ -35,14 +35,14 @@ import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
-import           Inflex.Printer
 import           Inflex.Document
+import           Inflex.Eval
 import           Inflex.Instances ()
 import           Inflex.Location
+import           Inflex.Printer
 import           Inflex.Renamer
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
-import           Inflex.Eval
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types.Filler
@@ -280,6 +280,9 @@ toTree ::
   -> Shared.Tree2
 toTree mappings nameMappings original final =
   case final of
+    -- Handle overloaded dictionary things:
+    LambdaExpression Lambda{body, location=ImplicitArgumentFor{}} ->
+      toTree mappings nameMappings original body
     ArrayExpression Array {typ, expressions} -- Recognize a table.
       | ArrayType (RecordType (RowType TypeRow {fields})) <- typ ->
         Shared.TableTreeMaybe2
