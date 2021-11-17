@@ -81,6 +81,7 @@ data Alternative s = Alternative
 data Pattern s
   = ParamPattern (Param s)
   | VariantPattern (VariantP s)
+  | WildPattern (Hole s)
 
 data VariantP s = VariantP
   { location :: !(StagedLocation s)

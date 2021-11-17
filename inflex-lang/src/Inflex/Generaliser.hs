@@ -412,6 +412,8 @@ caseGeneralise substitutions Case {..} =
              Alternative
                { pattern' =
                    case pattern' of
+                     WildPattern hole ->
+                       WildPattern (holeGeneralise substitutions hole)
                      ParamPattern param ->
                        ParamPattern (paramGeneralise substitutions param)
                      VariantPattern VariantP {location = locp, ..} ->

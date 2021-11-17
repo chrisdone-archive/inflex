@@ -166,21 +166,11 @@ operatorPrecedence =
   concat [["=", "/=", "<", ">", "<=", ">="], ["-", "+"], ["*", "/"]]
 
 expressionParser :: Parser (Expression Parsed)
-expressionParser = caseParser <> ifParser <> chainParser
+expressionParser = caseParser <> chainParser
   where
     chainParser = do
       chain <- infixChainParser
       resolveChain chain
-
-ifParser :: Parser (Expression Parsed)
-ifParser = do
-  Located {location} <- keyword "if"
-  condition <- expressionParser
-  keyword_ "then"
-  consequent <- expressionParser
-  keyword_ "else"
-  alternative <- expressionParser
-  pure (IfExpression (If {typ=Nothing, ..}))
 
 -- Examples
 -- case x { #true: p*2, #false: 12 }
@@ -188,7 +178,7 @@ ifParser = do
 --
 caseParser :: Parser (Expression Parsed)
 caseParser = do
-  Located {location} <- keyword "case"
+  Located {location} <- keyword "if"
   scrutinee <- expressionParser
   token_ ExpectedCurly (preview _OpenCurlyToken)
   alternatives <-
@@ -224,7 +214,8 @@ alterativeParser = do
 
 patternParser :: Parser (Pattern Parsed)
 patternParser =
-  fmap ParamPattern paramParser <> fmap VariantPattern variantPattern
+  fmap WildPattern holeParser <> fmap ParamPattern paramParser <>
+  fmap VariantPattern variantPattern
 
 variantPattern :: Parser (VariantP Parsed)
 variantPattern = do
@@ -244,9 +235,6 @@ variantPattern = do
            pure (pure e)
          else pure Nothing
   pure VariantP {tag = TagName name, location, argument}
-
-keyword_ :: Text -> Parser ()
-keyword_ = void . keyword
 
 keyword :: Text -> Parser (Located ())
 keyword word = do
@@ -942,6 +930,7 @@ patternParam =
   \case
     ParamPattern param -> pure param
     VariantPattern VariantP {argument} -> argument
+    WildPattern{} -> Nothing
 
 anyWordTokenPreview :: Token -> Maybe Text
 anyWordTokenPreview = \c -> preview _AnyWordToken c <|> preview _CamelCaseToken c

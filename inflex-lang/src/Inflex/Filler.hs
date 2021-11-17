@@ -100,6 +100,7 @@ alternativeFill globals Alternative {location = l, ..} = do
     patternFill :: Pattern Renamed -> Pattern Filled
     patternFill =
       \case
+        WildPattern Hole {..} -> WildPattern Hole {..}
         ParamPattern Param {..} -> ParamPattern Param {..}
         VariantPattern VariantP {argument, ..} ->
           VariantPattern VariantP {argument = fmap paramFill argument, ..}

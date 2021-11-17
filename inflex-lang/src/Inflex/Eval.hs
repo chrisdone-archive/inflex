@@ -171,6 +171,7 @@ evalCase build case'@Case {..} = do
 match :: Expression Resolved -> Alternative Resolved -> Maybe (Expression Resolved)
 match scrutinee Alternative {..} =
   case pattern' of
+    WildPattern {} -> pure expression
     ParamPattern {} -> pure (runIdentity (betaReduce expression scrutinee))
     VariantPattern VariantP {tag = expectedTag, argument = namedArgument} ->
       case scrutinee of
@@ -874,6 +875,7 @@ betaReduce body0 arg = go 0 body0
                    go
                      (deBrujinNesting +
                      -- TODO: check this arithmetic.
+                     -- 2021-11-17: Seems OK.
                       case patternParam pattern' of
                         Just {} -> 1
                         Nothing -> 0)

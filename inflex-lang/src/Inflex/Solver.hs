@@ -533,6 +533,8 @@ caseSolve substitutions Case {..} =
              Alternative
                { pattern' =
                    case pattern' of
+                     WildPattern hole ->
+                       WildPattern (holeSolve substitutions hole)
                      ParamPattern param ->
                        ParamPattern (paramSolve substitutions param)
                      VariantPattern VariantP {location = locp, ..} ->

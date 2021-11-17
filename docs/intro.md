@@ -61,7 +61,7 @@ You can refer to choices with hashtag syntax, like:
 
 It's fine to make a list like `[#red, #black, #red, #blue]`.
 
-See `case` section.
+See `if` section.
 
 ## Text
 
@@ -131,32 +131,30 @@ There is a limited list so far:
 <tr><td>from_ok</td><td><code>from_ok(0,#ok(1))</code></td></tr>
 </table>
 
-## If
-
-```haskell
-if #true then "ok" else "boo!"
-
-if 3 > 2 then "Yep" else "Maths is broken!"
-```
-
-## Cases
+## If/case
 
 Cases currently only work on variants (`#foo`).
 
 ```haskell
-case #true { #true: "true", #false: "false" }
+if #true { #true: "ok", _: "boo!" }
+
+if 3 > 2 { #true: "Yep", _: "Maths is broken!" }
+```
+
+```haskell
+if #true { #true: "true", #false: "false" }
 ```
 
 Wildcards (`x` below):
 
 ```haskell
-case #true { #true: "true", x: "false" }
+if #true { #true: "true", x: "false" }
 ```
 
 Arguments to variants:
 
 ```haskell
-case sum([1,2,3,4]) { #ok(n): n, x: 0 }
+if sum([1,2,3,4]) { #ok(n): n, x: 0 }
 ```
 
 ## Tables

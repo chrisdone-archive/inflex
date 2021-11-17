@@ -122,7 +122,7 @@ instance Stage s => Printer (Expression s) where
 
 instance Stage s => Printer (Case s) where
   printer Case {..} =
-    "case " <> printer scrutinee <> " {" <>
+    "if " <> printer scrutinee <> " {" <>
     (mconcat . intersperse ", ") (map printer (toList alternatives)) <>
     "}"
 
@@ -142,11 +142,13 @@ instance Stage s => Printer (Alternative s) where
     case reflectStage @s of
       StageResolved ->
         case pattern' of
+          WildPattern {} -> "_: " <> printer expression
           ParamPattern param -> printer param <> ": " <> printer expression
           VariantPattern variant ->
             printer variant <> ": " <> printer expression
       StageParsed ->
         case pattern' of
+          WildPattern {} -> "_: " <> printer expression
           ParamPattern param -> printer param <> ": " <> printer expression
           VariantPattern variant ->
             printer variant <> ": " <> printer expression

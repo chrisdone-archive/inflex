@@ -163,6 +163,7 @@ caseGenerator Case {..} = do
                              (\Alternative {pattern'} ->
                                 case pattern' of
                                   ParamPattern {} -> True
+                                  WildPattern {} -> True
                                   _ -> False)
                              alternatives' of
                         Just {} -> Just rowVariable
@@ -205,6 +206,7 @@ patternType =
   \case
     ParamPattern p -> pure (paramType p)
     VariantPattern variantP -> variantPType variantP
+    WildPattern hole -> pure (holeType hole)
 
 variantPType :: VariantP Generated -> Generate e (Type Generated)
 variantPType VariantP {tag = TagName name, argument, location} = do
@@ -239,6 +241,12 @@ patternGenerator =
   \case
     ParamPattern param -> fmap ParamPattern (paramGenerator param)
     VariantPattern variantP -> fmap VariantPattern (variantPGenerator variantP)
+    WildPattern wildP -> fmap WildPattern (wildPGenerator wildP)
+
+wildPGenerator :: Hole Filled -> Generate e (Hole Generated)
+wildPGenerator Hole {..} = do
+  generated <- generateVariableType location AltPrefix TypeKind
+  pure Hole {typ = generated, ..}
 
 variantPGenerator :: VariantP Filled -> Generate e (VariantP Generated)
 variantPGenerator VariantP {..} = do

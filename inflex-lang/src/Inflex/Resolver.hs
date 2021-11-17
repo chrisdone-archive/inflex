@@ -163,6 +163,7 @@ patternResolver :: DeBrujinNesting -> Pattern Generalised -> Resolve (Pattern Re
 patternResolver nesting =
   \case
     ParamPattern param -> fmap ParamPattern (pure (paramResolver param))
+    WildPattern wild -> fmap WildPattern (pure (holeResolver wild))
     VariantPattern variant -> fmap VariantPattern (variantpResolver nesting variant)
 
 variantpResolver :: DeBrujinNesting -> VariantP Generalised -> Resolve (VariantP Resolved)

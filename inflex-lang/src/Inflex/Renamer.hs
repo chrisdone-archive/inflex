@@ -94,10 +94,13 @@ renameExpression env =
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable -> renameVariable env variable
-    HoleExpression Hole {..} -> do
-      final <- finalizeCursor (cursor env) TypeCursor location
-      pure (HoleExpression Hole {location = final, typ = Nothing})
+    HoleExpression hole -> fmap HoleExpression (renameHole env hole)
     GlobalExpression global -> fmap GlobalExpression (renameGlobal env global)
+
+renameHole :: Env -> Hole Parsed -> Renamer (Hole Renamed)
+renameHole env Hole{..} = do
+  final <- finalizeCursor (cursor env) TypeCursor location
+  pure (Hole {location = final, typ = Nothing})
 
 renameLiteral :: Env -> Literal Parsed -> Renamer (Expression Renamed)
 renameLiteral env@Env {cursor} =
@@ -310,6 +313,7 @@ renamePattern env =
   \case
     ParamPattern param -> fmap ParamPattern (renameParam env param)
     VariantPattern variant -> fmap VariantPattern (renameVariantP env variant)
+    WildPattern hole -> fmap WildPattern (renameHole env hole)
 
 bindingParam :: Binding s -> NonEmpty (Param s)
 bindingParam =
@@ -323,6 +327,7 @@ patternParam =
   \case
     ParamPattern param -> pure param
     VariantPattern VariantP {argument} -> argument
+    WildPattern {} -> Nothing
 
 renameVariantP :: Env -> VariantP Parsed -> Renamer (VariantP Renamed)
 renameVariantP env@Env {cursor} VariantP {..} = do
