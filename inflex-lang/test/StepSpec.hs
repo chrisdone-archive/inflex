@@ -394,10 +394,10 @@ functions1 = do
     (do it
           "@prim:array_concat(...)"
           (do shouldReturn
-                (stepDefaultedTextly "@prim:array_concat [[1,2,3],[4,5,6],[],[7,8]]")
+                (stepDefaultedTextly "@prim:array_concat([[1,2,3],[4,5,6],[],[7,8]])")
                 (Right "[1, 2, 3, 4, 5, 6, 7, 8]")
               shouldReturn
-                (stepDefaultedTextly "@prim:array_concat []")
+                (stepDefaultedTextly "@prim:array_concat([])")
                 (Right "[]")))
   describe
     "@prim:array_length"

@@ -34,7 +34,7 @@ spec = do
   lambda
   apply
   records
-  implicitcalls
+  {-implicitcalls-}
   dotcalls
   {-early-}
   it
@@ -1535,8 +1535,8 @@ variants =
                                      })))
                       })))))
 
-implicitcalls :: Spec
-implicitcalls =
+_implicitcalls :: Spec
+_implicitcalls =
   describe
     "Implicit calls"
     (do it

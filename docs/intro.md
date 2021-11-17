@@ -92,15 +92,6 @@ Familiar like in spreadsheets:
 map(x:x*x,[1,2,3,4])
 ```
 
-As convenience, for lists or records, you can omit the parens:
-
-```haskell
-sum [1,2,3]
-foo {some:"123",thing:567}
-```
-
-Which can be handy especially for named arguments.
-
 A nicer way to call functions is using dot syntax:
 
 ```haskell

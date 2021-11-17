@@ -509,9 +509,9 @@ applyParser = do
 
 finishApplyParser :: Expression Parsed -> Parser (Expression Parsed)
 finishApplyParser function0 =
-  tuple function0 <> list function0 <> record function0
+  tuple function0 -- <> list function0 <> record function0
   where
-    list function = do
+    _list function = do
       array <- arrayParser
       pure
         (ApplyExpression
@@ -522,7 +522,7 @@ finishApplyParser function0 =
              , typ = Nothing
              , style = PrefixApply
              })
-    record function = do
+    _record function = do
       record' <- recordParser
       pure
         (ApplyExpression
