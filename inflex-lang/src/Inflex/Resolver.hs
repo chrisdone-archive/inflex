@@ -417,11 +417,13 @@ resolveEqualInstance =
   \case
     ConstantType TypeConstant {name = IntegerTypeName} ->
       pure EqualIntegerInstance
-    ConstantType TypeConstant {name = TextTypeName} ->
-      pure EqualTextInstance
+    ConstantType TypeConstant {name = TextTypeName} -> pure EqualTextInstance
     ApplyType TypeApplication { function = ConstantType TypeConstant {name = DecimalTypeName}
                               , argument = ConstantType TypeConstant {name = NatTypeName places}
                               } -> pure (EqualDecimalInstance places)
+    ArrayType a -> do
+      instanceForA <- resolveEqualInstance a
+      pure (EqualArrayInstance instanceForA)
     numberType -> Left (NoInstanceForType EqualClassName numberType)
 
 -- | Return the instance for Compare.

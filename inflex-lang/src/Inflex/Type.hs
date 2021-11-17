@@ -11,9 +11,9 @@
 
 module Inflex.Type where
 
-import           Data.Text (Text)
-import           Inflex.Types
-import           Numeric.Natural
+import Data.Text (Text)
+import Inflex.Types
+import Numeric.Natural
 
 -- | Return the final output type.
 --
@@ -134,6 +134,8 @@ paramType Param {typ} = typ
 instanceNameType :: (StagedLocation s ~ Cursor) => InstanceName -> Type s
 instanceNameType =
   \case
+    EqualArrayInstance subInstance ->
+      instanceNameType subInstance .-> instanceNameType subInstance
     FromIntegerIntegerInstance -> integerT .-> integerT
     FromIntegerDecimalInstance nat -> integerT .-> decimalT nat
     FromDecimalDecimalInstance FromDecimalInstance { supersetPlaces

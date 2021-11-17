@@ -477,6 +477,7 @@ data InstanceName
   | CompareIntegerInstance
   | CompareTextInstance
   | CompareDecimalInstance !Natural
+  | EqualArrayInstance !InstanceName
   deriving (Show, Lift, Eq, Ord)
 
 data FromDecimalInstance = FromDecimalInstance

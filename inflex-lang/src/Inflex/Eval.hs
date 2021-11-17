@@ -33,6 +33,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Text (Text)
+import           Data.Traversable
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           GHC.Natural
@@ -446,6 +447,8 @@ applyInfixNF expression global left right =
       evalIntegerOp expression numericBinOp left right
     ApplyDict1 NumericBinOpGlobal{} (DecimalOpInstance precision numericBinOp)  ->
       evalDecimalOp expression precision numericBinOp left right
+    ApplyDict1 (EqualGlobal equality) (EqualArrayInstance i) ->
+      evalArrayEquality expression equality left right
     ApplyDict1 (EqualGlobal equality) _instance ->
       evalAtomicEquality expression equality left right
     ApplyDict1 (CompareGlobal comparison) _instance ->
@@ -454,6 +457,21 @@ applyInfixNF expression global left right =
 
 --------------------------------------------------------------------------------
 -- Equality
+
+evalArrayEquality ::
+     Monad f
+  => Expression Resolved
+  -> Equality
+  -> Expression Resolved
+  -> Expression Resolved
+  -> f (Expression Resolved)
+evalArrayEquality expression equality left' right' =
+  case (left', right') of
+    (ArrayExpression Array{expressions=l}, ArrayExpression Array{expressions=r}) -> do
+      results <- for (V.zip l r)
+            (\(leftE, rightE) -> do variant <- applyInfixNF
+                                    undefined)
+      pure undefined
 
 evalAtomicEquality ::
      Applicative f
