@@ -27,7 +27,7 @@ spec:
       - name: inflex-server
         image: registry.gitlab.com/sky-above/inflex/prod:7ffb62940a66103f7048ad3a0b6d494722d4aac7
         command: ["inflex-server"]
-        args: ["+RTS","-Iw60", "-T"]
+        args: ["+RTS","-Iw60", "-T", "-M500m"]
         env:
           - name: PORT
             value: "80"
