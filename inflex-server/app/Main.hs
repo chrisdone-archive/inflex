@@ -16,7 +16,6 @@ import           Criterion.Measurement
 import qualified Data.ByteString.Char8 as S8
 import           Data.Functor.Contravariant
 import qualified Data.List as List
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Pool
 import           Data.String
@@ -39,6 +38,7 @@ import           Network.Wai.Middleware.Gzip
 import           RIO
 import           RIO.Warp
 import           System.Environment
+import           System.Mem
 import qualified System.Metrics.Prometheus.Concurrent.Registry as Prometheus.Registry
 import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
 import qualified System.Metrics.Prometheus.Metric.Counter as Counter
@@ -176,6 +176,8 @@ makeAppLogFunc registry
     Prometheus.Registry.registerGauge "rts_max_live_bytes" mempty registry
   max_mem_in_use_bytesGauge <-
     Prometheus.Registry.registerGauge "rts_max_mem_in_use_bytes" mempty registry
+  mem_in_use_bytesGauge <-
+    Prometheus.Registry.registerGauge "rts_mem_in_use_bytes" mempty registry
   gc_elapsed_nsCounter <-
     Prometheus.Registry.registerCounter "rts_gc_elapsed_ns" mempty registry
   elapsed_nsCounter <-
@@ -186,7 +188,8 @@ makeAppLogFunc registry
     (void
        (forkIO
           (forever
-             (do stats <- getRTSStats
+             (do performMinorGC
+                 stats <- getRTSStats
                  Counter.add (fromIntegral (gcs stats)) gcsCounter
                  Counter.add
                    (fromIntegral (allocated_bytes stats))
@@ -194,6 +197,9 @@ makeAppLogFunc registry
                  Gauge.set
                    (fromIntegral (max_mem_in_use_bytes stats))
                    max_mem_in_use_bytesGauge
+                 Gauge.set
+                   (fromIntegral (gcdetails_mem_in_use_bytes (gc stats)))
+                   mem_in_use_bytesGauge
                  Gauge.set
                    (fromIntegral (max_live_bytes stats))
                    max_live_bytesCounter
