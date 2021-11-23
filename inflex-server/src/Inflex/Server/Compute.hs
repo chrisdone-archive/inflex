@@ -17,6 +17,7 @@ import           Control.Early
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Coerce
+import           Data.Compact
 import           Data.Foldable
 import           Data.Function
 import           Data.Functor.Contravariant
@@ -163,18 +164,19 @@ loadInputDocument (InputDocument {cells}) = do
          DocumentReader {glogfunc = contramap LoadDocumentMsg logfunc}
          (RIO.timeout
             (1000 * milliseconds)
-            (loadDocument1 loadedCache inputCells)))?
-  liftIO
-    (writeIORef
-       loadedCacheRef
-       (foldl'
-          (\cache Named {thing} ->
-             case thing of
-               Right loadedExpression@LoadedExpression {..} ->
-                 HM.insert (digestToSha512 sourceHash) loadedExpression cache
-               Left {} -> cache)
-          loadedCache
-          loaded))
+            (loadDocument1 (fmap getCompact loadedCache) inputCells)))?
+  compacted <-
+    liftIO
+      (foldlM
+         (\cache Named {thing} ->
+            case thing of
+              Right loadedExpression@LoadedExpression {..} -> do
+                compactedE <- compact loadedExpression
+                pure (HM.insert (digestToSha512 sourceHash) compactedE cache)
+              Left {} -> pure cache)
+         loadedCache
+         loaded)
+  liftIO (writeIORef loadedCacheRef compacted)
   defaulted <-
     timed
       TimedDefaulter
@@ -188,19 +190,21 @@ loadInputDocument (InputDocument {cells}) = do
          Eval {glogfunc = mempty, globals = evalEnvironment1 loaded}
          (RIO.timeout
             (1000 * milliseconds)
-            (evalDocument1' evalCache (evalEnvironment1 loaded) defaulted)))?
-  liftIO
-    (writeIORef
-       evalCacheRef
-       (foldl'
-          (\cache Named {thing, sourceHash} ->
-             case thing of
-               Right evalExpression@EvaledExpression {..}
-                 | HashKnown hash <- sourceHash ->
-                   HM.insert hash evalExpression cache
-               _ -> cache)
-          evalCache
-          topo))
+            (evalDocument1'
+               (fmap getCompact evalCache)
+               (evalEnvironment1 loaded)
+               defaulted)))?
+  liftIO (do c <- foldlM
+                    (\cache Named {thing, sourceHash} ->
+                       case thing of
+                         Right evalExpression@EvaledExpression {..}
+                           | HashKnown hash <- sourceHash ->
+                             do compactedE <- compact evalExpression
+                                pure (HM.insert hash compactedE cache)
+                         _ -> pure cache)
+                    evalCache
+                    topo
+             writeIORef evalCacheRef c)
   outputCells <-
     RIO.pooledMapConcurrently
       (\Named { uuid = Uuid uuid

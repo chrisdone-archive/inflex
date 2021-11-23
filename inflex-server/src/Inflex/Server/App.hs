@@ -30,6 +30,7 @@ module Inflex.Server.App where
 import           Control.Monad.Logger as MonadLogger
 import           Control.Monad.Reader
 import           Criterion.Measurement
+import           Data.Compact
 import           Data.Fixed
 import           Data.Functor.Contravariant
 import           Data.Pool
@@ -66,8 +67,8 @@ data App = App
   { appPool :: !(Pool SqlBackend)
   , appConfig :: !Config
   , appLogFunc :: GLogFunc AppMsg
-  , appLoadCache :: IORef (HashMap SHA512 LoadedExpression)
-  , appEvalCache :: IORef (HashMap SHA512 EvaledExpression)
+  , appLoadCache :: IORef (HashMap SHA512 (Compact LoadedExpression))
+  , appEvalCache :: IORef (HashMap SHA512 (Compact EvaledExpression))
   , appStatic :: EmbeddedStatic
   }
 
