@@ -283,7 +283,9 @@ makeAppLogFunc registry
        (\_callStack ->
           \case
             ServerMsg msg -> do
-              prettyWrite msg
+              case msg of
+                CellSharedResult{} -> pure ()
+                _ -> prettyWrite msg
               case msg of
                 TimeoutExceeded {} -> Counter.inc timeoutExceeded
                 UpdateTransformError -> Counter.inc updateTransformError

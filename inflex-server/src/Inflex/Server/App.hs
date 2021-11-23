@@ -121,6 +121,7 @@ data Timed
   | TimedSelectCells
   | TimedSetInputDocument
   | TimedRpcCall Text
+  | TimedMakeCachedUuids
   deriving (Show)
 
 -- | A generic log output.
