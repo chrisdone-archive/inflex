@@ -44,7 +44,6 @@ import qualified System.Metrics.Prometheus.Http.Scrape as Prometheus
 import qualified System.Metrics.Prometheus.Metric.Counter as Counter
 import qualified System.Metrics.Prometheus.Metric.Gauge as Gauge
 import           System.Posix.Signals
--- import qualified System.Metrics.Prometheus.Metric.Histogram as Histogram
 import           Yesod hiding (Html)
 
 --------------------------------------------------------------------------------
@@ -190,8 +189,8 @@ makeAppLogFunc registry
           (forever
              (do performMinorGC
                  stats <- getRTSStats
-                 Counter.add (fromIntegral (gcs stats)) gcsCounter
-                 Counter.add
+                 Counter.set (fromIntegral (gcs stats)) gcsCounter
+                 Counter.set
                    (fromIntegral (allocated_bytes stats))
                    allocated_bytesCounter
                  Gauge.set
@@ -203,10 +202,10 @@ makeAppLogFunc registry
                  Gauge.set
                    (fromIntegral (max_live_bytes stats))
                    max_live_bytesCounter
-                 Counter.add
+                 Counter.set
                    (fromIntegral (gc_elapsed_ns stats))
                    gc_elapsed_nsCounter
-                 Counter.add (fromIntegral (elapsed_ns stats)) elapsed_nsCounter
+                 Counter.set (fromIntegral (elapsed_ns stats)) elapsed_nsCounter
                  RIO.threadDelay (1000 * 1000 * 60)))))
   timeoutExceeded <-
     Prometheus.Registry.registerCounter
@@ -284,7 +283,7 @@ makeAppLogFunc registry
           \case
             ServerMsg msg -> do
               case msg of
-                CellSharedResult{} -> pure ()
+                CellSharedResult {} -> pure ()
                 _ -> prettyWrite msg
               case msg of
                 TimeoutExceeded {} -> Counter.inc timeoutExceeded
