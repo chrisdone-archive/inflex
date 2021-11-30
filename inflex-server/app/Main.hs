@@ -126,7 +126,8 @@ main = do
                             (do RIO.runRIO logFunc (glog (ServerMsg ResettingCache))
                                 RIO.threadDelay (1000 * 1000 * 60 * 5)
                                 writeIORef loadedRef mempty
-                                writeIORef evaledRef mempty))
+                                writeIORef evaledRef mempty
+                                performMajorGC))
                          (runMyWarp
                             port
                             (addServerHeader
@@ -169,6 +170,7 @@ makeAppLogFunc registry
   --     registry
  = do
   gcsCounter <- Prometheus.Registry.registerCounter "rts_gcs" mempty registry
+  majorgcsCounter <- Prometheus.Registry.registerCounter "rts_major_gcs" mempty registry
   allocated_bytesCounter <-
     Prometheus.Registry.registerCounter "rts_allocated_bytes" mempty registry
   max_live_bytesCounter <-
@@ -190,6 +192,7 @@ makeAppLogFunc registry
              (do performMinorGC
                  stats <- getRTSStats
                  Counter.set (fromIntegral (gcs stats)) gcsCounter
+                 Counter.set (fromIntegral (major_gcs stats)) majorgcsCounter
                  Counter.set
                    (fromIntegral (allocated_bytes stats))
                    allocated_bytesCounter
