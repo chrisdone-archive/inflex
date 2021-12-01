@@ -25,7 +25,7 @@ spec:
       - name: gitlab-registry
       containers:
       - name: inflex-server
-        image: registry.gitlab.com/sky-above/inflex/prod:8ba5008687ce1b61e4ccf5f2063ab63ddc96b7ac
+        image: registry.gitlab.com/sky-above/inflex/prod:40b02e48d6d619da37144cd220bb15b7f802a6ea
         command: ["inflex-server"]
         args: ["+RTS","-Iw60", "-T", "-M500m"]
         env:

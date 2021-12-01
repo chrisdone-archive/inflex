@@ -175,6 +175,8 @@ makeAppLogFunc registry
     Prometheus.Registry.registerCounter "rts_allocated_bytes" mempty registry
   max_live_bytesCounter <-
     Prometheus.Registry.registerGauge "rts_max_live_bytes" mempty registry
+  live_bytesCounter <-
+    Prometheus.Registry.registerGauge "rts_live_bytes" mempty registry
   max_mem_in_use_bytesGauge <-
     Prometheus.Registry.registerGauge "rts_max_mem_in_use_bytes" mempty registry
   mem_in_use_bytesGauge <-
@@ -205,6 +207,9 @@ makeAppLogFunc registry
                  Gauge.set
                    (fromIntegral (max_live_bytes stats))
                    max_live_bytesCounter
+                 Gauge.set
+                   (fromIntegral (gcdetails_live_bytes (gc stats)))
+                   live_bytesCounter
                  Counter.set
                    (fromIntegral (gc_elapsed_ns stats))
                    gc_elapsed_nsCounter
