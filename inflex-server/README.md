@@ -6,6 +6,10 @@ docker run -ePOSTGRES_USER=inflex -ePOSTGRES_PASSWORD=inflex -ePOSTGRES_DB=infle
 
 stack build --file-watch  --exec 'cron-daemon --terminate --pid .stack-work/pid -ePORT=3031 -eCONFIG=config.yaml inflex-server' --flag inflex-server:postgresql --fast
 
+## Dump prod schema
+
+docker run --net=host -i postgres:12-alpine pg_dump -U doadmin -ddefaultdb -h localhost -p 54322 --no-owner --schema-only --no-privileges > ~/Work/skyabove/inflex/schema.sql
+
 ## ngrok
 
 ngrok http -subdomain=inflex 3031
