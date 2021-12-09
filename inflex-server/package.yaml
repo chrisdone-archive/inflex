@@ -107,9 +107,6 @@ flags:
  release:
    manual: True
    default: False
- postgresql:
-   manual: True
-   default: False
 
 library:
   source-dirs: src
