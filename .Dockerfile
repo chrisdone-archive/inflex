@@ -9,6 +9,7 @@ RUN if getent group chris ; then groupdel chris; fi &&\
     install -d -m 0755 -o chris -g chris /home/chris &&\
     chown -R chris:chris /root/.stack
 
+COPY .Dockerfile-bashrc /home/chris/.bashrc
 RUN chown chris:chris /root/
 
 USER chris
