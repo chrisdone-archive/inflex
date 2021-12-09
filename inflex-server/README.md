@@ -8,7 +8,11 @@ stack build --file-watch  --exec 'cron-daemon --terminate --pid .stack-work/pid 
 
 ## Dump prod schema
 
-docker run --net=host -i postgres:12-alpine pg_dump -U doadmin -ddefaultdb -h localhost -p 54322 --no-owner --schema-only --no-privileges > ~/Work/skyabove/inflex/schema.sql
+docker run --net=host -i postgres:12-alpine pg_dump -U doadmin -ddefaultdb -h localhost -p 54322 --no-owner --schema-only --no-privileges > ~/Work/skyabove/inflex/inflex-server/schema.sql
+
+## Import prod schema
+
+docker run --net=host -v$HOME/Work/skyabove/inflex/inflex-server:/w -i postgres:12-alpine psql -U inflex -h localhost -d inflex -p 54321 -f /w/schema.sql
 
 ## ngrok
 
