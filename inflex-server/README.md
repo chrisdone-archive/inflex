@@ -6,6 +6,11 @@ docker run -ePOSTGRES_USER=inflex -ePOSTGRES_PASSWORD=inflex -ePOSTGRES_DB=infle
 
 stack build --file-watch  --exec 'cron-daemon --terminate --pid .stack-work/pid -ePORT=3031 -eCONFIG=config.yaml inflex-server' --flag inflex-server:postgresql --fast
 
+Via GHCi, this adds a easy restart command for running the server
+inside ghci:
+
+    :script ../.ghci-script
+
 ## Dump prod schema
 
 docker run --net=host -i postgres:12-alpine pg_dump -U doadmin -ddefaultdb -h localhost -p 54322 --no-owner --schema-only --no-privileges > ~/Work/skyabove/inflex/inflex-server/schema.sql
