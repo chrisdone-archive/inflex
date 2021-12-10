@@ -24,17 +24,14 @@ import qualified Data.Text.IO as T
 import           Data.Time
 import           Data.Yaml
 import           GHC.Stats
-import           GitInfo (gitHash)
 import           Inflex.Backend
 import           Inflex.Migrate
 import           Inflex.Server.App
 import           Inflex.Server.Dispatch ()
 import           Inflex.Server.Types
 import           Log
-import           Network.Wai
+import           Middlewares
 import qualified Network.Wai.Handler.Warp as Warp
-import           Network.Wai.Middleware.AddHeaders
-import           Network.Wai.Middleware.Gzip
 import           RIO
 import           RIO.Warp
 import           System.Environment
@@ -62,18 +59,6 @@ main = do
   Buffering.setAppBuffering
   initializeTime
   now <- getCurrentTime
-  let addKillswitch :: Middleware
-      addKillswitch appl request reply = do
-        when (rawPathInfo request == "/kill")
-             (killThread mainId)
-        appl request reply
-      addServerHeader :: Middleware
-      addServerHeader =
-        addHeaders
-          [ ("Server", "inflex-server")
-          , ("X-Git-Commit", fromString gitHash)
-          , ("X-Process-Started", fromString (show now))
-          ]
   fp <- getEnv "CONFIG"
   config <- decodeFileEither fp >>= either RIO.throwIO return
   port <- fmap read (getEnv "PORT")
@@ -135,9 +120,7 @@ main = do
                                 performMajorGC))
                          (runMyWarp
                             port
-                            (addKillswitch
-                              (addServerHeader
-                               (gzip def {gzipFiles = GzipCompress} app)))))))))
+                            (middlewares mainId now app)))))))
     (S8.putStrLn "Server shutdown: OK")
   where
     warpSettings parentGLogFunc =
