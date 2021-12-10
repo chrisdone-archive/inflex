@@ -63,7 +63,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - inflex-lang
-    - hint
 
 benchmarks:
   inflex-lang-time:
