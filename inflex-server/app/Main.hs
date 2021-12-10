@@ -62,7 +62,12 @@ main = do
   Buffering.setAppBuffering
   initializeTime
   now <- getCurrentTime
-  let addServerHeader :: Middleware
+  let addKillswitch :: Middleware
+      addKillswitch appl request reply = do
+        when (rawPathInfo request == "/kill")
+             (killThread mainId)
+        appl request reply
+      addServerHeader :: Middleware
       addServerHeader =
         addHeaders
           [ ("Server", "inflex-server")
@@ -130,8 +135,9 @@ main = do
                                 performMajorGC))
                          (runMyWarp
                             port
-                            (addServerHeader
-                               (gzip def {gzipFiles = GzipCompress} app))))))))
+                            (addKillswitch
+                              (addServerHeader
+                               (gzip def {gzipFiles = GzipCompress} app)))))))))
     (S8.putStrLn "Server shutdown: OK")
   where
     warpSettings parentGLogFunc =
