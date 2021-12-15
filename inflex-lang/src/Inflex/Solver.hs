@@ -232,10 +232,13 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
       case (disjointFields1, v1, disjountFields2, v2) of
           -- Below: For empty fields, don't generate any constraints. Even for the type variables.
           ([], Just v1', [], Just v2')
-            | v1' == v2' -> pure $ Right [] -- IF the variables are
-          -- the same.  Note that we can end up here if a non-empty
-          -- pair of rows have the same fields; the disjoint lists for
-          -- both would be empty. That's why asTypeOf({x:1},{x:1}) works.
+             -- IF the variables are the same.
+            | v1' == v2' -> pure $ Right []
+          --
+          -- Below: Note that we can end up here if a non-empty pair of rows
+          -- have the same fields; the disjoint lists for both would
+          -- be empty. That's why asTypeOf({x:1},{x:1}) works.
+          --
           ([], Nothing, [], Nothing) -> pure $ Right []
           --
           -- Below: Just unify a row variable with no fields with any other row.
