@@ -210,42 +210,49 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
     fieldName Field {name} = name
     fieldType Field {typ} = typ
     generateConstraints = do
-      let -- Get all the fields from fs1 that are not in fs2.
-          sd1_0 =
+      let --
+          -- DISJOINT CALCULATION
+          --
+          -- This makes it easy to deal with two rows on each side
+          -- that have disjoint fields, i.e. ones on the left aren't
+          -- on the right and vise-versa.
+          --
+          -- Get all the fields from fs1 that are not in fs2.
+          disjointFields1 =
             [ f1
             | f1@Field {name} <- fs1
             , name `notElem` map (\Field {name = name2} -> name2) fs2
             ]
           -- All the fields from fs2 that aren't in fs1.
-          sd2_0 =
+          disjountFields2 =
             [ f1
             | f1@Field {name} <- fs2
             , name `notElem` map (\Field {name = name2} -> name2) fs1
             ]
-      case (sd1_0, v1, sd2_0, v2) of
+      case (disjointFields1, v1, disjountFields2, v2) of
           -- Below: For empty fields, don't generate any constraints. Even for the type variables.
           ([], Just v1', [], Just v2')
-            | v1' == v2' -> pure $ Right []
+            | v1' == v2' -> pure $ Right [] -- IF the variables are the same.
           ([], Nothing, [], Nothing) -> pure $ Right []
           --
           -- Below: Just unify a row variable with no fields with any other row.
           --
-          ([], Just u, sd, r) ->
-            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))]) -- TODO: Merge locs, vars
-          (sd, r, [], Just u) ->
-            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = sd, ..}))]) -- TODO: Merge locs, vars
+          ([], Just u, disjountFields, r) ->
+            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = disjountFields, ..}))]) -- TODO: Merge locs, vars
+          (disjountFields, r, [], Just u) ->
+            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = disjountFields, ..}))]) -- TODO: Merge locs, vars
           --
           -- Below: Two open records, their fields must unify and we
           -- produce a union row type of both.
           --
-          (sd1, Just u1, sd2, Just u2) -> do
+          (_, Just u1, _, Just u2) -> do
             freshType <- generateTypeVariable' location RowUnifyPrefix RowKind
             let merged1 =
                   RowType
-                    (TypeRow {typeVariable = Just freshType, fields = sd1, ..})
+                    (TypeRow {typeVariable = Just freshType, fields = disjointFields1, ..})
                 merged2 =
                   RowType
-                    (TypeRow {typeVariable = Just freshType, fields = sd2, ..})
+                    (TypeRow {typeVariable = Just freshType, fields = disjountFields2, ..})
             pure (Right [(u1, merged2), (u2, merged1)])
           --
           -- Below: If we got here, then the following is true:
