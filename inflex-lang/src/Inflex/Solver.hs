@@ -267,8 +267,8 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
           --    b. Both sides are closed.
           --
           -- 2) Because we disjoin the two, so f([1,2],[1,2,3]) ->
-          --    ([],[1,2,3]), we can expect an empty field set on one
-          --    side, which is handled by the above cases.
+          --    ([],[3]), we can expect an empty field set on one
+          --    side, which is handled by the above cases. Fine. However...
           --
           -- 3) However, if don't have an empty side, then we arrive here.
           --
