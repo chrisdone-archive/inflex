@@ -247,6 +247,31 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
                   RowType
                     (TypeRow {typeVariable = Just freshType, fields = sd2, ..})
             pure (Right [(u1, merged2), (u2, merged1)])
+          --
+          -- Below: If we got here, then the following is true:
+          --
+          -- 1) a. One side is an open row, and the other side is a closed row.
+          --    b. Both sides are closed.
+          --
+          -- 2) Because we disjoin the two, so f([1,2],[1,2,3]) ->
+          --    ([],[1,2,3]), we can expect an empty field set on one
+          --    side, which is handled by the above cases.
+          --
+          -- 3) However, if don't have an empty side, then we arrive here.
+          --
+          --   a. If both sides are closed, that's an easy mismatch
+          --      e.g. a closed function expects {x,y} and you give
+          --      {k,q} then your fields just are wrong.
+          --
+          --   b. If one side is open, then that's either a field
+          --      access or an open function, but in either case means
+          --      that you aren't giving enough in the case of a
+          --      function, or that your expectations are wrong in a
+          --      property access.
+          --
+          --     It depends on whether we're in a function call or a
+          --     property access.
+          --
           _ -> pure (Left (RowMismatch row1 row2))
 
 --------------------------------------------------------------------------------
