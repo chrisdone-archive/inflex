@@ -170,32 +170,16 @@ unifyRecords :: Type Generated -> Type Generated -> Solve (Either SolveError ())
 unifyRecords (RowType x) (RowType y) = unifyRows x y
 unifyRecords _ _ = pure (Left NotRowTypes)
 
+-- | Unify two rows. This involves unioning the fields.
 unifyRows ::
      TypeRow Generated
   -> TypeRow Generated
   -> Solve (Either SolveError ())
-unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { typeVariable = v2
-                                                                             , fields = fs2
-                                                                             }) = do
+unifyRows row1@(TypeRow{fields = fields1, ..}) row2@(TypeRow{ fields = fields2 }) = do
   glog (UnifyRows row1 row2)
-  constraints <- generateConstraints?
-  let !common = force $ intersect (map fieldName fs1) (map fieldName fs2)
-      -- You have to make sure that the types of all the fields match
-      -- up, obviously.
-  let !fieldsToUnify =
-        mapMaybe
-          (\name -> do
-             f1 <- find ((== name) . fieldName) fs1
-             f2 <- find ((== name) . fieldName) fs2
-             pure
-               EqualityConstraint
-                 { type1 = fieldType f1
-                 , type2 = fieldType f2
-                 , .. -- TODO: clever location.
-                 })
-          common
-      -- These are essentially substitutions -- replacing one of the
-      -- rows with something else.
+  -- Below: These are essentially substitutions -- replacing one or
+  -- more of the rows with something else:
+  constraints <- generateConstraints row1 row2?
   let !constraintsToUnify =
         map
           (\(tyvar, t) ->
@@ -207,85 +191,105 @@ unifyRows row1@(TypeRow {typeVariable = v1, fields = fs1, ..}) row2@(TypeRow { t
           constraints
   unifyConstraints (Seq.fromList (fieldsToUnify <> constraintsToUnify))
   where
-    fieldName Field {name} = name
-    fieldType Field {typ} = typ
-    generateConstraints = do
-      let --
-          -- DISJOINT CALCULATION
-          --
-          -- This makes it easy to deal with two rows on each side
-          -- that have disjoint fields, i.e. ones on the left aren't
-          -- on the right and vise-versa.
-          --
-          -- Get all the fields from fs1 that are not in fs2.
-          disjointFields1 =
-            [ f1
-            | f1@Field {name} <- fs1
-            , name `notElem` map (\Field {name = name2} -> name2) fs2
-            ]
-          -- All the fields from fs2 that aren't in fs1.
-          disjountFields2 =
-            [ f1
-            | f1@Field {name} <- fs2
-            , name `notElem` map (\Field {name = name2} -> name2) fs1
-            ]
-      case (disjointFields1, v1, disjountFields2, v2) of
-          -- Below: For empty fields, don't generate any constraints. Even for the type variables.
-          ([], Just v1', [], Just v2')
-             -- IF the variables are the same.
-            | v1' == v2' -> pure $ Right []
-          --
-          -- Below: Note that we can end up here if a non-empty pair of rows
-          -- have the same fields; the disjoint lists for both would
-          -- be empty. That's why asTypeOf({x:1},{x:1}) works.
-          --
-          ([], Nothing, [], Nothing) -> pure $ Right []
-          --
-          -- Below: Just unify a row variable with no fields with any other row.
-          --
-          ([], Just u, disjountFields, r) ->
-            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = disjountFields, ..}))]) -- TODO: Merge locs, vars
-          (disjountFields, r, [], Just u) ->
-            pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields = disjountFields, ..}))]) -- TODO: Merge locs, vars
-          --
-          -- Below: Two open records, their fields must unify and we
-          -- produce a union row type of both.
-          --
-          (_, Just u1, _, Just u2) -> do
-            freshType <- generateTypeVariable' location RowUnifyPrefix RowKind
-            let merged1 =
-                  RowType
-                    (TypeRow {typeVariable = Just freshType, fields = disjointFields1, ..})
-                merged2 =
-                  RowType
-                    (TypeRow {typeVariable = Just freshType, fields = disjountFields2, ..})
-            pure (Right [(u1, merged2), (u2, merged1)])
-          --
-          -- Below: If we got here, then the following is true:
-          --
-          -- 1) a. One side is an open row, and the other side is a closed row.
-          --    b. Both sides are closed.
-          --
-          -- 2) Because we disjoin the two, so f([1,2],[1,2,3]) ->
-          --    ([],[3]), we can expect an empty field set on one
-          --    side, which is handled by the above cases. Fine. However...
-          --
-          -- 3) However, if don't have an empty side, then we arrive here.
-          --
-          --   a. If both sides are closed, that's an easy mismatch
-          --      e.g. a closed function expects {x,y} and you give
-          --      {k,q} then your fields just are wrong.
-          --
-          --   b. If one side is open, then that's either a field
-          --      access or an open function, but in either case means
-          --      that you aren't giving enough in the case of a
-          --      function, or that your expectations are wrong in a
-          --      property access.
-          --
-          --     It depends on whether we're in a function call or a
-          --     property access.
-          --
-          _ -> pure (Left (RowMismatch row1 row2))
+   -- You have to make sure that the types of all the fields match
+   -- up, obviously.
+   !fieldsToUnify =
+        mapMaybe
+          (\name -> do
+             field1 <- find ((== name) . fieldName) fields1
+             field2 <- find ((== name) . fieldName) fields2
+             pure
+               EqualityConstraint
+                 { type1 = fieldType field1
+                 , type2 = fieldType field2
+                 , .. -- TODO: clever location.
+                 })
+          common
+     where fieldType Field {typ} = typ
+    -- The fields that are shared between the two rows.
+   !common = force $ intersect (map fieldName fields1) (map fieldName fields2)
+   --
+   fieldName Field {name} = name
+
+-- | Generate unification constraints for the two rows.
+generateConstraints
+  :: TypeRow Generated
+  -> TypeRow Generated
+  -> Solve (Either SolveError [(TypeVariable Generated, Type Generated)])
+generateConstraints
+  row1@(TypeRow { typeVariable = v1, fields = fs1, ..})
+  row2@(TypeRow { typeVariable = v2, fields = fs2    }) =
+  case (theseNotInThere fs1 fs2, v1, theseNotInThere fs2 fs1, v2) of
+      -- Below: For empty fields, don't generate any constraints. Even for the type variables.
+      ([], Just v1', [], Just v2')
+         -- IF the variables are the same.
+        | v1' == v2' -> pure $ Right []
+      --
+      -- Below: Note that we can end up here if a non-empty pair of rows
+      -- have the same fields; the disjoint lists for both would
+      -- be empty. That's why asTypeOf({x:1},{x:1}) works.
+      --
+      ([], Nothing, [], Nothing) -> pure $ Right []
+      --
+      -- Below: Just unify a row variable with no fields with any other row.
+      --
+      ([], Just u, fields, r) ->
+        pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields, ..}))]) -- TODO: Merge locs, vars
+      (fields, r, [], Just u) ->
+        pure (Right [(,) u (RowType (TypeRow {typeVariable = r, fields, ..}))]) -- TODO: Merge locs, vars
+      --
+      -- Below: Two open records, their fields must unify and we
+      -- produce a union row type of both.
+      --
+      (fields1, Just u1, fields2, Just u2) -> do
+        freshType <- generateTypeVariable' location RowUnifyPrefix RowKind
+        let merged1 =
+              RowType
+                (TypeRow {typeVariable = Just freshType, fields = fields1, ..})
+            merged2 =
+              RowType
+                (TypeRow {typeVariable = Just freshType, fields = fields2, ..})
+        pure (Right [(u1, merged2), (u2, merged1)])
+      --
+      -- Below: If we got here, then the following is true:
+      --
+      -- 1) a. One side is an open row, and the other side is a closed row.
+      --    b. Both sides are closed.
+      --
+      -- 2) Because we disjoin the two, so f([1,2],[1,2,3]) ->
+      --    ([],[3]), we can expect an empty field set on one
+      --    side, which is handled by the above cases. Fine. However...
+      --
+      -- 3) However, if don't have an empty side, then we arrive here.
+      --
+      --   a. If both sides are closed, that's an easy mismatch
+      --      e.g. a closed function expects {x,y} and you give
+      --      {k,q} then your fields just are wrong.
+      --
+      --   b. If one side is open, then that's either a field
+      --      access or an open function, but in either case means
+      --      that you aren't giving enough in the case of a
+      --      function, or that your expectations are wrong in a
+      --      property access.
+      --
+      --     It depends on whether we're in a function call or a
+      --     property access.
+      --
+      _ -> pure (Left (RowMismatch row1 row2))
+
+-- | Get all the fields from fs1 that are not in fs2, by name.
+--
+-- This makes it easy to deal with two rows on each side
+-- that have disjoint fields, i.e. ones on the left aren't
+-- on the right and vise-versa.
+--
+-- TODO: Make faster.
+theseNotInThere :: [Field s1] -> [Field s2] -> [Field s1]
+theseNotInThere fields1 fields2 =
+  [ field1
+  | field1@Field {name} <- fields1
+  , name `notElem` map (\Field {name = name2} -> name2) fields2
+  ]
 
 --------------------------------------------------------------------------------
 -- Binding
