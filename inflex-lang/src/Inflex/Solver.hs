@@ -226,7 +226,7 @@ generateConstraints
         | v1' == v2' -> pure $ Right []
       --
       -- Below: Note that we can end up here if a non-empty pair of rows
-      -- have the same fields; the disjoint lists for both would
+      -- have the same fields; the intersecting lists for both would
       -- be empty. That's why asTypeOf({x:1},{x:1}) works.
       --
       ([], Nothing, [], Nothing) -> pure $ Right []
