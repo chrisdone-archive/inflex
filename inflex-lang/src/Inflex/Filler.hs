@@ -27,16 +27,12 @@ expressionFill globals =
   \case
     RecordExpression record -> fmap RecordExpression (recordFill globals record)
     CaseExpression case' -> fmap CaseExpression (caseFill globals case')
-    FoldExpression fold' -> fmap FoldExpression (foldFill globals fold')
-    UnfoldExpression unfold' -> fmap UnfoldExpression (unfoldFill globals unfold')
-    IfExpression if' -> fmap IfExpression (ifFill globals if')
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
     ArrayExpression array -> fmap ArrayExpression (arrayFill globals array)
     VariantExpression variant -> fmap VariantExpression (variantFill globals variant)
     LiteralExpression literal -> pure (LiteralExpression (literalFill literal))
     LambdaExpression lambda -> fmap LambdaExpression (lambdaFill globals lambda)
-    LetExpression let' -> fmap LetExpression (letFill globals let')
     InfixExpression infix' -> fmap InfixExpression (infixFill globals infix')
     ApplyExpression apply -> fmap ApplyExpression (applyFill globals apply)
     VariableExpression variable ->
@@ -75,16 +71,6 @@ caseFill globals Case {..} = do
   scrutinee' <- expressionFill globals scrutinee
   alternatives' <- traverse (alternativeFill globals) alternatives
   pure Case {alternatives = alternatives', scrutinee = scrutinee', ..}
-
-foldFill :: FillerEnv e -> Fold Renamed -> Filler e (Fold Filled)
-foldFill globals Fold {..} = do
-  expression' <- expressionFill globals expression
-  pure Fold {expression = expression', ..}
-
-unfoldFill :: FillerEnv e -> Unfold Renamed -> Filler e (Unfold Filled)
-unfoldFill globals Unfold {..} = do
-  expression' <- expressionFill globals expression
-  pure Unfold {expression = expression', ..}
 
 alternativeFill ::
      FillerEnv e
@@ -139,15 +125,6 @@ lambdaFill globals Lambda {..} = do
   body' <- expressionFill globals body
   pure Lambda {body = body', param = paramFill param, ..}
 
-letFill ::
-     FillerEnv e
-  -> Let Renamed
-  -> Filler e (Let Filled)
-letFill globals Let {..} = do
-  binds' <- traverse (bindFill globals) binds
-  body' <- expressionFill globals body
-  pure Let {binds = binds', body = body', ..}
-
 infixFill ::
      FillerEnv e
   -> Infix Renamed
@@ -157,19 +134,6 @@ infixFill globals Infix {..} = do
   right' <- expressionFill globals right
   global' <- globalFill globals global
   pure Infix {left = left', right = right', global = global', ..}
-
-bindFill ::
-     FillerEnv e
-  -> Bind Renamed
-  -> Filler e (Bind Filled)
-bindFill globals Bind {..} = do
-  value' <- expressionFill globals value
-  pure
-    Bind
-      { param = paramFill param
-      , value = value'
-      , ..
-      }
 
 applyFill ::
      FillerEnv e
@@ -181,21 +145,6 @@ applyFill globals Apply {..} = do
   pure Apply
     { function = function'
     , argument = argument'
-    , ..
-    }
-
-ifFill ::
-     FillerEnv e
-  -> If Renamed
-  -> Filler e (If Filled)
-ifFill globals If {..} = do
-  condition' <- expressionFill globals condition
-  consequent' <- expressionFill globals consequent
-  alternative' <- expressionFill globals alternative
-  pure If
-    { condition = condition'
-    , consequent = consequent'
-    , alternative = alternative'
     , ..
     }
 

@@ -437,10 +437,6 @@ expressionSolve substitutions =
       LiteralExpression (literalSolve substitutions literal)
     PropExpression prop ->
       PropExpression (propSolve substitutions prop)
-    FoldExpression fold' ->
-      FoldExpression (foldSolve substitutions fold')
-    UnfoldExpression unfold' ->
-      UnfoldExpression (unfoldSolve substitutions unfold')
     HoleExpression hole ->
       HoleExpression (holeSolve substitutions hole)
     ArrayExpression array ->
@@ -451,10 +447,6 @@ expressionSolve substitutions =
       RecordExpression (recordSolve substitutions record)
     LambdaExpression lambda ->
       LambdaExpression (lambdaSolve substitutions lambda)
-    LetExpression let' ->
-      LetExpression (letSolve substitutions let')
-    IfExpression if' ->
-      IfExpression (ifSolve substitutions if')
     CaseExpression case' ->
       CaseExpression (caseSolve substitutions case')
     InfixExpression infix' ->
@@ -478,22 +470,6 @@ lambdaSolve substitutions Lambda {..} =
 propSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Prop Generated -> Prop Solved
 propSolve substitutions Prop {..} =
   Prop
-    { expression = expressionSolve substitutions expression
-    , typ = solveType substitutions typ
-    , ..
-    }
-
-foldSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Fold Generated -> Fold Solved
-foldSolve substitutions Fold {..} =
-  Fold
-    { expression = expressionSolve substitutions expression
-    , typ = solveType substitutions typ
-    , ..
-    }
-
-unfoldSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Unfold Generated -> Unfold Solved
-unfoldSolve substitutions Unfold {..} =
-  Unfold
     { expression = expressionSolve substitutions expression
     , typ = solveType substitutions typ
     , ..
@@ -540,24 +516,6 @@ infixSolve substitutions Infix {..} =
     , ..
     }
 
-letSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Let Generated -> Let Solved
-letSolve substitutions Let {..} =
-  Let
-    { binds = fmap (bindSolve substitutions) binds
-    , body = expressionSolve substitutions body
-    , typ = solveType substitutions typ
-    , ..
-    }
-
-bindSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Bind Generated -> Bind Solved
-bindSolve substitutions Bind {..} =
-  Bind
-    { param = paramSolve substitutions param
-    , value = expressionSolve substitutions value
-    , typ = solveType substitutions typ
-    , ..
-    }
-
 applySolve :: HashMap (TypeVariable Generated) (Type Generated) -> Apply Generated -> Apply Solved
 applySolve substitutions Apply {..} =
   Apply
@@ -595,16 +553,6 @@ caseSolve substitutions Case {..} =
                , ..
                })
           alternatives
-    }
-
-ifSolve :: HashMap (TypeVariable Generated) (Type Generated) -> If Generated -> If Solved
-ifSolve substitutions If {..} =
-  If
-    { condition = expressionSolve substitutions condition
-    , consequent = expressionSolve substitutions consequent
-    , alternative = expressionSolve substitutions alternative
-    , typ = solveType substitutions typ
-    , ..
     }
 
 variableSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Variable Generated -> Variable Solved

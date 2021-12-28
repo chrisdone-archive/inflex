@@ -18,7 +18,6 @@ $(do fmap
           , ''Prop
           , ''Array
           , ''Variant
-          , ''If
           , ''Case
           , ''Alternative
           , ''FieldE

@@ -107,10 +107,6 @@ expressionResolver nesting =
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
       fmap PropExpression (propResolver nesting prop)
-    FoldExpression fold' ->
-      fmap FoldExpression (foldResolver nesting fold')
-    UnfoldExpression unfold ->
-      fmap UnfoldExpression (unfoldResolver nesting unfold)
     ArrayExpression array ->
       fmap ArrayExpression (arrayResolver nesting array)
     VariantExpression variant ->
@@ -119,9 +115,7 @@ expressionResolver nesting =
       fmap VariableExpression (pure (variableResolver variable))
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaResolver nesting lambda)
-    LetExpression let' -> fmap LetExpression (letResolver nesting let')
     CaseExpression case' -> fmap CaseExpression (caseResolver nesting case')
-    IfExpression if' -> fmap IfExpression (ifResolver nesting if')
     ApplyExpression apply -> fmap ApplyExpression (applyResolver nesting apply)
     GlobalExpression global -> globalResolver nesting global
     InfixExpression infix' ->
@@ -131,12 +125,6 @@ lambdaResolver :: DeBrujinNesting -> Lambda Generalised -> Resolve (Lambda Resol
 lambdaResolver (DeBrujinNesting nesting) Lambda {..} = do
   body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
   pure Lambda {param = paramResolver param, body = body', ..}
-
-letResolver :: DeBrujinNesting -> Let Generalised -> Resolve (Let Resolved)
-letResolver (DeBrujinNesting nesting) Let {..} = do
-  binds' <- traverse (bindResolver (DeBrujinNesting (nesting + 1))) binds
-  body' <- expressionResolver (DeBrujinNesting (nesting + 1)) body
-  pure Let {binds = binds', body = body', ..}
 
 caseResolver :: DeBrujinNesting -> Case Generalised -> Resolve (Case Resolved)
 caseResolver nesting  Case {..} = do
@@ -171,30 +159,11 @@ variantpResolver _nesting VariantP {..} = do
   argument' <- traverse (pure . paramResolver) argument
   pure VariantP {argument = argument', ..}
 
-bindResolver :: DeBrujinNesting -> Bind Generalised -> Resolve (Bind Resolved)
-bindResolver nesting Bind {..} = do
-  let param' = paramResolver param
-  value' <- expressionResolver nesting value
-  pure Bind {param = param', value = value', ..}
-
 applyResolver :: DeBrujinNesting -> Apply Generalised -> Resolve (Apply Resolved)
 applyResolver nesting Apply {..} = do
   function' <- expressionResolver nesting function
   argument' <- expressionResolver nesting argument
   pure Apply {function = function', argument = argument', ..}
-
-ifResolver :: DeBrujinNesting -> If Generalised -> Resolve (If Resolved)
-ifResolver nesting If {..} = do
-  condition' <- expressionResolver nesting condition
-  consequent' <- expressionResolver nesting consequent
-  alternative' <- expressionResolver nesting alternative
-  pure
-    If
-      { condition = condition'
-      , consequent = consequent'
-      , alternative = alternative'
-      , ..
-      }
 
 recordResolver :: DeBrujinNesting -> Record Generalised -> Resolve (Record Resolved)
 recordResolver nesting Record {..} = do
@@ -210,16 +179,6 @@ propResolver :: DeBrujinNesting -> Prop Generalised -> Resolve (Prop Resolved)
 propResolver nesting Prop {..} = do
   expression' <- expressionResolver nesting expression
   pure Prop {expression = expression', ..}
-
-foldResolver :: DeBrujinNesting -> Fold Generalised -> Resolve (Fold Resolved)
-foldResolver nesting Fold {..} = do
-  expression' <- expressionResolver nesting expression
-  pure Fold {expression = expression', ..}
-
-unfoldResolver :: DeBrujinNesting -> Unfold Generalised -> Resolve (Unfold Resolved)
-unfoldResolver nesting Unfold {..} = do
-  expression' <- expressionResolver nesting expression
-  pure Unfold {expression = expression', ..}
 
 arrayResolver :: DeBrujinNesting -> Array Generalised -> Resolve (Array Resolved)
 arrayResolver nesting Array {..} = do
@@ -565,15 +524,11 @@ expressionCollect =
   \case
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
-    FoldExpression fold' -> foldCollect fold'
-    UnfoldExpression unfold -> unfoldCollect unfold
     HoleExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
     VariantExpression variant -> variantCollect variant
     RecordExpression record -> recordCollect record
     LambdaExpression lambda -> lambdaCollect lambda
-    LetExpression let' -> letCollect let'
-    IfExpression if' -> ifCollect if'
     CaseExpression case' -> caseCollect case'
     InfixExpression infix' -> infixCollect infix'
     ApplyExpression apply -> applyCollect apply
@@ -594,12 +549,6 @@ recordCollect Record {..} =
 propCollect :: Prop Generalised -> Set (ClassConstraint Generalised)
 propCollect Prop {..} = expressionCollect expression
 
-foldCollect :: Fold Generalised -> Set (ClassConstraint Generalised)
-foldCollect Fold {..} = expressionCollect expression
-
-unfoldCollect :: Unfold Generalised -> Set (ClassConstraint Generalised)
-unfoldCollect Unfold {..} = expressionCollect expression
-
 arrayCollect :: Array Generalised -> Set (ClassConstraint Generalised)
 arrayCollect Array {..} = foldMap expressionCollect expressions
 
@@ -609,25 +558,13 @@ variantCollect Variant {..} = foldMap expressionCollect argument
 lambdaCollect :: Lambda Generalised -> Set (ClassConstraint Generalised)
 lambdaCollect Lambda {..} = expressionCollect body
 
-letCollect :: Let Generalised -> Set (ClassConstraint Generalised)
-letCollect Let {..} =
-  mconcat (toList (fmap (bindCollect) binds)) <> expressionCollect body
-
 infixCollect :: Infix Generalised -> Set (ClassConstraint Generalised)
 infixCollect Infix {..} =
   expressionCollect left <> expressionCollect right <> globalCollect global
 
-bindCollect :: Bind Generalised -> Set (ClassConstraint Generalised)
-bindCollect Bind {..} = expressionCollect value
-
 applyCollect :: Apply Generalised -> Set (ClassConstraint Generalised)
 applyCollect Apply {..} =
   expressionCollect function <> expressionCollect argument
-
-ifCollect :: If Generalised -> Set (ClassConstraint Generalised)
-ifCollect If {..} =
-  expressionCollect condition <> expressionCollect consequent <>
-  expressionCollect alternative
 
 caseCollect :: Case Generalised -> Set (ClassConstraint Generalised)
 caseCollect Case {..} =

@@ -18,11 +18,7 @@ expressionLocation =
     VariantExpression variant -> variantLocation variant
     ArrayExpression array -> arrayLocation array
     LambdaExpression lambda -> lambdaLocation lambda
-    LetExpression let' -> letLocation let'
-    IfExpression if' -> ifLocation if'
     CaseExpression case' -> caseLocation case'
-    FoldExpression fold' -> foldLocation fold'
-    UnfoldExpression unfold' -> unfoldLocation unfold'
     InfixExpression infix' -> infixLocation infix'
     GlobalExpression global -> globalLocation global
     ApplyExpression apply -> applyLocation apply
@@ -49,20 +45,8 @@ arrayLocation Array {location} = location
 paramLocation :: Param s -> StagedLocation s
 paramLocation Param {location} = location
 
-letLocation :: Let s -> StagedLocation s
-letLocation Let {location} = location
-
 caseLocation :: Case s -> StagedLocation s
 caseLocation Case {location} = location
-
-foldLocation :: Fold s -> StagedLocation s
-foldLocation Fold {location} = location
-
-unfoldLocation :: Unfold s -> StagedLocation s
-unfoldLocation Unfold {location} = location
-
-ifLocation :: If s -> StagedLocation s
-ifLocation If {location} = location
 
 infixLocation :: Infix s -> StagedLocation s
 infixLocation Infix {location} = location

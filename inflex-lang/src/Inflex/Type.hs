@@ -47,12 +47,9 @@ expressionType :: Expression s -> StagedType s
 expressionType =
   \case
     CaseExpression case' -> caseType case'
-    FoldExpression fold' -> foldType fold'
-    IfExpression if' -> ifType if'
     LiteralExpression literal -> literalType literal
     ArrayExpression array -> arrayType array
     LambdaExpression lambda -> lambdaType lambda
-    LetExpression let' -> letType let'
     InfixExpression infix' -> infixType infix'
     ApplyExpression apply -> applyType apply
     VariableExpression variable -> variableType variable
@@ -61,22 +58,12 @@ expressionType =
     PropExpression prop -> propType prop
     HoleExpression hole -> holeType hole
     VariantExpression variant -> variantType variant
-    UnfoldExpression e -> unfoldType e
-
-unfoldType :: Unfold s -> StagedType s
-unfoldType Unfold{typ} = typ
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
 
-ifType :: If s -> StagedType s
-ifType If {typ} = typ
-
 caseType :: Case s -> StagedType s
 caseType Case {typ} = typ
-
-foldType :: Fold s -> StagedType s
-foldType Fold {typ} = typ
 
 arrayType :: Array s -> StagedType s
 arrayType Array {typ} = typ
@@ -106,9 +93,6 @@ schemeType Scheme{typ} = typ
 
 lambdaType :: Lambda s -> StagedType s
 lambdaType Lambda {typ} = typ
-
-letType :: Let s -> StagedType s
-letType Let {typ} = typ
 
 infixType :: Infix s -> StagedType s
 infixType Infix {typ} = typ

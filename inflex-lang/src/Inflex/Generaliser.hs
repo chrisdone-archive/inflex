@@ -190,10 +190,6 @@ expressionGeneralise substitutions =
       LiteralExpression (literalGeneralise substitutions literal)
     PropExpression prop ->
       PropExpression (propGeneralise substitutions prop)
-    FoldExpression fold ->
-      FoldExpression (foldGeneralise substitutions fold)
-    UnfoldExpression unfold ->
-      UnfoldExpression (unfoldGeneralise substitutions unfold)
     HoleExpression hole ->
       HoleExpression (holeGeneralise substitutions hole)
     ArrayExpression array ->
@@ -204,10 +200,6 @@ expressionGeneralise substitutions =
       RecordExpression (recordGeneralise substitutions record)
     LambdaExpression lambda ->
       LambdaExpression (lambdaGeneralise substitutions lambda)
-    LetExpression let' ->
-      LetExpression (letGeneralise substitutions let')
-    IfExpression if' ->
-      IfExpression (ifGeneralise substitutions if')
     CaseExpression case' ->
       CaseExpression (caseGeneralise substitutions case')
     InfixExpression infix' ->
@@ -282,28 +274,6 @@ propGeneralise substitutions Prop {..} =
     , ..
     }
 
-foldGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> Fold Solved
-  -> Fold Generalised
-foldGeneralise substitutions Fold {..} =
-  Fold
-    { expression = expressionGeneralise substitutions expression
-    , typ = generaliseType substitutions typ
-    , ..
-    }
-
-unfoldGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> Unfold Solved
-  -> Unfold Generalised
-unfoldGeneralise substitutions Unfold {..} =
-  Unfold
-    { expression = expressionGeneralise substitutions expression
-    , typ = generaliseType substitutions typ
-    , ..
-    }
-
 holeGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)
   -> Hole Solved
@@ -348,18 +318,6 @@ lambdaGeneralise substitutions Lambda {..} =
     , ..
     }
 
-letGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> Let Solved
-  -> Let Generalised
-letGeneralise substitutions Let {..} =
-  Let
-    { binds = fmap (bindGeneralise substitutions) binds
-    , body = expressionGeneralise substitutions body
-    , typ = generaliseType substitutions typ
-    , ..
-    }
-
 infixGeneralise ::
      Map (TypeVariable Solved) (TypeVariable Polymorphic)
   -> Infix Solved
@@ -369,18 +327,6 @@ infixGeneralise substitutions Infix {..} =
     { left = expressionGeneralise substitutions left
     , right = expressionGeneralise substitutions right
     , global = globalGeneralise substitutions global
-    , typ = generaliseType substitutions typ
-    , ..
-    }
-
-bindGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> Bind Solved
-  -> Bind Generalised
-bindGeneralise substitutions Bind {..} =
-  Bind
-    { param = paramGeneralise substitutions param
-    , value = expressionGeneralise substitutions value
     , typ = generaliseType substitutions typ
     , ..
     }
@@ -428,19 +374,6 @@ caseGeneralise substitutions Case {..} =
                , ..
                })
           alternatives
-    }
-
-ifGeneralise ::
-     Map (TypeVariable Solved) (TypeVariable Polymorphic)
-  -> If Solved
-  -> If Generalised
-ifGeneralise substitutions If {..} =
-  If
-    { condition = expressionGeneralise substitutions condition
-    , consequent = expressionGeneralise substitutions consequent
-    , alternative = expressionGeneralise substitutions alternative
-    , typ = generaliseType substitutions typ
-    , ..
     }
 
 variableGeneralise ::

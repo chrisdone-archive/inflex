@@ -41,29 +41,13 @@ data Expression s where
   ApplyExpression :: !(Apply s) -> Expression s
   VariableExpression :: !(Variable s) -> Expression s
   GlobalExpression :: !(Global s) -> Expression s
-  LetExpression :: !(Let s) -> Expression s
   InfixExpression :: !(Infix s) -> Expression s
   RecordExpression :: !(Record s) -> Expression s
   PropExpression :: !(Prop s) -> Expression s
   ArrayExpression :: !(Array s) -> Expression s
   HoleExpression :: !(Hole s) -> Expression s
   VariantExpression :: !(Variant s) -> Expression s
-  IfExpression :: !(If s) -> Expression s
   CaseExpression :: !(Case s) -> Expression s
-  FoldExpression :: !(Fold s) -> Expression s
-  UnfoldExpression :: !(Unfold s) -> Expression s
-
-data Unfold s = Unfold
-  { location :: !(StagedLocation s)
-  , typ :: !(StagedType s)
-  , expression :: Expression s
-  }
-
-data Fold s = Fold
-  { location :: !(StagedLocation s)
-  , typ :: !(StagedType s)
-  , expression :: Expression s
-  }
 
 data Case s = Case
   { location :: !(StagedLocation s)
@@ -87,14 +71,6 @@ data VariantP s = VariantP
   { location :: !(StagedLocation s)
   , tag :: !TagName
   , argument :: !(Maybe (Param s))
-  }
-
-data If s = If
-  { location :: !(StagedLocation s)
-  , typ :: !(StagedType s)
-  , condition :: !(Expression s)
-  , consequent :: !(Expression s)
-  , alternative :: !(Expression s)
   }
 
 data Variant s = Variant
@@ -144,13 +120,6 @@ data Infix s = Infix
   , global :: !(StagedOp s)
   , left :: !(Expression s)
   , right :: !(Expression s)
-  , typ :: !(StagedType s)
-  }
-
-data Let s = Let
-  { location :: !(StagedLocation s)
-  , binds :: !(NonEmpty (Bind s))
-  , body :: !(Expression s)
   , typ :: !(StagedType s)
   }
 
@@ -214,13 +183,6 @@ data Default s = Default
   { classConstraintDefaulted :: !(ClassConstraint s)
   , classConstraintOriginal :: !(ClassConstraint s)
   , instanceName :: !InstanceName
-  }
-
-data Bind s = Bind
-  { location :: !(StagedLocation s)
-  , param :: !(Param s)
-  , value :: !(Expression s)
-  , typ :: !(StagedType s)
   }
 
 data Global s = Global

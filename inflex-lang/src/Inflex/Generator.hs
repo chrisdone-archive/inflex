@@ -43,7 +43,6 @@ import qualified Inflex.Renamer as Renamer
 import           Inflex.Type
 import           Inflex.Types
 import qualified Inflex.Types as Alternative (Alternative(..))
-import qualified Inflex.Types as Bind (Bind(..))
 import qualified Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
@@ -115,16 +114,8 @@ expressionGenerator =
       fmap RecordExpression (recordGenerator record)
     LambdaExpression lambda ->
       fmap LambdaExpression (lambdaGenerator lambda)
-    LetExpression let' ->
-      fmap LetExpression (letGenerator let')
     CaseExpression case' ->
       fmap CaseExpression (caseGenerator case')
-    FoldExpression fold' ->
-      fmap FoldExpression (foldGenerator fold')
-    UnfoldExpression unfold' ->
-      fmap UnfoldExpression (unfoldGenerator unfold')
-    IfExpression if' ->
-      fmap IfExpression (ifGenerator if')
     InfixExpression infix' ->
       fmap InfixExpression (infixGenerator infix')
     ApplyExpression apply ->
@@ -191,16 +182,6 @@ caseGenerator Case {..} = do
       , ..
       }
 
-foldGenerator :: Fold Filled -> Generate e (Fold Generated)
-foldGenerator Fold {..} = do
-  expression' <- expressionGenerator expression
-  pure Fold {expression = expression', typ = undefined, ..}
-
-unfoldGenerator :: Unfold Filled -> Generate e (Unfold Generated)
-unfoldGenerator Unfold {..} = do
-  expression' <- expressionGenerator expression
-  pure Unfold {expression = expression', typ = undefined, ..}
-
 patternType :: Pattern Generated -> Generate e (Type Generated)
 patternType =
   \case
@@ -252,30 +233,6 @@ variantPGenerator :: VariantP Filled -> Generate e (VariantP Generated)
 variantPGenerator VariantP {..} = do
   argument' <- traverse paramGenerator argument
   pure VariantP {argument = argument', ..}
-
-ifGenerator :: If Filled -> Generate e (If Generated)
-ifGenerator If {..} = do
-  condition' <- expressionGenerator condition
-  consequent' <- expressionGenerator consequent
-  alternative' <- expressionGenerator alternative
-  common <- generateVariableType location IfPrefix TypeKind
-  addEqualityConstraint
-    EqualityConstraint
-      {location, type1 = boolType location, type2 = expressionType condition'}
-  addEqualityConstraint
-    EqualityConstraint
-      {location, type1 = common, type2 = expressionType consequent'}
-  addEqualityConstraint
-    EqualityConstraint
-      {location, type1 = common, type2 = expressionType alternative'}
-  pure
-    If
-      { consequent = consequent'
-      , condition = condition'
-      , alternative = alternative'
-      , typ = common
-      , ..
-      }
 
 holeGenerator :: Hole Filled -> Generate e (Hole Generated)
 holeGenerator Hole {..} = do
@@ -433,15 +390,6 @@ lambdaGenerator Lambda {typ = mtyp, ..} = do
          EqualityConstraint {location, type1 = ty, type2 = typ})
   pure Lambda {typ, body = body', param = param', ..}
 
-letGenerator :: Let Filled -> Generate e (Let Generated)
-letGenerator Let {typ = _, ..} = do
-  binds' <- traverse bindGenerator binds
-  body' <-
-    local
-      (over envScopeL (LetBinding (fmap (\Bind {param} -> param) binds') :))
-      (expressionGenerator body)
-  pure Let {body = body', binds = binds', typ = expressionType body', ..}
-
 infixGenerator :: Infix Filled -> Generate e (Infix Generated)
 infixGenerator Infix {typ = _, ..} = do
   ty <- generateVariableType location InfixOutputPrefix TypeKind
@@ -455,15 +403,6 @@ infixGenerator Infix {typ = _, ..} = do
       , ..
       }
   pure Infix {global = global', right = right', left = left', typ = ty, ..}
-
-bindGenerator :: Bind Filled -> Generate e (Bind Generated)
-bindGenerator Bind {..} = do
-  param' <- paramGenerator param
-  value' <- expressionGenerator value
-  addEqualityConstraint
-    EqualityConstraint
-      {type1 = paramType param', type2 = expressionType value', ..}
-  pure Bind {param = param', value = value', typ = paramType param', ..}
 
 paramGenerator :: Param Filled -> Generate e (Param Generated)
 paramGenerator Param {typ = _, ..} = do

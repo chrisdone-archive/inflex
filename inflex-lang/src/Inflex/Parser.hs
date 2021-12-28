@@ -331,7 +331,6 @@ operatorlessExpressionParser =
        [ dotFuncParser
        , RecordExpression <$> recordParser
        , ArrayExpression <$> arrayParser
-       , LetExpression <$> letParser
        , applyParser
        , LiteralExpression <$> literalParser
        , LambdaExpression <$> lambdaParser
@@ -424,47 +423,6 @@ fieldNameParser = do
     token ExpectedVariable (anyWordTokenPreview) <>
     token ExpectedVariable (preview _StringToken)
   pure (FieldName name, location)
-
-letParser :: Parser (Let Parsed)
-letParser = do
-  Located {location = SourceLocation {start}} <-
-    token ExpectedLet (preview _LetToken)
-  let loop = do
-        bind <- bindParser
-        colon <-
-          fmap
-            (const True)
-            (token_ ExpectedContinuation (preview _SemiColonToken)) <>
-          pure False
-        rest <-
-          if colon
-            then fmap NE.toList loop
-            else pure []
-        pure (bind :| rest)
-  binds <- loop
-  token_ ExpectedIn (preview _InToken)
-  body <- expressionParser
-  pure
-    Let
-      { binds
-      , typ = Nothing
-      , location = SourceLocation {start, end = end (expressionLocation body)}
-      , body = body
-      }
-
-bindParser :: Parser (Bind Parsed)
-bindParser = do
-  param <- paramParser
-  Located {thing} <- operatorParser
-  if thing == "="
-    then do
-      value <- expressionParser
-      let SourceLocation {start} = paramLocation param
-          SourceLocation {end} = expressionLocation value
-      pure
-        Bind
-          {param, location = SourceLocation {start, end}, value, typ = Nothing}
-    else Reparsec.failWith (liftError ExpectedEquals)
 
 dotFuncParser :: Parser (Expression Parsed)
 dotFuncParser = do

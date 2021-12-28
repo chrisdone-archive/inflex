@@ -138,13 +138,8 @@ evalExpression build expression = do
     ApplyExpression apply -> evalApply build apply
     InfixExpression infix' -> evalInfix build infix'
     -- Special forms:
-    IfExpression if' -> evalIf build if'
     CaseExpression case' -> evalCase build case'
     PropExpression prop -> evalProp build prop
-    -- Disabled forms:
-    UnfoldExpression {} -> pure expression
-    FoldExpression {} -> pure expression
-    LetExpression {} -> pure expression
   glog (EvalStep (build result))
   pure result
 
@@ -581,27 +576,6 @@ evalDecimalOp expression places numericBinOp left' right' =
     _ -> pure expression
 
 --------------------------------------------------------------------------------
--- Special forms
-
-evalIf ::
-     (Expression Resolved -> Expression Resolved)
-  -> If Resolved
-  -> RIO Eval (Expression Resolved)
-evalIf build if'@If {..} = do
-  condition' <-
-    evalExpression
-      (build . IfExpression . setFlipped ifConditionL if')
-      condition
-  case condition' of
-    BoolAtom bool ->
-      if bool
-        then evalExpression build consequent
-        else evalExpression build alternative
-    _ ->
-      pure
-        (IfExpression If {condition = condition', location = SteppedCursor, ..})
-
---------------------------------------------------------------------------------
 -- Applying functions easily
 
 apply1 ::
@@ -890,27 +864,9 @@ betaReduce body0 arg = go 0 body0
           pure
             (ApplyExpression
                Apply {argument = argument', function = function', ..})
-        IfExpression If {..} -> do
-          condition' <- go deBrujinNesting condition
-          consequent' <- go deBrujinNesting consequent
-          alternative' <- go deBrujinNesting alternative
-          pure
-            (IfExpression
-               If
-                 { condition = condition'
-                 , consequent = consequent'
-                 , alternative = alternative'
-                 , ..
-                 })
         PropExpression Prop {..} -> do
           expression' <- go deBrujinNesting expression
           pure (PropExpression Prop {expression = expression', ..})
-        FoldExpression Fold {..} -> do
-          expression' <- go deBrujinNesting expression
-          pure (FoldExpression Fold {expression = expression', ..})
-        UnfoldExpression Unfold {..} -> do
-          expression' <- go deBrujinNesting expression
-          pure (UnfoldExpression Unfold {expression = expression', ..})
         ArrayExpression Array {..} -> do
           expressions' <- traverse (go deBrujinNesting) expressions
           pure (ArrayExpression Array {expressions = expressions', ..})
@@ -932,9 +888,6 @@ betaReduce body0 arg = go 0 body0
           pure
             (InfixExpression
                Infix {left = left', right = right', global = global', ..})
-        LetExpression Let {..} -> do
-          body' <- go (deBrujinNesting + 1) body
-          pure (LetExpression Let {body = body', ..})
         e@GlobalExpression {} -> pure e
         e@LiteralExpression {} -> pure e
         e@HoleExpression {} -> pure e

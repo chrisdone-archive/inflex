@@ -48,43 +48,45 @@ spec_table_nums :: SpecWith ()
 spec_table_nums =
   it
     "table nums"
-    (do shouldReturn
-          (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
-              mempty
-              ""
-              ("let f = r:r.y+r.x in f")))
-          (Right (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = AddOpClassName, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}) :| [], location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixOpCursor ExpressionCursor))}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = LetBindCursor (IndexInLet 0) ExpressionCursor, name = FunctionTypeName}), argument = RecordType (RowType (TypeRow {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixLeftCursor ExpressionCursor)), typeVariable = Just (TypeVariable {location = (), prefix = (), index = 1, kind = RowKind}), fields = [Field {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixRightCursor ExpressionCursor)), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})},Field {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixLeftCursor ExpressionCursor)), name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]})), location = LetBindCursor (IndexInLet 0) ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = LetBindCursor (IndexInLet 0) ExpressionCursor, kind = TypeKind})}))
-        shouldReturn
-          (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
-              mempty
-              ""
-              ("let f = r:r.y+r.x in f({x:3,y:2.0})")))
-          (Right
-             (Scheme
-                { location = ExpressionCursor
-                , constraints = []
-                , typ =
-                    ApplyType
-                      (TypeApplication
-                        { function =
-                             ConstantType
-                               (TypeConstant
-                                  {location = DefaultedCursor, name = DecimalTypeName})
-                         , argument =
-                             ConstantType
-                               (TypeConstant
-                                  { location =
-                                      LetBodyCursor
-                                        (ApplyArgCursor
-                                           (RecordFieldCursor
-                                              (FieldName {unFieldName = "y"})
-                                              (RowFieldExpression ExpressionCursor)))
-                                  , name = NatTypeName 1
-                                  })
-                         , location = DefaultedCursor
-                         , kind = TypeKind
-                         })
-                }))
+    (do -- Below comented out because we dropped `let'
+        --
+        -- shouldReturn
+        --   (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
+        --       mempty
+        --       ""
+        --       ("let f = r:r.y+r.x in f")))
+        --   (Right (Scheme {location = ExpressionCursor, constraints = [ClassConstraint {className = AddOpClassName, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}) :| [], location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixOpCursor ExpressionCursor))}], typ = ApplyType (TypeApplication {function = ApplyType (TypeApplication {function = ConstantType (TypeConstant {location = LetBindCursor (IndexInLet 0) ExpressionCursor, name = FunctionTypeName}), argument = RecordType (RowType (TypeRow {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixLeftCursor ExpressionCursor)), typeVariable = Just (TypeVariable {location = (), prefix = (), index = 1, kind = RowKind}), fields = [Field {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixRightCursor ExpressionCursor)), name = FieldName {unFieldName = "x"}, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})},Field {location = LetBindCursor (IndexInLet 0) (LambdaBodyCursor (InfixLeftCursor ExpressionCursor)), name = FieldName {unFieldName = "y"}, typ = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind})}]})), location = LetBindCursor (IndexInLet 0) ExpressionCursor, kind = FunKind TypeKind TypeKind}), argument = VariableType (TypeVariable {location = (), prefix = (), index = 0, kind = TypeKind}), location = LetBindCursor (IndexInLet 0) ExpressionCursor, kind = TypeKind})}))
+        -- shouldReturn
+        --   (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
+        --       mempty
+        --       ""
+        --       ("let f = r:r.y+r.x in f({x:3,y:2.0})")))
+        --   (Right
+        --      (Scheme
+        --         { location = ExpressionCursor
+        --         , constraints = []
+        --         , typ =
+        --             ApplyType
+        --               (TypeApplication
+        --                 { function =
+        --                      ConstantType
+        --                        (TypeConstant
+        --                           {location = DefaultedCursor, name = DecimalTypeName})
+        --                  , argument =
+        --                      ConstantType
+        --                        (TypeConstant
+        --                           { location =
+        --                               LetBodyCursor
+        --                                 (ApplyArgCursor
+        --                                    (RecordFieldCursor
+        --                                       (FieldName {unFieldName = "y"})
+        --                                       (RowFieldExpression ExpressionCursor)))
+        --                           , name = NatTypeName 1
+        --                           })
+        --                  , location = DefaultedCursor
+        --                  , kind = TypeKind
+        --                  })
+        --         }))
         shouldReturn
           (fmap (second (\Cell{scheme} -> scheme)) (defaultText'
               mempty

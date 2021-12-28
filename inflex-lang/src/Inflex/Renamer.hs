@@ -26,7 +26,6 @@ import           Data.Decimal
 import           Data.Foldable
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import           Data.Text (Text)
@@ -36,7 +35,6 @@ import           Inflex.Parser
 import           Inflex.Type
 import           Inflex.Types
 import           Inflex.Types as Alternative (Alternative(..))
-import           Inflex.Types as Bind (Bind(..))
 import           Inflex.Types as Field (FieldE(..))
 import           Inflex.Types.Renamer
 import           Optics hiding (Fold)
@@ -67,7 +65,7 @@ renameParsed expression =
    in fmap
         (\thing ->
            IsRenamed
-             { thing = addUnfoldImplicitly thing
+             { thing
              , mappings
              , unresolvedGlobals
              , unresolvedUuids
@@ -86,11 +84,7 @@ renameExpression env =
     PropExpression prop -> fmap PropExpression (renameProp env prop)
     ArrayExpression array -> fmap ArrayExpression (renameArray env array)
     VariantExpression variant -> fmap VariantExpression (renameVariant env variant)
-    LetExpression let' -> fmap LetExpression (renameLet env let')
     CaseExpression case' -> fmap CaseExpression (renameCase env case')
-    FoldExpression fold' -> fmap FoldExpression (renameFold env fold')
-    UnfoldExpression unfold' -> fmap UnfoldExpression (renameUnfold env unfold')
-    IfExpression if' -> fmap IfExpression (renameIf env if')
     InfixExpression infix' -> fmap InfixExpression (renameInfix env infix')
     ApplyExpression apply -> fmap ApplyExpression (renameApply env apply)
     VariableExpression variable -> renameVariable env variable
@@ -172,7 +166,7 @@ renameLambda env@Env {cursor} Lambda {..} = do
   typ' <- renameSignature env typ
   pure
     Lambda
-      { body = addUnfoldImplicitly body'
+      { body = body'
       , location = final
       , param = param'
       , typ = typ'
@@ -230,30 +224,6 @@ renameFieldE env@Env {cursor} FieldE {..} = do
     renameExpression (over envCursorL (. RowFieldExpression) env) expression
   pure FieldE {location = final, expression = expression', ..}
 
--- TODO: Disable duplicate names in bind list.
-renameLet :: Env -> Let Parsed -> Renamer (Let Renamed)
-renameLet env@Env {cursor} Let {..} = do
-  final <- finalizeCursor cursor ExpressionCursor location
-  binds' <-
-    traverse
-      (\(index, bind) ->
-         renameBind
-           (over
-              envScopeL
-              (LetBinding (fmap (\Bind {param} -> param) binds) :)
-              (over envCursorL (. LetBindCursor (IndexInLet index)) env))
-           bind)
-      (NE.zip (NE.fromList [0 ..]) binds)
-  body' <-
-    renameExpression
-      (over
-         envScopeL
-         (LetBinding (fmap (\Bind {param} -> param) binds) :)
-         (over envCursorL (. LetBodyCursor) env))
-      body
-  typ' <- renameSignature env typ
-  pure Let {body = body', location = final, binds = binds', typ = typ', ..}
-
 renameCase :: Env -> Case Parsed -> Renamer (Case Renamed)
 renameCase env@Env {cursor} Case {..} = do
   final <- finalizeCursor cursor ExpressionCursor location
@@ -266,32 +236,6 @@ renameCase env@Env {cursor} Case {..} = do
       , typ = typ'
       , alternatives = alternatives'
       , scrutinee = scrutinee'
-      , ..
-      }
-
-renameFold :: Env -> Fold Parsed -> Renamer (Fold Renamed)
-renameFold env@Env {cursor} Fold {..} = do
-  final <- finalizeCursor cursor ExpressionCursor location
-  typ' <- renameSignature env typ
-  expression' <- renameExpression env expression
-  pure
-    Fold
-      { location = final
-      , typ = typ'
-      , expression = expression'
-      , ..
-      }
-
-renameUnfold :: Env -> Unfold Parsed -> Renamer (Unfold Renamed)
-renameUnfold env@Env {cursor} Unfold {..} = do
-  final <- finalizeCursor cursor ExpressionCursor location
-  typ' <- renameSignature env typ
-  expression' <- renameExpression env expression
-  pure
-    Unfold
-      { location = final
-      , typ = typ'
-      , expression = expression'
       , ..
       }
 
@@ -412,14 +356,6 @@ renameGlobal Env {cursor} Global {..} = do
           }
     _ -> Renamer (refute (pure (NotInScope name)))
 
-renameBind :: Env -> Bind Parsed -> Renamer (Bind Renamed)
-renameBind env@Env {cursor} Bind {param, value, location, typ} = do
-  final <- finalizeCursor cursor ExpressionCursor location
-  param' <- renameParam env param
-  value' <- renameExpression env value
-  typ' <- renameSignature env typ
-  pure Bind {value = value', param = param', location = final, typ = typ'}
-
 renameApply :: Env -> Apply Parsed -> Renamer (Apply Renamed)
 renameApply env@Env {cursor} Apply {..} = do
   function' <-
@@ -435,22 +371,6 @@ renameApply env@Env {cursor} Apply {..} = do
       , location = final
       , typ = typ'
       , style
-      }
-
-renameIf :: Env -> If Parsed -> Renamer (If Renamed)
-renameIf env@Env {cursor} If {..} = do
-  condition' <- renameExpression (over envCursorL (. IfCursor) env) condition
-  consequent' <- renameExpression (over envCursorL (. IfCursor) env) consequent
-  alternative' <- renameExpression (over envCursorL (. IfCursor) env) alternative
-  final <- finalizeCursor cursor ExpressionCursor location
-  typ' <- renameSignature env typ
-  pure
-    If
-      { consequent = consequent'
-      , alternative = alternative'
-      , condition = condition'
-      , location = final
-      , typ = typ'
       }
 
 renameVariable ::
@@ -587,58 +507,3 @@ finalizeCursor cursor finalCursor loc = do
 finalizeCursorForName :: Cursor -> Text -> Renamer ()
 finalizeCursorForName final text = do
   modify (over _4 (M.insert final text))
-
---------------------------------------------------------------------------------
--- Fold returns
-
-addUnfoldImplicitly :: Expression Renamed -> Expression Renamed
-addUnfoldImplicitly e =
-  if returnsFold e
-    then UnfoldExpression
-           Unfold {expression = e, location = BuiltIn, typ = Nothing}
-    else e
-
--- When generating types, on an fold `e?`, where e :: Maybe t, then `e? :: t` if composite, such as
---
--- e? + x
---
---   then e :: Maybe t
---               e? :: t
---               x  :: t
---   finally
---               e? + x :: Maybe t
---
--- and e? by itself is syntactically ILLEGAL, as it would be pointless.
---
--- We stop as far as lambdas.
-
-returnsFold :: Expression s -> Bool
-returnsFold =
-  \case
-    FoldExpression {} -> True
-    -- These are transitive fold returnable:
-    ApplyExpression Apply {function, argument} ->
-      returnsFold function || returnsFold argument
-    PropExpression Prop {expression} -> returnsFold expression
-    InfixExpression Infix {left, right} ->
-      returnsFold left || returnsFold right
-    RecordExpression Record {fields} ->
-      any (returnsFold . Field.expression) fields
-    ArrayExpression Array {expressions} -> any returnsFold expressions
-    IfExpression If {condition, consequent, alternative} ->
-      returnsFold consequent ||
-      returnsFold condition || returnsFold alternative
-    CaseExpression Case {scrutinee, alternatives} ->
-      returnsFold scrutinee ||
-      any (returnsFold . Alternative.expression) alternatives
-    LetExpression Let {binds, body} ->
-      returnsFold body || any (returnsFold . Bind.value) binds
-    -- Lambda and Fold is the ceiling:
-    LambdaExpression {} -> False
-    UnfoldExpression {} -> False
-    -- These are constant/literals or non-composites:
-    LiteralExpression {} -> False
-    VariableExpression {} -> False
-    GlobalExpression {} -> False
-    HoleExpression {} -> False
-    VariantExpression {} -> False

@@ -171,14 +171,10 @@ expressionGenerate =
     ApplyExpression {} -> Left NotNormalForm
     VariableExpression {} -> Left NotNormalForm
     GlobalExpression {} -> Left NotNormalForm
-    LetExpression {} -> Left NotNormalForm
     InfixExpression {} -> Left NotNormalForm
     PropExpression {} -> Left NotNormalForm
     HoleExpression {} -> Left NotNormalForm
-    IfExpression {} -> Left NotNormalForm
     CaseExpression {} -> Left NotNormalForm
-    FoldExpression {} -> Left NotNormalForm
-    UnfoldExpression {} -> Left NotNormalForm
 
 recordGenerate ::
      Record Parsed -> Either NormalFormCheckProblem (InsOrdHashMap FieldName T)

@@ -113,11 +113,7 @@ instance Stage s => Printer (Expression s) where
       ApplyExpression apply -> printer apply
       VariableExpression variable -> printer variable
       GlobalExpression global -> printer global
-      LetExpression let' -> printer let'
-      IfExpression if' -> printer if'
       CaseExpression case' -> printer case'
-      UnfoldExpression {} ->  Print (pure "TODO: unfold") -- TODO:
-      FoldExpression {} ->  Print (pure "TODO: fold") -- TODO:
       InfixExpression infix' -> printer infix'
 
 instance Stage s => Printer (Case s) where
@@ -125,17 +121,6 @@ instance Stage s => Printer (Case s) where
     "if " <> printer scrutinee <> " {" <>
     (mconcat . intersperse ", ") (map printer (toList alternatives)) <>
     "}"
-
-instance Stage s =>  Printer (Fold s) where
-  printer Fold{..} = printer expression <> "?"
-
-instance Stage s =>  Printer (Unfold s) where
-  printer Unfold{..} = "fold { " <> printer expression <> " }"
-
-instance Stage s =>  Printer (If s) where
-  printer If {..} =
-    "if " <> printer condition <> " then " <> printer consequent <> " else " <>
-    printer alternative
 
 instance Stage s => Printer (Alternative s) where
   printer Alternative {..} =
@@ -218,9 +203,6 @@ instance Stage s => Printer (Infix s) where
     " " <>
     printer right <>
     ")"
-
-instance Stage s =>  Printer (Let s) where
-  printer (Let {body}) = "let ... in " <> printer body
 
 instance Stage s =>  Printer (Literal s) where
   printer = \case
