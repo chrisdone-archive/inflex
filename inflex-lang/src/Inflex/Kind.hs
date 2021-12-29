@@ -36,7 +36,7 @@ typeNameKind :: TypeName -> Kind
 typeNameKind =
   \case
     IntegerTypeName -> TypeKind
-    DecimalTypeName -> FunKind TypeKind TypeKind
+    DecimalTypeName -> FunKind NatKind TypeKind
     TextTypeName -> TypeKind
     OptionTypeName -> FunKind TypeKind TypeKind
     FunctionTypeName -> FunKind TypeKind (FunKind TypeKind TypeKind)
