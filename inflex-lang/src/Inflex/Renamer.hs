@@ -460,8 +460,6 @@ renameType env@Env {cursor} =
     RecordType typeRow -> fmap RecordType (renameType env typeRow)
     VariantType typeRow -> fmap VariantType (renameType env typeRow)
     ArrayType typ -> fmap ArrayType (renameType env typ)
-    RecursiveType typ -> fmap RecursiveType (renameType env typ)
-    DeBruijnType i -> pure (DeBruijnType i)
 
 renameTypeConstant :: Env -> TypeConstant Parsed -> Renamer (TypeConstant Renamed)
 renameTypeConstant Env{cursor} TypeConstant {..} = do

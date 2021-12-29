@@ -305,8 +305,6 @@ data Type s where
   VariantType :: Type s -> Type s
   ArrayType :: Type s -> Type s
   FreshType :: StagedFresh s -> Type s
-  RecursiveType :: Type s -> Type s
-  DeBruijnType :: Int -> Type s
 
 type family StagedFresh s where
   StagedFresh Parsed = SourceLocation
@@ -373,7 +371,6 @@ data Kind
             Kind
   | NatKind
   | RowKind
-  | DeBruijnKind
   deriving (Show, Lift, Eq, Ord)
 
 data TypePoly = TypePoly

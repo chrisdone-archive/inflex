@@ -596,8 +596,6 @@ renamedToGenerated :: Type Renamed -> Generate e (Type Generated)
 renamedToGenerated =
   \case
     FreshType location -> generateVariableType location FreshPrefix TypeKind
-    RecursiveType typ -> fmap RecursiveType (renamedToGenerated typ)
-    DeBruijnType i -> pure (DeBruijnType i)
     RecordType t -> fmap RecordType (renamedToGenerated t)
     VariantType t -> fmap VariantType (renamedToGenerated t)
     ArrayType t -> fmap ArrayType (renamedToGenerated t)
@@ -652,8 +650,6 @@ polymorphicSchemeToGenerated location0 = flip evalStateT mempty . rewriteScheme
         RecordType t -> fmap RecordType (rewriteType t)
         VariantType t -> fmap VariantType (rewriteType t)
         ArrayType t -> fmap ArrayType (rewriteType t)
-        RecursiveType typ -> fmap RecursiveType (rewriteType typ)
-        DeBruijnType i -> pure (DeBruijnType i)
         RowType TypeRow {..} -> do
           fields' <- traverse rewriteField fields
           typeVariable' <- traverse rewriteTypeVar typeVariable

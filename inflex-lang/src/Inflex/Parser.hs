@@ -698,21 +698,12 @@ paramParser = do
 
 typeParser :: Parser (Type Parsed)
 typeParser =
-  recType <> functionType <> decimalType <> integerType <> parensType <>
+  functionType <> decimalType <> integerType <> parensType <>
   arrayType <>
   freshType <>
   recordType <>
   variantType
   where
-    recType = do
-      token_
-        ExpectedRec
-        (\case
-           CamelCaseToken "rec" -> pure ()
-           _ -> Nothing)
-      token_ ExpectedPeriod (preview _PeriodToken)
-      typ <- typeParser
-      pure (RecursiveType typ)
     freshType = do
       Located {location} <- token ExpectedHole (preview _HoleToken)
       pure (FreshType location)

@@ -770,23 +770,10 @@ fineGrained = do
              (unifyAndSubstitute'
                 [t .~ _F a a, _F a a .~ _F (_Option b) (_Option _Integer)]
                 t)
-             (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer)))))
-        it
-          "mu a. a ~ mu b. b"
-          (shouldReturn (unifyConstraints' [_Rec _0 .~ _Rec _0]) (pure []))
-        it
-          "mu self. F self Integer ~ mu self. F self Integer"
-          (shouldReturn
-             (unifyConstraints' [_Rec (_F _0 _Integer) .~ _Rec (_F _0 _Integer)])
-             (pure [])))
+             (pure (solveType mempty (_F (_Option _Integer) (_Option _Integer))))))
   describe
     "Failing"
     (do it
-          "mu self. F self Integer ~ mu self. F self Integer"
-          (shouldReturn
-             (unifyConstraints' [_Rec (_F _0 _Integer) .~ (_F _0 _Integer)])
-             (Left (TypeMismatch (_Rec (_F _0 _Integer) .~ _F _0 _Integer))))
-        it
           "Occurs check: F a b ~ a"
           (shouldReturn
              (unifyConstraints' [_F a b .~ a])
@@ -846,12 +833,6 @@ c = VariableType c'
 
 --------------------------------------------------------------------------------
 -- Type constructors
-
-_Rec :: Type Generated -> Type Generated
-_Rec = RecursiveType
-
-_0 :: Type Generated
-_0 = DeBruijnType 0
 
 _Integer :: Type Generated
 _Integer =
