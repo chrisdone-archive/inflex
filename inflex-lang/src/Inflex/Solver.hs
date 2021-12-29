@@ -160,7 +160,7 @@ unifyTypeApplications typeApplication1 typeApplication2 = do
     TypeApplication {function = function2, argument = argument2} =
       typeApplication2
 
--- | Unify records -- must contain row types inside.
+-- | Unify records -- must contain row types inside.  TODO: delete
 unifyRecords :: Type Generated -> Type Generated -> Solve (Either SolveError ())
 unifyRecords (RowType x) (RowType y) = unifyRows x y
 unifyRecords _ _ = pure (Left NotRowTypes)
