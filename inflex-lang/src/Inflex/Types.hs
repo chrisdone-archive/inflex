@@ -451,6 +451,7 @@ data TypeName
   | OptionTypeName
   | NatTypeName !Natural
   | VegaTypeName
+  | TupleTypeName
   deriving (Show, Lift, Eq, Ord)
 
 data ClassName

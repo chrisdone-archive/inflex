@@ -42,3 +42,4 @@ typeNameKind =
     FunctionTypeName -> FunKind TypeKind (FunKind TypeKind TypeKind)
     NatTypeName{} -> NatKind
     VegaTypeName -> TypeKind
+    TupleTypeName -> FunKind RowKind TypeKind
