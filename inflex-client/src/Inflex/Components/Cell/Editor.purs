@@ -10,6 +10,7 @@ module Inflex.Components.Cell.Editor
 
 
 -- import Data.Int
+import Inflex.Components.ProseMirror as Prose
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
 import Data.Array (mapWithIndex)
@@ -136,6 +137,7 @@ type Slots i =
   , fieldname :: H.Slot i String String
   , textEditor :: H.Slot i String Unit
   , code :: H.Slot Code.Query Code.Output Unit
+  , prosemirror :: H.Slot Prose.Query Unit Unit
   )
 
 data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}
@@ -436,9 +438,10 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
                         [ HP.class_
                             (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                         , HP.title "Click to edit"
-                        , HE.onClick
-                            (\ev ->
-                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                        -- TODO: Fix this.
+                        -- , HE.onClick
+                        --     (\ev ->
+                        --        pure (PreventDefault (Event' (toEvent ev)) StartEditor))
                         ]
                         inner
                      } originalSource
@@ -478,7 +481,10 @@ renderEditor ::
   -> Array (HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command)
 renderEditor editing type' offset path cells =
   caseTree2 {
-    "MiscTree2":       \v _originalSource t ->
+    "MiscTree2":       \v o t ->
+      if  caseOriginalSource { "OriginalSource": \src -> src == "_(\"rich\")", "NoOriginalSource": false } o
+          then [renderRichEditor type' path cells]
+          else
       [HH.div [HP.class_ (HH.ClassName "misc")
           -- Commenting out clever scrolling trick for now
           -- HE.onWheel (\e -> case fromString t  of
@@ -506,6 +512,23 @@ renderEditor editing type' offset path cells =
           materialize type' originalSource offset path cells
        -- else holeFallback
   }
+
+--------------------------------------------------------------------------------
+-- Rich editor
+
+renderRichEditor ::
+     forall a. MonadAff a
+  => Maybe (View Shared.TypeOf)
+  -> (Shared.DataPath -> Shared.DataPath)
+  -> Map UUID (OutputCell)
+  -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
+renderRichEditor mtype mkPath cells =
+  HH.slot
+    (SProxy :: SProxy "prosemirror")
+    unit
+    Prose.component
+    unit
+    (\output -> Nothing)
 
 --------------------------------------------------------------------------------
 -- Variant display
