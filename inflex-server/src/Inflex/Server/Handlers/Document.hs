@@ -166,6 +166,7 @@ documentScripts = do
                     div_ (pure ())))))
   script_ [type_ "text/javascript", src_ (url (StaticR js_vega_all_js))] ""
   script_ [type_ "text/javascript", src_ (url (StaticR js_codemirror_js))] ""
+  script_ [type_ "text/javascript", src_ (url (StaticR js_prosemirror_2021_12_15_js))] ""
   script_
     [type_ "text/javascript", src_ (url (StaticR inflex_client_app_js))]
     ""
