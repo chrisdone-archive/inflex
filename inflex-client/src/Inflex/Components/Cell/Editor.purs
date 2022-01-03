@@ -527,7 +527,7 @@ renderRichEditor mtype mkPath cells =
     (SProxy :: SProxy "prosemirror")
     unit
     Prose.component
-    unit
+    cells
     (\output -> Nothing)
 
 --------------------------------------------------------------------------------

@@ -5,6 +5,10 @@ module Inflex.Components.ProseMirror
   , Input, Query, Config, Output
   ) where
 
+import Data.Map (Map)
+import Data.Map as M
+import Data.UUID (UUID, uuidToString)
+import Inflex.Types (OutputCell(..))
 import Data.Foldable
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -14,6 +18,7 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Foreign.Object (Object)
+import Halogen as H
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
@@ -24,11 +29,11 @@ import Web.HTML.HTMLElement (HTMLElement)
 --------------------------------------------------------------------------------
 -- Interface
 
-type Input = Unit
+type Input = Map UUID OutputCell
 
 type Output = Unit
 
-data Query a = NoOp
+data Query a = SetCells (Map UUID (OutputCell))
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -36,7 +41,7 @@ data Query a = NoOp
 type Slots a = ()
 
 data State = State
-  {
+  { cells :: Map UUID (OutputCell)
   }
 
 data Command
@@ -81,7 +86,7 @@ component =
     }
   where
     initialState :: Input -> State
-    initialState (config) = State {}
+    initialState cells = State {cells}
 
 --------------------------------------------------------------------------------
 -- Query
@@ -92,7 +97,9 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
-    NoOp -> pure Nothing
+        SetCells cells -> do
+            H.modify_ (\(State s) -> State (s {cells = cells}))
+            pure Nothing
 
 --------------------------------------------------------------------------------
 -- Eval

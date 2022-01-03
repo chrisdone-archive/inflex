@@ -42,8 +42,6 @@ exports.proseMirror = function(parentElement){
         marks: prosemirrorSchemaBasic.schema.spec.marks
       });
 
-      var content = document.querySelector("#content");
-
       // }
 
       // command{
@@ -88,16 +86,16 @@ exports.proseMirror = function(parentElement){
             "content": [
               {
                 "type": "text",
-                "text": "This is your cell-enabled editor! Tada!"
+                "text": "This is your cell-enabled editor! Tada: "
+              },
+              {
+                "type": "dino",
+                "attrs": {
+                  "cell_uuid": "7190914a-9a54-477b-b5dc-da6b73edb7c9",
+                  "type": "stegosaurus"
+                }
               }
             ]
-          },
-          {
-            "type": "dino",
-            "attrs": {
-              "cell_uuid": "7190914a-9a54-477b-b5dc-da6b73edb7c9",
-              "type": "stegosaurus"
-            }
           }
         ]
         //   {
