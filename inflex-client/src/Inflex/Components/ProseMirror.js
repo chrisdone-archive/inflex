@@ -12,8 +12,10 @@ exports.proseMirror = function(parentElement){
         // Dinosaurs have one attribute, their type, which must be one of
         // the types defined above.
         // Brontosaurs are still the default dino.
-        attrs: {type: {default: "brontosaurus"}// , uuid: {default: uuidv4}
-               },
+        attrs: {
+          type: {default: "brontosaurus"},
+          cell_uuid: {default: "UNPOPULATED CELL_UUID"}
+        },
         inline: true,
         group: "inline",
         draggable: true,
@@ -79,65 +81,74 @@ exports.proseMirror = function(parentElement){
 
       let startDoc = dinoSchema.nodeFromJSON({
         "type": "doc",
-        "content": [
+        "content":
+        [
           {
             "type": "paragraph",
             "content": [
               {
                 "type": "text",
-                "text": "This is your dinosaur-enabled editor. The insert menu allows you to insert dinosaurs."
+                "text": "This is your cell-enabled editor! Tada!"
               }
             ]
           },
           {
-            "type": "paragraph",
-            "content": [
-              {
-                "type": "text",
-                "text": "This paragraph "
-              },
-              {
-                "type": "dino",
-                "attrs": {
-                  "type": "stegosaurus"
-                }
-              },
-              {
-                "type": "text",
-                "text": ", for example, "
-              },
-              {
-                "type": "dino",
-                "attrs": {
-                  "type": "triceratops"
-                }
-              },
-              {
-                "type": "text",
-                "text": " is full "
-              },
-              {
-                "type": "dino",
-                "attrs": {
-                  "type": "tyrannosaurus"
-                }
-              },
-              {
-                "type": "text",
-                "text": " of dinosaurs."
-              }
-            ]
-          },
-          {
-            "type": "paragraph",
-            "content": [
-              {
-                "type": "text",
-                "text": "Dinosaur nodes can be selected, copied, pasted, dragged, and so on."
-              }
-            ]
+            "type": "dino",
+            "attrs": {
+              "cell_uuid": "7190914a-9a54-477b-b5dc-da6b73edb7c9",
+              "type": "stegosaurus"
+            }
           }
         ]
+        //   {
+        //     "type": "paragraph",
+        //     "content": [
+        //       {
+        //         "type": "text",
+        //         "text": "This paragraph "
+        //       },
+        //       {
+        //         "type": "dino",
+        //         "attrs": {
+        //           "type": "stegosaurus"
+        //         }
+        //       },
+        //       {
+        //         "type": "text",
+        //         "text": ", for example, "
+        //       },
+        //       {
+        //         "type": "dino",
+        //         "attrs": {
+        //           "type": "triceratops"
+        //         }
+        //       },
+        //       {
+        //         "type": "text",
+        //         "text": " is full "
+        //       },
+        //       {
+        //         "type": "dino",
+        //         "attrs": {
+        //           "type": "tyrannosaurus"
+        //         }
+        //       },
+        //       {
+        //         "type": "text",
+        //         "text": " of dinosaurs."
+        //       }
+        //     ]
+        //   },
+        //   {
+        //     "type": "paragraph",
+        //     "content": [
+        //       {
+        //         "type": "text",
+        //         "text": "Dinosaur nodes can be selected, copied, pasted, dragged, and so on."
+        //       }
+        //     ]
+        //   }
+        // ]
       });
       let state = prosemirrorState.EditorState.create({
         doc: startDoc,
@@ -152,7 +163,7 @@ exports.proseMirror = function(parentElement){
             n.innerText = node.attrs.type;
             n.style.border = '1px solid black';
             var uuid = uuidv4();
-            console.log('create: %o', uuid);
+            console.log('create: cell:%o ==> %o', node.attrs.cell_uuid, uuid);
             return {
               dom: n,
               destroy: function(){
