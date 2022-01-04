@@ -42,7 +42,7 @@ type Input = Map UUID OutputCell
 
 type Output = Unit
 
-data Query a = SetCells (Map UUID (OutputCell))
+data Query a = NoOp
 
 --------------------------------------------------------------------------------
 -- Internal protocol
@@ -59,6 +59,7 @@ data State = State
 
 data Command
   = Initializer
+  | SetCells (Map UUID (OutputCell))
 
 --------------------------------------------------------------------------------
 -- Types
@@ -94,7 +95,7 @@ component editorComponent =
     , eval: H.mkEval
               H.defaultEval
                 { handleAction = eval
-                -- , receive = pure <<< SetConfig
+                , receive = pure <<< SetCells
                 , initialize = Just Initializer
                 , handleQuery = query
                 }
@@ -115,8 +116,8 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
-    SetCells cells -> do
-      H.modify_ (\(State s) -> State (s {allCells = cells}))
+    NoOp -> do
+
       pure Nothing
 
 --------------------------------------------------------------------------------
@@ -125,6 +126,7 @@ query =
 eval :: forall i t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command (Slots i) Output t9 Unit
 -- eval (CMEventIn event) =
 --   H.raise (CMEventOut event)
+eval (SetCells cells) = H.modify_ (\(State s) -> State (s {allCells = cells}))
 eval Initializer = do
   State {} <- H.get
   melement <- H.getHTMLElementRef refLabel
@@ -144,7 +146,8 @@ eval Initializer = do
 
 render editorComponent (State{embedCells, allCells}) =
   HH.div
-    [HP.ref refLabel]
+    [HP.ref refLabel
+    ]
     (concatMap (\(Tuple proseUuid cellUuid) ->
            case M.lookup cellUuid allCells of
              Nothing -> []

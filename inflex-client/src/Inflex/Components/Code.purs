@@ -48,6 +48,7 @@ data Input = Input
 data Output =
   TextOutput String
 
+-- TODO: remove, not used
 data Query a = SetCells (Map UUID (OutputCell))
 
 --------------------------------------------------------------------------------
@@ -97,6 +98,7 @@ query ::
   -> H.HalogenM State Command (Slots i) Output m (Maybe a)
 query =
   case _ of
+    -- TODO: remove, not used
     SetCells cells -> do
       H.modify_ (\(State s) -> State (s {cells = cells}))
       pure Nothing
