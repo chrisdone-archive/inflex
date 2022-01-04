@@ -43,6 +43,7 @@ import Halogen.HTML as HH
 import Halogen.VDom.Driver as VDom
 import Web.HTML (HTMLElement)
 import Type.Row as Row
+import Data.Coyoneda
 
 type InputFields query input output n
   = ( input :: input
@@ -110,6 +111,7 @@ portal ::
   IsSymbol label =>
   Ord slot =>
   MonadAff m =>
+  (input -> query Unit) ->
   m (NT n Aff) ->
   SProxy label ->
   slot ->
@@ -118,9 +120,9 @@ portal ::
   Maybe HTMLElement ->
   (output -> Maybe action) ->
   H.ComponentHTML action slots m
-portal contextualize label slot childComponent childInput htmlElement handler =
+portal mkQuery contextualize label slot childComponent childInput htmlElement handler =
   handler
-    # HH.slot label slot (component contextualize)
+    # HH.slot label slot (component mkQuery contextualize)
         { child: childComponent
         , input: childInput
         , targetElement: htmlElement
@@ -133,6 +135,7 @@ portalAff ::
   IsSymbol label =>
   Ord slot =>
   MonadAff m =>
+  (input -> query Unit) ->
   SProxy label ->
   slot ->
   H.Component HH.HTML query input output Aff ->
@@ -140,30 +143,15 @@ portalAff ::
   Maybe HTMLElement ->
   (output -> Maybe action) ->
   H.ComponentHTML action slots m
-portalAff = portal (pure ntIdentity)
-
--- | Run a portal component that is in `ReaderT r Aff` (for some context `r`).
-portalReaderT ::
-  forall m r query action input output slots label slot _1.
-  Row.Cons label (H.Slot query output slot) _1 slots =>
-  IsSymbol label =>
-  Ord slot =>
-  MonadAff m =>
-  SProxy label ->
-  slot ->
-  H.Component HH.HTML query input output (ReaderT r Aff) ->
-  input ->
-  Maybe HTMLElement ->
-  (output -> Maybe action) ->
-  H.ComponentHTML action slots (ReaderT r m)
-portalReaderT = portal ntReaderT
+portalAff mkQuery = portal mkQuery (pure ntIdentity)
 
 component ::
   forall query input output m n.
   MonadAff m =>
+  (input -> query Unit) ->
   m (NT n Aff) ->
   H.Component HH.HTML query (Input query input output n) output m
-component contextualize =
+component mkQuery contextualize =
   H.mkComponent
     { initialState
     , render
@@ -210,7 +198,9 @@ component contextualize =
       state <- H.get
       for_ state.io (H.liftAff <<< _.dispose)
       pure a
-    H.Receive input a -> pure a
+    H.Receive input a -> do
+      _ <- eval (H.Query (liftCoyoneda (mkQuery (input.input))) identity)
+      pure a
     H.Action output a -> do
       H.raise output
       pure a

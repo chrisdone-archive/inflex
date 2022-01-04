@@ -69,5 +69,6 @@ data Output
 data Query a
  = NestedCellError (View Shared.NestedCellError)
  | ResetDisplay
+ | NewInput Input
 
 type Input = EditorAndCode

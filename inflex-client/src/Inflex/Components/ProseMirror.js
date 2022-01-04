@@ -87,7 +87,7 @@ exports.proseMirror = function(parentElement){
               "content": [
                 {
                   "type": "text",
-                  "text": "This is your cell-enabled editor! Tada: "
+                  "text": "Width is "
                 },
                 {
                   "type": "dino",

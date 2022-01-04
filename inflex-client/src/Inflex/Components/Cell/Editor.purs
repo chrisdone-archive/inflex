@@ -182,12 +182,11 @@ getRowCount editor =
 --------------------------------------------------------------------------------
 -- Query
 
-query ::
-     forall a action m t0 t1 x. Ord t1 => (MonadAff m)
-  => Query a
-  -> H.HalogenM State action (editor :: H.Slot Query t0 t1 | x) Output m (Maybe a)
 query =
   case _ of
+    NewInput input -> do
+      _ <- eval (SetEditorInput input)
+      pure Nothing
     ResetDisplay -> do
       H.modify_ (\(State st) ->  (State (st {display = DisplayEditor})))
       pure Nothing
