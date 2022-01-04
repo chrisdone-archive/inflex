@@ -95,6 +95,26 @@ exports.proseMirror = function(parentElement){
                     "cell_uuid": "7190914a-9a54-477b-b5dc-da6b73edb7c9",
                     "type": "stegosaurus"
                   }
+                },{
+                  "type": "text",
+                  "text": " and height is "
+                },
+                {
+                  "type": "dino",
+                  "attrs": {
+                    "cell_uuid": "b5f919a9-6f82-4939-bc44-da2c2a09b3eb",
+                    "type": "stegosaurus"
+                  }
+                },{
+                  "type": "text",
+                  "text": ", and so the area is "
+                },
+                {
+                  "type": "dino",
+                  "attrs": {
+                    "cell_uuid": "ca133f13-ab6c-4fd9-a422-de964963d755",
+                    "type": "stegosaurus"
+                  }
                 }
               ]
             }

@@ -361,6 +361,11 @@
     overflow: hidden;
   }
 
+  /* TODO: Fixme? Is this fine? Seems OK, but look at it in the browser. */
+  span > .editor-boundary-wrap, span > .editor-boundary-wrap > .misc {
+    display: inline;
+  }
+
   .ellipsis-button {
     position: absolute;
     background: #9fb6c8;
