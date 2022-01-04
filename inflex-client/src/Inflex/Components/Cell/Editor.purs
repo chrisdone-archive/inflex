@@ -502,7 +502,7 @@ renderRichEditor mtype mkPath cells =
   HH.slot
     (SProxy :: SProxy "prosemirror")
     unit
-    (Prose.component component)
+    (H.hoist H.liftAff (Prose.component component))
     cells
     (\output -> Nothing)
 
