@@ -52,8 +52,6 @@ import Inflex.Components.Cell.Editor.Types
 --------------------------------------------------------------------------------
 -- Component types
 
-type Input = EditorAndCode
-
 data State = State
   { display :: Display
   , editor :: Either (View Shared.CellError) (View Shared.Tree2)
@@ -416,10 +414,10 @@ render (State {display, code, editor, path, cellError, cells, tableOffset, type'
                         [ HP.class_
                             (HH.ClassName "editor-boundary-wrap clickable-to-edit")
                         , HP.title "Click to edit"
-                        -- TODO: Fix this.
-                        -- , HE.onClick
-                        --     (\ev ->
-                        --        pure (PreventDefault (Event' (toEvent ev)) StartEditor))
+                        -- TODO: Stop capture of ProseMirror.
+                        , HE.onClick
+                            (\ev ->
+                               pure (PreventDefault (Event' (toEvent ev)) StartEditor))
                         ]
                         inner
                      } originalSource
@@ -504,7 +502,7 @@ renderRichEditor mtype mkPath cells =
   HH.slot
     (SProxy :: SProxy "prosemirror")
     unit
-    Prose.component
+    (Prose.component component)
     cells
     (\output -> Nothing)
 

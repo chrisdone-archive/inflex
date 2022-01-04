@@ -4,10 +4,10 @@ module Inflex.Components.Cell.Editor.Types (
     EditorAndCode(..)
   , Output(..)
   , Query(..)
+    , Input
   )
   where
 
-import Inflex.Components.ProseMirror as Prose
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
 import Data.Array (mapWithIndex)
@@ -69,3 +69,5 @@ data Output
 data Query a
  = NestedCellError (View Shared.NestedCellError)
  | ResetDisplay
+
+type Input = EditorAndCode

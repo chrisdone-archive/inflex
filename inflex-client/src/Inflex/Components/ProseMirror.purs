@@ -6,6 +6,7 @@ module Inflex.Components.ProseMirror
   ) where
 
 import Data.Array (concatMap)
+import Data.Either
 import Data.Foldable
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -14,6 +15,7 @@ import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple
+import Data.UUID
 import Data.UUID (UUID, uuidToString)
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -27,8 +29,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Portal as Portal
 import Halogen.Query.EventSource (effectEventSource, emit) as H
+import Inflex.Components.Cell.Editor.Types as EditorTypes
+import Inflex.Frisson as F
 import Inflex.Types (OutputCell(..))
-import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<))
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity)
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -43,7 +47,7 @@ data Query a = SetCells (Map UUID (OutputCell))
 --------------------------------------------------------------------------------
 -- Internal protocol
 
-type Slots a = ()
+type Slots a = (editor :: H.Slot EditorTypes.Query EditorTypes.Output UUID)
 
 data State = State
   { allCells :: Map UUID (OutputCell)
@@ -80,11 +84,13 @@ refLabel = H.RefLabel "prosemirror"
 --------------------------------------------------------------------------------
 -- Component
 
-component :: forall m. MonadAff m => H.Component HH.HTML Query Input Output m
-component =
+component :: forall m. MonadAff m
+  => H.Component HH.HTML EditorTypes.Query EditorTypes.Input EditorTypes.Output m
+  -> H.Component HH.HTML Query Input Output m
+component editorComponent =
   H.mkComponent
     { initialState: initialState
-    , render
+    , render: render editorComponent
     , eval: H.mkEval
               H.defaultEval
                 { handleAction = eval
@@ -95,7 +101,10 @@ component =
     }
   where
     initialState :: Input -> State
-    initialState cells = State {allCells: cells, embedCells: mempty}
+    initialState cells = State {
+      allCells: cells,
+      embedCells: M.fromFoldable [Tuple (UUID "some-unique-id") (UUID "7190914a-9a54-477b-b5dc-da6b73edb7c9")]
+     }
 
 --------------------------------------------------------------------------------
 -- Query
@@ -132,15 +141,58 @@ eval Initializer = do
 --------------------------------------------------------------------------------
 -- Render
 
-render :: forall t1 t3 t4. State -> HH.HTML t4 t3
-render (State{embedCells, allCells}) =
+
+render editorComponent (State{embedCells, allCells}) =
   HH.div
     [HP.ref refLabel]
     (concatMap (\(Tuple proseUuid cellUuid) ->
            case M.lookup cellUuid allCells of
              Nothing -> []
              Just (OutputCell cell) ->
-               []
+               [
+
+                 HH.div
+            [HP.class_ (HH.ClassName "cell-body")]
+            [ HH.slot
+                (SProxy :: SProxy "editor")
+                proseUuid
+                editorComponent
+                (EditorTypes.EditorAndCode
+                   { editor:
+                     -- TODO: Refactor, the code below is the same as in Cell.purs.
+                     F.caseResult
+                        { "ResultError": Left
+                        , "ResultOk": \resultTree -> Right (F.resultTreeTree resultTree)
+                        }
+                        (cell.result)
+                   , code: cell.code
+                   , cells: allCells
+                   , path: identity
+                   -- TODO: Refactor, the code below is the same as in Cell.purs.
+                   , type': F.caseResult
+                       { "ResultError": \_ -> Nothing
+                       , "ResultOk": \resultTree -> Just (F.resultTreeTyp resultTree)
+                       }
+                       (cell.result)
+                   })
+                (\output ->
+                   case output of
+                     -- TODO: Enable TriggerUpdatePath
+                     EditorTypes.UpdatePath update -> Nothing -- Just (TriggerUpdatePath update)
+                     -- TODO: Enable TriggerUpdatePath
+                     EditorTypes.NewCode text ->
+                       Nothing
+                       -- Just
+                       --   (TriggerUpdatePath
+                       --      (Shared.UpdatePath
+                       --         { path: Shared.DataHere
+                       --         , update:
+                       --             Shared.CodeUpdate (Shared.Code {text})
+                       --         }))
+                )
+            ]
+
+                ]
                -- Portal.portalAff
                --   (SProxy :: SProxy "EmbedCell")
                --   (uuidToString proseUuid)
