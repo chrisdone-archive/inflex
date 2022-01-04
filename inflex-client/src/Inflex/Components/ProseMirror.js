@@ -158,7 +158,7 @@ exports.proseMirror = function(parentElement){
         nodeViews: {
           dino: function(node){
             var n = document.createElement('span');
-            n.innerText = node.attrs.type;
+            n.innerText = node.attrs.cell_uuid;
             n.style.border = '1px solid black';
             var uuid = uuidv4();
             console.log('create: cell:%o ==> %o', node.attrs.cell_uuid, uuid);

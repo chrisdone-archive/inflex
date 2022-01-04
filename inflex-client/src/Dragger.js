@@ -1,3 +1,7 @@
+exports.emptyDragger = function(){
+  return {};
+};
+
 exports.newDragger = function(element){
   return function(connector){
     return function(){

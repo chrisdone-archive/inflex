@@ -21,6 +21,9 @@ foreign import newDragger
   -> Connector   -- Inform this connector
   -> Effect Dragger
 
+foreign import emptyDragger
+  :: Unit -> Dragger
+
 foreign import attach
    :: HTMLElement -- Mouse actuation point
    -> Int         -- Go N levels up to find the element to move
