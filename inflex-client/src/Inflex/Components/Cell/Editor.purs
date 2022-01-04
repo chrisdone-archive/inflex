@@ -1,11 +1,8 @@
 -- | Recursive editing of parts of a result.
 
 module Inflex.Components.Cell.Editor
-  ( EditorAndCode(..)
-  , Output(..)
-  , Field(..)
+  ( Field(..)
   , Row(..)
-  , Query(..)
   , component) where
 
 
@@ -50,14 +47,12 @@ import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.MouseEvent (toEvent)
 import Web.UIEvent.WheelEvent (toEvent) as Wheel
 
+import Inflex.Components.Cell.Editor.Types
+
 --------------------------------------------------------------------------------
 -- Component types
 
 type Input = EditorAndCode
-
-data Output
-  = NewCode String
-  | UpdatePath Shared.UpdatePath
 
 data State = State
   { display :: Display
@@ -99,10 +94,6 @@ data Command
   | VariantDropdownChanged Shared.DataPath Event'
   | AddRowForEditing Int
 
-data Query a
- = NestedCellError (View Shared.NestedCellError)
- | ResetDisplay
-
 derive instance genericCommand :: Generic Command _
 instance showCommand :: Show Command where show x = genericShow x
 
@@ -113,19 +104,6 @@ data Display
   = DisplayEditor
   | DisplayCode
 
-data EditorAndCode = EditorAndCode
-  { editor :: Either (View Shared.CellError) (View Shared.Tree2)
-  , code :: String
-  , path :: Shared.DataPath -> Shared.DataPath
-  , cells :: Map UUID (OutputCell)
-  , type' :: Maybe (View Shared.TypeOf)
-  }
-instance editorAndCodeEq :: Eq EditorAndCode where
-  eq (EditorAndCode x) (EditorAndCode y) =
-    show (x.editor)==show (y.editor) && x.code==y.code && x.path Shared.DataHere == y.path Shared.DataHere
-
-instance showEditorAndCode :: Show EditorAndCode where
-  show (EditorAndCode e) = "EditorAndCode{code=" <> show (e.code) <> "}"
 newtype Event' = Event' Event
 instance showEvent :: Show Event' where show _ = "Event"
 

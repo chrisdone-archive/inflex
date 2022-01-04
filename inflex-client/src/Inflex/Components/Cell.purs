@@ -27,6 +27,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Manage as Manage
 import Halogen.Query.EventSource (effectEventSource, emit) as Src
 import Inflex.Components.Cell.Editor as Editor
+import Inflex.Components.Cell.Editor.Types as EditorTypes
 import Inflex.Components.Cell.TextInput as TextInput
 import Inflex.Frisson (View, casePosition)
 import Inflex.Frisson as F
@@ -146,13 +147,13 @@ outputCellToCell (OutputCell cell) =
 query ::
      forall a action output m t0 t1 x. Ord t1 => (MonadAff m)
   => Query a
-  -> H.HalogenM State action (editor :: H.Slot Editor.Query t0 t1 | x) output m (Maybe a)
+  -> H.HalogenM State action (editor :: H.Slot EditorTypes.Query t0 t1 | x) output m (Maybe a)
 query =
   case _ of
     NestedCellError cellError -> do
       log ("[Cell] Received error:" <> show cellError)
       _ <- H.queryAll (SProxy :: SProxy "editor")
-                 (Editor.NestedCellError cellError)
+                 (EditorTypes.NestedCellError cellError)
       pure Nothing
 
 --------------------------------------------------------------------------------
@@ -170,7 +171,7 @@ foreign import setEmptyData :: DE.DragEvent -> Effect Unit
 eval :: forall t184 t225 t227 t228.
   MonadAff t184 => Ord t227 => Command
                                   -> H.HalogenM State Command
-                                       ( editor :: H.Slot Editor.Query t228 t227
+                                       ( editor :: H.Slot EditorTypes.Query t228 t227
                                        | t225
                                        )
                                        Output
@@ -211,7 +212,7 @@ eval =
                State (s {cell = newCell, cells = cells, dragger = dragger}))
         else do
           H.modify_ (\(State s) -> State (s {cells = cells, dragger = dragger}))
-          _ <- H.queryAll (SProxy :: SProxy "editor") Editor.ResetDisplay
+          _ <- H.queryAll (SProxy :: SProxy "editor") EditorTypes.ResetDisplay
           pure unit
     DeleteCell -> do
       H.modify_ (\(State s) -> State (s {deleted = true}))
@@ -222,7 +223,7 @@ eval =
 
 render :: forall keys q m. MonadAff m =>
           State
-       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot Editor.Query Editor.Output Unit,
+       -> HH.HTML (H.ComponentSlot HH.HTML ( editor :: H.Slot EditorTypes.Query EditorTypes.Output Unit,
                                              declname :: H.Slot q String Unit | keys) m Command)
                   Command
 render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid}
@@ -270,7 +271,7 @@ render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid
                 (SProxy :: SProxy "editor")
                 unit
                 Editor.component
-                (Editor.EditorAndCode
+                (EditorTypes.EditorAndCode
                    { editor: result
                    , code: code
                    , cells
@@ -279,8 +280,8 @@ render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid
                    })
                 (\output ->
                    case output of
-                     Editor.UpdatePath update -> Just (TriggerUpdatePath update)
-                     Editor.NewCode text ->
+                     EditorTypes.UpdatePath update -> Just (TriggerUpdatePath update)
+                     EditorTypes.NewCode text ->
                        Just
                          (TriggerUpdatePath
                             (Shared.UpdatePath
