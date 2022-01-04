@@ -119,55 +119,6 @@ exports.proseMirror = function(parentElement){
               ]
             }
           ]
-          //   {
-          //     "type": "paragraph",
-          //     "content": [
-          //       {
-          //         "type": "text",
-          //         "text": "This paragraph "
-          //       },
-          //       {
-          //         "type": "dino",
-          //         "attrs": {
-          //           "type": "stegosaurus"
-          //         }
-          //       },
-          //       {
-          //         "type": "text",
-          //         "text": ", for example, "
-          //       },
-          //       {
-          //         "type": "dino",
-          //         "attrs": {
-          //           "type": "triceratops"
-          //         }
-          //       },
-          //       {
-          //         "type": "text",
-          //         "text": " is full "
-          //       },
-          //       {
-          //         "type": "dino",
-          //         "attrs": {
-          //           "type": "tyrannosaurus"
-          //         }
-          //       },
-          //       {
-          //         "type": "text",
-          //         "text": " of dinosaurs."
-          //       }
-          //     ]
-          //   },
-          //   {
-          //     "type": "paragraph",
-          //     "content": [
-          //       {
-          //         "type": "text",
-          //         "text": "Dinosaur nodes can be selected, copied, pasted, dragged, and so on."
-          //       }
-          //     ]
-          //   }
-          // ]
         });
         let state = prosemirrorState.EditorState.create({
           doc: startDoc,
