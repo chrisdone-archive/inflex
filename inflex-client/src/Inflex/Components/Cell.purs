@@ -206,11 +206,12 @@ eval =
       let newCell@(Cell {name}) = outputCellToCell c
       if newCell /= oldCell
         then do
-          log ("Cell.eval:Updating:" <> name)
+          log ("Cell.eval:SetCellFromInput: just updating.")
           H.modify_
             (\(State s) ->
                State (s {cell = newCell, cells = cells, dragger = dragger}))
         else do
+          log ("Cell.eval:SetCellFromInput: running ResetDisplay")
           H.modify_ (\(State s) -> State (s {cells = cells, dragger = dragger}))
           _ <- H.queryAll (SProxy :: SProxy "editor") EditorTypes.ResetDisplay
           pure unit

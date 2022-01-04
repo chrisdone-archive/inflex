@@ -7,6 +7,9 @@ module Inflex.Components.Cell.Editor
 
 
 -- import Data.Int
+import Timed (timed)
+import Data.Maybe
+import Effect.Class.Console (log)
 import Inflex.Components.ProseMirror as Prose
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
 
@@ -20,7 +23,7 @@ import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.String (joinWith, trim)
+import Data.String (joinWith, trim, stripPrefix, Pattern(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID)
@@ -151,7 +154,7 @@ component =
              , type'
              , tableMode: NormalMode
              })
-    , render
+    , render: \state -> timed "Editor.render" (\_ -> render state)
     , eval:
         H.mkEval
           H.defaultEval
@@ -284,6 +287,7 @@ eval' =
               then "_"
               else code))
     SetEditorInput input@(EditorAndCode {editor, code, path, cells, type'}) -> do
+      log ("SetEditorInput: " <> code)
       State state <- H.get
       H.put
         (State
@@ -458,7 +462,8 @@ renderEditor ::
 renderEditor editing type' offset path cells =
   caseTree2 {
     "MiscTree2":       \v o t ->
-      if  caseOriginalSource { "OriginalSource": \src -> src == "_(\"rich\")", "NoOriginalSource": false } o
+      -- TODO: Hack for experimenting, replace.
+      if  caseOriginalSource { "OriginalSource": \src -> isJust (stripPrefix (Pattern "(_(") src), "NoOriginalSource": false } o
           then [renderRichEditor type' path cells]
           else
       [HH.div [HP.class_ (HH.ClassName "misc")
