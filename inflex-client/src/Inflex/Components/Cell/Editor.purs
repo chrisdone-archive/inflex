@@ -8,7 +8,7 @@ module Inflex.Components.Cell.Editor
 
 -- import Data.Int
 import Timed (timed)
-import Data.Maybe
+import Data.Maybe (Maybe(..), isJust)
 import Effect.Class.Console (log)
 import Inflex.Components.ProseMirror as Prose
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
@@ -19,7 +19,6 @@ import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map)
-import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Set (Set)
 import Data.Set as Set
@@ -42,7 +41,7 @@ import Inflex.FieldName (validFieldName)
 import Inflex.Schema (CellError)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell)
-import Prelude (class Eq, class Ord, class Show, Unit, bind, const, discard, map, max, mempty, min, pure, show, unit, (&&), (+), (-), (<<<), (<>), (==), (>), (>>=), negate, (/=))
+import Prelude (class Show, Unit, bind, const, discard, map, max, mempty, min, negate, pure, show, unit, (&&), (+), (-), (/=), (<<<), (<>), (==), (>), (>>=))
 import Web.DOM.Element (Element, fromEventTarget)
 import Web.Event.Event (preventDefault, stopPropagation, currentTarget)
 import Web.Event.Internal.Types (Event)
@@ -50,7 +49,7 @@ import Web.HTML.HTMLElement (HTMLElement, fromElement)
 import Web.UIEvent.MouseEvent (toEvent)
 import Web.UIEvent.WheelEvent (toEvent) as Wheel
 
-import Inflex.Components.Cell.Editor.Types
+import Inflex.Components.Cell.Editor.Types (EditorAndCode(..), Input, Output(..), Query(..))
 
 --------------------------------------------------------------------------------
 -- Component types
@@ -182,6 +181,13 @@ getRowCount editor =
 --------------------------------------------------------------------------------
 -- Query
 
+query :: forall t1162 t1166 t1167 t1171.
+        MonadAff t1167 => Query t1162
+                          -> H.HalogenM State t1166
+                               (Slots Query)
+                               Output
+                               t1167
+                               (Maybe t1171)
 query =
   case _ of
     NewInput input -> do
@@ -508,7 +514,8 @@ renderRichEditor mtype mkPath cells =
     unit
     (H.hoist H.liftAff (Prose.component component))
     cells
-    (\output -> Nothing)
+    (case _ of
+        Prose.UpdatePath update -> Just (TriggerUpdatePath update))
 
 --------------------------------------------------------------------------------
 -- Variant display

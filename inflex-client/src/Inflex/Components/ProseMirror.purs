@@ -2,7 +2,7 @@
 
 module Inflex.Components.ProseMirror
   ( component
-  , Input, Query, Config, Output
+  , Input, Query, Config, Output(..)
   ) where
 
 import Inflex.Schema as Shared
