@@ -87,7 +87,7 @@ data Command
   | SetInput String
   | InputElementChanged (ElemRef' Element)
   | VegaElementChanged String (ElemRef' Element)
-  | TriggerUpdatePath Shared.UpdatePath
+  | TriggerUpdatePath (Maybe UUID) Shared.UpdatePath
   | ScrollTable Event'
   | ScrollIntegral Int Shared.DataPath Event'
   | ScrollToBottom
@@ -241,6 +241,7 @@ eval' =
     ScrollIntegral i path (Event' event) -> do
        delta <- H.liftEffect (getDeltaY event)
        eval' (TriggerUpdatePath
+                        Nothing
                         (Shared.UpdatePath
                            { path
                            , update:
@@ -258,6 +259,7 @@ eval' =
                 Nothing -> pure unit
                 Just text -> do
                   eval' (TriggerUpdatePath
+                        Nothing
                         (Shared.UpdatePath
                            { path
                            , update:
@@ -265,7 +267,7 @@ eval' =
                                  (Shared.Code {text})
                            }))
             Nothing -> pure unit
-    TriggerUpdatePath update -> H.raise (UpdatePath update)
+    TriggerUpdatePath muuid update -> H.raise (UpdatePath muuid update)
     SetInput i -> do
       H.modify_ (\(State st) -> State (st {display = DisplayCode, code = i}))
     InputElementChanged (ElemRef' elemRef) ->
@@ -515,7 +517,7 @@ renderRichEditor mtype mkPath cells =
     (H.hoist H.liftAff (Prose.component component))
     cells
     (case _ of
-        Prose.UpdatePath update -> Just (TriggerUpdatePath update))
+        Prose.UpdatePath muuid update -> Just (TriggerUpdatePath muuid update))
 
 --------------------------------------------------------------------------------
 -- Variant display
@@ -577,10 +579,11 @@ renderVariantEditor type' originalSource path cells tag marg =
                })
             (\output ->
                case output of
-                 UpdatePath update -> Just (TriggerUpdatePath update)
+                 UpdatePath muid update -> Just (TriggerUpdatePath muid update)
                  NewCode rhs ->
                    Just
                      (TriggerUpdatePath
+                        Nothing
                         (Shared.UpdatePath
                            { path:
                                path (Shared.DataVariantOf tag Shared.DataHere)
@@ -635,6 +638,7 @@ renderTextEditor originalSource path text =
            (\text' ->
               pure
                 (TriggerUpdatePath
+                   Nothing
                    (Shared.UpdatePath
                       { path: path Shared.DataHere
                       , update:
@@ -713,6 +717,7 @@ renderTableEditor editing type0 originalSource offset path cells columns rows =
                                      (AndThen
 
                                         (TriggerUpdatePath
+                                        Nothing
                                         (Shared.UpdatePath
                                            { path:
                                                path Shared.DataHere
@@ -792,10 +797,11 @@ tableRowHole editing types editable columns path cells rowIndex editor' =
                        })
                     (\output ->
                        case output of
-                         UpdatePath update -> Just (TriggerUpdatePath update)
+                         UpdatePath muid update -> Just (TriggerUpdatePath muid update)
                          NewCode rhs ->
                            Just
                              (TriggerUpdatePath
+                                Nothing
                                 (Shared.UpdatePath
                                    { path:
                                        path
@@ -856,10 +862,11 @@ tableRow editing types editable columns path cells rowIndex row =
                        })
                     (\output ->
                        case output of
-                         UpdatePath update -> Just (TriggerUpdatePath update)
+                         UpdatePath muid update -> Just (TriggerUpdatePath muid update)
                          NewCode rhs ->
                            Just
                              (TriggerUpdatePath
+                                Nothing
                                 (Shared.UpdatePath
                                    { path:
                                        path
@@ -915,6 +922,7 @@ listMenu editing path =
                      (PreventDefault
                         (Event' (toEvent e))
                         (TriggerUpdatePath
+                           Nothing
                            (Shared.UpdatePath
                               { path: path Shared.DataHere
                               , update:
@@ -932,6 +940,7 @@ listMenu editing path =
                      (PreventDefault
                         (Event' (toEvent e))
                         (TriggerUpdatePath
+                           Nothing
                            (Shared.UpdatePath
                               { path: path Shared.DataHere
                               , update:
@@ -950,6 +959,7 @@ listMenu editing path =
                      (PreventDefault
                         (Event' (toEvent e))
                         (TriggerUpdatePath
+                           Nothing
                            (Shared.UpdatePath
                               { path: path Shared.DataHere
                               , update:
@@ -1047,6 +1057,7 @@ columnNameSlot columns path i text =
     (\name' ->
        pure
          (TriggerUpdatePath
+            Nothing
             (Shared.UpdatePath
                { path: path (Shared.DataElemOf 0 Shared.DataHere)
                , update:
@@ -1069,6 +1080,7 @@ removeColumnButton path text =
              (PreventDefault
                 (Event' (toEvent e))
                 (TriggerUpdatePath
+                   Nothing
                    (Shared.UpdatePath
                       { path:
                           path (Shared.DataElemOf 0 Shared.DataHere)
@@ -1096,6 +1108,7 @@ newColumnButton path columns =
                  (PreventDefault
                     (Event' (toEvent e))
                     (TriggerUpdatePath
+                       Nothing
                        (Shared.UpdatePath
                           { path:
                               path (Shared.DataElemOf 0 Shared.DataHere)
@@ -1174,11 +1187,12 @@ renderArrayEditor editing type' originalSource path cells offset editors =
                             })
                          (\output ->
                             case output of
-                              UpdatePath update ->
-                                Just (TriggerUpdatePath update)
+                              UpdatePath muuid update ->
+                                Just (TriggerUpdatePath muuid update)
                               NewCode rhs ->
                                 Just
                                   (TriggerUpdatePath
+                                     Nothing
                                      (Shared.UpdatePath
                                         { path:
                                             childPath Shared.DataHere
@@ -1206,6 +1220,7 @@ renderArrayEditor editing type' originalSource path cells offset editors =
                                   (PreventDefault
                                      (Event' (toEvent e))
                                      (AndThen (TriggerUpdatePath
+                                        Nothing
                                         (Shared.UpdatePath
                                            { path:
                                                path Shared.DataHere
@@ -1258,6 +1273,7 @@ renderRecordEditor types originalSource path cells fields =
                    (PreventDefault
                       (Event' (toEvent e))
                       (TriggerUpdatePath
+                         Nothing
                          (Shared.UpdatePath
                             { path: path Shared.DataHere
                             , update:
@@ -1291,6 +1307,7 @@ renderRecordEditor types originalSource path cells fields =
                                              (PreventDefault
                                                 (Event' (toEvent e))
                                                 (TriggerUpdatePath
+                                                   Nothing
                                                    (Shared.UpdatePath
                                                       { path:
                                                           path Shared.DataHere
@@ -1325,6 +1342,7 @@ renderRecordEditor types originalSource path cells fields =
                             (\name' ->
                                pure
                                  (TriggerUpdatePath
+                                    Nothing
                                     (Shared.UpdatePath
                                        { path:
                                            path Shared.DataHere
@@ -1355,11 +1373,12 @@ renderRecordEditor types originalSource path cells fields =
                                })
                             (\output ->
                                case output of
-                                 UpdatePath update ->
-                                   Just (TriggerUpdatePath update)
+                                 UpdatePath muid update ->
+                                   Just (TriggerUpdatePath muid update)
                                  NewCode rhs ->
                                    Just
                                      (TriggerUpdatePath
+                                        Nothing
                                         (Shared.UpdatePath
                                            { path:
                                                childPath Shared.DataHere

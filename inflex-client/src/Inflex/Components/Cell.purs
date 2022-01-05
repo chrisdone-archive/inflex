@@ -1,5 +1,4 @@
 -- | A declaration in a document.
-
 module Inflex.Components.Cell
   ( component
   , Input(..)
@@ -51,7 +50,7 @@ data Query a
 
 data Output
   = RemoveCell
-  | UpdatePath Shared.UpdatePath
+  | UpdatePath (Maybe UUID) Shared.UpdatePath
   | RenameCell String
   | RepositionCell Int Int
 
@@ -65,7 +64,7 @@ data State = State
 data Command
   = SetCellFromInput Input
   | DeleteCell
-  | TriggerUpdatePath Shared.UpdatePath
+  | TriggerUpdatePath (Maybe UUID) Shared.UpdatePath
   | TriggerRenameCell String
   | TriggerRepositionCell Int Int
   | DragElementAvailable (Manage.ElemRef Manage.Element)
@@ -197,8 +196,8 @@ eval =
                          pure mempty)))
             Nothing -> pure unit
         Manage.Removed _ -> pure unit
-    TriggerUpdatePath update -> do
-      H.raise (UpdatePath update)
+    TriggerUpdatePath muuid update -> do
+      H.raise (UpdatePath muuid update)
     TriggerRenameCell update -> H.raise (RenameCell update)
     TriggerRepositionCell x y -> H.raise (RepositionCell x y)
     SetCellFromInput (Input {cell: c, cells, dragger}) -> do
@@ -281,10 +280,11 @@ render (State { cell: Cell {name, code, result, type', position, uuid: UUID uuid
                    })
                 (\output ->
                    case output of
-                     EditorTypes.UpdatePath update -> Just (TriggerUpdatePath update)
+                     EditorTypes.UpdatePath muuid update -> Just (TriggerUpdatePath muuid update)
                      EditorTypes.NewCode text ->
                        Just
                          (TriggerUpdatePath
+                            Nothing
                             (Shared.UpdatePath
                                { path: Shared.DataHere
                                , update:

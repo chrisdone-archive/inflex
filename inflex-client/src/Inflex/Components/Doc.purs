@@ -11,7 +11,7 @@ import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as M
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..), isNothing, fromMaybe)
 import Data.MediaType (MediaType(..))
 import Data.Nullable (Nullable, toMaybe)
 import Data.Set as Set
@@ -245,8 +245,8 @@ render state =
                             pure
                               (case update0 of
                                  Cell.RemoveCell -> DeleteCell uuid
-                                 Cell.UpdatePath update' ->
-                                   UpdatePath uuid update'
+                                 Cell.UpdatePath muuid update' ->
+                                   UpdatePath (fromMaybe uuid muuid) update'
                                  Cell.RenameCell name' -> RenameCell uuid name'
                                  Cell.RepositionCell x y -> RepositionCell uuid x y)))
             (state . cells))

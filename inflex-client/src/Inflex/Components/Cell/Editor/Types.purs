@@ -64,7 +64,7 @@ instance showEditorAndCode :: Show EditorAndCode where
 
 data Output
   = NewCode String
-  | UpdatePath Shared.UpdatePath
+  | UpdatePath (Maybe UUID) Shared.UpdatePath
 
 data Query a
  = NestedCellError (View Shared.NestedCellError)

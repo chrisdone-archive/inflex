@@ -5,6 +5,7 @@ module Inflex.Components.ProseMirror
   , Input, Query, Config, Output(..)
   ) where
 
+import Control.Alternative ((<|>))
 import Inflex.Schema as Shared
 import Timed (timed)
 import Data.Array (concatMap)
@@ -43,7 +44,7 @@ import Web.HTML.HTMLElement (HTMLElement)
 type Input = Map UUID OutputCell
 
 data Output
-  = UpdatePath Shared.UpdatePath
+  = UpdatePath (Maybe UUID) Shared.UpdatePath
 
 data Query a = NoOp
 
@@ -64,6 +65,7 @@ data Command
   = Initializer
   | SetCells (Map UUID (OutputCell))
   | RegisterWidget UUID UUID HTMLElement
+  | TriggerUpdatePath (Maybe UUID) Shared.UpdatePath
 
 --------------------------------------------------------------------------------
 -- Types
@@ -127,8 +129,8 @@ query =
 -- Eval
 
 eval :: forall i t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command (Slots i) Output t9 Unit
--- eval (CMEventIn event) =
---   H.raise (CMEventOut event)
+eval (TriggerUpdatePath muuid event) =
+  H.raise (UpdatePath muuid event)
 eval (SetCells cells) = do
   log "SetCells in ProseMirror..."
   H.modify_ (\(State s) -> State (s {allCells = cells}))
@@ -139,7 +141,7 @@ eval Initializer = do
   melement <- H.getHTMLElementRef refLabel
   case melement of
     Nothing -> pure unit
-    Just element -> do
+    Just element0 -> do
       creator <- H.liftEffect newCreator
       void
         (H.subscribe
@@ -147,7 +149,7 @@ eval Initializer = do
               (\emitter -> do
                  setOnCreate creator (\proseUuid cellUuid element -> H.emit emitter (RegisterWidget (UUID proseUuid) (UUID cellUuid) element))
                  pure mempty)))
-      _ <- H.liftEffect (proseMirror element creator)
+      _ <- H.liftEffect (proseMirror element0 creator)
       pure unit
 
 --------------------------------------------------------------------------------
@@ -187,18 +189,17 @@ render editorComponent (State{embedCells, allCells}) =
                 (Just element)
                 (\output ->
                    case output of
-                     -- TODO: Enable TriggerUpdatePath
-                     EditorTypes.UpdatePath update -> Nothing -- Just (TriggerUpdatePath update)
-                     -- TODO: Enable TriggerUpdatePath
+                     EditorTypes.UpdatePath muuid update ->
+                       Just (TriggerUpdatePath (muuid <|> Just cellUuid) update)
                      EditorTypes.NewCode text ->
-                       Nothing
-                       -- Just
-                       --   (TriggerUpdatePath
-                       --      (Shared.UpdatePath
-                       --         { path: Shared.DataHere
-                       --         , update:
-                       --             Shared.CodeUpdate (Shared.Code {text})
-                       --         }))
+                       Just
+                         (TriggerUpdatePath
+                            (Just cellUuid)
+                            (Shared.UpdatePath
+                               { path: Shared.DataHere
+                               , update:
+                                   Shared.CodeUpdate (Shared.Code {text})
+                               }))
                 )
 
 
