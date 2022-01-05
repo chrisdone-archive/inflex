@@ -116,7 +116,7 @@ type Slots i =
   , fieldname :: H.Slot i String String
   , textEditor :: H.Slot i String Unit
   , code :: H.Slot Code.Query Code.Output Unit
-  , prosemirror :: H.Slot Prose.Query Unit Unit
+  , prosemirror :: H.Slot Prose.Query Prose.Output Unit
   )
 
 data Row = Row { fields :: Array Field, original :: Shared.OriginalSource}

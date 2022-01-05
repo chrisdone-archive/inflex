@@ -4,9 +4,7 @@ module Inflex.Components.Doc
   ( component
   ) where
 
-import Inflex.Frisson
-import Prelude
-
+import Connector as Connector
 import Control.Monad.State (class MonadState)
 import Data.Array (mapMaybe, concatMap)
 import Data.Array as Array
@@ -22,24 +20,23 @@ import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.UUID (UUID(..), uuidToString)
 import Dragger as Dragger
-import Connector as Connector
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (error)
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Core as HC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Manage as Manage
 import Halogen.Svg as S
-import Halogen.VDom.Types as VD
 import Inflex.Components.Cell as Cell
+import Inflex.Frisson
 import Inflex.Rpc (rpcCsvGuessSchema, rpcCsvImport, rpcGetFiles, rpcLoadDocument, rpcRedoDocument, rpcUndoDocument, rpcUpdateDocument, rpcUpdateSandbox)
 import Inflex.Schema (DocumentId(..), InputCell1(..), CachedOutputCell, OutputDocument, versionRefl)
 import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
+import Prelude (class Bind, Unit, bind, const, discard, map, mempty, not, pure, unit, (&&), (<>), (||))
 import Timed (timed)
 import Web.HTML.Event.DragEvent as DE
 import Web.UIEvent.MouseEvent as ME
@@ -644,6 +641,7 @@ undoDisabled = meta.readonly || isNothing documentId
 --------------------------------------------------------------------------------
 -- SVG
 
+svg :: forall t10 t9. Array OutputCell -> HH.HTML t9 t10
 svg cells =
   S.elem
     "svg"

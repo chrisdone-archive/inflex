@@ -5,6 +5,7 @@ module Inflex.Components.ProseMirror
   , Input, Query, Config, Output
   ) where
 
+import Inflex.Schema as Shared
 import Timed (timed)
 import Data.Array (concatMap)
 import Data.Either
@@ -41,7 +42,8 @@ import Web.HTML.HTMLElement (HTMLElement)
 
 type Input = Map UUID OutputCell
 
-type Output = Unit
+data Output
+  = UpdatePath Shared.UpdatePath
 
 data Query a = NoOp
 
