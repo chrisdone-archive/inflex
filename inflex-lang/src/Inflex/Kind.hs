@@ -43,3 +43,7 @@ typeNameKind =
     NatTypeName{} -> NatKind
     VegaTypeName -> TypeKind
     TupleTypeName -> FunKind RowKind TypeKind
+    -- Rich
+    RichDocTypeName -> TypeKind
+    RichBlockTypeName -> TypeKind
+    RichInlineTypeName -> TypeKind

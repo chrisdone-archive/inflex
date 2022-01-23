@@ -452,6 +452,10 @@ data TypeName
   | NatTypeName !Natural
   | VegaTypeName
   | TupleTypeName
+
+  | RichDocTypeName
+  | RichBlockTypeName
+  | RichInlineTypeName
   deriving (Show, Lift, Eq, Ord)
 
 data ClassName
@@ -628,10 +632,8 @@ data Function
   | ReduceFunction
   -- Rich text
   | RichDoc
-  | RichParagraph
-  | RichText
+  | RichParagraph | RichText | RichCell | RichSource
   | RichBold | RichItalic | RichLink
-  | RichCell | RichSource
   -- TODO:
   | AndFunction
   | OrFunction

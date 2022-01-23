@@ -305,7 +305,28 @@ functionScheme location =
           record [("state", a), ("item", d)]) .->
          ArrayType e .->
          record [("state", a), ("items", ArrayType d)])
+
+    -- Rich text types
+    --
+    -- We take a very simple type structure, copied from
+    -- ProseMirror. The explicit sum type approach just adds more
+    -- work.
+    --
+    -- Produce a doc
+    RichDoc -> mono (ArrayType (constant RichBlockTypeName) .-> constant RichDocTypeName)
+    -- Produce blocks
+    RichParagraph -> mono (ArrayType (constant RichInlineTypeName) .-> constant RichBlockTypeName)
+    -- Produce inlines
+    RichCell -> mono (a .-> constant RichInlineTypeName)
+    RichSource -> mono (a .-> constant RichInlineTypeName)
+    RichText -> mono (constant TextTypeName .-> constant RichInlineTypeName)
+    -- Marks, can apply to any inline anywhere (even cell)
+    RichBold -> mono (constant RichInlineTypeName .-> constant RichInlineTypeName)
+    RichItalic -> mono (constant RichInlineTypeName .-> constant RichInlineTypeName)
+    RichLink -> mono (constant TextTypeName .-> constant RichInlineTypeName .-> constant RichInlineTypeName)
+
   where
+    constant nam = ConstantType TypeConstant { location, name = nam }
     mono t = Scheme {location, constraints = [], typ = t}
     poly p t = Scheme {location, constraints = p, typ = t}
     comparable t =
