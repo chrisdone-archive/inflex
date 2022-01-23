@@ -187,8 +187,6 @@ tokenLexer =
               case txt of
                 "from_integer" -> pure (GlobalToken ParsedFromInteger)
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
-                "fold" -> pure FoldToken
-                "unfold" -> pure UnfoldToken
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         uuidRef = do
