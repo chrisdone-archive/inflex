@@ -626,6 +626,12 @@ data Function
   | AccumFunction
   | ScanFunction
   | ReduceFunction
+  -- Rich text
+  | RichDoc
+  | RichParagraph
+  | RichText
+  | RichBold | RichItalic | RichLink
+  | RichCell | RichSource
   -- TODO:
   | AndFunction
   | OrFunction

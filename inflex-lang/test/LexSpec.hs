@@ -22,7 +22,9 @@ spec =
           "@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7 \
           \AB ab d_ex_f 123 456.1 123.456 12.000 ( )[] {:,} \
           \@sha512:3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279ecb4aab48763b5b84b8c45d9ea2b90bf7356e06b063cc4478f2b817d66f449ad @prim:array_map @uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7-@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7\
-          \ \"foo\"\"bar\"")
+          \ \"foo\"\"bar\"\
+          \ @prim:rich_doc @prim:rich_paragraph @prim:rich_bold @prim:rich_italic @prim:rich_link \
+          \ @prim:rich_text @prim:rich_cell @prim:rich_source")
        (Right
           (Seq.fromList
              [ Located
@@ -217,5 +219,9 @@ spec =
                        , end = SourcePos {line = 1, column = 342, name = ""}
                        }
                  , thing = StringToken "bar"
-                 }
+                 },
+
+                 -- Rich text
+                 Located {location = SourceLocation {start = SourcePos {line = 1, column = 343, name = ""}, end = SourcePos {line = 1, column = 357, name = ""}}, thing = GlobalToken (ParsedPrim RichDoc)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 358, name = ""}, end = SourcePos {line = 1, column = 378, name = ""}}, thing = GlobalToken (ParsedPrim RichParagraph)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 379, name = ""}, end = SourcePos {line = 1, column = 394, name = ""}}, thing = GlobalToken (ParsedPrim RichBold)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 395, name = ""}, end = SourcePos {line = 1, column = 412, name = ""}}, thing = GlobalToken (ParsedPrim RichItalic)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 413, name = ""}, end = SourcePos {line = 1, column = 428, name = ""}}, thing = GlobalToken (ParsedPrim RichLink)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 430, name = ""}, end = SourcePos {line = 1, column = 445, name = ""}}, thing = GlobalToken (ParsedPrim RichText)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 446, name = ""}, end = SourcePos {line = 1, column = 461, name = ""}}, thing = GlobalToken (ParsedPrim RichCell)},Located {location = SourceLocation {start = SourcePos {line = 1, column = 462, name = ""}, end = SourcePos {line = 1, column = 479, name = ""}}, thing = GlobalToken (ParsedPrim RichSource)}
+
              ])))

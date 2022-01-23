@@ -336,6 +336,16 @@ prims =
     , ("array_reduce", ReduceFunction)
     , ("from_ok", FromOkFunction)
     , ("not", NotFunction)
+
+   -- Rich text
+   , ( "rich_doc", RichDoc)
+   , ( "rich_paragraph", RichParagraph)
+   , ( "rich_text", RichText)
+   , ( "rich_bold", RichBold)
+   , ( "rich_italic", RichItalic)
+   , ( "rich_link", RichLink)
+   , ( "rich_cell", RichCell)
+   , ( "rich_source", RichSource)
     ]
 
 $(makePrisms ''Token)
