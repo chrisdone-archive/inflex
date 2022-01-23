@@ -424,6 +424,14 @@ instance Printer Function where
       AllFunction -> "array_all"
       AnyFunction -> "array_any"
       NullFunction -> "array_null"
+      RichDoc -> "rich_doc"
+      RichParagraph -> "rich_paragraph"
+      RichText -> "rich_text"
+      RichBold -> "rich_bold"
+      RichItalic -> "rich_italic"
+      RichLink -> "rich_link"
+      RichCell -> "rich_cell"
+      RichSource -> "rich_source"
 
 instance Printer NumericBinOp where
   printer =

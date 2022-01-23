@@ -709,6 +709,10 @@ erroneous =
   describe
     "Erroneous"
   (do
+     it "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
+        (shouldReturn
+           (solveText' mempty "" "@prim:rich_doc([@prim:rich_text(\"Hello!\")])")
+           (Left (SolverError (TypeMismatch (EqualityConstraint {type1 = ConstantType (TypeConstant {location = ApplyFuncCursor ExpressionCursor, name = RichBlockTypeName}), type2 = VariableType (TypeVariable {location = ApplyArgCursor ExpressionCursor, prefix = ArrayElementPrefix, index = 0, kind = TypeKind}), location = BuiltIn})))))
      it
        "{x:1}.y"
        (shouldReturn

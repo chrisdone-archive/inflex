@@ -40,7 +40,12 @@ spec :: SpecWith ()
 spec = do
   describe
     "Single expressions"
-    (do it "6" (shouldReturn (stepTextly "6 :: Integer") (Right "6"))
+    (do -- Rich text
+        let asis k = it (T.unpack k) (shouldReturn (stepTextly k) (Right k))
+        asis "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
+        asis "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_bold(@prim:rich_text(\"Hello!\"))])])"
+
+        it "6" (shouldReturn (stepTextly "6 :: Integer") (Right "6"))
         it "6 + _" (shouldReturn (stepDefaultedTextly "(6 + _)") (Right "(6 + _)"))
         it
           "2 * 6 + _"
