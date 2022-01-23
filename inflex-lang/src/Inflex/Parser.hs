@@ -409,13 +409,15 @@ arrayParser = do
 
 propLhsParser :: Parser (Expression Parsed)
 propLhsParser =
-  (VariantExpression <$> variantParser) <> (RecordExpression <$> recordParser) <>
+  (VariantExpression <$> variantParser) <>
+  (RecordExpression <$> recordParser) <>
   (ArrayExpression <$> arrayParser) <>
   (HoleExpression <$> holeParser) <>
   applyParser <>
   (VariableExpression <$> variableParser) <>
   (GlobalExpression <$> globalParser) <>
-  parensParser
+  parensParser <>
+  (LiteralExpression <$> literalParser)
 
 fieldNameParser :: Parser (FieldName, SourceLocation)
 fieldNameParser = do
