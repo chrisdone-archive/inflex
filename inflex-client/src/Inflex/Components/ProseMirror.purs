@@ -149,7 +149,7 @@ eval Initializer = do
               (\emitter -> do
                  setOnCreate creator (\proseUuid cellUuid element -> H.emit emitter (RegisterWidget (UUID proseUuid) (UUID cellUuid) element))
                  pure mempty)))
-      _ <- H.liftEffect (proseMirror element0 creator)
+      _ <- H.liftEffect (proseMirror the_json element0 creator)
       pure unit
 
 --------------------------------------------------------------------------------
@@ -211,7 +211,8 @@ render editorComponent (State{embedCells, allCells}) =
 -- Foreign
 
 foreign import proseMirror
-  :: HTMLElement
+  :: Shared.Json
+  -> HTMLElement
   -> Creator
   -> Effect ProseMirror
 
@@ -225,3 +226,5 @@ foreign import setOnCreate
 foreign import data ProseMirror :: Type
 
 foreign import data Creator :: Type
+
+foreign import the_json :: Shared.Json

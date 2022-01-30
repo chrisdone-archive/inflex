@@ -469,10 +469,6 @@ renderEditor ::
 renderEditor editing type' offset path cells =
   caseTree2 {
     "MiscTree2":       \v o t ->
-      -- TODO: Hack for experimenting, replace.
-      if  caseOriginalSource { "OriginalSource": \src -> isJust (stripPrefix (Pattern "(_(") src), "NoOriginalSource": false } o
-          then [renderRichEditor type' path cells]
-          else
       [HH.div [HP.class_ (HH.ClassName "misc")
           -- Commenting out clever scrolling trick for now
           -- HE.onWheel (\e -> case fromString t  of
@@ -499,7 +495,8 @@ renderEditor editing type' offset path cells =
       -- if hasOriginalSource originalSource then
           materialize type' originalSource offset path cells,
        -- else holeFallback
-    "DocTree2": \originalSource doc -> []
+    "DocTree2": \originalSource doc ->
+      [renderRichEditor type' path cells doc]
   }
 
 --------------------------------------------------------------------------------
@@ -510,8 +507,9 @@ renderRichEditor ::
   => Maybe (View Shared.TypeOf)
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
+  -> View _
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
-renderRichEditor mtype mkPath cells =
+renderRichEditor mtype mkPath cells json =
   HH.slot
     (SProxy :: SProxy "prosemirror")
     unit

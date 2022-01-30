@@ -17,6 +17,7 @@ import           Control.Early
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Coerce
+import qualified Data.Aeson as Aeson
 import           Data.Foldable
 import           Data.Function
 import           Data.Functor.Contravariant
@@ -382,6 +383,12 @@ toTree mappings nameMappings original final =
                (toTree mappings nameMappings (join (inVariant original)) arg)
            Nothing -> Shared.NoVariantArgument)
     HoleExpression {} -> Shared.HoleTree (originalSource id True)
+    ApplyExpression Apply { typ = ConstantType TypeConstant {name = RichDocTypeName}
+                          , argument
+                          } ->
+      Shared.DocTree2
+        Shared.NoOriginalSource
+        Aeson.Null
     expression ->
       Shared.MiscTree2
         Shared.versionRefl

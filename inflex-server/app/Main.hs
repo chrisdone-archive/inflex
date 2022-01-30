@@ -280,7 +280,7 @@ makeAppLogFunc registry
           \case
             ServerMsg msg -> do
               case msg of
-                CellSharedResult {} -> pure ()
+                -- CellSharedResult {} -> pure ()
                 _ -> prettyWrite msg
               case msg of
                 TimeoutExceeded {} -> Counter.inc timeoutExceeded
