@@ -21,6 +21,11 @@ type Text = String
 
 newtype Hash = Hash String
 
+foreign import data Json :: Type
+foreign import showJsonImpl :: Json -> String
+foreign import toForeign :: Json -> Foreign
+foreign import fromForeign :: Foreign -> Json
+
 --------------------------------------------------------------------------------
 -- Custom types
 
@@ -28,6 +33,10 @@ $types
 
 --------------------------------------------------------------------------------
 -- Derivings
+
+instance showJson :: Show Json where show = showJsonImpl
+instance decodeJson :: Decode Json where decode x = pure (fromForeign x)
+instance encodeJson :: Encode Json where encode = toForeign
 
 derive instance genericOptionality :: Generic Optionality _
 instance showOptionality :: Show Optionality where show = genericShow

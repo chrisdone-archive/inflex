@@ -30,6 +30,8 @@ newtype UUID = UUID Text
 newtype Hash = Hash Text
  deriving (Eq, Ord, FromJSON, Show, NFData)
 
+type Json = Value
+
 {-
 
 GUIDELINE:
@@ -249,6 +251,7 @@ data Tree2
   | MiscTree2 Version2 OriginalSource Text
   | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
   | HoleTree OriginalSource
+  | DocTree2 OriginalSource Json
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument

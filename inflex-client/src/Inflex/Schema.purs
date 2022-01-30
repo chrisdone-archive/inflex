@@ -21,6 +21,11 @@ type Text = String
 
 newtype Hash = Hash String
 
+foreign import data Json :: Type
+foreign import showJsonImpl :: Json -> String
+foreign import toForeign :: Json -> Foreign
+foreign import fromForeign :: Foreign -> Json
+
 --------------------------------------------------------------------------------
 -- Custom types
 
@@ -243,6 +248,7 @@ data Tree2
   | MiscTree2 Version2 OriginalSource Text
   | TableTreeMaybe2 Version2 OriginalSource (Vector Text) (Vector MaybeRow)
   | HoleTree OriginalSource
+  | DocTree2 OriginalSource Json
 
 data VariantArgument =
   VariantArgument Tree2 | NoVariantArgument
@@ -381,6 +387,10 @@ data Field1 = Field1
 
 --------------------------------------------------------------------------------
 -- Derivings
+
+instance showJson :: Show Json where show = showJsonImpl
+instance decodeJson :: Decode Json where decode x = pure (fromForeign x)
+instance encodeJson :: Encode Json where encode = toForeign
 
 derive instance genericOptionality :: Generic Optionality _
 instance showOptionality :: Show Optionality where show = genericShow

@@ -497,8 +497,9 @@ renderEditor editing type' offset path cells =
     -- TODO: produce an empty spine when in certain contexts -- e.g. text fields in a table.
     "HoleTree": \originalSource ->
       -- if hasOriginalSource originalSource then
-          materialize type' originalSource offset path cells
+          materialize type' originalSource offset path cells,
        -- else holeFallback
+    "DocTree2": \originalSource doc -> []
   }
 
 --------------------------------------------------------------------------------
@@ -1442,7 +1443,8 @@ editorCode =
       originalOr original "",
     "TableTreeMaybe2": \v original columns rows ->
       originalOr original "",
-    "HoleTree": \original -> originalOr original "_"
+    "HoleTree": \original -> originalOr original "_",
+    "DocTree2": \original _j -> originalOr original ""
   }
 
 originalOr :: View Shared.OriginalSource -> String -> String
@@ -1460,17 +1462,6 @@ hasOriginalSource = caseOriginalSource  {
 --------------------------------------------------------------------------------
 -- Tree casing
 
-caseTree2Default :: forall t628 t629 t630 t631 t632 t633 t634 t635 t636 t637 t638 t639 t640 t641 t642 t643 t644 t645 t646 t647 t648 t649 t650 t651.
-  t648
-  -> { "ArrayTree2" :: t641 -> t642 -> t643 -> t648
-     , "HoleTree" :: t650 -> t648
-     , "MiscTree2" :: t628 -> t629 -> t630 -> t648
-     , "RecordTree2" :: t638 -> t639 -> t640 -> t648
-     , "TableTreeMaybe2" :: t644 -> t645 -> t646 -> t647 -> t648
-     , "TextTree2" :: t631 -> t632 -> t633 -> t648
-     , "VariantTree2" :: t634 -> t635 -> t636 -> t637 -> t648
-     , "VegaTree2" :: t649 -> t650 -> t651 -> t648
-     }
 caseTree2Default d = {
     "MiscTree2":       \v _originalSource t -> d,
     "TextTree2":       \v _originalSource t -> d,
@@ -1479,7 +1470,8 @@ caseTree2Default d = {
     "ArrayTree2":      \v _originalSource editors -> d,
     "TableTreeMaybe2":      \v _originalSource editors _ -> d,
     "VegaTree2":       \v _originalSource t -> d,
-    "HoleTree": \_originalSource -> d
+    "HoleTree": \_originalSource -> d,
+    "DocTree2": \_originalSource x -> d
   }
 
 rowType :: Maybe (View Shared.TypeOf) -> Maybe (Array (View Shared.NamedType))
