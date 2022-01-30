@@ -1,4 +1,4 @@
-exports.showJsonImpl = function(o){
+exports.showValueImpl = function(o){
   return JSON.stringify(o);
 }
 

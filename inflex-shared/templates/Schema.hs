@@ -30,8 +30,6 @@ newtype UUID = UUID Text
 newtype Hash = Hash Text
  deriving (Eq, Ord, FromJSON, Show, NFData)
 
-type Json = Value
-
 $types
 
 --------------------------------------------------------------------------------

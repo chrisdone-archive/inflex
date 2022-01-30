@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE BangPatterns #-}
@@ -388,7 +388,8 @@ toTree mappings nameMappings original final =
                           } ->
       Shared.DocTree2
         Shared.NoOriginalSource
-        Aeson.Null
+        -- TODO: Replace this with a conversion from Inflex's AST to this format.
+        the_doc
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
@@ -500,3 +501,6 @@ typeOf =
            Just {} -> Shared.Open)
     ConstantType TypeConstant {name=TextTypeName} -> Shared.TextOf
     _ -> Shared.MiscType
+
+-- TODO: Replace this with a conversion from Inflex's AST to this format.
+the_doc = (Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("text",Aeson.String "Width is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "7190914a-9a54-477b-b5dc-da6b73edb7c9"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String " and height is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "b5f919a9-6f82-4939-bc44-da2c2a09b3eb"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String ", and so the area is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "ca133f13-ab6c-4fd9-a422-de964963d755"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")])]),("type",Aeson.String "paragraph")])]),("type",Aeson.String "doc")]))

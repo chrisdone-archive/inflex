@@ -9,6 +9,7 @@ module Inflex.Components.Cell.Editor
 -- import Data.Int
 import Timed (timed)
 import Data.Maybe (Maybe(..), isJust)
+import Inflex.Frisson.Value (unViewValue)
 import Effect.Class.Console (log)
 import Inflex.Components.ProseMirror as Prose
 import Inflex.Frisson (View, caseCellError, caseDataPath, caseFillError, caseMaybeRow, caseOriginalSource, caseTree2, caseTypeOf, caseVariantArgument, field2Key, field2Value, namedTypeName, namedTypeTyp, nestedCellErrorError, nestedCellErrorPath, rowFields)
@@ -507,14 +508,14 @@ renderRichEditor ::
   => Maybe (View Shared.TypeOf)
   -> (Shared.DataPath -> Shared.DataPath)
   -> Map UUID (OutputCell)
-  -> View _
+  -> View Shared.Value
   -> HH.HTML (H.ComponentSlot HH.HTML (Slots Query) a Command) Command
 renderRichEditor mtype mkPath cells json =
   HH.slot
     (SProxy :: SProxy "prosemirror")
     unit
     (H.hoist H.liftAff (Prose.component component))
-    cells
+    { cells: cells, the_json: unViewValue json }
     (case _ of
         Prose.UpdatePath muuid update -> Just (TriggerUpdatePath muuid update))
 
