@@ -7,7 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields, ExtendedDefaultRules #-}
 
 -- |
 
@@ -16,8 +16,10 @@ module Inflex.Server.Compute where
 import           Control.Early
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Data.Coerce
+import           Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as L
+import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
 import           Data.Functor.Contravariant
@@ -33,6 +35,8 @@ import           Data.Ord
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Inflex.Defaulter
@@ -42,6 +46,7 @@ import           Inflex.Instances ()
 import           Inflex.Location
 import           Inflex.Printer
 import           Inflex.Renamer
+import           Inflex.Resolver
 import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Type
@@ -49,6 +54,7 @@ import           Inflex.Types
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Inflex.Types.SHA512
+import qualified Lexx
 import           Prelude hiding (putStrLn)
 import qualified RIO
 import           RIO (HasGLogFunc(..), RIO, glog)
@@ -383,13 +389,13 @@ toTree mappings nameMappings original final =
                (toTree mappings nameMappings (join (inVariant original)) arg)
            Nothing -> Shared.NoVariantArgument)
     HoleExpression {} -> Shared.HoleTree (originalSource id True)
-    ApplyExpression Apply { typ = ConstantType TypeConstant {name = RichDocTypeName}
+    expression@(ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichDoc}
                           , argument
-                          } ->
-      Shared.DocTree2
-        Shared.NoOriginalSource
-        -- TODO: Replace this with a conversion from Inflex's AST to this format.
-        the_doc
+                          })
+        | Right doc <- extractDoc expression ->
+          Shared.DocTree2
+            Shared.NoOriginalSource
+            doc
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
@@ -504,3 +510,54 @@ typeOf =
 
 -- TODO: Replace this with a conversion from Inflex's AST to this format.
 the_doc = (Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("text",Aeson.String "Width is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "7190914a-9a54-477b-b5dc-da6b73edb7c9"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String " and height is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "b5f919a9-6f82-4939-bc44-da2c2a09b3eb"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String ", and so the area is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "ca133f13-ab6c-4fd9-a422-de964963d755"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")])]),("type",Aeson.String "paragraph")])]),("type",Aeson.String "doc")]))
+
+testExtract :: IO ()
+testExtract =
+  do result <- RIO.runRIO ResolveReader $
+       resolveText
+         mempty ""
+         string
+     case result of
+       Left e -> error (show e)
+       Right IsResolved{thing=ast} -> do
+
+         Lexx.prettyWrite ast
+         either print (L.putStrLn . ("\nOutput: " <>)) $ fmap Aeson.encode $ extractDoc ast
+         T.putStrLn ("\nSource: " <> string <> "\n")
+  where string = "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
+
+data ExtractError = NotArrayOfBlocks | NotABlock | NotAInline deriving (Show)
+
+extractDoc :: Expression Resolved -> Either ExtractError Aeson.Value
+extractDoc =
+  \case
+    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichDoc}
+                          , argument = ArrayExpression Array{expressions}
+                          } ->
+      do blocks <- traverse extractBlock expressions
+         pure (Aeson.object
+               ["type" .= "doc"
+               ,"content" .= Aeson.Array blocks])
+    _ -> Left NotArrayOfBlocks
+
+extractBlock :: Expression Resolved -> Either ExtractError Aeson.Value
+extractBlock =
+  \case
+    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichParagraph}
+                          , argument = ArrayExpression Array{expressions}
+                          }
+      -> do
+         blocks <- traverse extractInline expressions
+         pure (Aeson.object
+               ["type" .= "paragraph"
+               ,"content" .= Aeson.Array blocks])
+    _ -> Left NotABlock
+
+extractInline :: Expression Resolved -> Either ExtractError Aeson.Value
+extractInline =
+  \case
+    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichText}
+                          , argument
+                          }
+      -> pure Aeson.Null
+    _ -> Left NotAInline
