@@ -94,8 +94,12 @@ alternativeFill globals Alternative {location = l, ..} = do
 globalFill :: FillerEnv e -> Global Renamed -> Filler e (Global Filled)
 globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
   case name of
-    UnresolvedGlobalText textName ->
-      Filler (Failure (pure (MissingGlobal env textName)))
+    ExactGlobalRef globalRef ->
+      pure Global {scheme = FilledScheme, name = globalRef, ..}
+    --
+    -- TODO: This is also old school, because the renamer could
+    -- resolve this instead. Delete the UnresolvedUuid constructor, and
+    -- then delete the WHOLE Filler module. All killer no filler.
     UnresolvedUuid uuid ->
       case M.lookup uuid uuidsToHash of
         Nothing -> Filler (Failure (pure (MissingGlobalUuid env uuid)))
@@ -105,6 +109,13 @@ globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
             Right globalRef ->
               pure
                 Global {name = HashGlobal globalRef, scheme = FilledScheme, ..}
+    -- TODO: This is old school and can probably be removed, and make the
+    -- renamer complain instead.
+    UnresolvedGlobalText textName ->
+      Filler (Failure (pure (MissingGlobal env textName)))
+    -- TODO: This is old school too, because we only ever have exact UUIDs
+    -- in scope for globals. So this can be removed too, we should delete the
+    -- ResolvedGlobalRef constructor.
     ResolvedGlobalRef textName globalRef ->
       case M.lookup textName namesTohash of
         Nothing -> pure Global {scheme = FilledScheme, name = globalRef, ..}
@@ -114,8 +125,6 @@ globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
             Right globalRef' ->
               pure
                 Global {name = HashGlobal globalRef', scheme = FilledScheme, ..}
-    ExactGlobalRef globalRef ->
-      pure Global {scheme = FilledScheme, name = globalRef, ..}
 
 lambdaFill ::
      FillerEnv e
