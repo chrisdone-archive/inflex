@@ -557,7 +557,9 @@ extractInline :: Expression Resolved -> Either ExtractError Aeson.Value
 extractInline =
   \case
     ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichText}
-                          , argument
+                          , argument = LiteralExpression (TextLiteral LiteralText{text})
                           }
-      -> pure Aeson.Null
+      -> pure (Aeson.object
+               ["type" .= "text"
+               ,"text" .= text])
     _ -> Left NotAInline
