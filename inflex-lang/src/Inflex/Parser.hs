@@ -546,6 +546,12 @@ optionalSignatureParser = do
     then fmap Just typeParser
     else pure Nothing
 
+-- TODO:
+--
+-- Here or somewhere else, ensure that @prim:rich-cell and
+-- @prim:rich-source can only syntactically be applied to a global
+-- cell UUID or sha256.
+
 functionParser :: Parser (Expression Parsed)
 functionParser =
   fold1
