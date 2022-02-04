@@ -842,6 +842,16 @@ deriving instance Ord ParsedGlobal
 deriving instance Show ParsedGlobal
 deriving instance Lift ParsedGlobal
 
+deriving instance Eq RefStyle
+deriving instance Ord RefStyle
+deriving instance Show RefStyle
+deriving instance Lift RefStyle
+
+deriving instance Eq RichReferent
+deriving instance Ord RichReferent
+deriving instance Show RichReferent
+deriving instance Lift RichReferent
+
 deriving instance Eq (Default Polymorphic)
 deriving instance Ord (Default Polymorphic)
 deriving instance Show (Default Polymorphic)

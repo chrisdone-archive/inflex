@@ -187,18 +187,33 @@ tokenLexer =
               case txt of
                 "from_integer" -> pure (GlobalToken ParsedFromInteger)
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
+                "rich_cell" -> do
+                  void (Mega.string ":")
+                  richRef <- richRefParser
+                  pure (GlobalToken (ParsedRichRef richRef CellStyle))
+                "rich_source" -> do
+                  void (Mega.string ":")
+                  richRef <- richRefParser
+                  pure (GlobalToken (ParsedRichRef richRef SourceStyle))
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
+        richRefParser =
+          fmap RichUuid uuidParser Mega.<|> fmap RichHash hashParser
         uuidRef = do
-          void (Mega.string "uuid:")
-          txt <- uuidLexer
+          txt <- uuidParser
           pure (GlobalToken (ParsedUuid txt))
-        sha512Ref = do
+        uuidParser = do
+          void (Mega.string "uuid:")
+          uuidLexer
+        hashParser = do
           void (Mega.string "sha512:")
           txt <- Mega.takeWhile1P Nothing isAlphaNum
           case sha512HexParser txt of
             Left e -> fail ("Invalid SHA512 hash: " ++ e)
-            Right sha -> pure (GlobalToken (ParsedHash (Hash sha)))
+            Right sha -> pure (Hash sha)
+        sha512Ref = do
+          hash <- hashParser
+          pure (GlobalToken (ParsedHash hash))
     string =
       located
         (do void (Mega.char '"')
@@ -344,8 +359,6 @@ prims =
    , ( "rich_bold", RichBold)
    , ( "rich_italic", RichItalic)
    , ( "rich_link", RichLink)
-   , ( "rich_cell", RichCell)
-   , ( "rich_source", RichSource)
     ]
 
 $(makePrisms ''Token)
