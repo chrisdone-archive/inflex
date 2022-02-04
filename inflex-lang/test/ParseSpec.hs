@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, OverloadedLists #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -38,6 +38,7 @@ spec = do
   {-early-}
   describe "Operators" ops
   parser2
+  rich
 
 ops :: Spec
 ops = do
@@ -1687,4 +1688,209 @@ dotcalls = do
                               })
                      , typ = Nothing
                      , style = DotApply
+                     }))|]))
+
+rich =
+  it
+    "Rich text example"
+    (shouldSatisfy
+       (parseText
+          ""
+          "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])")
+       $(match
+           [|Right
+               (ApplyExpression
+                  (Apply
+                     { location =
+                         SourceLocation
+                           { start =
+                               SourcePos {line = 1, column = 16, name = ""}
+                           , end = SourcePos {line = 1, column = 67, name = ""}
+                           }
+                     , function =
+                         GlobalExpression
+                           (Global
+                              { location =
+                                  SourceLocation
+                                    { start =
+                                        SourcePos
+                                          {line = 1, column = 1, name = ""}
+                                    , end =
+                                        SourcePos
+                                          {line = 1, column = 15, name = ""}
+                                    }
+                              , name = ParsedPrim RichDoc
+                              , scheme = ParsedScheme
+                              })
+                     , argument =
+                         ArrayExpression
+                           (Array
+                              { expressions =
+                                  [ ApplyExpression
+                                      (Apply
+                                         { location =
+                                             SourceLocation
+                                               { start =
+                                                   SourcePos
+                                                     { line = 1
+                                                     , column = 38
+                                                     , name = ""
+                                                     }
+                                               , end =
+                                                   SourcePos
+                                                     { line = 1
+                                                     , column = 65
+                                                     , name = ""
+                                                     }
+                                               }
+                                         , function =
+                                             GlobalExpression
+                                               (Global
+                                                  { location =
+                                                      SourceLocation
+                                                        { start =
+                                                            SourcePos
+                                                              { line = 1
+                                                              , column = 17
+                                                              , name = ""
+                                                              }
+                                                        , end =
+                                                            SourcePos
+                                                              { line = 1
+                                                              , column = 37
+                                                              , name = ""
+                                                              }
+                                                        }
+                                                  , name =
+                                                      ParsedPrim RichParagraph
+                                                  , scheme = ParsedScheme
+                                                  })
+                                         , argument =
+                                             ArrayExpression
+                                               (Array
+                                                  { expressions =
+                                                      [ ApplyExpression
+                                                          (Apply
+                                                             { location =
+                                                                 SourceLocation
+                                                                   { start =
+                                                                       SourcePos
+                                                                         { line =
+                                                                             1
+                                                                         , column =
+                                                                             55
+                                                                         , name =
+                                                                             ""
+                                                                         }
+                                                                   , end =
+                                                                       SourcePos
+                                                                         { line =
+                                                                             1
+                                                                         , column =
+                                                                             63
+                                                                         , name =
+                                                                             ""
+                                                                         }
+                                                                   }
+                                                             , function =
+                                                                 GlobalExpression
+                                                                   (Global
+                                                                      { location =
+                                                                          SourceLocation
+                                                                            { start =
+                                                                                SourcePos
+                                                                                  { line =
+                                                                                      1
+                                                                                  , column =
+                                                                                      39
+                                                                                  , name =
+                                                                                      ""
+                                                                                  }
+                                                                            , end =
+                                                                                SourcePos
+                                                                                  { line =
+                                                                                      1
+                                                                                  , column =
+                                                                                      54
+                                                                                  , name =
+                                                                                      ""
+                                                                                  }
+                                                                            }
+                                                                      , name =
+                                                                          ParsedPrim
+                                                                            RichText
+                                                                      , scheme =
+                                                                          ParsedScheme
+                                                                      })
+                                                             , argument =
+                                                                 LiteralExpression
+                                                                   (TextLiteral
+                                                                      (LiteralText
+                                                                         { location =
+                                                                             SourceLocation
+                                                                               { start =
+                                                                                   SourcePos
+                                                                                     { line =
+                                                                                         1
+                                                                                     , column =
+                                                                                         55
+                                                                                     , name =
+                                                                                         ""
+                                                                                     }
+                                                                               , end =
+                                                                                   SourcePos
+                                                                                     { line =
+                                                                                         1
+                                                                                     , column =
+                                                                                         63
+                                                                                     , name =
+                                                                                         ""
+                                                                                     }
+                                                                               }
+                                                                         , text =
+                                                                             "Hello!"
+                                                                         , typ =
+                                                                             Nothing
+                                                                         }))
+                                                             , typ = Nothing
+                                                             , style =
+                                                                 PrefixApply
+                                                             })
+                                                      ]
+                                                  , typ = Nothing
+                                                  , location =
+                                                      SourceLocation
+                                                        { start =
+                                                            SourcePos
+                                                              { line = 1
+                                                              , column = 38
+                                                              , name = ""
+                                                              }
+                                                        , end =
+                                                            SourcePos
+                                                              { line = 1
+                                                              , column = 65
+                                                              , name = ""
+                                                              }
+                                                        }
+                                                  , form = ()
+                                                  })
+                                         , typ = Nothing
+                                         , style = PrefixApply
+                                         })
+                                  ]
+                              , typ = Nothing
+                              , location =
+                                  SourceLocation
+                                    { start =
+                                        SourcePos
+                                          {line = 1, column = 16, name = ""}
+                                    , end =
+                                        SourcePos
+                                          {line = 1, column = 67, name = ""}
+                                    }
+                              , form = ()
+                              })
+                     , typ = Nothing
+                     , style = PrefixApply
                      }))|]))
