@@ -203,7 +203,6 @@ data ParsedGlobal
   -- many of these constructors.
   | ParsedFromInteger
   | ParsedFromDecimal
-  | ParsedRichRef RichReferent RefStyle
 
 data RichReferent = RichUuid Uuid | RichHash Hash
 

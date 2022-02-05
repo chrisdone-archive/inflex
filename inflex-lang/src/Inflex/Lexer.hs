@@ -178,6 +178,20 @@ tokenLexer =
         (do void (Mega.char '@')
             uuidRef Mega.<|> primRef Mega.<|> sha512Ref)
       where
+
+{-
+Useful for later.
+
+"rich_cell" -> do
+  void (Mega.string ":")
+  richRef <- richRefParser
+  pure (GlobalToken (ParsedRichRef richRef CellStyle))
+"rich_source" -> do
+  void (Mega.string ":")
+  richRef <- richRefParser
+  pure (GlobalToken (ParsedRichRef richRef SourceStyle))
+-}
+
         primRef = do
           void (Mega.string "prim:")
           txt <-
@@ -187,14 +201,6 @@ tokenLexer =
               case txt of
                 "from_integer" -> pure (GlobalToken ParsedFromInteger)
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
-                "rich_cell" -> do
-                  void (Mega.string ":")
-                  richRef <- richRefParser
-                  pure (GlobalToken (ParsedRichRef richRef CellStyle))
-                "rich_source" -> do
-                  void (Mega.string ":")
-                  richRef <- richRefParser
-                  pure (GlobalToken (ParsedRichRef richRef SourceStyle))
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
         richRefParser =
