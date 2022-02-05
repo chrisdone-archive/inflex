@@ -1691,7 +1691,15 @@ dotcalls = do
                      }))|]))
 
 rich :: Spec
-rich =
+rich = do
+  it
+    "Rich text example"
+    (shouldSatisfy
+       (parseText
+          ""
+          "@prim:rich_cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+       $(match [|Right _|]))
+
   it
     "Rich text example"
     (shouldSatisfy
