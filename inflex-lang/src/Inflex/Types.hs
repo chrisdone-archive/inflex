@@ -637,7 +637,7 @@ data Function
   | ReduceFunction
   -- Rich text
   | RichDoc
-  | RichParagraph | RichText | RichCell | RichSource
+  | RichParagraph | RichText
   | RichBold | RichItalic | RichLink
   -- TODO:
   | AndFunction

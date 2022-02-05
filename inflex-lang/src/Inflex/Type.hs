@@ -317,8 +317,6 @@ functionScheme location =
     -- Produce blocks
     RichParagraph -> mono (ArrayType (constant RichInlineTypeName) .-> constant RichBlockTypeName)
     -- Produce inlines
-    RichCell -> mono (a .-> constant RichInlineTypeName)
-    RichSource -> mono (a .-> constant RichInlineTypeName)
     RichText -> mono (constant TextTypeName .-> constant RichInlineTypeName)
     -- Marks, can apply to any inline anywhere (even cell)
     RichBold -> mono (constant RichInlineTypeName .-> constant RichInlineTypeName)
