@@ -48,6 +48,7 @@ data Expression s where
   HoleExpression :: !(Hole s) -> Expression s
   VariantExpression :: !(Variant s) -> Expression s
   CaseExpression :: !(Case s) -> Expression s
+  CellRefExpression :: !(CellRef) -> Expression s
 
 data Case s = Case
   { location :: !(StagedLocation s)
@@ -204,9 +205,21 @@ data ParsedGlobal
   | ParsedFromInteger
   | ParsedFromDecimal
 
-data RichReferent = RichUuid Uuid | RichHash Hash
+-- TODO: Later, make staged, to ensure cell address is checked.
+data CellRef =
+  CellRef
+    { address :: !CellAddress
+    , style :: !CellRefStyle
+    }
 
-data RefStyle = CellStyle | SourceStyle
+data CellAddress
+  = RefUuid Uuid
+  -- TODO: Later. We currently can't do cross-doc references anyway in the UI.
+  -- | RefHash Hash
+
+data CellRefStyle
+  = CellStyle
+  | SourceStyle
 
 data IncompleteGlobalRef
   = ExactGlobalRef (GlobalRef Renamed)

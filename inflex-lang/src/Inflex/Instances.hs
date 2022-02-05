@@ -842,15 +842,20 @@ deriving instance Ord ParsedGlobal
 deriving instance Show ParsedGlobal
 deriving instance Lift ParsedGlobal
 
-deriving instance Eq RefStyle
-deriving instance Ord RefStyle
-deriving instance Show RefStyle
-deriving instance Lift RefStyle
+deriving instance Eq CellRefStyle
+deriving instance Ord CellRefStyle
+deriving instance Show CellRefStyle
+deriving instance Lift CellRefStyle
 
-deriving instance Eq RichReferent
-deriving instance Ord RichReferent
-deriving instance Show RichReferent
-deriving instance Lift RichReferent
+deriving instance Eq CellAddress
+deriving instance Ord CellAddress
+deriving instance Show CellAddress
+deriving instance Lift CellAddress
+
+deriving instance Eq CellRef
+deriving instance Ord CellRef
+deriving instance Show CellRef
+deriving instance Lift CellRef
 
 deriving instance Eq (Default Polymorphic)
 deriving instance Ord (Default Polymorphic)
