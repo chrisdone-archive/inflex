@@ -1041,8 +1041,7 @@ cellRefs :: Spec
 cellRefs = do
   eval_it_match
     "cell ref resolves properly and type checks"
-    [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
-      , ("t", "{}"))
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("t", "{}"))
     , ( Nothing
       , ( "k"
         , "@prim:rich_cell(@cell:uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
@@ -1052,15 +1051,40 @@ cellRefs = do
          r
          $(match
              [|[ Named {uuid = Uuid u1, thing = Right _}
-               , Named {uuid = Uuid u2, thing = Right _}
+               , Named
+                   { uuid = Uuid u2
+                   , thing =
+                       Right
+                         (ApplyExpression
+                            (Apply
+                               { location = ExpressionCursor
+                               , function =
+                                   GlobalExpression
+                                     (Global {name = FunctionGlobal RichCell})
+                               , argument =
+                                   CellRefExpression
+                                     (CellRef
+                                        { address =
+                                            RefUuid
+                                              (Uuid
+                                                 "85cbcc37-0c41-4871-a66a-31390a3ef391")
+                                        , typ =
+                                            ConstantType
+                                              (TypeConstant
+                                                 {name = CellTypeName})
+                                        })
+                               , typ =
+                                   ConstantType
+                                     (TypeConstant {name = RichInlineTypeName})
+                               }))
+                   }
                ]|]))
     (maybe nextRandom' pure)
     (pure ())
   -- Ensures the above is not a false positive.
   eval_it_match
     "cell ref fails when not valid uuid"
-    [ ( Just "85cbcc37-0c41-4871-a66a-000000000000"
-      , ("t", "{}"))
+    [ (Just "85cbcc37-0c41-4871-a66a-000000000000", ("t", "{}"))
     , ( Nothing
       , ( "k"
         , "@prim:rich_cell(@cell:uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
