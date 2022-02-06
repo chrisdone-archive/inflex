@@ -827,6 +827,33 @@ deriving instance Lift (Pattern Resolved)
 deriving instance Eq (Pattern Resolved)
 deriving instance Ord (Pattern Resolved)
 
+
+deriving instance Show (CellRef Parsed)
+deriving instance Show (CellRef Parsed2)
+deriving instance Lift (CellRef Parsed)
+deriving instance Eq (CellRef Parsed)
+deriving instance Ord (CellRef Parsed)
+deriving instance Show (CellRef Renamed)
+deriving instance Lift (CellRef Renamed)
+deriving instance Eq (CellRef Renamed)
+deriving instance Ord (CellRef Renamed)
+deriving instance Show (CellRef Solved)
+deriving instance Lift (CellRef Solved)
+deriving instance Eq (CellRef Solved)
+deriving instance Ord (CellRef Solved)
+deriving instance Show (CellRef Generalised)
+deriving instance Lift (CellRef Generalised)
+deriving instance Eq (CellRef Generalised)
+deriving instance Ord (CellRef Generalised)
+deriving instance Show (CellRef Generated)
+deriving instance Lift (CellRef Generated)
+deriving instance Eq (CellRef Generated)
+deriving instance Ord (CellRef Generated)
+deriving instance Show (CellRef Resolved)
+deriving instance Lift (CellRef Resolved)
+deriving instance Eq (CellRef Resolved)
+deriving instance Ord (CellRef Resolved)
+
 deriving instance Eq Cell
 deriving instance Ord Cell
 deriving instance Show Cell
@@ -842,20 +869,10 @@ deriving instance Ord ParsedGlobal
 deriving instance Show ParsedGlobal
 deriving instance Lift ParsedGlobal
 
-deriving instance Eq CellRefStyle
-deriving instance Ord CellRefStyle
-deriving instance Show CellRefStyle
-deriving instance Lift CellRefStyle
-
 deriving instance Eq CellAddress
 deriving instance Ord CellAddress
 deriving instance Show CellAddress
 deriving instance Lift CellAddress
-
-deriving instance Eq CellRef
-deriving instance Ord CellRef
-deriving instance Show CellRef
-deriving instance Lift CellRef
 
 deriving instance Eq (Default Polymorphic)
 deriving instance Ord (Default Polymorphic)

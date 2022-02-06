@@ -1693,13 +1693,16 @@ dotcalls = do
 rich :: Spec
 rich = do
   it
-    "Rich cell ref example"
+    "Cell ref example"
     (shouldSatisfy
-       (parseText
-          ""
-          "@prim:rich_cell") -- todo: @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
-       $(match [|Right _|]))
-
+       (parseText "" "@cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+       $(match
+           [|Right
+               (CellRefExpression
+                  (CellRef
+                     { address =
+                         RefUuid (Uuid "1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+                     }))|]))
   it
     "Rich text example"
     (shouldSatisfy

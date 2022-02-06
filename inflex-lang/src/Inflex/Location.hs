@@ -23,6 +23,10 @@ expressionLocation =
     GlobalExpression global -> globalLocation global
     ApplyExpression apply -> applyLocation apply
     VariableExpression variable -> variableLocation variable
+    CellRefExpression ref -> cellRefLocation ref
+
+cellRefLocation :: CellRef s -> StagedLocation s
+cellRefLocation CellRef {location} = location
 
 lambdaLocation :: Lambda s -> StagedLocation s
 lambdaLocation Lambda {location} = location

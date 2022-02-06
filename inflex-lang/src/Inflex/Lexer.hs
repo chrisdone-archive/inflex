@@ -22,6 +22,7 @@ module Inflex.Lexer
   , lexText
   , LexError
   , lexTextSingleton
+  , _CellAddressToken
   , _NaturalToken
   , _DecimalToken
   , _BackslashToken
@@ -193,8 +194,8 @@ tokenLexer =
         -- E.g. @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
         cellRefParser = do
           void (Mega.string "cell:")
-          ref <- fmap RefUuid uuidParser
-          pure (CellAddressToken ref)
+          ref' <- fmap RefUuid uuidParser
+          pure (CellAddressToken ref')
           -- TODO: When this is supported in the UI:
           --
           -- Mega.<|> fmap CellHash hashParser
