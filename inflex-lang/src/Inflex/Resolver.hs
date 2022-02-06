@@ -103,6 +103,8 @@ expressionResolver nesting =
       fmap LiteralExpression (pure (literalResolver literal))
     HoleExpression hole ->
       fmap HoleExpression (pure (holeResolver hole))
+    CellRefExpression cellRef ->
+      fmap CellRefExpression (pure (cellRefResolver cellRef))
     RecordExpression record ->
       fmap RecordExpression (recordResolver nesting record)
     PropExpression prop ->
@@ -195,6 +197,9 @@ variableResolver Variable {..} = Variable {..}
 
 holeResolver :: Hole Generalised -> Hole Resolved
 holeResolver Hole {..} = Hole {..}
+
+cellRefResolver :: CellRef Generalised -> CellRef Resolved
+cellRefResolver CellRef {..} = CellRef {..}
 
 literalResolver :: Literal Generalised -> Literal Resolved
 literalResolver =
@@ -523,6 +528,7 @@ expressionCollect =
     LiteralExpression {} -> mempty
     PropExpression prop -> propCollect prop
     HoleExpression {} -> mempty
+    CellRefExpression {} -> mempty
     ArrayExpression array -> arrayCollect array
     VariantExpression variant -> variantCollect variant
     RecordExpression record -> recordCollect record

@@ -159,6 +159,7 @@ lexTextPlusUUIDs text =
             (mapMaybe
                (\case
                   Located {thing = GlobalToken (ParsedUuid uuid)} -> pure uuid
+                  Located {thing = CellAddressToken (RefUuid uuid)} -> pure uuid
                   _ -> Nothing)
                (toList toks)))
 

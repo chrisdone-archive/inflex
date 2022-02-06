@@ -188,6 +188,8 @@ expressionGeneralise substitutions =
       PropExpression (propGeneralise substitutions prop)
     HoleExpression hole ->
       HoleExpression (holeGeneralise substitutions hole)
+    CellRefExpression cellRef ->
+      CellRefExpression (cellRefGeneralise substitutions cellRef)
     ArrayExpression array ->
       ArrayExpression (arrayGeneralise substitutions array)
     VariantExpression variant ->
@@ -276,6 +278,16 @@ holeGeneralise ::
   -> Hole Generalised
 holeGeneralise substitutions Hole {..} =
   Hole
+    { typ = generaliseType substitutions typ
+    , ..
+    }
+
+cellRefGeneralise ::
+     Map (TypeVariable Solved) (TypeVariable Polymorphic)
+  -> CellRef Solved
+  -> CellRef Generalised
+cellRefGeneralise substitutions CellRef {..} =
+  CellRef
     { typ = generaliseType substitutions typ
     , ..
     }

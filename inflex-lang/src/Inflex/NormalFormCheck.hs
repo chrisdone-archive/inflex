@@ -168,6 +168,7 @@ expressionGenerate =
     VariantExpression variant -> variantGenerate variant
     -- The rest of these are not normal form. We only consider the above cases.
     LambdaExpression {} -> Left NotNormalForm
+    CellRefExpression {} -> Left NotNormalForm
     ApplyExpression {} -> Left NotNormalForm
     VariableExpression {} -> Left NotNormalForm
     GlobalExpression {} -> Left NotNormalForm
