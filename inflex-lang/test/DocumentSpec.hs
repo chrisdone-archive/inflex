@@ -1057,8 +1057,7 @@ cellRefs = do
                        Right
                          (ApplyExpression
                             (Apply
-                               { location = ExpressionCursor
-                               , function =
+                               { function =
                                    GlobalExpression
                                      (Global {name = FunctionGlobal RichCell})
                                , argument =
