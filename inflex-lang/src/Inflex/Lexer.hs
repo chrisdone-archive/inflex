@@ -180,16 +180,14 @@ tokenLexer =
       where
 
 {-
-Useful for later.
+Useful for later, support: @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
 
-"rich_cell" -> do
+use cellRefParser
+
+"cell" -> do
   void (Mega.string ":")
-  richRef <- richRefParser
-  pure (GlobalToken (ParsedRichRef richRef CellStyle))
-"rich_source" -> do
-  void (Mega.string ":")
-  richRef <- richRefParser
-  pure (GlobalToken (ParsedRichRef richRef SourceStyle))
+  cellRef <- cellRefParser
+
 -}
 
         primRef = do
@@ -203,8 +201,11 @@ Useful for later.
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
-        richRefParser =
-          fmap RichUuid uuidParser Mega.<|> fmap RichHash hashParser
+        cellRefParser =
+          fmap RefUuid uuidParser
+          -- TODO: When this is supported in the UI:
+          --
+          -- Mega.<|> fmap CellHash hashParser
         uuidRef = do
           txt <- uuidParser
           pure (GlobalToken (ParsedUuid txt))
@@ -365,6 +366,7 @@ prims =
    , ( "rich_bold", RichBold)
    , ( "rich_italic", RichItalic)
    , ( "rich_link", RichLink)
+   , ( "rich_cell", RichCell)
     ]
 
 $(makePrisms ''Token)

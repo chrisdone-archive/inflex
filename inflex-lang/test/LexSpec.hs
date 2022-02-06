@@ -24,7 +24,7 @@ spec =
           \@sha512:3ba402f10ef7807ab8767a44d57ed1b6dcfc84d629219a0603535993c93b6279ecb4aab48763b5b84b8c45d9ea2b90bf7356e06b063cc4478f2b817d66f449ad @prim:array_map @uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7-@uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7\
           \ \"foo\"\"bar\"\
           \ @prim:rich_doc @prim:rich_paragraph @prim:rich_bold @prim:rich_italic @prim:rich_link \
-          \ @prim:rich_text @prim:rich_cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7 @prim:rich_source:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+          \ @prim:rich_text @prim:rich_cell")
        (Right
           (Seq.fromList
              [ Located

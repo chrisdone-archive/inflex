@@ -1693,11 +1693,11 @@ dotcalls = do
 rich :: Spec
 rich = do
   it
-    "Rich text example"
+    "Rich cell ref example"
     (shouldSatisfy
        (parseText
           ""
-          "@prim:rich_cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7")
+          "@prim:rich_cell") -- todo: @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
        $(match [|Right _|]))
 
   it

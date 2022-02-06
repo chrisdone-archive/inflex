@@ -473,6 +473,8 @@ data TypeName
   | RichDocTypeName
   | RichBlockTypeName
   | RichInlineTypeName
+
+  | CellTypeName
   deriving (Show, Lift, Eq, Ord)
 
 data ClassName
@@ -649,7 +651,8 @@ data Function
   | ReduceFunction
   -- Rich text
   | RichDoc
-  | RichParagraph | RichText
+  | RichParagraph | RichText | RichCell
+   -- TODO: Add RichSource
   | RichBold | RichItalic | RichLink
   -- TODO:
   | AndFunction
