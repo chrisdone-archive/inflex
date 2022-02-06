@@ -1035,6 +1035,27 @@ success = do
               }
           ])
   describe "Records" records
+  describe "CellRefs" cellRefs
+
+cellRefs :: Spec
+cellRefs =
+  eval_it_match
+    "cell ref resolves properly and type checks"
+    [ ( Just "85cbcc37-0c41-4871-a66a-31390a3ef391"
+      , ("t", "[\"x\",\"y\",\"z\"]"))
+    , ( Nothing
+      , ( "k"
+        , "@prim:rich_cell(@cell:uuid:85cbcc37-0c41-4871-a66a-31390a3ef391)"))
+    ]
+    (\[u1, u2] r -> do
+       shouldSatisfy
+         r
+         $(match
+             [|[ Named {uuid = Uuid u1, thing = Right _}
+               , Named {uuid = Uuid u2, thing = Right _}
+               ]|]))
+    (maybe nextRandom' pure)
+    (pure ())
 
 records :: Spec
 records = do

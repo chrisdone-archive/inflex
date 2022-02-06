@@ -98,7 +98,7 @@ renameCellRef env CellRef{..} = do
   -- Make sure we add the UUID address as a dependency.
   case address of
     RefUuid uuid -> modify (over _3 (Set.insert uuid))
-  pure (CellRef {location = final, ..})
+  pure (CellRef {location = final, typ = Nothing, ..})
 
 renameHole :: Env -> Hole Parsed -> Renamer (Hole Renamed)
 renameHole env Hole{..} = do

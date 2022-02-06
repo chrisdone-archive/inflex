@@ -676,7 +676,7 @@ cellRefParser :: Parser (CellRef Parsed)
 cellRefParser = do
   Located {thing = address, location} <-
     token ExpectedCellRef (preview _CellAddressToken)
-  pure CellRef {location, address}
+  pure CellRef {location, address, typ = Nothing}
 
 lambdaParser :: Parser (Lambda Parsed)
 lambdaParser = do

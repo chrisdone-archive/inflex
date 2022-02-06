@@ -126,6 +126,8 @@ expressionGenerator =
       fmap GlobalExpression (globalGenerator global)
     HoleExpression hole ->
       fmap HoleExpression (holeGenerator hole)
+    CellRefExpression cellRef ->
+      fmap CellRefExpression (cellRefGenerator cellRef)
 
 caseGenerator :: Case Filled -> Generate e (Case Generated)
 caseGenerator Case {..} = do
@@ -238,6 +240,12 @@ holeGenerator :: Hole Filled -> Generate e (Hole Generated)
 holeGenerator Hole {..} = do
   elementVariable <- generateVariableType location HolePrefix TypeKind
   pure Hole {typ = elementVariable, ..}
+
+cellRefGenerator :: CellRef Filled -> Generate e (CellRef Generated)
+cellRefGenerator CellRef {..} = do
+  pure
+    CellRef
+      {typ = ConstantType TypeConstant {location, name = CellTypeName}, ..}
 
 recordGenerator :: Record Filled -> Generate e (Record Generated)
 recordGenerator Record {..} = do

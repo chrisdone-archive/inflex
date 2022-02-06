@@ -128,6 +128,7 @@ evalExpression build expression = do
     LambdaExpression {} -> pure expression
     VariableExpression {} -> pure expression
     HoleExpression {} -> pure expression
+    CellRefExpression {} -> pure expression
     -- Data structures:
     RecordExpression record -> evalRecord build record
     ArrayExpression array -> evalArray build array
@@ -891,6 +892,7 @@ betaReduce body0 arg = go 0 body0
         e@GlobalExpression {} -> pure e
         e@LiteralExpression {} -> pure e
         e@HoleExpression {} -> pure e
+        e@CellRefExpression {} -> pure e
 
 --------------------------------------------------------------------------------
 -- Primitive class methods

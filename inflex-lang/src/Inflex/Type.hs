@@ -58,6 +58,7 @@ expressionType =
     PropExpression prop -> propType prop
     HoleExpression hole -> holeType hole
     VariantExpression variant -> variantType variant
+    CellRefExpression cellRef -> cellRefType cellRef
 
 recordType :: Record s -> StagedType s
 recordType Record {typ} = typ
@@ -73,6 +74,9 @@ propType Prop {typ} = typ
 
 holeType :: Hole s -> StagedType s
 holeType Hole {typ} = typ
+
+cellRefType :: CellRef s -> StagedType s
+cellRefType CellRef {typ} = typ
 
 variantType :: Variant s -> StagedType s
 variantType Variant {typ} = typ

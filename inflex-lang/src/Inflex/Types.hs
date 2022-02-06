@@ -209,6 +209,7 @@ data CellRef s =
   CellRef
     { address :: !CellAddress
     , location :: !(StagedLocation s)
+    , typ :: !(StagedType s)
     }
 
 data CellAddress
