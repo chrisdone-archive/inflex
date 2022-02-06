@@ -29,6 +29,7 @@ expressionFill globals =
     CaseExpression case' -> fmap CaseExpression (caseFill globals case')
     PropExpression prop -> fmap PropExpression (propFill globals prop)
     HoleExpression hole -> pure (HoleExpression (holeFill hole))
+    CellRefExpression cellRef -> fmap CellRefExpression (cellRefFill globals cellRef)
     ArrayExpression array -> fmap ArrayExpression (arrayFill globals array)
     VariantExpression variant -> fmap VariantExpression (variantFill globals variant)
     LiteralExpression literal -> pure (LiteralExpression (literalFill literal))
@@ -125,6 +126,21 @@ globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
             Right globalRef' ->
               pure
                 Global {name = HashGlobal globalRef', scheme = FilledScheme, ..}
+
+cellRefFill :: FillerEnv e -> CellRef Renamed -> Filler e (CellRef Filled)
+cellRefFill env@FillerEnv {namesTohash, uuidsToHash} CellRef {..} = do
+  case address of
+    --
+    -- TODO: This is also old school, because the renamer could
+    -- resolve this instead. Delete the UnresolvedUuid constructor, and
+    -- then delete the WHOLE Filler module. All killer no filler.
+    RefUuid uuid ->
+      case M.lookup uuid uuidsToHash of
+        Nothing -> Filler (Failure (pure (MissingGlobalUuid env uuid)))
+        Just result -> do
+          case result of
+            Left e -> Filler (Failure (pure (OtherCellUuidError uuid e)))
+            Right {} -> pure CellRef {..}
 
 lambdaFill ::
      FillerEnv e

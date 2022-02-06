@@ -44,6 +44,7 @@ spec = do
         let asis k = it (T.unpack k) (shouldReturn (stepTextly k) (Right k))
         asis "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
         asis "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_bold(@prim:rich_text(\"Hello!\"))])])"
+        asis "@prim:rich_cell(@cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7)"
 
         it "6" (shouldReturn (stepTextly "6 :: Integer") (Right "6"))
         it "6 + _" (shouldReturn (stepDefaultedTextly "(6 + _)") (Right "(6 + _)"))

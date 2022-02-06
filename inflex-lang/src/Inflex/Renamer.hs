@@ -90,6 +90,15 @@ renameExpression env =
     VariableExpression variable -> renameVariable env variable
     HoleExpression hole -> fmap HoleExpression (renameHole env hole)
     GlobalExpression global -> fmap GlobalExpression (renameGlobal env global)
+    CellRefExpression cellRef -> fmap CellRefExpression (renameCellRef env cellRef)
+
+renameCellRef :: Env -> CellRef Parsed -> Renamer (CellRef Renamed)
+renameCellRef env CellRef{..} = do
+  final <- finalizeCursor (cursor env) TypeCursor location
+  -- Make sure we add the UUID address as a dependency.
+  case address of
+    RefUuid uuid -> modify (over _3 (Set.insert uuid))
+  pure (CellRef {location = final, ..})
 
 renameHole :: Env -> Hole Parsed -> Renamer (Hole Renamed)
 renameHole env Hole{..} = do
