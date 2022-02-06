@@ -117,6 +117,7 @@ data Token
   | BarToken
   | FoldToken
   | UnfoldToken
+  | CellAddressToken !CellAddress
   deriving (Show, Eq, Ord, Generic)
 
 -- | A located token.
@@ -176,20 +177,8 @@ tokenLexer =
     ref =
       located
         (do void (Mega.char '@')
-            uuidRef Mega.<|> primRef Mega.<|> sha512Ref)
+            cellRefParser Mega.<|> uuidRef Mega.<|> primRef Mega.<|> sha512Ref)
       where
-
-{-
-Useful for later, support: @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
-
-use cellRefParser
-
-"cell" -> do
-  void (Mega.string ":")
-  cellRef <- cellRefParser
-
--}
-
         primRef = do
           void (Mega.string "prim:")
           txt <-
@@ -201,8 +190,11 @@ use cellRefParser
                 "from_decimal" -> pure (GlobalToken ParsedFromDecimal)
                 _ -> fail ("Invalid primitive: " <> T.unpack txt)
             Just fun -> pure (GlobalToken (ParsedPrim fun))
-        cellRefParser =
-          fmap RefUuid uuidParser
+        -- E.g. @cell:uuid:1ea653f3-67f7-4fad-9892-85ce6cbf10a7
+        cellRefParser = do
+          void (Mega.string "cell:")
+          ref <- fmap RefUuid uuidParser
+          pure (CellAddressToken ref)
           -- TODO: When this is supported in the UI:
           --
           -- Mega.<|> fmap CellHash hashParser
