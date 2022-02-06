@@ -106,6 +106,7 @@ instance Stage s => Printer (Expression s) where
       RecordExpression record -> printer record
       PropExpression prop -> printer prop
       HoleExpression hole -> printer hole
+      CellRefExpression cellRef -> printer cellRef
       ArrayExpression array -> printer array
       VariantExpression variant -> printer variant
       LiteralExpression literal -> printer literal
@@ -155,6 +156,10 @@ instance Stage s => Printer (VariantP s) where
 
 instance Stage s =>  Printer (Hole s) where
   printer (Hole{}) = "_"
+
+instance Stage s =>  Printer (CellRef s) where
+  printer (CellRef{address=RefUuid (Uuid uuid)}) =
+    "@cell:uuid:" <> printer uuid
 
 instance Stage s =>  Printer (Prop s) where
   printer (Prop {expression, name}) =

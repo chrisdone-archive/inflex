@@ -428,6 +428,8 @@ expressionSolve substitutions =
       PropExpression (propSolve substitutions prop)
     HoleExpression hole ->
       HoleExpression (holeSolve substitutions hole)
+    CellRefExpression cellRef ->
+      CellRefExpression (cellRefSolve substitutions cellRef)
     ArrayExpression array ->
       ArrayExpression (arraySolve substitutions array)
     VariantExpression variant ->
@@ -593,6 +595,10 @@ paramSolve substitutions Param {..} =
 holeSolve :: HashMap (TypeVariable Generated) (Type Generated) -> Hole Generated -> Hole Solved
 holeSolve substitutions Hole {..} =
   Hole {typ = solveType substitutions typ, ..}
+
+cellRefSolve :: HashMap (TypeVariable Generated) (Type Generated) -> CellRef Generated -> CellRef Solved
+cellRefSolve substitutions CellRef {..} =
+  CellRef {typ = solveType substitutions typ, ..}
 
 --------------------------------------------------------------------------------
 -- Generate type variable

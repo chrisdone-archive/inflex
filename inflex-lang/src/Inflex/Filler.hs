@@ -128,7 +128,7 @@ globalFill env@FillerEnv {namesTohash, uuidsToHash} Global {..} = do
                 Global {name = HashGlobal globalRef', scheme = FilledScheme, ..}
 
 cellRefFill :: FillerEnv e -> CellRef Renamed -> Filler e (CellRef Filled)
-cellRefFill env@FillerEnv {namesTohash, uuidsToHash} CellRef {..} = do
+cellRefFill env@FillerEnv {uuidsToHash} CellRef {..} = do
   case address of
     --
     -- TODO: This is also old school, because the renamer could

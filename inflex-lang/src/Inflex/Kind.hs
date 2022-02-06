@@ -47,3 +47,5 @@ typeNameKind =
     RichDocTypeName -> TypeKind
     RichBlockTypeName -> TypeKind
     RichInlineTypeName -> TypeKind
+    --
+    CellTypeName -> TypeKind
