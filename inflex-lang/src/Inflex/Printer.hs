@@ -431,7 +431,6 @@ instance Printer Function where
       RichItalic -> "rich_italic"
       RichLink -> "rich_link"
       RichCell -> "rich_cell"
-      RichSource -> "rich_source"
 
 instance Printer NumericBinOp where
   printer =
