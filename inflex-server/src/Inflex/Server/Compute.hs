@@ -509,57 +509,125 @@ typeOf =
     _ -> Shared.MiscType
 
 -- TODO: Replace this with a conversion from Inflex's AST to this format.
-the_doc = (Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("content",Aeson.Array $ V.fromList [Aeson.Object (HM.fromList [("text",Aeson.String "Width is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "7190914a-9a54-477b-b5dc-da6b73edb7c9"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String " and height is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "b5f919a9-6f82-4939-bc44-da2c2a09b3eb"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")]),Aeson.Object (HM.fromList [("text",Aeson.String ", and so the area is "),("type",Aeson.String "text")]),Aeson.Object (HM.fromList [("attrs",Aeson.Object (HM.fromList [("cell_uuid",Aeson.String "ca133f13-ab6c-4fd9-a422-de964963d755"),("type",Aeson.String "stegosaurus")])),("type",Aeson.String "dino")])]),("type",Aeson.String "paragraph")])]),("type",Aeson.String "doc")]))
+the_doc =
+  (Aeson.Object
+     (HM.fromList
+        [ ( "content"
+          , Aeson.Array $
+            V.fromList
+              [ Aeson.Object
+                  (HM.fromList
+                     [ ( "content"
+                       , Aeson.Array $
+                         V.fromList
+                           [ Aeson.Object
+                               (HM.fromList
+                                  [ ("text", Aeson.String "Width is ")
+                                  , ("type", Aeson.String "text")
+                                  ])
+                           , Aeson.Object
+                               (HM.fromList
+                                  [ ( "attrs"
+                                    , Aeson.Object
+                                        (HM.fromList
+                                           [ ( "cell_uuid"
+                                             , Aeson.String
+                                                 "7190914a-9a54-477b-b5dc-da6b73edb7c9")
+                                           , ( "type"
+                                             , Aeson.String "stegosaurus")
+                                           ]))
+                                  , ("type", Aeson.String "dino")
+                                  ])
+                           , Aeson.Object
+                               (HM.fromList
+                                  [ ("text", Aeson.String " and height is ")
+                                  , ("type", Aeson.String "text")
+                                  ])
+                           , Aeson.Object
+                               (HM.fromList
+                                  [ ( "attrs"
+                                    , Aeson.Object
+                                        (HM.fromList
+                                           [ ( "cell_uuid"
+                                             , Aeson.String
+                                                 "b5f919a9-6f82-4939-bc44-da2c2a09b3eb")
+                                           , ( "type"
+                                             , Aeson.String "stegosaurus")
+                                           ]))
+                                  , ("type", Aeson.String "dino")
+                                  ])
+                           , Aeson.Object
+                               (HM.fromList
+                                  [ ( "text"
+                                    , Aeson.String ", and so the area is ")
+                                  , ("type", Aeson.String "text")
+                                  ])
+                           , Aeson.Object
+                               (HM.fromList
+                                  [ ( "attrs"
+                                    , Aeson.Object
+                                        (HM.fromList
+                                           [ ( "cell_uuid"
+                                             , Aeson.String
+                                                 "ca133f13-ab6c-4fd9-a422-de964963d755")
+                                           , ( "type"
+                                             , Aeson.String "stegosaurus")
+                                           ]))
+                                  , ("type", Aeson.String "dino")
+                                  ])
+                           ])
+                     , ("type", Aeson.String "paragraph")
+                     ])
+              ])
+        , ("type", Aeson.String "doc")
+        ]))
 
 testExtract :: IO ()
-testExtract =
-  do result <- RIO.runRIO ResolveReader $
-       resolveText
-         mempty ""
-         string
-     case result of
-       Left e -> error (show e)
-       Right IsResolved{thing=ast} -> do
+testExtract = do
+  result <- RIO.runRIO ResolveReader $ resolveText mempty "" string
+  case result of
+    Left e -> error (show e)
+    Right IsResolved {thing = ast} -> do
+      Lexx.prettyWrite ast
+      either print (L.putStrLn . ("\nOutput: " <>)) $
+        fmap Aeson.encode $ extractDoc ast
+      T.putStrLn ("\nSource: " <> string <> "\n")
+  where
+    string =
+      "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
 
-         Lexx.prettyWrite ast
-         either print (L.putStrLn . ("\nOutput: " <>)) $ fmap Aeson.encode $ extractDoc ast
-         T.putStrLn ("\nSource: " <> string <> "\n")
-  where string = "@prim:rich_doc([@prim:rich_paragraph([@prim:rich_text(\"Hello!\")])])"
-
-data ExtractError = NotArrayOfBlocks | NotABlock | NotAInline deriving (Show)
+data ExtractError
+  = NotArrayOfBlocks
+  | NotABlock
+  | NotAInline
+  deriving (Show)
 
 extractDoc :: Expression Resolved -> Either ExtractError Aeson.Value
 extractDoc =
   \case
-    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichDoc}
-                          , argument = ArrayExpression Array{expressions}
-                          } ->
-      do blocks <- traverse extractBlock expressions
-         pure (Aeson.object
-               ["type" .= "doc"
-               ,"content" .= Aeson.Array blocks])
+    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichDoc}
+                          , argument = ArrayExpression Array {expressions}
+                          } -> do
+      blocks <- traverse extractBlock expressions
+      pure (Aeson.object ["type" .= "doc", "content" .= Aeson.Array blocks])
     _ -> Left NotArrayOfBlocks
 
 extractBlock :: Expression Resolved -> Either ExtractError Aeson.Value
 extractBlock =
   \case
-    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichParagraph}
-                          , argument = ArrayExpression Array{expressions}
-                          }
-      -> do
-         blocks <- traverse extractInline expressions
-         pure (Aeson.object
-               ["type" .= "paragraph"
-               ,"content" .= Aeson.Array blocks])
+    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichParagraph}
+                          , argument = ArrayExpression Array {expressions}
+                          } -> do
+      blocks <- traverse extractInline expressions
+      pure
+        (Aeson.object ["type" .= "paragraph", "content" .= Aeson.Array blocks])
     _ -> Left NotABlock
 
 extractInline :: Expression Resolved -> Either ExtractError Aeson.Value
 extractInline =
   \case
-    ApplyExpression Apply { function = GlobalExpression Global{name=FunctionGlobal RichText}
-                          , argument = LiteralExpression (TextLiteral LiteralText{text})
-                          }
-      -> pure (Aeson.object
-               ["type" .= "text"
-               ,"text" .= text])
+    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichText}
+                          , argument = LiteralExpression (TextLiteral LiteralText {text})
+                          } ->
+      pure (Aeson.object ["type" .= "text", "text" .= text])
     _ -> Left NotAInline
