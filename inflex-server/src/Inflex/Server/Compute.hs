@@ -630,4 +630,12 @@ extractInline =
                           , argument = LiteralExpression (TextLiteral LiteralText {text})
                           } ->
       pure (Aeson.object ["type" .= "text", "text" .= text])
+    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichCell}
+                          , argument = (CellRefExpression (CellRef {address = RefUuid (Uuid uuid)}))
+                          } ->
+      pure
+        (Aeson.object
+           [ "type" .= "cell"
+           , "attrs" .= Aeson.object [("cell_uuid", Aeson.String uuid)]
+           ])
     _ -> Left NotAInline
