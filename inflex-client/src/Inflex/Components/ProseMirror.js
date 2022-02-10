@@ -1,7 +1,12 @@
+// Tip: get contents via: window.view.state.toJSON().doc.content
+//
+// TODO: More than one rich editor will require window.view to not be shared.
+
 exports.proseMirror = function(the_doc_json){
   return function(parentElement){
     return function(creator){
       return function(){
+        console.log('proseMirror: %o', the_doc_json);
         return (function (prosemirrorModel, prosemirrorSchemaBasic, prosemirrorMenu, prosemirrorExampleSetup, prosemirrorState, prosemirrorView) {
           'use strict';
 
@@ -105,6 +110,11 @@ exports.proseMirror = function(the_doc_json){
             }
           });
 
+
+          setInterval(function(){
+            console.log('ProseMirror contents: %o', window
+          },3000);
+
           return {};
           // }
 
@@ -125,46 +135,3 @@ exports.setOnCreate = function(creator){
     }
   }
 }
-
-exports.the_json = {
-  "type": "doc",
-  "content":
-  [
-    {
-      "type": "paragraph",
-      "content": [
-        {
-          "type": "text",
-          "text": "Width is "
-        },
-        {
-          "type": "dino",
-          "attrs": {
-            "cell_uuid": "7190914a-9a54-477b-b5dc-da6b73edb7c9",
-            "type": "stegosaurus"
-          }
-        },{
-          "type": "text",
-          "text": " and height is "
-        },
-        {
-          "type": "dino",
-          "attrs": {
-            "cell_uuid": "b5f919a9-6f82-4939-bc44-da2c2a09b3eb",
-            "type": "stegosaurus"
-          }
-        },{
-          "type": "text",
-          "text": ", and so the area is "
-        },
-        {
-          "type": "dino",
-          "attrs": {
-            "cell_uuid": "ca133f13-ab6c-4fd9-a422-de964963d755",
-            "type": "stegosaurus"
-          }
-        }
-      ]
-    }
-  ]
-};

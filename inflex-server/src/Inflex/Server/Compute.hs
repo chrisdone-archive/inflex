@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, QuasiQuotes #-}
+{-# LANGUAGE GADTs, QuasiQuotes, ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE BangPatterns #-}
@@ -394,8 +394,9 @@ toTree mappings nameMappings original final =
                           })
         | Right doc <- extractDoc expression ->
           Shared.DocTree2
-            Shared.NoOriginalSource
+            (originalSource id True)
             doc
+        -- | otherwise -> error ("Extract doc failed! " ++ show (extractDoc expression))
     expression ->
       Shared.MiscTree2
         Shared.versionRefl
@@ -599,7 +600,7 @@ testExtract = do
 data ExtractError
   = NotArrayOfBlocks
   | NotABlock
-  | NotAInline
+  | NotAInline (Expression Resolved)
   deriving (Show)
 
 extractDoc :: Expression Resolved -> Either ExtractError Aeson.Value
@@ -624,18 +625,45 @@ extractBlock =
     _ -> Left NotABlock
 
 extractInline :: Expression Resolved -> Either ExtractError Aeson.Value
-extractInline =
-  \case
-    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichText}
-                          , argument = LiteralExpression (TextLiteral LiteralText {text})
-                          } ->
-      pure (Aeson.object ["type" .= "text", "text" .= text])
-    ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichCell}
-                          , argument = (CellRefExpression (CellRef {address = RefUuid (Uuid uuid)}))
-                          } ->
-      pure
-        (Aeson.object
-           [ "type" .= "cell"
-           , "attrs" .= Aeson.object [("cell_uuid", Aeson.String uuid)]
-           ])
-    _ -> Left NotAInline
+extractInline = go mempty
+  where
+    go (attrs :: Map Text Aeson.Value) =
+      \case
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichText}
+                              , argument = LiteralExpression (TextLiteral LiteralText {text})
+                              } ->
+          pure
+            (Aeson.object
+               ["type" .= "text", "text" .= text, "marks" .= M.elems attrs])
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichCell}
+                              , argument = (CellRefExpression (CellRef {address = RefUuid (Uuid uuid)}))
+                              } ->
+          pure
+            (Aeson.object
+               [ "type" .= "dino"
+               , "attrs" .=
+                 Aeson.object
+                   [ ("cell_uuid", Aeson.String uuid)
+                   , ("type", Aeson.String "stegosaurus")
+                   ]
+               ])
+
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichBold}
+                              , argument
+                              } ->
+          go
+            (M.insert
+               "strong"
+               (Aeson.object ["type" .= ("strong" :: Text)])
+               attrs)
+            argument
+        ApplyExpression Apply { function = GlobalExpression Global {name = FunctionGlobal RichItalic}
+                              , argument
+                              } ->
+          go
+            (M.insert
+               "italic"
+               (Aeson.object ["type" .= ("em" :: Text)])
+               attrs)
+            argument
+        e -> Left (NotAInline e)

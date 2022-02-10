@@ -368,6 +368,7 @@
 
   .ellipsis-button {
     position: absolute;
+    z-index: 1; /* Added so that it overlaps the absolutely positioned menu bar of ProseMirror */
     background: #9fb6c8;
     top: -0.5em;
     left: -0.5em;
