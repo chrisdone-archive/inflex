@@ -2,9 +2,11 @@
 
 Tokens = Token*
 
-Token = Plain / String / Uuid / Prim / PlainAt
+Token = Plain / Cell / String / Uuid / Prim / PlainAt
 
 Uuid = "@uuid:" uuid:UuidGroups { return { text: uuid.join(""), location: location(), tag: "uuid" } }
+
+Cell = "@cell:uuid:" uuid:UuidGroups { return { text: uuid.join(""), location: location(), tag: "uuid" } }
 
 Prim = "@prim:" prim:([a-z0-9_]+) { return { text: prim.join(""), location: location(), tag: "prim" } }
 
