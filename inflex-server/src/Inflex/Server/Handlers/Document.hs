@@ -145,6 +145,12 @@ prims =
   , object ["name" .= "array_any", "display" .= "any"]
   , object ["name" .= "array_all", "display" .= "all"]
   , object ["name" .= "from_ok", "display" .= "from_ok"]
+  , object ["name" .= "rich_cell", "display" .= "cell"]
+  , object ["name" .= "rich_bold", "display" .= "bold"]
+  , object ["name" .= "rich_italic", "display" .= "italic"]
+  , object ["name" .= "rich_paragraph", "display" .= "paragraph"]
+  , object ["name" .= "rich_doc", "display" .= "doc"]
+  , object ["name" .= "rich_text", "display" .= "text"]
   ]
 
 documentScripts :: Lucid App ()
