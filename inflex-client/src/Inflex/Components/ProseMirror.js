@@ -112,7 +112,10 @@ exports.proseMirror = function(the_doc_json){
 
 
           setInterval(function(){
-            console.log('ProseMirror contents: %o', window
+            console.log('ProseMirror contents: %o',
+                        window.view.state.doc.content.toJSON());
+            console.log('ProseMirror contents as Inflex code: %s',
+                        arrayToCode(window.view.state.doc.content.toJSON()));
           },3000);
 
           return {};
@@ -122,6 +125,54 @@ exports.proseMirror = function(the_doc_json){
       };
     };
   };
+
+  function arrayToCode(array){
+    let buffer = [];
+    buffer.push('@prim:rich_doc([');
+    for (var i = 0; i < array.length; i++) {
+      if (i > 0) buffer.push(',');
+      toCode(array[i], buffer);
+    }
+    buffer.push('])');
+    return buffer.join("");
+  }
+
+  function toCode(tree, buffer){
+    if (tree.type == 'paragraph') {
+      buffer.push('@prim:rich_paragraph([');
+      for (var i = 0; i < tree.content.length; i++) {
+        if (i > 0) buffer.push(',');
+        toCode(tree.content[i], buffer);
+      }
+      buffer.push('])');
+    } else if (tree.type == 'text') {
+      if (tree.marks) {
+        for (var i = 0; i < tree.marks.length; i++) {
+          if (tree.marks[i].type == 'strong') {
+            buffer.push('@prim:rich_bold(');
+          } else if (tree.marks[i].type == 'em') {
+            buffer.push('@prim:rich_italic(');
+          }
+        }
+      }
+      buffer.push('@prim:rich_text(');
+      buffer.push('"' + tree.text.replace(/"/, '""') + '"');
+      buffer.push(')');
+      if (tree.marks) {
+        for (var i = 0; i < tree.marks.length; i++) {
+          if (tree.marks[i].type == 'strong' || tree.marks[i].type == 'em') {
+            buffer.push(')');
+          }
+        }
+      }
+    } else if (tree.type == 'dino') {
+      buffer.push('@prim:rich_cell(');
+      buffer.push('@cell:uuid:' + tree.attrs.cell_uuid);
+      buffer.push(')');
+    } else {
+      throw new Exception('tree type unknown: ' + tree.type);
+    }
+  }
 };
 
 exports.newCreator = function(){
