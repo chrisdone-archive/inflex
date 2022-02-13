@@ -517,7 +517,17 @@ renderRichEditor mtype mkPath cells json =
     (H.hoist H.liftAff (Prose.component component))
     { cells: cells, the_json: unViewValue json }
     (case _ of
-        Prose.UpdatePath muuid update -> Just (TriggerUpdatePath muuid update))
+        Prose.UpdatePath muuid update -> Just (TriggerUpdatePath muuid update)
+        Prose.TextOutput code ->
+          pure
+            (TriggerUpdatePath
+               Nothing
+               (Shared.UpdatePath
+                  { path: mkPath Shared.DataHere
+                  , update:
+                      Shared.CodeUpdate
+                        (Shared.Code {text: code})
+                  })))
 
 --------------------------------------------------------------------------------
 -- Variant display

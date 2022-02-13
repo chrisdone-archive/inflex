@@ -3,4 +3,4 @@
 module Log (prettyWrite) where
 import qualified Lexx
 prettyWrite :: Show a => a -> IO ()
-prettyWrite = Lexx.prettyWriteLimited 512
+prettyWrite = Lexx.prettyWrite-- Limited 512

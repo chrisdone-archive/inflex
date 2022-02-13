@@ -47,7 +47,8 @@ type Input = {
 }
 
 data Output
-  = UpdatePath (Maybe UUID) Shared.UpdatePath
+  = TextOutput String
+  | UpdatePath (Maybe UUID) Shared.UpdatePath
 
 data Query a = NoOp
 
@@ -70,6 +71,7 @@ data Command
   | SetInput Input
   | RegisterWidget UUID UUID HTMLElement
   | TriggerUpdatePath (Maybe UUID) Shared.UpdatePath
+  | TriggerTextOutput String
 
 --------------------------------------------------------------------------------
 -- Types
@@ -114,7 +116,6 @@ component editorComponent =
       allCells: input.cells,
       embedCells: mempty,
       the_json: input.the_json
-      -- M.fromFoldable [Tuple (UUID "some-unique-id") (UUID "7190914a-9a54-477b-b5dc-da6b73edb7c9")]
      }
 
 --------------------------------------------------------------------------------
@@ -136,6 +137,8 @@ query =
 eval :: forall i t9. MonadEffect t9 => MonadAff t9 => Command -> H.HalogenM State Command (Slots i) Output t9 Unit
 eval (TriggerUpdatePath muuid event) =
   H.raise (UpdatePath muuid event)
+eval (TriggerTextOutput code) =
+  H.raise (TextOutput code)
 eval (SetInput input) = do
   log "SetInput in ProseMirror..."
   H.modify_ (\(State s) -> State (s {allCells = input.cells, the_json = input.the_json}))
@@ -148,14 +151,18 @@ eval Initializer = do
     Nothing -> pure unit
     Just element0 -> do
       creator <- H.liftEffect newCreator
+      codeEmitter <- H.liftEffect newCodeEmitter
       void
         (H.subscribe
            (H.effectEventSource
               (\emitter -> do
                  setOnCreate creator (\proseUuid cellUuid element -> H.emit emitter (RegisterWidget (UUID proseUuid) (UUID cellUuid) element))
+                 setOnCode codeEmitter (\code -> H.emit emitter (TriggerTextOutput code))
                  pure mempty)))
-      _ <- H.liftEffect (proseMirror the_json element0 creator)
+      _ <- H.liftEffect (proseMirror the_json element0 creator codeEmitter)
       pure unit
+
+
 
 --------------------------------------------------------------------------------
 -- Render
@@ -219,6 +226,7 @@ foreign import proseMirror
   :: Shared.Json
   -> HTMLElement
   -> Creator
+  -> CodeEmitter
   -> Effect ProseMirror
 
 foreign import newCreator :: Effect Creator
@@ -228,6 +236,15 @@ foreign import setOnCreate
   -> (String -> String -> HTMLElement -> Effect Unit)
   -> Effect Unit
 
+foreign import newCodeEmitter :: Effect CodeEmitter
+
+foreign import setOnCode
+  :: CodeEmitter
+  -> (String -> Effect Unit)
+  -> Effect Unit
+
 foreign import data ProseMirror :: Type
 
 foreign import data Creator :: Type
+
+foreign import data CodeEmitter :: Type
