@@ -35,7 +35,7 @@ import Halogen.Query.EventSource (effectEventSource, emit) as H
 import Inflex.Components.Cell.Editor.Types as EditorTypes
 import Inflex.Frisson as F
 import Inflex.Types (OutputCell(..))
-import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity, (==), (&&))
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity, (==), (&&), ($), map)
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -146,12 +146,13 @@ eval (SetInput input) = do
   State {allCells, proseMirror} <- H.get
   H.modify_ (\(State s) -> State (s {allCells = input . cells}))
   case proseMirror of
-    Just pm -> H.liftEffect (setProseMirrorInput (input . the_json) pm)
+    Just pm -> H.liftEffect $ do
+      setProseMirrorInput (input . the_json) pm
     Nothing -> pure unit
 eval (RegisterWidget proseUuid cellUuid element) =
    H.modify_ (\(State s) -> State (s {embedCells = M.insert proseUuid (Tuple cellUuid element) (s.embedCells)}))
 eval Initializer = do
-  State {the_json} <- H.get
+  State {the_json, allCells} <- H.get
   melement <- H.getHTMLElementRef refLabel
   case melement of
     Nothing -> pure unit
@@ -167,8 +168,6 @@ eval Initializer = do
                  pure mempty)))
       pm <- H.liftEffect (proseMirror the_json element0 creator codeEmitter)
       H.modify_ (\(State s) -> State s {proseMirror = pure pm})
-
-
 
 --------------------------------------------------------------------------------
 -- Render
@@ -234,6 +233,11 @@ foreign import proseMirror
   -> Creator
   -> CodeEmitter
   -> Effect ProseMirror
+
+foreign import insertProseMirrorCell
+  :: String
+  -> ProseMirror
+  -> Effect Unit
 
 foreign import setProseMirrorInput
   :: Shared.Json

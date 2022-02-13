@@ -48,10 +48,6 @@ exports.proseMirror = function(the_doc_json){
 
             // }
 
-            var ourMenu = document.createElement('button');
-            ourMenu.innerText = 'Insert cell';
-            parentElement.appendChild(ourMenu);
-
             // command{
             var dinoType = dinoSchema.nodes.dino;
 
@@ -123,6 +119,10 @@ exports.proseMirror = function(the_doc_json){
             });
 
             return {
+              insertCell: function(uuid){
+                console.log('Inserting cell %o', uuid);
+                insertDino('stegosaurus', uuid);
+              },
               setInput: function(json){
                 // console.log('ProseMirror.js: setInput(%o)', json);
                 let code = arrayToCode(json.content);
@@ -227,6 +227,14 @@ exports.setProseMirrorInput = function(json){
   return function(thing){
     return function(){
       thing.setInput(json);
+    }
+  }
+}
+
+exports.insertProseMirrorCell = function(uuid){
+  return function(thing){
+    return function(){
+      thing.insertCell(uuid);
     }
   }
 }
