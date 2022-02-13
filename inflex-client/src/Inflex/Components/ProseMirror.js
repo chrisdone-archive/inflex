@@ -3,7 +3,7 @@ exports.proseMirror = function(the_doc_json){
     return function(creator){
       return function(codeEmitter){
         return function(){
-          console.log('proseMirror: %o', the_doc_json);
+          // console.log('proseMirror: %o', the_doc_json);
           return (function (prosemirrorModel, prosemirrorSchemaBasic, prosemirrorMenu, prosemirrorExampleSetup, prosemirrorState, prosemirrorView) {
             'use strict';
 
@@ -102,7 +102,7 @@ exports.proseMirror = function(the_doc_json){
                 previousCode = code;
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(function(){
-                  console.log("ProseMirror.js: Idle timer triggered. Emitting code.", code);
+                  // console.log("ProseMirror.js: Idle timer triggered. Emitting code.", code);
                   codeEmitter.onCode(code)();
                 }, 1000);
               },
