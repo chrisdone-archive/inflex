@@ -126,6 +126,11 @@ exports.proseMirror = function(the_doc_json){
             return {
               setInput: function(json){
                 // console.log('ProseMirror.js: setInput(%o)', json);
+                let code = arrayToCode(json.content);
+                if (code == previousCode) {
+                  // console.log('ProseMirror.js: ignoring, no change.');
+                  return;
+                }
                 let startDoc = dinoSchema.nodeFromJSON(json);
                 let newState = prosemirrorState.EditorState.create({
                   doc: startDoc,
