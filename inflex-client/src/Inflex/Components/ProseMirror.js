@@ -84,23 +84,25 @@ exports.proseMirror = function(the_doc_json){
             });
             let idleTimer = null;
             let previousCode = arrayToCode(startDoc.content.toJSON());
+            function dispatch(transaction) {
+              // Apply the update to the editor
+              let newState = view.state.apply(transaction);
+              view.updateState(newState);
+
+              // Set an idle timer to emit the code
+              let code = arrayToCode(transaction.doc.content.toJSON());
+              if (code == previousCode) return;
+              previousCode = code;
+              clearTimeout(idleTimer);
+              idleTimer = setTimeout(function(){
+                // console.log("ProseMirror.js: Idle timer triggered. Emitting code.", code);
+                codeEmitter.onCode(code)();
+              }, 1000);
+            }
+
             let view = new prosemirrorView.EditorView(parentElement, {
               state: state,
-              dispatchTransaction: function(transaction) {
-                // Apply the update to the editor
-                let newState = view.state.apply(transaction);
-                view.updateState(newState);
-
-                // Set an idle timer to emit the code
-                let code = arrayToCode(transaction.doc.content.toJSON());
-                if (code == previousCode) return;
-                previousCode = code;
-                clearTimeout(idleTimer);
-                idleTimer = setTimeout(function(){
-                  // console.log("ProseMirror.js: Idle timer triggered. Emitting code.", code);
-                  codeEmitter.onCode(code)();
-                }, 1000);
-              },
+              dispatchTransaction: dispatch,
               nodeViews: {
                 dino: function(node){
                   var n = document.createElement('span');
@@ -120,8 +122,8 @@ exports.proseMirror = function(the_doc_json){
 
             return {
               insertCell: function(uuid){
-                console.log('Inserting cell %o', uuid);
-                insertDino('stegosaurus', uuid);
+                // console.log('Inserting cell %o', uuid);
+                insertDino('stegosaurus', uuid)(view.state, dispatch);
               },
               setInput: function(json){
                 // console.log('ProseMirror.js: setInput(%o)', json);

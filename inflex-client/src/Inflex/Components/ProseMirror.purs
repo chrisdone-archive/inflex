@@ -6,8 +6,6 @@ module Inflex.Components.ProseMirror
   ) where
 
 import Control.Alternative ((<|>))
-import Inflex.Schema as Shared
-import Timed (timed)
 import Data.Array (concatMap)
 import Data.Either
 import Data.Foldable
@@ -29,13 +27,16 @@ import Foreign.Object (Object)
 import Halogen (Component, HalogenM, RefLabel(..), defaultEval, get, getHTMLElementRef, liftEffect, mkComponent, mkEval, put, raise, subscribe) as H
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Portal as Portal
 import Halogen.Query.EventSource (effectEventSource, emit) as H
 import Inflex.Components.Cell.Editor.Types as EditorTypes
 import Inflex.Frisson as F
+import Inflex.Schema as Shared
 import Inflex.Types (OutputCell(..))
-import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity, (==), (&&), ($), map)
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity, (==), (&&), ($), map, (<>))
+import Timed (timed)
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -73,6 +74,7 @@ data Command
   | RegisterWidget UUID UUID HTMLElement
   | TriggerUpdatePath (Maybe UUID) Shared.UpdatePath
   | TriggerTextOutput String
+  | InsertCell UUID
 
 --------------------------------------------------------------------------------
 -- Types
@@ -141,6 +143,13 @@ eval (TriggerUpdatePath muuid event) =
   H.raise (UpdatePath muuid event)
 eval (TriggerTextOutput code) =
   H.raise (TextOutput code)
+eval (InsertCell uuid) = do
+  log "InsertCell in ProseMirror..."
+  State {proseMirror} <- H.get
+  case proseMirror of
+    Just pm -> H.liftEffect $ do
+      insertProseMirrorCell (uuidToString uuid) pm
+    Nothing -> pure unit
 eval (SetInput input) = do
   log "SetInput in ProseMirror..."
   State {allCells, proseMirror} <- H.get
@@ -173,56 +182,66 @@ eval Initializer = do
 -- Render
 
 render editorComponent (State{embedCells, allCells}) =
-  HH.div
-    [HP.ref refLabel
-    ]
-    (concatMap (\(Tuple proseUuid (Tuple cellUuid element)) ->
-           case M.lookup cellUuid allCells of
-             Nothing -> []
-             Just (OutputCell cell) ->
-               [Portal.portalAff
-                EditorTypes.NewInput
-                (SProxy :: SProxy "editor")
-                proseUuid
-                editorComponent
-                (EditorTypes.EditorAndCode
-                   { editor:
+  HH.div [] [
+    HH.div [] ([
+              HH.text "Insert: "
+              ] <>
+              map (\(Tuple _ (OutputCell {name, uuid})) ->
+                    HH.button
+                      [HE.onClick (\e -> Just (InsertCell uuid))]
+                      [HH.text name])
+              (M.toUnfoldable allCells)),
+    HH.div
+        [HP.ref refLabel
+        ]
+        (concatMap (\(Tuple proseUuid (Tuple cellUuid element)) ->
+             case M.lookup cellUuid allCells of
+               Nothing -> []
+               Just (OutputCell cell) ->
+                 [Portal.portalAff
+                  EditorTypes.NewInput
+                  (SProxy :: SProxy "editor")
+                  proseUuid
+                  editorComponent
+                  (EditorTypes.EditorAndCode
+                     { editor:
+                       -- TODO: Refactor, the code below is the same as in Cell.purs.
+                       F.caseResult
+                          { "ResultError": Left
+                          , "ResultOk": \resultTree -> Right (F.resultTreeTree resultTree)
+                          }
+                          (cell.result)
+                     , code: cell.code
+                     , cells: allCells
+                     , path: identity
                      -- TODO: Refactor, the code below is the same as in Cell.purs.
-                     F.caseResult
-                        { "ResultError": Left
-                        , "ResultOk": \resultTree -> Right (F.resultTreeTree resultTree)
-                        }
-                        (cell.result)
-                   , code: cell.code
-                   , cells: allCells
-                   , path: identity
-                   -- TODO: Refactor, the code below is the same as in Cell.purs.
-                   , type': F.caseResult
-                       { "ResultError": \_ -> Nothing
-                       , "ResultOk": \resultTree -> Just (F.resultTreeTyp resultTree)
-                       }
-                       (cell.result)
-                   })
-                (Just element)
-                (\output ->
-                   case output of
-                     EditorTypes.UpdatePath muuid update ->
-                       Just (TriggerUpdatePath (muuid <|> Just cellUuid) update)
-                     EditorTypes.NewCode text ->
-                       Just
-                         (TriggerUpdatePath
-                            (Just cellUuid)
-                            (Shared.UpdatePath
-                               { path: Shared.DataHere
-                               , update:
-                                   Shared.CodeUpdate (Shared.Code {text})
-                               }))
-                )
+                     , type': F.caseResult
+                         { "ResultError": \_ -> Nothing
+                         , "ResultOk": \resultTree -> Just (F.resultTreeTyp resultTree)
+                         }
+                         (cell.result)
+                     })
+                  (Just element)
+                  (\output ->
+                     case output of
+                       EditorTypes.UpdatePath muuid update ->
+                         Just (TriggerUpdatePath (muuid <|> Just cellUuid) update)
+                       EditorTypes.NewCode text ->
+                         Just
+                           (TriggerUpdatePath
+                              (Just cellUuid)
+                              (Shared.UpdatePath
+                                 { path: Shared.DataHere
+                                 , update:
+                                     Shared.CodeUpdate (Shared.Code {text})
+                                 }))
+                  )
 
 
-                ]
-         )
-         (M.toUnfoldable embedCells))
+                  ]
+           )
+           (M.toUnfoldable embedCells))
+    ]
 
 --------------------------------------------------------------------------------
 -- Foreign
