@@ -48,10 +48,14 @@ exports.proseMirror = function(the_doc_json){
 
             // }
 
+            var ourMenu = document.createElement('button');
+            ourMenu.innerText = 'Insert cell';
+            parentElement.appendChild(ourMenu);
+
             // command{
             var dinoType = dinoSchema.nodes.dino;
 
-            function insertDino(type) {
+            function insertDino(type, uuid) {
               return function(state, dispatch) {
                 var ref = state.selection;
                 var $from = ref.$from;
@@ -60,7 +64,9 @@ exports.proseMirror = function(the_doc_json){
                 { return false }
                 if (dispatch)
                 {
-                  dispatch(state.tr.replaceSelectionWith(dinoType.create({type: type}))); }
+                  dispatch(state.tr.replaceSelectionWith(dinoType.create({
+                    type: type, cell_uuid: uuid
+                  }))); }
                 return true
               }
             }
@@ -73,13 +79,6 @@ exports.proseMirror = function(the_doc_json){
 
             // Ask example-setup to build its basic menu
             var menu = prosemirrorExampleSetup.buildMenuItems(dinoSchema);
-            // Add a dino-inserting item for each type of dino
-            dinos.forEach(function (name) { return menu.insertMenu.content.push(new prosemirrorMenu.MenuItem({
-              title: "Insert " + name,
-              label: name.charAt(0).toUpperCase() + name.slice(1),
-              enable: function enable(state) { return insertDino(name)(state) },
-              run: insertDino(name)
-            })); });
 
             let startDoc = dinoSchema.nodeFromJSON(the_doc_json);
             let state = prosemirrorState.EditorState.create({
