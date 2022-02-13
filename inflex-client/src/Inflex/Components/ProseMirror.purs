@@ -35,7 +35,7 @@ import Halogen.Query.EventSource (effectEventSource, emit) as H
 import Inflex.Components.Cell.Editor.Types as EditorTypes
 import Inflex.Frisson as F
 import Inflex.Types (OutputCell(..))
-import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity)
+import Prelude (class Show, Unit, bind, const, discard, mempty, pure, unit, void, (/=), (<<<), identity, (==), (&&))
 import Web.HTML.HTMLElement (HTMLElement)
 
 --------------------------------------------------------------------------------
@@ -64,6 +64,7 @@ data State = State
   -- ProseMirror.js, the latter is an Inflex cell UUID.
   , embedCells :: Map UUID (Tuple UUID HTMLElement)
   , the_json :: Shared.Json
+  , proseMirror :: Maybe ProseMirror
   }
 
 data Command
@@ -115,7 +116,8 @@ component editorComponent =
     initialState input = State {
       allCells: input.cells,
       embedCells: mempty,
-      the_json: input.the_json
+      the_json: input.the_json,
+      proseMirror: Nothing
      }
 
 --------------------------------------------------------------------------------
@@ -141,7 +143,11 @@ eval (TriggerTextOutput code) =
   H.raise (TextOutput code)
 eval (SetInput input) = do
   log "SetInput in ProseMirror..."
-  H.modify_ (\(State s) -> State (s {allCells = input.cells, the_json = input.the_json}))
+  State {allCells, proseMirror} <- H.get
+  H.modify_ (\(State s) -> State (s {allCells = input . cells}))
+  case proseMirror of
+    Just pm -> H.liftEffect (setProseMirrorInput (input . the_json) pm)
+    Nothing -> pure unit
 eval (RegisterWidget proseUuid cellUuid element) =
    H.modify_ (\(State s) -> State (s {embedCells = M.insert proseUuid (Tuple cellUuid element) (s.embedCells)}))
 eval Initializer = do
@@ -159,8 +165,8 @@ eval Initializer = do
                  setOnCreate creator (\proseUuid cellUuid element -> H.emit emitter (RegisterWidget (UUID proseUuid) (UUID cellUuid) element))
                  setOnCode codeEmitter (\code -> H.emit emitter (TriggerTextOutput code))
                  pure mempty)))
-      _ <- H.liftEffect (proseMirror the_json element0 creator codeEmitter)
-      pure unit
+      pm <- H.liftEffect (proseMirror the_json element0 creator codeEmitter)
+      H.modify_ (\(State s) -> State s {proseMirror = pure pm})
 
 
 
@@ -228,6 +234,11 @@ foreign import proseMirror
   -> Creator
   -> CodeEmitter
   -> Effect ProseMirror
+
+foreign import setProseMirrorInput
+  :: Shared.Json
+  -> ProseMirror
+  -> Effect Unit
 
 foreign import newCreator :: Effect Creator
 

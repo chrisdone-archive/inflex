@@ -123,7 +123,18 @@ exports.proseMirror = function(the_doc_json){
               }
             });
 
-            return view;
+            return {
+              setInput: function(json){
+                // console.log('ProseMirror.js: setInput(%o)', json);
+                let startDoc = dinoSchema.nodeFromJSON(json);
+                let newState = prosemirrorState.EditorState.create({
+                  doc: startDoc,
+                  // Pass exampleSetup our schema and the menu we created
+                  plugins: prosemirrorExampleSetup.exampleSetup({schema: dinoSchema, menuContent: menu.fullMenu})
+                });
+                view.updateState(newState);
+              }
+            };
             // }
 
           }(PM.model, PM.schema_basic, PM.menu, PM.example_setup, PM.state, PM.view));
@@ -204,6 +215,14 @@ exports.setOnCode = function(codeEmitter){
   return function(f){
     return function(){
       codeEmitter.onCode = f;
+    }
+  }
+}
+
+exports.setProseMirrorInput = function(json){
+  return function(thing){
+    return function(){
+      thing.setInput(json);
     }
   }
 }

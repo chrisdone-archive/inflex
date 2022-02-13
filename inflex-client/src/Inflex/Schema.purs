@@ -391,6 +391,7 @@ data Field1 = Field1
 -- Derivings
 
 instance showValue :: Show Value where show = showValueImpl
+instance eqValue :: Eq Value where eq x y = showValueImpl x == showValueImpl y
 instance decodeValue :: Decode Value where decode x = pure (fromForeign x)
 instance encodeValue :: Encode Value where encode = toForeign
 
