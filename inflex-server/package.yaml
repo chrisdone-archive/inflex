@@ -104,6 +104,9 @@ dependencies:
 - insert-ordered-containers
 
 flags:
+ postgresql:
+   manual: True
+   default: True
  release:
    manual: True
    default: False
