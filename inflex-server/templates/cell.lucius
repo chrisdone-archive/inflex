@@ -640,3 +640,37 @@ button.menu-button {
   cursor: default;
   background: #e9eef2 !important;
 }
+
+/* Hack to hide menu items, until I figure out how to customize them in ProseMirror */
+.ProseMirror-menubar :nth-child(3), /* code */
+.ProseMirror-menubar :nth-child(4), /* link */
+.ProseMirror-menubar :nth-child(6),  /* insert */
+.ProseMirror-menubar :nth-child(7),  /* type */
+.ProseMirror-menubar :nth-child(12),  /* quote */
+.ProseMirror-menubar :nth-child(15)  /* select parent node */
+{
+  display: none
+}
+
+.ProseMirror-menuseparator {
+  display: none
+}
+
+/* insert rich cell */
+.insert-rich {
+  font-family: sans-serif;
+  padding: 5px;
+  background: #fff;
+}
+.insert-cell-rich {
+  margin-right: 0.5em;
+  background: #e9eef2;
+  border: 0;
+  border-radius: 5px;
+  font-family: sans-serif;
+  cursor: pointer;
+}
+.insert-cell-rich:hover {
+  background: #15263b;
+  color: #fff;
+}

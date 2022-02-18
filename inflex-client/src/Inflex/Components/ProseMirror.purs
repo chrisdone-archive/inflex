@@ -183,12 +183,13 @@ eval Initializer = do
 
 render editorComponent (State{embedCells, allCells}) =
   HH.div [] [
-    HH.div [] ([
-              HH.text "Insert: "
+    HH.div [HP.class_ (HH.ClassName "insert-rich")] ([
+              HH.text "Insert cell: "
               ] <>
               map (\(Tuple _ (OutputCell {name, uuid})) ->
                     HH.button
-                      [HE.onClick (\e -> Just (InsertCell uuid))]
+                      [HP.class_ (HH.ClassName "insert-cell-rich")
+                      ,HE.onClick (\e -> Just (InsertCell uuid))]
                       [HH.text name])
               (M.toUnfoldable allCells)),
     HH.div
