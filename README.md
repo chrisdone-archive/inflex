@@ -1,3 +1,12 @@
+# DigitalOcean
+
+Run the binary with the right environment, listens on port 3031:
+
+    docker run -d -p 3031:3031 -ePORT=3031 -eCONFIG=/config/config.yml -v`pwd`/opt:/opt -v`pwd`/config:/config --name inflex-server -w/opt inflex-server ./inflex-server
+
+# Old style
+
+
 ```
 docker image build . -f docker/sky-above/inflex/src.Dockerfile -t registry.gitlab.com/sky-above/inflex/src:2020-09-13
 docker image build docker -f docker/sky-above/inflex/base.Dockerfile -t registry.gitlab.com/sky-above/inflex/base:2020-09-13
