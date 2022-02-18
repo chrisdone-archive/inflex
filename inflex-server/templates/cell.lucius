@@ -674,3 +674,8 @@ button.menu-button {
   background: #15263b;
   color: #fff;
 }
+
+/* another hack to hide ellipsis buttons when a cell's in a content editable */
+span[contenteditable="false"] > .editor-boundary-wrap > .ellipsis-button {
+  display: none;
+}
