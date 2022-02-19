@@ -2,7 +2,8 @@
 
 Run the binary with the right environment, listens on port 3031:
 
-    docker run -d -p 3031:3031 -ePORT=3031 -eCONFIG=/config/config.yml -v`pwd`/opt:/opt -v`pwd`/config:/config --name inflex-server -w/opt inflex-server ./inflex-server
+docker run --privileged --restart on-failure:10 -d -p 3031:3031 -ePORT=3031 -eCONFIG=/config/config.yml -v`pwd`/opt:/opt -v`pwd`/config:/config --name inflex-server -w/opt inflex-server ./inflex-server
+
 
 # Old style
 
