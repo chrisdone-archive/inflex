@@ -1,3 +1,8 @@
+# System setup
+
+TODO: Nix install things?
+
+
 # DigitalOcean
 
 Run the binary with the right environment, listens on port 3031:
