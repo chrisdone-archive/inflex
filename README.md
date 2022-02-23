@@ -1,7 +1,14 @@
 # System setup
 
-TODO: Nix install things?
+    root@Ubuntu-2004-focal-64-minimal ~ # echo 'kernel.unprivileged_userns_clone=1' >/etc/sysctl.d/nspawn.conf
+    root@Ubuntu-2004-focal-64-minimal ~ # systemctl restart systemd-sysctl.service
+    root@Ubuntu-2004-focal-64-minimal ~ # apt-get install systemd-container
 
+then:
+
+    disable meltdown/spectre
+    https://wiki.ubuntu.com/SecurityTeam/KnowledgeBase/SpectreAndMeltdown/MitigationControls
+    sudo update-grub
 
 # DigitalOcean
 
