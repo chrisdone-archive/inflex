@@ -252,9 +252,7 @@ evalDocument1 cache env =
               resultExpression <-
                 fmap
                   (first LoadStepError)
-                  (RIO.runRIO
-                     Eval.Eval {globals = env, glogfunc = mempty}
-                     (Eval.evalDefaulted Cell {..}))?
+                  (Eval.evalDefaulted Cell {..})?
               pure (Right EvaledExpression {..})
             Just evaled -> pure (Right evaled)))
 
