@@ -239,10 +239,9 @@ evalDocument env =
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::
      HashMap SHA512 EvaledExpression
-  -> Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell1))
   -> RIO Eval.Eval (Toposorted (Named (Either LoadError EvaledExpression)))
-evalDocument1 cache env =
+evalDocument1 cache =
   RIO.pooledMapConcurrently
     (traverse
        (\result -> do
