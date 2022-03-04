@@ -29,6 +29,8 @@ import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List as List
 import           Data.List.Extra
+import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -1320,3 +1322,22 @@ setFlipped l v s = set l s v
 
 ignore :: RIO Eval a -> RIO Eval a
 ignore = RIO.local (\Eval {..} -> Eval {glogfunc = mempty, ..})
+
+--------------------------------------------------------------------------------
+-- Extracting applications of instance dictionaries
+
+-- | Given a generic global like
+extractDictionaryApplication ::
+     Apply Resolved -> Maybe (GlobalRef Resolved, NonEmpty InstanceName)
+extractDictionaryApplication expression = do
+  (global, instances) <- delve (ApplyExpression expression)
+  instancesNE <- NE.nonEmpty instances
+  pure (global, instancesNE)
+  where
+    delve :: Expression Resolved -> Maybe (GlobalRef Resolved, [InstanceName])
+    delve (ApplyExpression Apply {function, argument})
+      | GlobalExpression Global {name = InstanceGlobal instanceName} <- argument
+      , Just (global, instanceNames) <- delve function =
+        Just (global, instanceName : instanceNames)
+    delve (GlobalExpression Global{name}) = Just (name, [])
+    delve _ = Nothing
