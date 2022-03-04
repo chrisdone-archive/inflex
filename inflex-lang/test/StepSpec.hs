@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables, TemplateHaskell, DuplicateRecordFields #-}
@@ -19,21 +19,24 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 stepDefaultedTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
-stepDefaultedTextly text' =
+stepDefaultedTextly text' = do
+  genericGlobalCache <- RIO.newIORef mempty
   RIO.runRIO
-    Eval {glogfunc = mempty, globals = mempty}
+    Eval {glogfunc = mempty, globals = mempty, genericGlobalCache}
     (fmap (fmap (printerText emptyPrinterConfig)) (evalTextDefaulted mempty "" text'))
 
 stepTextly :: Text -> IO (Either (DefaultEvalError ()) Text)
-stepTextly text' =
+stepTextly text' = do
+  genericGlobalCache <- RIO.newIORef mempty
   RIO.runRIO
-    Eval {glogfunc = mempty, globals = mempty}
+    Eval {glogfunc = mempty, globals = mempty, genericGlobalCache}
     (fmap (fmap (printerText emptyPrinterConfig)) (evalTextDefaulted mempty "" text'))
 
 stepDefaulted' :: Text -> IO (Either (DefaultEvalError ()) (Expression Resolved))
-stepDefaulted' text' =
+stepDefaulted' text' = do
+  genericGlobalCache <- RIO.newIORef mempty
   RIO.runRIO
-    Eval {glogfunc = mempty, globals = mempty}
+    Eval {glogfunc = mempty, globals = mempty, genericGlobalCache}
     (evalTextDefaulted mempty "" text')
 
 spec :: SpecWith ()

@@ -38,6 +38,7 @@ import           Data.Graph
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.List.Extra
+import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -232,9 +233,7 @@ evalDocument env =
           cell <- pure result?
           fmap
             (first LoadStepError)
-            (RIO.runRIO
-               Eval.Eval {globals = env, glogfunc = mempty}
-               (Eval.evalDefaulted cell))))
+            (Eval.evalDefaulted cell)))
 
 -- | Evaluate the cells in a document. The expression will be changed.
 evalDocument1 ::

@@ -45,7 +45,7 @@ import           Inflex.Server.Forge
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Blog
 import           Inflex.Server.Types.Sha256
-import           Inflex.Types (SourceHash)
+import           Inflex.Types (SourceHash, InstanceName, Resolved, Expression, Hash)
 import           Inflex.Types.SHA512
 import qualified Network.Wai.Parse
 import           Optics (toLensVL, makePrisms, makeLensesFor, preview)
@@ -68,6 +68,7 @@ data App = App
   , appLogFunc :: GLogFunc AppMsg
   , appLoadCache :: IORef (HashMap SHA512 LoadedExpression)
   , appEvalCache :: IORef (HashMap SHA512 EvaledExpression)
+  , appGenericGlobalCache :: IORef (Map (Hash, NonEmpty InstanceName) (Expression Resolved))
   , appStatic :: EmbeddedStatic
   }
 

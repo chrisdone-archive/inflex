@@ -89,6 +89,7 @@ main = do
                  logFunc <- liftIO (makeAppLogFunc registry)
                  loadedRef <- newIORef mempty
                  evaledRef <- newIORef mempty
+                 genericCacheRef <- newIORef mempty
                  app <-
                    liftIO
                      (toWaiAppPlain
@@ -99,6 +100,7 @@ main = do
                           , appLoadCache = loadedRef
                           , appEvalCache = evaledRef
                           , appStatic = app_static
+                          , appGenericGlobalCache = genericCacheRef
                           })
                  let runMyWarp thisPort =
                        Warp.runSettings

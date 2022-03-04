@@ -61,13 +61,15 @@ import           RIO (RIO, glog)
 evalTextRepl :: Bool -> Text -> IO ()
 evalTextRepl loud text = do
   lastRef <- RIO.newSomeRef ""
+  genericGlobalCache <- RIO.newIORef mempty
   output <-
     RIO.runRIO
       Eval
         { glogfunc =
             if loud
               then RIO.mkGLogFunc
-                     (\stack msg ->
+                     (\stack msg -> do
+                        -- print msg
                         case msg of
                           EvalStep e -> do
                             prev <- RIO.readSomeRef lastRef
@@ -79,11 +81,12 @@ evalTextRepl loud text = do
                                           (printer e)))
                             unless
                               (prev == cur)
-                              (do L8.putStrLn cur
+                              (do -- L8.putStrLn cur
                                   RIO.writeSomeRef lastRef cur)
                           _ -> print stack >> prettyWrite msg)
               else mempty
         , globals = mempty
+        , genericGlobalCache
         }
       (evalTextDefaulted mempty "" text)
   case output of
@@ -143,7 +146,6 @@ evalExpression build expression = do
     -- Special forms:
     CaseExpression case' -> evalCase build case'
     PropExpression prop -> evalProp build prop
-  glog (EvalStep (build result))
   pure result
 
 --------------------------------------------------------------------------------
@@ -287,7 +289,33 @@ evalApply ::
      (Expression Resolved -> Expression Resolved)
   -> Apply Resolved
   -> RIO Eval (Expression Resolved)
-evalApply build apply@Apply {function, argument, ..} = do
+evalApply build apply@Apply {style = ImplicitApply}
+  | Just (HashGlobal hash, instanceNames) <- extractDictionaryApplication apply = do
+    glog (EncounteredGenericGlobal hash instanceNames)
+    Eval{genericGlobalCache} <- RIO.ask
+    theMap <- RIO.readIORef genericGlobalCache
+    case M.lookup (hash, instanceNames) theMap of
+      Just expression -> do
+        glog (FoundGenericGlobalInCache hash instanceNames)
+        pure expression
+      Nothing -> do
+        expression <- evalApplyVanilla build apply
+        glog (AddingGenericGlobalToCache hash instanceNames)
+        RIO.modifyIORef'
+          genericGlobalCache
+          (M.insert (hash, instanceNames) expression)
+        pure expression
+    -- TODO:
+    -- And then also in the Document.hs, after defaulting and
+    -- evaluating a cell, you can extract the dictionaries applied
+    -- there, too, and then write it to the genericGlobalCache.
+evalApply build apply = evalApplyVanilla build apply
+
+evalApplyVanilla ::
+     (Expression Resolved -> Expression Resolved)
+  -> Apply Resolved
+  -> RIO Eval (Expression Resolved)
+evalApplyVanilla build apply@Apply {function, argument, ..} = do
   function' <-
     evalExpression
       (build . ApplyExpression . setFlipped applyFunctionL apply)

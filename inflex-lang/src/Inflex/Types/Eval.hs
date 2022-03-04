@@ -7,13 +7,16 @@
 
 module Inflex.Types.Eval where
 
-import Data.Map.Strict (Map)
-import GHC.Natural
-import Inflex.Defaulter
-import Inflex.Optics
-import Inflex.Types
-import Optics
-import RIO (GLogFunc, HasGLogFunc(..))
+import           Data.IORef
+import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
+import           Data.Map.Strict (Map)
+import           GHC.Natural
+import           Inflex.Defaulter
+import           Inflex.Optics
+import           Inflex.Types
+import           Optics
+import           RIO (GLogFunc, HasGLogFunc(..))
 
 data DefaultEvalError e
   = DefaulterErrored (ResolverDefaulterError e)
@@ -22,6 +25,7 @@ data DefaultEvalError e
 data Eval = Eval
   { glogfunc :: GLogFunc EvalMsg
   , globals :: Map Hash (Expression Resolved)
+  , genericGlobalCache :: IORef (Map (Hash, NonEmpty InstanceName) (Expression Resolved))
   }
 
 data EvalMsg
@@ -29,6 +33,9 @@ data EvalMsg
   | GlobalMissing (Global Resolved)
   | CannotShrinkADecimalFromTo Natural Natural
   | MismatchingPrecisionsInFromDecimal Natural Natural
+  | FoundGenericGlobalInCache Hash (NonEmpty InstanceName)
+  | AddingGenericGlobalToCache Hash (NonEmpty InstanceName)
+  | EncounteredGenericGlobal Hash (NonEmpty InstanceName)
   deriving (Show)
 
 $(makeLensesWith (inflexRules ['glogfunc]) ''Eval)

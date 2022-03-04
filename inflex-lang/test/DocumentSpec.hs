@@ -7,6 +7,7 @@
 
 module DocumentSpec where
 
+import qualified Inflex.Types.Eval as Eval
 import           Data.Decimal
 import           Data.List
 import           Data.List.NonEmpty (NonEmpty(..))
@@ -42,10 +43,42 @@ evalDocument' ::
   -> m (Toposorted (Named (Either LoadError Cell)))
   -> m [Named (Either LoadError (Expression Resolved))]
 evalDocument' env m = do
+  genericGlobalCache <- RIO.newIORef mempty
   doc <- m
   fmap
     (sortBy (comparing order) . unToposorted)
-    (RIO.runRIO Eval {glogfunc=mempty,globals=env} (evalDocument env doc))
+    (RIO.runRIO
+       Eval {glogfunc = mempty, globals = env, genericGlobalCache}
+       (evalDocument env doc))
+
+evalDocumentCountEvalSteps ::
+     RIO.MonadIO m
+  => RIO.Map Hash (Expression Resolved)
+  -> m (Toposorted (Named (Either LoadError Cell)))
+  -> m Int
+evalDocumentCountEvalSteps env m = do
+  genericGlobalCache <- RIO.newIORef mempty
+  stepCount <- RIO.newIORef 0
+  doc <- m
+  _ <- fmap
+    (sortBy (comparing order) . unToposorted)
+    (RIO.runRIO
+       Eval
+         { glogfunc =
+             RIO.mkGLogFunc
+               (\_stack msg -> do
+                  case msg of
+                    Eval.EvalStep {} -> RIO.modifyIORef' stepCount (+ 1)
+                    -- Eval.EncounteredGenericGlobal{} -> putStrLn $ show msg
+                    Eval.FoundGenericGlobalInCache{} -> putStrLn $ show msg
+                    -- Eval.AddingGenericGlobalToCache{} -> putStrLn $ show msg
+                    _ -> pure ()
+               )
+         , globals = env
+         , genericGlobalCache
+         }
+       (evalDocument env doc))
+  RIO.readIORef stepCount
 
 spec :: Spec
 spec = do
@@ -1036,6 +1069,17 @@ success = do
           ])
   describe "Records" records
   describe "CellRefs" cellRefs
+  describe "Step counter" stepCounting
+
+stepCounting :: Spec
+stepCounting =
+  eval_it_with_uuids_steps
+    "Generic arithmetic across a few cells"
+    [ (Just "85cbcc37-0c41-4871-a66a-31390a3ef391", ("x", "23 + 5"))
+    , (Just "95cbcc37-0c41-4871-a66a-31390a3ef391", ("y", "9 + @uuid:85cbcc37-0c41-4871-a66a-31390a3ef391"))
+    , (Just "15cbcc37-0c41-4871-a66a-31390a3ef391", ("z", "6 + @uuid:95cbcc37-0c41-4871-a66a-31390a3ef391 + @uuid:85cbcc37-0c41-4871-a66a-31390a3ef391"))
+    ]
+    78 -- Before genericGlobalCache, this is 112 steps.
 
 cellRefs :: Spec
 cellRefs = do
@@ -2543,6 +2587,14 @@ eval_it_with_uuids desc xs result =
     (maybe nextRandom' pure)
     (pure ())
 
+eval_it_with_uuids_steps ::
+     String
+  -> [(Maybe Text, (Text, Text))]
+  -> Int
+  -> SpecWith ()
+eval_it_with_uuids_steps desc xs result =
+  eval_it_steps desc xs result (maybe nextRandom' pure)
+
 eval_it_pending ::
      String -> [(Text, Text)]
   -> ([Text] -> [Named (Either LoadError (Expression Resolved))])
@@ -2625,3 +2677,41 @@ eval_it_match desc xs should next io =
 
 nextRandom' :: IO Text
 nextRandom' = fmap UUID.toText nextRandom
+
+eval_it_steps ::
+     String
+  -> [(Maybe Text, (Text, Text))]
+  -> Int
+  -> (Maybe Text -> IO Text)
+  -> SpecWith ()
+eval_it_steps desc xs result next =
+  it
+    (desc <> ": " <>
+     intercalate
+       "; "
+       (map (\(_, (name, val)) -> T.unpack name <> " = " <> T.unpack val) xs))
+    (do xs' <-
+          mapM
+            (\(u0, x) -> do
+               u <- next u0
+               pure (u, x))
+            xs
+        shouldReturn
+          (do loaded <-
+                loadDocument'
+                  (zipWith
+                     (\i (uuid, (name, thing)) ->
+                        Named
+                          {position=Nothing,dependencies = mempty,  uuid = Uuid uuid
+                          , name
+                          , thing
+                          , code = thing
+                          , order = i
+                          , sourceHash = HashNotKnownYet
+                          })
+                     [0 ..]
+                     xs')
+              evalDocumentCountEvalSteps
+                (evalEnvironment loaded)
+                (RIO.runRIO DefaulterReader (defaultDocument loaded)))
+          (result))

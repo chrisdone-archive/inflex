@@ -18,6 +18,8 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import           Data.Coerce
 import           Data.Foldable
@@ -51,6 +53,7 @@ import qualified Inflex.Schema as Shared
 import           Inflex.Server.App
 import           Inflex.Type
 import           Inflex.Types
+import qualified Inflex.Types.Eval as Eval
 import           Inflex.Types.Filler
 import           Inflex.Types.Generator
 import           Inflex.Types.SHA512
@@ -110,6 +113,7 @@ loadInputDocument ::
 loadInputDocument (InputDocument {cells}) = do
   logfunc <- RIO.view gLogFuncL
   loadedCacheRef <- fmap appLoadCache getYesod
+  genericGlobalCache <- fmap appGenericGlobalCache getYesod
   loadedCache <- liftIO (readIORef loadedCacheRef)
   evalCacheRef <- fmap appEvalCache getYesod
   evalCache <- liftIO (readIORef evalCacheRef)
@@ -192,7 +196,18 @@ loadInputDocument (InputDocument {cells}) = do
     timed
       TimedStepper
       (RIO.runRIO
-         Eval {glogfunc = mempty, globals = evalEnvironment1 loaded}
+         Eval {glogfunc =
+                          RIO.mkGLogFunc
+               (\_stack msg -> do
+                  case msg of
+                    -- Eval.EvalStep {} -> RIO.modifyIORef' stepCount (+ 1)
+                    -- Eval.EncounteredGenericGlobal{} -> S8.putStrLn $ S8.pack $ show msg
+                    -- Eval.FoundGenericGlobalInCache{} -> S8.putStrLn $ S8.pack $ show msg
+                    -- Eval.AddingGenericGlobalToCache{} -> S8.putStrLn $ S8.pack $ show msg
+                    _ -> pure ()
+               )
+
+                          , globals = evalEnvironment1 loaded, genericGlobalCache}
          (RIO.timeout
             (1000 * milliseconds)
             (evalDocument1' evalCache defaulted)))?
