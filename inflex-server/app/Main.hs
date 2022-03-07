@@ -119,6 +119,7 @@ main = do
                                 RIO.threadDelay (1000 * 1000 * 60 * 5)
                                 writeIORef loadedRef mempty
                                 writeIORef evaledRef mempty
+                                writeIORef genericCacheRef mempty
                                 performMajorGC))
                          (runMyWarp
                             port
