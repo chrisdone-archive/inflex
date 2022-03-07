@@ -16,6 +16,7 @@ module Inflex.Defaulter
   , DefaulterError(..)
   , DefaulterReader(..)
   , ResolverDefaulterError(..)
+  , cellInstances
   ) where
 
 import           Control.Monad
@@ -283,3 +284,10 @@ substituteType substitutions = go
             Just Substitution {after} -> after
             Nothing -> typ
     fieldSub Field {..} = Field {typ = substituteType substitutions typ, ..}
+
+defaultedInstance :: Default Polymorphic -> InstanceName
+defaultedInstance Default{instanceName} = instanceName
+
+cellInstances :: Cell1 -> Set InstanceName
+cellInstances Cell1 {defaultedClassConstraints} =
+  Set.fromList (toList (fmap defaultedInstance defaultedClassConstraints))

@@ -60,6 +60,7 @@ import           Inflex.Renamer
 import           Inflex.Resolver
 import           Inflex.Solver
 import           Inflex.Types
+import           Inflex.Types.Eval
 import           Inflex.Types.Filler
 import           Inflex.Types.SHA512
 import           Optics.Lens
@@ -250,6 +251,13 @@ evalDocument1 cache =
                 fmap
                   (first LoadStepError)
                   (Eval.evalDefaulted Cell {..})?
+              let hash = Hash sourceHash
+              let instanceNames = cellInstances cell
+              glog (AddingGenericGlobalToCache hash instanceNames)
+              Eval {genericGlobalCache} <- RIO.ask
+              RIO.modifyIORef'
+                genericGlobalCache
+                (M.insert (hash, instanceNames) resultExpression)
               pure (Right EvaledExpression {..})
             Just evaled -> pure (Right evaled)))
 
