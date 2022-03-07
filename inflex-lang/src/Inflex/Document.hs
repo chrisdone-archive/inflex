@@ -38,7 +38,6 @@ import           Data.Graph
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.List.Extra
-import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
@@ -226,8 +225,8 @@ evalDocument ::
      Map Hash (Expression Resolved)
   -> Toposorted (Named (Either LoadError Cell))
   -> RIO Eval.Eval (Toposorted (Named (Either LoadError (Expression Resolved))))
-evalDocument env =
-  RIO.pooledMapConcurrently
+evalDocument _env =
+  traverse
     (traverse
        (\result -> do
           cell <- pure result?
@@ -241,7 +240,7 @@ evalDocument1 ::
   -> Toposorted (Named (Either LoadError Cell1))
   -> RIO Eval.Eval (Toposorted (Named (Either LoadError EvaledExpression)))
 evalDocument1 cache =
-  RIO.pooledMapConcurrently
+  traverse
     (traverse
        (\result -> do
           cell@Cell1 {..} <- pure result?
