@@ -33,7 +33,9 @@ data EvalMsg
   | CannotShrinkADecimalFromTo Natural Natural
   | MismatchingPrecisionsInFromDecimal Natural Natural
   | FoundGenericGlobalInCache Hash (Set InstanceName)
+  | FoundMonoGlobalInCache Hash (Set InstanceName)
   | AddingGenericGlobalToCache Hash (Set InstanceName)
+  | AddingGenericGlobalToCacheFromCell1 Hash (Set InstanceName)
   | EncounteredGenericGlobal Hash (Set InstanceName)
   deriving (Show)
 

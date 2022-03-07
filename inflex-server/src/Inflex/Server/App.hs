@@ -68,7 +68,7 @@ data App = App
   , appLogFunc :: GLogFunc AppMsg
   , appLoadCache :: IORef (HashMap SHA512 LoadedExpression)
   , appEvalCache :: IORef (HashMap SHA512 EvaledExpression)
-  , appGenericGlobalCache :: IORef (Map (Hash, NonEmpty InstanceName) (Expression Resolved))
+  , appGenericGlobalCache :: IORef (Map (Hash, Set InstanceName) (Expression Resolved))
   , appStatic :: EmbeddedStatic
   }
 

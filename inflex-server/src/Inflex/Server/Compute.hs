@@ -201,9 +201,10 @@ loadInputDocument (InputDocument {cells}) = do
                (\_stack msg -> do
                   case msg of
                     -- Eval.EvalStep {} -> RIO.modifyIORef' stepCount (+ 1)
-                    -- Eval.EncounteredGenericGlobal{} -> S8.putStrLn $ S8.pack $ show msg
-                    -- Eval.FoundGenericGlobalInCache{} -> S8.putStrLn $ S8.pack $ show msg
-                    -- Eval.AddingGenericGlobalToCache{} -> S8.putStrLn $ S8.pack $ show msg
+                    Eval.EncounteredGenericGlobal{} -> S8.putStrLn $ S8.pack $ show msg
+                    Eval.FoundGenericGlobalInCache{} -> S8.putStrLn $ S8.pack $ show msg
+                    Eval.FoundMonoGlobalInCache{} -> S8.putStrLn $ S8.pack $ show msg
+                    Eval.AddingGenericGlobalToCache{} -> S8.putStrLn $ S8.pack $ show msg
                     _ -> pure ()
                )
 

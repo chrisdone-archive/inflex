@@ -272,14 +272,22 @@ evalGlobal ::
   -> Global Resolved
   -> RIO Eval (Expression Resolved)
 evalGlobal build global@Global {name} = do
-  Eval {globals} <- RIO.ask
   case name of
-    HashGlobal hash ->
-      case M.lookup hash globals of
-        Just expression -> evalExpression build expression
+    HashGlobal hash -> do
+      Eval {globals, genericGlobalCache} <- RIO.ask
+      theMap <- RIO.readIORef genericGlobalCache
+      let instanceNames = mempty
+      case M.lookup (hash, instanceNames) theMap of
+        Just expression -> do
+          glog (FoundMonoGlobalInCache hash instanceNames)
+          pure expression
         Nothing -> do
-          glog (GlobalMissing global)
-          pure (GlobalExpression global)
+          case M.lookup hash globals of
+            Just expression ->
+              evalExpression build expression
+            Nothing -> do
+              glog (GlobalMissing global)
+              pure (GlobalExpression global)
     _ -> pure (GlobalExpression global)
 
 --------------------------------------------------------------------------------
