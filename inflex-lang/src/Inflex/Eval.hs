@@ -34,6 +34,7 @@ import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Maybe
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -290,9 +291,10 @@ evalApply ::
   -> Apply Resolved
   -> RIO Eval (Expression Resolved)
 evalApply build apply@Apply {style = ImplicitApply}
-  | Just (HashGlobal hash, instanceNames) <- extractDictionaryApplication apply = do
+  | Just (HashGlobal hash, (Set.fromList . NE.toList) -> instanceNames) <-
+     extractDictionaryApplication apply = do
     glog (EncounteredGenericGlobal hash instanceNames)
-    Eval{genericGlobalCache} <- RIO.ask
+    Eval {genericGlobalCache} <- RIO.ask
     theMap <- RIO.readIORef genericGlobalCache
     case M.lookup (hash, instanceNames) theMap of
       Just expression -> do
@@ -1354,7 +1356,8 @@ ignore = RIO.local (\Eval {..} -> Eval {glogfunc = mempty, ..})
 --------------------------------------------------------------------------------
 -- Extracting applications of instance dictionaries
 
--- | Given a generic global like
+-- | Given a generic global (i.e. has class constraints), return it
+-- and the instance dictionaries applied to it.
 extractDictionaryApplication ::
      Apply Resolved -> Maybe (GlobalRef Resolved, NonEmpty InstanceName)
 extractDictionaryApplication expression = do

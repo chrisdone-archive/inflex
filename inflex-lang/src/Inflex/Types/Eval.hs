@@ -8,9 +8,9 @@
 module Inflex.Types.Eval where
 
 import           Data.IORef
-import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict (Map)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           GHC.Natural
 import           Inflex.Defaulter
 import           Inflex.Optics
@@ -25,7 +25,7 @@ data DefaultEvalError e
 data Eval = Eval
   { glogfunc :: GLogFunc EvalMsg
   , globals :: Map Hash (Expression Resolved)
-  , genericGlobalCache :: IORef (Map (Hash, NonEmpty InstanceName) (Expression Resolved))
+  , genericGlobalCache :: IORef (Map (Hash, Set InstanceName) (Expression Resolved))
   }
 
 data EvalMsg
@@ -33,9 +33,9 @@ data EvalMsg
   | GlobalMissing (Global Resolved)
   | CannotShrinkADecimalFromTo Natural Natural
   | MismatchingPrecisionsInFromDecimal Natural Natural
-  | FoundGenericGlobalInCache Hash (NonEmpty InstanceName)
-  | AddingGenericGlobalToCache Hash (NonEmpty InstanceName)
-  | EncounteredGenericGlobal Hash (NonEmpty InstanceName)
+  | FoundGenericGlobalInCache Hash (Set InstanceName)
+  | AddingGenericGlobalToCache Hash (Set InstanceName)
+  | EncounteredGenericGlobal Hash (Set InstanceName)
   deriving (Show)
 
 $(makeLensesWith (inflexRules ['glogfunc]) ''Eval)
