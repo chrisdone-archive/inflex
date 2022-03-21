@@ -119,6 +119,7 @@ data Timed
   | TimedGetRevisedDocument
   | TimedSelectDoc
   | TimedSelectRevision
+  | TimedSelectCellDeps
   | TimedSelectCells
   | TimedSetInputDocument
   | TimedRpcCall Text

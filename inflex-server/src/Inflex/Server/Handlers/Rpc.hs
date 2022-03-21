@@ -299,7 +299,7 @@ getRevisedDocument loginAccountId docId =
                      pure row)))
         -- TODO: make this not so gross. Rushed it due to time limits.
         cells <-
-          for
+          liftedTimed TimedSelectCellDeps $ for
             cells0
             (\(cellId, InputCell {..}) -> do
                depCellIds <- selectList [CellDependencyOrigin ==. cellId] []
