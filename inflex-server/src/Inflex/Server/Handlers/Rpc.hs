@@ -40,14 +40,12 @@ import           Inflex.Server.Compute
 import qualified Inflex.Server.Compute as InputCell (InputCell(..))
 import qualified Inflex.Server.Compute as InputDocument (InputDocument(..))
 import           Inflex.Server.Csv
-import           Inflex.Server.Handlers.Files
 import           Inflex.Server.Session
 import           Inflex.Server.Transforms
 import           Inflex.Server.Types
 import           Inflex.Server.Types.Sha256
 import           Inflex.Types hiding (Cell)
 import           Inflex.Types.SHA512
-import qualified RIO
 import           RIO (glog)
 import           Yesod hiding (Html)
 
@@ -438,7 +436,7 @@ rpcCsvGuessSchema file@Shared.File {id = fileId} = do
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash, fileContent}) -> do
+         Just (Entity _ File {fileContent}) -> do
            pure (case guessCsvSchema file (L.fromStrict fileContent) of
                    Left err -> Shared.GuessCassavaFailure err
                    Right (schema, _rows) -> Shared.CsvGuessed schema))
@@ -458,7 +456,7 @@ rpcCsvCheckSchema Shared.CsvImportSpec { file = Shared.File {id = fileId}
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash, fileContent}) -> do
+         Just (Entity _ File {fileContent}) -> do
            case Csv.decodeByName (L.fromStrict  fileContent) of
              Left _err -> pure (Shared.CsvColumnFailures mempty)
              Right (_headers, _rows :: Vector (HashMap Text Text)) ->
@@ -480,7 +478,7 @@ rpcCsvImport Shared.CsvImportFinal { csvImportSpec = csvImportSpec@Shared.CsvImp
               [Desc FileCreated])
        case mfile of
          Nothing -> notFound
-         Just (Entity _ File {fileHash, fileContent}) -> do
+         Just (Entity _ File {fileContent}) -> do
            case Csv.decodeByName (L.fromStrict  fileContent) of
              Left err ->
                error
