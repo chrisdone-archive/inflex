@@ -154,7 +154,7 @@ component =
              , type'
              , tableMode: NormalMode
              })
-    , render: \state -> timed "Editor.render" (\_ -> render state)
+    , render -- : \state -> timed "Editor.render" (\_ -> render state)
     , eval:
         H.mkEval
           H.defaultEval
@@ -295,7 +295,7 @@ eval' =
               then "_"
               else code))
     SetEditorInput input@(EditorAndCode {editor, code, path, cells, type'}) -> do
-      log ("SetEditorInput: " <> code)
+      -- log ("SetEditorInput: " <> code)
       State state <- H.get
       H.put
         (State

@@ -23,5 +23,5 @@ timedM label m = do
   start <- liftEffect perfNow
   v <- m
   end <- liftEffect perfNow
-  liftEffect (logg label (end-start))
+  -- liftEffect (logg label (end-start))
   pure v
