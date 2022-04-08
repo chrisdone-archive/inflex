@@ -73,15 +73,13 @@ getBlogR = do
              div_ [class_ "logo"] (a_ [href_ (url HomeR)] (toHtmlRaw logo))
              span_ [class_ "beta-badge"] "beta"
              div_ [class_ "rhs-nav"] $
-               case hasLoginCookie' of
-                 NoLoginCookie ->
-                   form_
-                     [action_ (url LoginR), method_ "get"]
-                     (button_ [class_ "login full-button"] "Login")
-                 HasLoginCookie _loginState -> do
-                   form_
-                     [action_ (url LogoutR), method_ "post"]
-                     (button_ [class_ "logout full-button"] "Logout")
+                      form_
+                        [class_ "community-link"]
+                        (do a_
+                              [ href_ "https://discourse.inflex.io/"
+                              , class_ "login full-button"
+                              ]
+                              "Community")
          article_ [class_ "article"] $
            div_ [class_ "margin-wrapper"] $ do
              let byYear (_, Article {date}) = getYear date
@@ -156,15 +154,13 @@ getBlogEntryR entryName = do
              div_ [class_ "logo"] (a_ [href_ (url HomeR)] (toHtmlRaw logo))
              span_ [class_ "beta-badge"] "beta"
              div_ [class_ "rhs-nav"] $
-               case hasLoginCookie' of
-                 NoLoginCookie ->
-                   form_
-                     [action_ (url LoginR), method_ "get"]
-                     (button_ [class_ "login full-button"] "Login")
-                 HasLoginCookie _loginState -> do
-                   form_
-                     [action_ (url LogoutR), method_ "post"]
-                     (button_ [class_ "logout full-button"] "Logout")
+                      form_
+                        [class_ "community-link"]
+                        (do a_
+                              [ href_ "https://discourse.inflex.io/"
+                              , class_ "login full-button"
+                              ]
+                              "Community")
          article_ [class_ "article"] $
            div_ [class_ "margin-wrapper"] $ do
              h1_ (toHtml title)

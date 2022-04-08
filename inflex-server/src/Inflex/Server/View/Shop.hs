@@ -41,10 +41,10 @@ shopTemplate state body = do
                           div_
                             [class_ "rhs-nav"]
                             (do form_
-                                  [action_ (url IntroR), method_ "get"]
+                                  [action_ "https://discourse.inflex.io/", method_ "get"]
                                   (button_
                                      [class_ "logout full-button"]
-                                     "Docs")
+                                     "Community")
                                 case state of
                                   NoSessionState ->
                                     form_

@@ -89,10 +89,10 @@ getHomeR = do
                       form_
                         [class_ "community-link"]
                         (do a_
-                              [ href_ (url IntroR)
+                              [ href_ "https://discourse.inflex.io/"
                               , class_ "full-button"
                               ]
-                              "Docs")
+                              "Community")
                       form_
                         []
                         (do a_ [href_ (url BlogR), class_ "full-button"] "Blog")
