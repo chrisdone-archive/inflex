@@ -195,7 +195,11 @@ query =
       _ <- eval (SetEditorInput input)
       pure Nothing
     ResetDisplay -> do
-      H.modify_ (\(State st) ->  (State (st {display = DisplayEditor})))
+      -- This doesn't seem necessary anymore due to a more
+      -- fine-grained treatment of invalidation here:
+      -- https://gitlab-skyabove/sky-above/inflex/blob/fec7cc0500f372b78452f1a297bd9c279572b56d/inflex-client/src/Inflex/Components/Cell.purs#L214
+      -- H.modify_ (\(State st) -> (State (st {display =
+      -- DisplayEditor})))
       pure Nothing
     NestedCellError cellError -> do
       State {path} <- H.get

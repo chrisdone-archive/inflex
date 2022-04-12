@@ -213,7 +213,8 @@ eval =
           log ("Cell.eval:SetCellFromInput: running ResetDisplay")
           unless (cells == oldCells) $
              H.modify_ (\(State s) -> State (s {cells = cells}))
-          _ <- H.queryAll (SProxy :: SProxy "editor") EditorTypes.ResetDisplay
+          -- Doesn't seem necessary anymore?
+          -- _ <- H.queryAll (SProxy :: SProxy "editor") EditorTypes.ResetDisplay
           pure unit
     DeleteCell -> do
       H.modify_ (\(State s) -> State (s {deleted = true}))
