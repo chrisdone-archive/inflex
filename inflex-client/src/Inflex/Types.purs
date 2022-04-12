@@ -21,8 +21,13 @@ data OutputCell = OutputCell
   , dependencies :: Array UUID
   }
 
+-- This instance specifically caters to this line:
+-- <https://gitlab-skyabove/sky-above/inflex/blob/ded321713f2920ab3f32b338d97bc1b2ec728e82/inflex-client/src/Inflex/Components/Cell.purs#L214>
 instance outputCellEq :: Eq OutputCell where
-  eq (OutputCell{resultHash: h1}) (OutputCell{resultHash: h2}) = h1 == h2
+  eq (OutputCell{resultHash: h1, name: n1, uuid: u1}) (OutputCell{resultHash: h2, name: n2, uuid: u1}) =
+    u1 == u2 &&
+    h1 == h2 &&
+    n1 == n2
 
 derive instance genericOutputCell :: Generic OutputCell _
 instance showOutputCell :: Show OutputCell where show = genericShow
