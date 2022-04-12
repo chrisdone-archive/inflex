@@ -201,17 +201,18 @@ eval =
     TriggerRenameCell update -> H.raise (RenameCell update)
     TriggerRepositionCell x y -> H.raise (RepositionCell x y)
     SetCellFromInput (Input {cell: c, cells, dragger}) -> do
-      State {cell: oldCell} <- H.get
+      State {cell: oldCell, cells: oldCells} <- H.get
       let newCell@(Cell {name}) = outputCellToCell c
       if newCell /= oldCell
         then do
           log ("Cell.eval:SetCellFromInput: just updating.")
           H.modify_
             (\(State s) ->
-               State (s {cell = newCell, cells = cells, dragger = dragger}))
+               State (s {cell = newCell, cells = cells}))
         else do
           log ("Cell.eval:SetCellFromInput: running ResetDisplay")
-          H.modify_ (\(State s) -> State (s {cells = cells, dragger = dragger}))
+          unless (cells == oldCells) $
+             H.modify_ (\(State s) -> State (s {cells = cells}))
           _ <- H.queryAll (SProxy :: SProxy "editor") EditorTypes.ResetDisplay
           pure unit
     DeleteCell -> do
