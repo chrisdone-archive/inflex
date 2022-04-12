@@ -30,7 +30,6 @@ data OutputCell = OutputCell
 instance outputCellEq :: Eq OutputCell where
   eq (OutputCell{resultHash: h1, name: n1, uuid: u1}) (OutputCell{resultHash: h2, name: n2, uuid: u2}) =
     u1 == u2 &&
-    h1 == h2 &&
     n1 == n2
 
 derive instance genericOutputCell :: Generic OutputCell _

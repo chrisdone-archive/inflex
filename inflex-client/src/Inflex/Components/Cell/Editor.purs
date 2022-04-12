@@ -154,7 +154,7 @@ component =
              , type'
              , tableMode: NormalMode
              })
-    , render-- : \state -> timed "Editor.render" (\_ -> render state)
+    , render: \state -> timed "Editor.render" (\_ -> render state)
     , eval:
         H.mkEval
           H.defaultEval
