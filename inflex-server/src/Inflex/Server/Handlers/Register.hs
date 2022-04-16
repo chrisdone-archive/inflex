@@ -102,7 +102,7 @@ withRegistrationState theCons cont = do
 -- Registration form
 
 handleEnterDetailsR :: Handler (Html ())
-handleEnterDetailsR = withRegistrationState _EnterDetails go
+handleEnterDetailsR = error "Comming soon." -- withRegistrationState _EnterDetails go
   where
     go state sessionId mRegistrationDetails = do
       glog (AnalyticsMsg VisitRegistrationForm)

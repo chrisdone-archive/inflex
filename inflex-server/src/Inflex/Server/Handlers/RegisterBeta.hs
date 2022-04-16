@@ -50,7 +50,7 @@ intro_ = do
   p_ "An account subscription is $10/month. You can cancel immediately at any time."
 
 handleEnterDetailsR :: Handler (Html ())
-handleEnterDetailsR = withRegistrationState _BetaEnterDetails go
+handleEnterDetailsR = error "Temporarily disabled." -- withRegistrationState _BetaEnterDetails go
   where
     go state sessionId mRegistrationDetails = do
       submission <-

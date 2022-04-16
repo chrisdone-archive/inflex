@@ -127,7 +127,7 @@ getHomeR = do
                                  , required_ ""
                                  ])-}
                         (do a_ [class_ "button try tagline-action", href_ (url SandboxR)] "Try"
-                            button_ [class_ "button tagline-action"] "Register")
+                            when False $ button_ [class_ "button tagline-action"] "Register")
                     div_
                       [class_ "hero-pic"]
                       (do img_ [class_ "preview-pic", src_ (url (StaticR img_preview_png))])
@@ -139,8 +139,9 @@ getHomeR = do
                     p_ "We're open for beta testing now."
                   div_ [class_ "margin-wrapper"] $ do
                     p_ $
-                      form_ [action_ (url EnterDetailsR), method_ "get"] $
-                      button_ [class_ "button tagline-action"] "Register now"
+                      a_ [class_ "button try tagline-action", href_ (url SandboxR)] "Try"
+                      -- form_ [action_ (url EnterDetailsR), method_ "get"] $
+                      -- button_ [class_ "button tagline-action"] "Register now"
                 div_ [class_ "footer"] $ do
                   div_ [class_ "margin-wrapper"] $ do
                     p_ "© 2020 Sky Above Limited"
