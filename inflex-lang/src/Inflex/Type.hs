@@ -278,7 +278,7 @@ functionScheme location =
     SortFunction -> poly [comparable a] (ArrayType a .-> ArrayType a)
     ConcatFunction -> poly [] (ArrayType (ArrayType a) .-> ArrayType a)
     AndFunction -> mono (ArrayType boolT .-> boolT)
-    OrFunction -> mono (ArrayType boolT .-> integerT)
+    OrFunction -> mono (ArrayType boolT .-> boolT)
     MinimumFunction ->
       poly
         [comparable a]
