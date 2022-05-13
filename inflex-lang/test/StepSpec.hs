@@ -293,7 +293,7 @@ functions2 = do
           "@prim:array_all(_, [1])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(_, [1])")
-             (Right "if @prim:array_find(($:@prim:not(_($0))), [1]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
+             (Right "if(@prim:array_find(($:@prim:not(_($0))), [1])){#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
         it
           "@prim:array_all(_, [])"
           (shouldReturn
@@ -303,12 +303,12 @@ functions2 = do
           "@prim:array_all(r:r=2, _)"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,_)")
-             (Right "if @prim:array_find(($:@prim:not(($:($0 = 2))($0))), _) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
+             (Right "if(@prim:array_find(($:@prim:not(($:($0 = 2))($0))), _)){#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,_])"
           (shouldReturn
              (stepDefaultedTextly "@prim:array_all(r:r=2,[2,2,_])")
-             (Right "if @prim:array_find(($:@prim:not(($:($0 = 2))($0))), [2, 2, _]) {#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
+             (Right "if(@prim:array_find(($:@prim:not(($:($0 = 2))($0))), [2, 2, _])){#find_empty: #all_empty, #find_failed: #ok(#true), #ok($): #ok(#false)}"))
         it
           "@prim:array_all(r:r=2,[2,2,2])"
           (shouldReturn
@@ -520,20 +520,20 @@ if' =
   describe
     "If"
     (do it
-          "if #false { #true: 1, _: 0 }"
-          (shouldReturn (stepDefaultedTextly "if #false { #true: 1, _: 0 }")
+          "if (#false){ #true: 1, _: 0 }"
+          (shouldReturn (stepDefaultedTextly "if(#false){ #true: 1, _: 0 }")
                     (Right "0"))
         it
-          "if #true { #true: 1, _: 0 }"
-          (shouldReturn (stepDefaultedTextly "if #true { #true: 1, _: 0 }")
+          "if(#true){ #true: 1, _: 0 }"
+          (shouldReturn (stepDefaultedTextly "if(#true){ #true: 1, _: 0 }")
                     (Right "1"))
         it
-          "if 2*2>1 { #true: 1, _: 0 }"
-          (shouldReturn (stepDefaultedTextly "if 2*2>1 { #true: 1, _: 0 }")
+          "if(2*2>1){ #true: 1, _: 0 }"
+          (shouldReturn (stepDefaultedTextly "if(2*2>1){ #true: 1, _: 0 }")
                     (Right "1"))
         it
-          "if 2>4 { #true: 1, _: 0 }"
-          (shouldReturn (stepDefaultedTextly "if 2>4 { #true: 1, _: 0 }")
+          "if(2>4){ #true: 1, _: 0 }"
+          (shouldReturn (stepDefaultedTextly "if(2>4){ #true: 1, _: 0 }")
                     (Right "0")))
 
 case' :: SpecWith ()
@@ -541,41 +541,41 @@ case' =
   describe
     "If"
     (do it
-          "if 2>4 { #true: 1, #false: 0 }"
+          "if(2>4){ #true: 1, #false: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "if 2>4 { #true: 1, #false: 0 }")
+             (stepDefaultedTextly "if(2>4){ #true: 1, #false: 0 }")
              (Right "0"))
         it
-          "if 2>1 { #true: 1, #false: 0 }"
+          "if(2>1){ #true: 1, #false: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "if 2>1 { #true: 1, #false: 0 }")
+             (stepDefaultedTextly "if(2>1){ #true: 1, #false: 0 }")
              (Right "1"))
         it
-          "if #ok(1) { #ok(n): n, #none: 0 }"
+          "if(#ok(1)){ #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "if #ok(1) { #ok(n): n, #none: 0 }")
+             (stepDefaultedTextly "if(#ok(1)){ #ok(n): n, #none: 0 }")
              (Right "1"))
         it
-          "if #none { #ok(n): n, #none: 0 }"
+          "if(#none){ #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "if #none { #ok(n): n, #none: 0 }")
+             (stepDefaultedTextly "if(#none){ #ok(n): n, #none: 0 }")
              (Right "0"))
         it
-          "if #ok(2*3) { #ok(n): n, #none: 0 }"
+          "if(#ok(2*3)){ #ok(n): n, #none: 0 }"
           (shouldReturn
-             (stepDefaultedTextly "if #ok(2*3) { #ok(n): n, #none: 0 }")
+             (stepDefaultedTextly "if(#ok(2*3)){ #ok(n): n, #none: 0 }")
              (Right "6"))
         -- This sneaky test checks that all the types unify properly and defaulting working:
         it
-          "if #ok(2*3) { #ok(n): n, #none: 0.0 } -- check unification"
+          "if(#ok(2*3)){ #ok(n): n, #none: 0.0 } -- check unification"
           (shouldReturn
-             (stepDefaultedTextly "if #ok(2*3) { #ok(n): n, #none: 0.0 }")
+             (stepDefaultedTextly "if(#ok(2*3)){ #ok(n): n, #none: 0.0 }")
              (Right "6.0"))
         it
           "nested ifs"
           (shouldReturn
              (stepDefaultedTextly
-                "if 2>4 { #true: \"early\", #false: if 2=2 { #true: \"ok\", #false: \"nope\" } }")
+                "if(2>4){ #true: \"early\", #false: if(2=2){ #true: \"ok\", #false: \"nope\" } }")
              (Right "\"ok\"")))
 
 regression :: SpecWith ()

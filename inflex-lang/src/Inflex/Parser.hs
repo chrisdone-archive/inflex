@@ -174,13 +174,13 @@ expressionParser = caseParser <> chainParser
       resolveChain chain
 
 -- Examples
--- case x { #true: p*2, #false: 12 }
--- case x {#some(p): p*1, #none: 12 }
+-- if (x) { #true: p*2, #false: 12 }
+-- if (x) {#some(p): p*1, #none: 12 }
 --
 caseParser :: Parser (Expression Parsed)
 caseParser = do
   Located {location} <- keyword "if"
-  scrutinee <- expressionParser
+  scrutinee <- parensParser
   token_ ExpectedCurly (preview _OpenCurlyToken)
   alternatives <-
     let loop seen = do

@@ -119,7 +119,7 @@ instance Stage s => Printer (Expression s) where
 
 instance Stage s => Printer (Case s) where
   printer Case {..} =
-    "if " <> printer scrutinee <> " {" <>
+    "if(" <> printer scrutinee <> "){" <>
     (mconcat . intersperse ", ") (map printer (toList alternatives)) <>
     "}"
 
