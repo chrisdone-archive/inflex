@@ -53,6 +53,17 @@ ghc-options: -Wall
 library:
   source-dirs: src
 
+executables:
+  inflex:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -static
+    cc-options: -static
+    ld-options: -static -pthread
+    dependencies: inflex-lang
+
 tests:
   inflex-lang-test:
     main:                Spec.hs
