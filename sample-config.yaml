@@ -1,5 +1,0 @@
-stripeConfig:
-  publishableApiKey: ""
-  secretApiKey: ""
-  planId: ""
-databaseConn: ""

@@ -1,1 +1,0 @@
-exports.meta = window['inflexMetadata'];

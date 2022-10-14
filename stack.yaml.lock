@@ -5,50 +5,6 @@
 
 packages:
 - completed:
-    size: 7273
-    url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
-    name: purescript-bundle-fast
-    version: 0.1.0.1
-    sha256: 453b53e143994d23beeb30c9899ef2c805c0edeaabf287538813cad0f97eaba2
-    pantry-tree:
-      size: 441
-      sha256: a0cfe01e673c8077665181f1eca8c05ab9ff1cae96e67031d2836bb658416aaf
-  original:
-    url: https://github.com/chrisdone/purescript-bundle-fast/archive/c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e.tar.gz
-- completed:
-    size: 2615
-    url: https://github.com/chrisdone/yesod-lucid/archive/277d644297f36850f304dd5efa99c9eded09a633.tar.gz
-    name: yesod-lucid
-    version: '0.1'
-    sha256: 367c4242828af243006f134d6dee84ef199aa28630f4814de360153e22b8f71a
-    pantry-tree:
-      size: 361
-      sha256: 0534e78324b28a57110f31e595617b29af5abaa87a8a91f45d0ee7751749a676
-  original:
-    url: https://github.com/chrisdone/yesod-lucid/archive/277d644297f36850f304dd5efa99c9eded09a633.tar.gz
-- completed:
-    size: 12380
-    url: https://github.com/chrisdone/forge/archive/1bea561eec4e52687ad3b87afe7fc69785c70751.tar.gz
-    name: forge
-    version: 0.1.0.0
-    sha256: 52ebcaad394879489cdde89e683d252b0882e4ff70385d2552b695cffd2ed32d
-    pantry-tree:
-      size: 858
-      sha256: afc235279fa04096a415f69191d98a396d17e1502c9fe0af5e1fda0bd0a7a074
-  original:
-    url: https://github.com/chrisdone/forge/archive/1bea561eec4e52687ad3b87afe7fc69785c70751.tar.gz
-- completed:
-    size: 19130
-    url: https://github.com/chrisdone/safe-decimal/archive/7d12d7b326d7ca544306e2b3244b5e3bfd9b856b.tar.gz
-    name: safe-decimal
-    version: 0.2.0.0
-    sha256: c06dec7222ffcaf55f80d85a278731e7a4142f4bd4f2718007ae146eb37f1fb6
-    pantry-tree:
-      size: 925
-      sha256: 4b4b230d2e61aae0c265d315de99a4f88a04b1b35eb9fd94749802a46b77bf08
-  original:
-    url: https://github.com/chrisdone/safe-decimal/archive/7d12d7b326d7ca544306e2b3244b5e3bfd9b856b.tar.gz
-- completed:
     size: 32855
     url: https://github.com/chrisdone/flatparse/archive/3213749f811fbfa5983563f26989ac43d13cf499.tar.gz
     name: flatparse
@@ -72,28 +28,6 @@ packages:
   original:
     subdir: reparsec
     url: https://github.com/chrisdone/streaming-parsers/archive/955675a074e8443ab9a65cc1bcb7abd7e49e188f.tar.gz
-- completed:
-    size: 533412
-    url: https://github.com/purescript/purescript/archive/ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9.tar.gz
-    name: purescript
-    version: 0.13.6
-    sha256: e0a1f2c56a12356648f1207674c5dc2ae1a6bacd62b82654ef5d427d32e32713
-    pantry-tree:
-      size: 80429
-      sha256: b6e81e7ef624dfba7a0e0e2b8b0ae91b5b7fe986748621b40743ea92e32e631b
-  original:
-    url: https://github.com/purescript/purescript/archive/ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9.tar.gz
-- completed:
-    size: 25671
-    url: https://github.com/purescript/psc-package/archive/24a696131bca63513a84d0a9b691f773c7b37069.tar.gz
-    name: psc-package
-    version: 0.6.2
-    sha256: 49f22e6af412513fae81f629c5d8188d43c000af7806a8c14eda66dd06807d99
-    pantry-tree:
-      size: 1542
-      sha256: 7ae4413f1441bfa111f8e39a77ffdc95776d8ee6129d5ff328d6de4a8a67788e
-  original:
-    url: https://github.com/purescript/psc-package/archive/24a696131bca63513a84d0a9b691f773c7b37069.tar.gz
 - completed:
     size: 67654
     subdir: rio
@@ -142,17 +76,6 @@ packages:
       sha256: 59d87ed7eff3de2df1d1ad290ef32ede0b28d9aa01ae73aee6580a5500f0cfe1
   original:
     url: https://github.com/chrisdone/lexx/archive/1d57bf997666d35cf4304418b22d6c08ede41dcc.tar.gz
-- completed:
-    size: 11144
-    url: https://github.com/chrisdone/prometheus/archive/517c3a38a76e8ad1cdcb3ed31f4df791226300fe.tar.gz
-    name: prometheus
-    version: 2.2.2
-    sha256: 023de1f00f0c2646a313cd0e81c9e73afd2b7ca4a39fc5b2f5adbe9273c07054
-    pantry-tree:
-      size: 1969
-      sha256: ae1927b2fb7e5b303ad120818eb30cf2e7a27f8c394cf0bd8e64657d023982a6
-  original:
-    url: https://github.com/chrisdone/prometheus/archive/517c3a38a76e8ad1cdcb3ed31f4df791226300fe.tar.gz
 - completed:
     hackage: byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387
     pantry-tree:

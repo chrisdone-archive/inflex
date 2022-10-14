@@ -1,5 +1,0 @@
-$ flyctl secrets set PORT=8080 CONFIG=/tmp/inflex/config.yml
-
-$ stack build --flag inflex-server:sqlite inflex-server && cp $(stack exec which inflex-server) .
-
-$ flyctl deploy

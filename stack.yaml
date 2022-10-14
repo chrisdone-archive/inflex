@@ -1,31 +1,14 @@
 resolver: lts-14.20
 allow-newer: true
 ghc-options:
-  purescript: '-j4 -O2'
-  psc-package: '-j4 -O2'
-  inflex-server: '-j4 -dppr-user-length=0 -dppr-cols=10000'
-  inflex-client: '-j4 -dppr-user-length=0 -dppr-cols=10000'
-  inflex-engine: '-j4 -dppr-user-length=0 -dppr-cols=10000'
   inflex-lang: '-j4 -dppr-user-length=0 -dppr-cols=10000'
-  inflex-shared: '-j4 -dppr-user-length=0 -dppr-cols=10000'
 
 packages:
-- inflex-server
 - inflex-lang
-- inflex-client
-- inflex-shared
 
 extra-deps:
 
-# chrisdone forks/packages
-- github: chrisdone/purescript-bundle-fast
-  commit: c5a75b57cd2aa442bf03edfe5a6702b4df0fc45e
-- github: chrisdone/yesod-lucid
-  commit: 277d644297f36850f304dd5efa99c9eded09a633
-- github: chrisdone/forge
-  commit: 1bea561eec4e52687ad3b87afe7fc69785c70751
-- github: chrisdone/safe-decimal
-  commit: 7d12d7b326d7ca544306e2b3244b5e3bfd9b856b
+# chrisdone forks
 - github: chrisdone/flatparse
   commit: 3213749f811fbfa5983563f26989ac43d13cf499
 - github: chrisdone/streaming-parsers
@@ -34,10 +17,6 @@ extra-deps:
     - reparsec
 
 # Pinned github versions
-- github: purescript/purescript
-  commit: ed130c78b708ff55cf4a80b126a1bd3ba5d80eb9
-- github: purescript/psc-package
-  commit: 24a696131bca63513a84d0a9b691f773c7b37069
 - github: commercialhaskell/rio
   commit: 91c379f29b158dc91e7bea059fe7874d9a16973c
   subdirs:
@@ -47,8 +26,6 @@ extra-deps:
   commit: a642cea8d33bd5475fe56c0d31ff51287692789d
 - github: chrisdone/lexx
   commit: 1d57bf997666d35cf4304418b22d6c08ede41dcc
-- github: chrisdone/prometheus
-  commit: 517c3a38a76e8ad1cdcb3ed31f4df791226300fe
 
 # Specific hackage versions
 - byteunits-0.4.0.2@sha256:659e242f8051436582bfb748d857134b2fb7da80f33d31df6a22431cc77878db,1387

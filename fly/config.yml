@@ -1,5 +1,0 @@
-stripeConfig:
-  publishableApiKey: ""
-  planId: ""
-  secretApiKey: ""
-databaseConn: "/tmp/inflex.sqlite"
