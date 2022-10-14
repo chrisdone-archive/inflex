@@ -1,4 +1,5 @@
 resolver: lts-14.20
+system-ghc: true
 allow-newer: true
 ghc-options:
   inflex-lang: '-j4 -dppr-user-length=0 -dppr-cols=10000'

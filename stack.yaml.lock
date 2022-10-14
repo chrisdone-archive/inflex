@@ -7,6 +7,9 @@ packages:
 - completed:
     size: 32855
     url: https://github.com/chrisdone/flatparse/archive/3213749f811fbfa5983563f26989ac43d13cf499.tar.gz
+    cabal-file:
+      size: 2523
+      sha256: 391e4b1af4edd33d53e9e8920de7a6325b1730316732f2e811192883b8504b70
     name: flatparse
     version: 0.2.0.1
     sha256: eff7eaef5dc8006b06151fdee9c15aca15f90f1463451abfdcfc0d8db4183923
@@ -19,6 +22,9 @@ packages:
     size: 92392
     subdir: reparsec
     url: https://github.com/chrisdone/streaming-parsers/archive/955675a074e8443ab9a65cc1bcb7abd7e49e188f.tar.gz
+    cabal-file:
+      size: 995
+      sha256: a9e91c09182c8573fdde919bb1e6e117fa5b373543aa6fcf58075dafff3b754f
     name: reparsec
     version: 0.0.0
     sha256: ce83c812a53d3b32c5b163b6aa23ce7e3766ec1942c6cc66f4598a8ce6a47ac3
@@ -32,6 +38,9 @@ packages:
     size: 67654
     subdir: rio
     url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
+    cabal-file:
+      size: 3688
+      sha256: 13e9ce4561a87ae49d7600b0dd63482dd98d285147ce431a52bccbe73e3031df
     name: rio
     version: 0.1.19.0
     sha256: f6a5ed84d8582968acfe25ea9eccea96361b3304f8463098793b05b873ee5681
@@ -45,6 +54,9 @@ packages:
     size: 67654
     subdir: rio-orphans
     url: https://github.com/commercialhaskell/rio/archive/91c379f29b158dc91e7bea059fe7874d9a16973c.tar.gz
+    cabal-file:
+      size: 1611
+      sha256: d0d958340e7100e636419b143f27f2deaabdae4e26305410a221399d92b0c503
     name: rio-orphans
     version: 0.1.1.0
     sha256: f6a5ed84d8582968acfe25ea9eccea96361b3304f8463098793b05b873ee5681
@@ -57,6 +69,9 @@ packages:
 - completed:
     size: 10278
     url: https://github.com/inflex-io/early/archive/a642cea8d33bd5475fe56c0d31ff51287692789d.tar.gz
+    cabal-file:
+      size: 1727
+      sha256: 588c22caebfaf5f4d268bef30f131eb1ce8c602ee9eb5d92489a5d8243738efa
     name: early
     version: 0.0.0
     sha256: 475fbcf07e5c11df7c010cbf0099da1c8b6bf5a0e08ca6570dcb69c409f2b4d8
@@ -68,6 +83,9 @@ packages:
 - completed:
     size: 4288
     url: https://github.com/chrisdone/lexx/archive/1d57bf997666d35cf4304418b22d6c08ede41dcc.tar.gz
+    cabal-file:
+      size: 933
+      sha256: 43afc7ae793eb724819ddcee3ebfe560d0e316da1c4f3f5a16e0afbbea05495b
     name: lexx
     version: 0.1.0.0
     sha256: 6daad6926a8ce7e6838c95372cfb22ee2080909d6a84c2ecb6fcd8e9d0aa570c
