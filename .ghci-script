@@ -1,2 +1,0 @@
-:def restart \_ -> return ":!curl --silent  http://localhost:3031/kill\n:r\nforkIO main"
-:def retest \_ -> return ":r\n:main"
