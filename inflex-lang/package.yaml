@@ -47,6 +47,7 @@ dependencies:
 - th-lift
 - flatparse
 - byteunits
+- sdl2
 
 ghc-options: -Wall
 
