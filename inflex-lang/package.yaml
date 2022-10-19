@@ -48,6 +48,7 @@ dependencies:
 - flatparse
 - byteunits
 - sdl2
+- persistent-sqlite
 
 ghc-options: -Wall
 

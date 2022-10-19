@@ -6,6 +6,6 @@ RUN adduser -u 1000 chris --disabled-password && \
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
-RUN apk update && apk add sdl2 sdl2-dev sqlite ncurses-dev ncurses-static
+RUN apk update && apk add sdl2 sqlite sdl2-dev sqlite-dev ncurses-dev ncurses-static
 
 USER chris
