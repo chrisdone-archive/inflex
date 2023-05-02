@@ -10,4 +10,4 @@ Published with an Affero GPL license.
 
 Copyright ©️ Chris Done 2020-2022
 
-![screenie](/Screenshot from 2023-05-02 17-18-26.png "Screenshot")
+![screenie](https://raw.githubusercontent.com/chrisdone/inflex/master/Screenshot%20from%202023-05-02%2017-18-26.png)
