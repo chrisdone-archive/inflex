@@ -9,3 +9,5 @@ See the file Inflex.pdf in this repo for some slides about the language and some
 Published with an Affero GPL license.
 
 Copyright ©️ Chris Done 2020-2022
+
+![screenie](/Screenshot from 2023-05-02 17-18-26.png "Screenshot")
